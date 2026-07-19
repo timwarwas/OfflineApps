@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="color-scheme" content="light dark">
+<title>Spiele-Hub</title>
+<style>
+  :root{
+    --bg:#12152B; --surface:#1C2142; --surface2:#252B55; --line:#333A6B;
+    --text:#F2F3FF; --muted:#A6ADD8;
+    --yellow:#FFD447; --gold-text:#FFD447;
+    --coral:#FF6B7A; --mint:#43DFA0; --blue:#5B8DEF; --violet:#A78BFA;
+    --radius:20px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:ui-rounded,-apple-system,"SF Pro Rounded","Segoe UI",Roboto,sans-serif;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    overscroll-behavior:none;
+  }
+  .screen{display:none;max-width:520px;margin:0 auto;padding:20px 18px 40px;min-height:100dvh}
+  .screen.active{display:block}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+  .back{background:var(--surface);border:1px solid var(--line);color:var(--text);
+    width:42px;height:42px;border-radius:14px;font-size:20px;display:flex;align-items:center;justify-content:center}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.3px}
+  .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  button{font-family:inherit;border:none;cursor:pointer;font-size:16px}
+
+  /* ---------- Hauptmenü ---------- */
+  .hero{margin:8px 0 26px}
+  .hero .kicker{color:var(--gold-text);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+  .hero h1{font-size:34px;line-height:1.1;margin-top:6px}
+  .games{display:grid;gap:14px}
+  .game-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px;display:flex;align-items:center;gap:16px;color:var(--text);text-align:left;
+    transition:transform .12s ease;
+  }
+  .game-card:active{transform:scale(.98)}
+  .game-card .icon{
+    width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    font-size:26px;font-weight:800;flex-shrink:0;color:#12152B;
+  }
+  .game-card h2{font-size:19px;font-weight:800}
+  .game-card p{color:var(--muted);font-size:13px;margin-top:3px}
+  .game-card.soon{opacity:.45}
+  .chip{margin-left:auto;background:var(--surface2);border:1px solid var(--line);color:var(--muted);
+    font-size:11px;padding:5px 10px;border-radius:99px;flex-shrink:0}
+
+  /* ---------- Spieler-Setup ---------- */
+  .player-input{display:flex;gap:10px;margin-bottom:16px}
+  .player-input input{
+    flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    color:var(--text);padding:15px 16px;font-size:17px;font-family:inherit;outline:none;
+  }
+  .player-input input:focus{border-color:var(--blue)}
+  .add-btn{background:var(--blue);color:#fff;border-radius:16px;width:56px;font-size:26px;font-weight:700}
+  .plist{display:grid;gap:10px;margin-bottom:24px}
+  .prow{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:14px 16px;display:flex;align-items:center;gap:12px}
+  .dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
+  .prow span{font-size:17px;font-weight:600}
+  .del{margin-left:auto;background:none;color:var(--muted);font-size:20px;padding:4px 8px}
+  .primary{
+    width:100%;background:var(--yellow);color:#12152B;font-weight:800;font-size:18px;
+    padding:17px;border-radius:18px;transition:opacity .15s;
+  }
+  .primary:disabled{opacity:.35}
+  .ghost{width:100%;background:var(--surface);border:1px solid var(--line);color:var(--muted);
+    font-weight:600;padding:14px;border-radius:16px;margin-top:10px}
+  .empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:15px}
+
+  /* ---------- Spiel-Übersicht ---------- */
+  .goalbar{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .goalbar b{color:var(--gold-text);font-size:20px}
+  .goalbar small{color:var(--muted);font-size:13px}
+  .toggle{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:4px;margin-bottom:18px}
+  .toggle button{flex:1;padding:10px;border-radius:11px;background:none;color:var(--muted);font-weight:700;font-size:15px}
+  .toggle button.on{background:var(--surface2);color:var(--text)}
+
+  .score-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px;margin-bottom:12px}
+  .sc-top{display:flex;align-items:center;gap:10px}
+  .sc-top .name{font-size:18px;font-weight:800}
+  .sc-top .total{margin-left:auto;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
+  .sc-missing{color:var(--muted);font-size:14px;margin-top:2px}
+  .sc-missing b{color:var(--mint);font-weight:800}
+  .winner-tag{color:#12152B;background:var(--yellow);font-size:12px;font-weight:800;
+    padding:3px 9px;border-radius:99px}
+  .track{height:8px;background:var(--surface2);border-radius:99px;margin:12px 0;overflow:hidden}
+  .track i{display:block;height:100%;border-radius:99px;transition:width .4s ease}
+  .sc-actions{display:flex;gap:8px}
+  .sc-actions button{flex:1;background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    padding:11px;border-radius:12px;font-weight:700;font-size:15px}
+  .sc-actions .big{background:var(--blue);border-color:var(--blue);color:#fff}
+
+  /* ---------- Diagramm ---------- */
+  .chart{display:grid;gap:14px;margin-top:6px}
+  .bar-row{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center}
+  .rank{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:17px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+  .rank.r1{background:var(--yellow);color:#12152B;border-color:var(--yellow)}
+  .rank.r2{background:#C8CEEE;color:#12152B;border-color:#C8CEEE}
+  .rank.r3{background:#E8A46B;color:#12152B;border-color:#E8A46B}
+  .bar-info{min-width:0}
+  .bar-label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}
+  .bar-label b{font-weight:800}
+  .bar-label span{color:var(--muted);font-variant-numeric:tabular-nums}
+  .bar-bg{height:26px;background:var(--surface);border:1px solid var(--line);border-radius:9px;overflow:hidden;position:relative}
+  .bar-fill{height:100%;border-radius:8px 0 0 8px;transition:width .5s ease;min-width:2px}
+  .goal-line{position:absolute;top:0;bottom:0;right:0;width:2px;background:var(--yellow);opacity:.6}
+  .history{margin-top:26px}
+  .history h4{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .h-row{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;color:var(--text)}
+  .h-row:active{background:var(--surface2)}
+  .h-row .h-name{font-weight:700;font-size:15px}
+  .h-row .h-pts{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
+  .h-row .h-edit{color:var(--muted);font-size:13px;margin-left:10px}
+
+  /* ---------- Helles Farbschema (automatisch je nach System-Einstellung) ---------- */
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#F1F2FA; --surface:#FFFFFF; --surface2:#E7E9F5; --line:#C6CBE4;
+      --text:#13152B; --muted:#3E4468;
+      --yellow:#FFC933; --gold-text:#7E5C00;
+      --coral:#C52B41; --mint:#067A52; --blue:#2451B8; --violet:#5E32C4;
+    }
+    .modal{background:rgba(19,21,43,.45)}
+    .role-card.innocent{background:linear-gradient(160deg,#E4F7EE,#FFFFFF)}
+    .role-card.imposter{background:linear-gradient(160deg,#FBE6EA,#FFFFFF)}
+    .add-btn, .sc-actions .big{color:#FFFFFF}
+    .primary, .winner-tag, .rank.r1, .rank.r2, .rank.r3, .sheet-actions .ok{color:#13152B}
+  }
+
+  /* ---------- Imposter ---------- */
+  .cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .cat-btn{background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    padding:20px 14px;color:var(--text);text-align:center}
+  .cat-btn:active{transform:scale(.97)}
+  .cat-btn .emoji{font-size:30px;display:block;margin-bottom:8px}
+  .cat-btn b{font-size:15px;font-weight:800}
+  .cat-btn small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+  .center-stage{min-height:60dvh;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;gap:14px;padding:20px 0}
+  .center-stage .big-name{font-size:38px;font-weight:800;letter-spacing:-.5px}
+  .center-stage .hint{color:var(--muted);font-size:16px;max-width:280px}
+  .role-card{border-radius:26px;padding:36px 28px;width:100%;text-align:center}
+  .role-card.innocent{background:linear-gradient(160deg,#1d4235,#12152B);border:1px solid var(--mint)}
+  .role-card.imposter{background:linear-gradient(160deg,#4a1d28,#12152B);border:1px solid var(--coral)}
+  .role-card .role-label{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .role-card .role-name{font-size:32px;font-weight:800;margin:8px 0 4px}
+  .role-card.innocent .role-name{color:var(--mint)}
+  .role-card.imposter .role-name{color:var(--coral)}
+  .role-card .word{font-size:40px;font-weight:800;margin-top:18px;color:var(--gold-text)}
+  .role-card .word-label{color:var(--muted);font-size:13px;margin-top:20px}
+  .role-card p{color:var(--muted);font-size:15px;margin-top:14px;line-height:1.5}
+
+  /* ---------- Nummernpad ---------- */
+  .modal{position:fixed;inset:0;background:rgba(10,12,26,.75);display:none;
+    align-items:flex-end;justify-content:center;z-index:50}
+  .modal.open{display:flex}
+  .sheet{background:var(--surface);border-radius:26px 26px 0 0;width:100%;max-width:520px;
+    padding:22px 20px calc(24px + env(safe-area-inset-bottom))}
+  .sheet h3{font-size:17px;color:var(--muted);font-weight:600;text-align:center}
+  .pad-display{font-size:52px;font-weight:800;text-align:center;margin:10px 0 16px;
+    font-variant-numeric:tabular-nums;min-height:64px}
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .pad button{background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    padding:16px;border-radius:16px;font-size:24px;font-weight:700}
+  .pad button:active{background:var(--line)}
+  .pad .fn{font-size:17px;color:var(--muted)}
+  .sheet-actions{display:flex;gap:10px;margin-top:14px}
+  .sheet-actions .cancel{flex:1;background:var(--surface2);border:1px solid var(--line);
+    color:var(--muted);padding:15px;border-radius:16px;font-weight:700}
+  .sheet-actions .ok{flex:2;background:var(--mint);color:#12152B;padding:15px;border-radius:16px;font-weight:800;font-size:17px}
+
+  .footer-actions{margin-top:20px}
+  .danger{color:var(--coral)}
+</style>
+</head>
+<body>
+
+<!-- ========== HAUPTMENÜ ========== -->
+<div class="screen active" id="scr-menu">
+  <div class="hero">
+    <div class="kicker">Spieleabend</div>
+    <h1>Wähle dein Spiel</h1>
+  </div>
+  <div class="games">
+    <button class="game-card" onclick="openFlip7()">
+      <div class="icon" style="background:var(--yellow)">7</div>
+      <div>
+        <h2>Flip7</h2>
+        <p>Punktezähler · Erster bei 200 gewinnt</p>
+      </div>
+    </button>
+    <button class="game-card" onclick="openImposter()">
+      <div class="icon" style="background:var(--coral)">🕵️</div>
+      <div>
+        <h2>Imposter</h2>
+        <p>Einer kennt das Wort nicht · Findet ihn!</p>
+      </div>
+    </button>
+    <div class="game-card soon">
+      <div class="icon" style="background:var(--violet)">?</div>
+      <div>
+        <h2>Nächstes Spiel</h2>
+        <p>Hier ist Platz für mehr</p>
+      </div>
+      <span class="chip">Bald</span>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SPIELER-SETUP ========== -->
+<div class="screen" id="scr-setup">
+  <header>
+    <button class="back" onclick="show('scr-menu')">‹</button>
+    <div>
+      <h1>Flip7 · Spieler</h1>
+      <div class="sub">Wer spielt mit?</div>
+    </div>
+  </header>
+  <div class="player-input">
+    <input id="name-input" type="text" placeholder="Name eingeben" autocomplete="off" enterkeyhint="done">
+    <button class="add-btn" onclick="addPlayer()">+</button>
+  </div>
+  <div class="plist" id="setup-list"></div>
+  <button class="primary" id="start-btn" onclick="startGame()" disabled>Spiel starten</button>
+</div>
+
+<!-- ========== SPIEL ========== -->
+<div class="screen" id="scr-game">
+  <header>
+    <button class="back" onclick="show('scr-menu')">‹</button>
+    <div>
+      <h1>Flip7</h1>
+      <div class="sub" id="round-info"></div>
+    </div>
+  </header>
+
+  <div class="goalbar">
+    <small>Ziel</small>
+    <b>200 Punkte</b>
+  </div>
+
+  <div class="toggle">
+    <button id="tab-list" class="on" onclick="setView('list')">Liste</button>
+    <button id="tab-chart" onclick="setView('chart')">Diagramm</button>
+  </div>
+
+  <div id="view-list"></div>
+  <div id="view-chart" class="chart" style="display:none"></div>
+
+  <div class="footer-actions">
+    <button class="ghost" onclick="undoLast()">↩︎ Letzten Eintrag rückgängig</button>
+    <button class="ghost danger" onclick="resetGame()">Neues Spiel (Punkte löschen)</button>
+    <button class="ghost" onclick="show('scr-setup')">Spieler bearbeiten</button>
+  </div>
+</div>
+
+<!-- ========== IMPOSTER: SPIELER ========== -->
+<div class="screen" id="scr-imp-setup">
+  <header>
+    <button class="back" onclick="show('scr-menu')">‹</button>
+    <div>
+      <h1>Imposter · Spieler</h1>
+      <div class="sub">Mindestens 3 Spieler</div>
+    </div>
+  </header>
+  <div class="player-input">
+    <input id="imp-name-input" type="text" placeholder="Name eingeben" autocomplete="off" enterkeyhint="done">
+    <button class="add-btn" onclick="impAddPlayer()">+</button>
+  </div>
+  <div class="plist" id="imp-setup-list"></div>
+  <button class="primary" id="imp-next-btn" onclick="show('scr-imp-cat')" disabled>Weiter zur Kategorie</button>
+</div>
+
+<!-- ========== IMPOSTER: KATEGORIE ========== -->
+<div class="screen" id="scr-imp-cat">
+  <header>
+    <button class="back" onclick="show('scr-imp-setup')">‹</button>
+    <div>
+      <h1>Kategorie wählen</h1>
+      <div class="sub">Aus welchem Thema kommt das Wort?</div>
+    </div>
+  </header>
+  <div class="cat-grid" id="cat-grid"></div>
+</div>
+
+<!-- ========== IMPOSTER: WEITERGEBEN ========== -->
+<div class="screen" id="scr-imp-pass">
+  <header>
+    <button class="back" onclick="impQuit()">✕</button>
+    <div>
+      <h1>Imposter</h1>
+      <div class="sub" id="imp-pass-progress"></div>
+    </div>
+  </header>
+  <div class="center-stage">
+    <div class="hint">Gib das Handy an</div>
+    <div class="big-name" id="imp-pass-name"></div>
+    <div class="hint">Niemand sonst darf auf den Bildschirm schauen!</div>
+  </div>
+  <button class="primary" onclick="impShowRole()">Rolle anzeigen</button>
+</div>
+
+<!-- ========== IMPOSTER: ROLLE ========== -->
+<div class="screen" id="scr-imp-role">
+  <header>
+    <button class="back" style="visibility:hidden">‹</button>
+    <div>
+      <h1 id="imp-role-playername"></h1>
+      <div class="sub">Nur für deine Augen</div>
+    </div>
+  </header>
+  <div class="center-stage">
+    <div class="role-card" id="imp-role-card"></div>
+  </div>
+  <button class="primary" onclick="impNextPlayer()">Verstanden – weitergeben</button>
+</div>
+
+<!-- ========== IMPOSTER: LOS GEHT'S ========== -->
+<div class="screen" id="scr-imp-final">
+  <header>
+    <button class="back" onclick="impQuit()">✕</button>
+    <div>
+      <h1>Alle bereit!</h1>
+      <div class="sub">Die Jagd beginnt</div>
+    </div>
+  </header>
+  <div class="center-stage">
+    <div class="hint">Es beginnt:</div>
+    <div class="big-name" style="color:var(--gold-text)" id="imp-final-name"></div>
+    <div class="hint">Beschreibt reihum das Wort mit je einem Begriff – aber verratet es nicht zu deutlich. Dann wird abgestimmt, wer der Imposter ist!</div>
+  </div>
+  <button class="primary" onclick="impStartRound()">Neue Runde (gleiche Gruppe)</button>
+  <button class="ghost" onclick="show('scr-imp-cat')">Kategorie ändern</button>
+  <button class="ghost" onclick="show('scr-menu')">Zurück zum Menü</button>
+</div>
+
+<!-- ========== NUMMERNPAD ========== -->
+<div class="modal" id="pad-modal" onclick="if(event.target===this)closePad()">
+  <div class="sheet">
+    <h3 id="pad-title">Punkte für …</h3>
+    <div class="pad-display" id="pad-display">0</div>
+    <div class="pad">
+      <button onclick="padKey(1)">1</button><button onclick="padKey(2)">2</button><button onclick="padKey(3)">3</button>
+      <button onclick="padKey(4)">4</button><button onclick="padKey(5)">5</button><button onclick="padKey(6)">6</button>
+      <button onclick="padKey(7)">7</button><button onclick="padKey(8)">8</button><button onclick="padKey(9)">9</button>
+      <button class="fn" onclick="padClear()">C</button><button onclick="padKey(0)">0</button><button class="fn" onclick="padBack()">⌫</button>
+    </div>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="closePad()">Abbrechen</button>
+      <button class="cancel danger" id="pad-delete" style="display:none" onclick="padDelete()">Löschen</button>
+      <button class="ok" id="pad-ok" onclick="padConfirm()">Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const GOAL = 200;
+const COLORS_DARK  = ['#FFD447','#5B8DEF','#43DFA0','#FF6B7A','#A78BFA','#4FD1E8','#F49D5C','#E86BC6'];
+const COLORS_LIGHT = ['#9A7000','#2451B8','#067A52','#C52B41','#5E32C4','#0A7D96','#B35A12','#B0247F'];
+const lightMode = window.matchMedia('(prefers-color-scheme: light)');
+let COLORS = lightMode.matches ? COLORS_LIGHT : COLORS_DARK;
+lightMode.addEventListener('change', e=>{
+  COLORS = e.matches ? COLORS_LIGHT : COLORS_DARK;
+  renderSetup(); impRenderSetup(); renderGame();
+});
+let state = { players: [], view: 'list', log: [] }; // log: {playerId, points}
+let padTarget = null, padValue = '', padEditId = null;
+
+/* ---------- Persistenz: Claude-Speicher, sonst Browser-Speicher (z.B. GitHub Pages) ---------- */
+async function saveState(){
+  const json = JSON.stringify(state);
+  try{ await window.storage.set('flip7-state', json); return; }catch(e){}
+  try{ localStorage.setItem('flip7-state', json); }catch(e){}
+}
+async function loadState(){
+  let json = null;
+  try{
+    const r = await window.storage.get('flip7-state');
+    if(r && r.value) json = r.value;
+  }catch(e){}
+  if(!json){
+    try{ json = localStorage.getItem('flip7-state'); }catch(e){}
+  }
+  if(json){
+    try{
+      state = JSON.parse(json);
+      if(!state.log) state.log = [];
+      state.log.forEach((e,i)=>{ if(!e.id) e.id = 'mig-'+i+'-'+Date.now(); });
+    }catch(e){}
+  }
+}
+
+/* ---------- Navigation ---------- */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='scr-setup') renderSetup();
+  if(id==='scr-game') renderGame();
+  if(id==='scr-imp-setup') impRenderSetup();
+  if(id==='scr-imp-cat') impRenderCats();
+}
+function openFlip7(){
+  show(state.players.length ? 'scr-game' : 'scr-setup');
+}
+
+/* ---------- Spieler-Setup ---------- */
+function addPlayer(){
+  const inp = document.getElementById('name-input');
+  const name = inp.value.trim();
+  if(!name) return;
+  state.players.push({ id: Date.now()+''+Math.random(), name, scores: [] });
+  inp.value=''; inp.focus();
+  saveState(); renderSetup();
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('name-input').addEventListener('keydown', e=>{
+    if(e.key==='Enter') addPlayer();
+  });
+  document.getElementById('imp-name-input').addEventListener('keydown', e=>{
+    if(e.key==='Enter') impAddPlayer();
+  });
+});
+function removePlayer(id){
+  state.players = state.players.filter(p=>p.id!==id);
+  state.log = state.log.filter(l=>l.playerId!==id);
+  saveState(); renderSetup();
+}
+function renderSetup(){
+  const list = document.getElementById('setup-list');
+  if(!state.players.length){
+    list.innerHTML = '<div class="empty">Noch keine Spieler.<br>Füge oben Namen hinzu.</div>';
+  }else{
+    list.innerHTML = state.players.map((p,i)=>`
+      <div class="prow">
+        <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
+        <span>${esc(p.name)}</span>
+        <button class="del" onclick="removePlayer('${p.id}')">✕</button>
+      </div>`).join('');
+  }
+  document.getElementById('start-btn').disabled = state.players.length < 1;
+}
+function startGame(){ show('scr-game'); }
+
+/* ---------- Spiel-Logik ---------- */
+const total = p => p.scores.reduce((a,b)=>a+b,0);
+
+// Punktestände immer aus dem Eintrags-Log ableiten (hält alles konsistent)
+function rebuildScores(){
+  state.players.forEach(p=>{
+    p.scores = state.log.filter(l=>l.playerId===p.id).map(l=>l.points);
+  });
+}
+function addPoints(id, pts){
+  const p = state.players.find(x=>x.id===id);
+  if(!p) return;
+  state.log.push({ id: Date.now()+''+Math.random(), playerId:id, points:pts });
+  rebuildScores();
+  saveState(); renderGame();
+}
+function editLogEntry(logId, pts){
+  const e = state.log.find(l=>l.id===logId);
+  if(!e) return;
+  e.points = pts;
+  rebuildScores();
+  saveState(); renderGame();
+}
+function deleteLogEntry(logId){
+  state.log = state.log.filter(l=>l.id!==logId);
+  rebuildScores();
+  saveState(); renderGame();
+}
+function undoLast(){
+  if(!state.log.length) return;
+  state.log.pop();
+  rebuildScores();
+  saveState(); renderGame();
+}
+function resetGame(){
+  if(!confirm('Alle Punkte löschen und neu starten?')) return;
+  state.players.forEach(p=>p.scores=[]);
+  state.log = [];
+  saveState(); renderGame();
+}
+
+/* ---------- Rendering ---------- */
+function setView(v){
+  state.view = v; saveState();
+  document.getElementById('tab-list').classList.toggle('on', v==='list');
+  document.getElementById('tab-chart').classList.toggle('on', v==='chart');
+  document.getElementById('view-list').style.display = v==='list' ? '' : 'none';
+  document.getElementById('view-chart').style.display = v==='chart' ? '' : 'none';
+}
+function renderGame(){
+  setView(state.view || 'list');
+  const rounds = Math.max(0, ...state.players.map(p=>p.scores.length));
+  document.getElementById('round-info').textContent =
+    rounds ? `Runde ${rounds}` : 'Noch keine Punkte eingetragen';
+
+  // Gewinner: bei mehreren über 200 gewinnt die höchste Punktzahl
+  const over = state.players.filter(p=>total(p)>=GOAL);
+  const maxOver = over.length ? Math.max(...over.map(p=>total(p))) : null;
+
+  /* Listenansicht */
+  document.getElementById('view-list').innerHTML = state.players.map((p,i)=>{
+    const t = total(p);
+    const missing = Math.max(0, GOAL - t);
+    const pct = Math.min(100, t/GOAL*100);
+    const color = COLORS[i%COLORS.length];
+    const reached = t >= GOAL;
+    const won = reached && t === maxOver;
+    return `
+    <div class="score-card">
+      <div class="sc-top">
+        <span class="dot" style="background:${color}"></span>
+        <span class="name">${esc(p.name)}</span>
+        ${won ? '<span class="winner-tag">🏆 Gewonnen!</span>' :
+          reached ? '<span class="winner-tag" style="background:var(--surface2);color:var(--muted)">🎯 200 erreicht</span>' : ''}
+        <span class="total" style="color:${color}">${t}</span>
+      </div>
+      <div class="sc-missing">${
+        won ? 'Höchste Punktzahl – Sieg!' :
+        reached ? 'Ziel erreicht, aber jemand hat mehr Punkte' :
+        `Fehlen noch <b>${missing}</b> Punkte`}</div>
+      <div class="track"><i style="width:${pct}%;background:${color}"></i></div>
+      <div class="sc-actions">
+        <button onclick="addPoints('${p.id}',1)">+1</button>
+        <button onclick="addPoints('${p.id}',5)">+5</button>
+        <button onclick="addPoints('${p.id}',10)">+10</button>
+        <button class="big" onclick="openPad('${p.id}')">Eingeben</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  /* Diagrammansicht */
+  const sorted = [...state.players].sort((a,b)=>total(b)-total(a));
+  const bars = sorted.map((p,idx)=>{
+    const t = total(p);
+    const pct = Math.min(100, t/GOAL*100);
+    const i = state.players.indexOf(p);
+    const rankCls = idx===0?'r1':idx===1?'r2':idx===2?'r3':'';
+    const won = t >= GOAL && t === maxOver;
+    return `
+    <div class="bar-row">
+      <div class="rank ${rankCls}">${idx+1}.</div>
+      <div class="bar-info">
+        <div class="bar-label"><b>${won?'🏆 ':''}${esc(p.name)}</b><span>${t} / ${GOAL}</span></div>
+        <div class="bar-bg">
+          <div class="bar-fill" style="width:${pct}%;background:${COLORS[i%COLORS.length]}"></div>
+          <div class="goal-line"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const recent = [...state.log].slice(-8).reverse();
+  const history = `
+    <div class="history">
+      <h4>Letzte Eingaben · Tippen zum Bearbeiten</h4>
+      ${recent.length ? recent.map(e=>{
+        const p = state.players.find(x=>x.id===e.playerId);
+        if(!p) return '';
+        const i = state.players.indexOf(p);
+        return `
+        <button class="h-row" onclick="openPadEdit('${e.id}')">
+          <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
+          <span class="h-name">${esc(p.name)}</span>
+          <span class="h-pts">+${e.points}</span>
+          <span class="h-edit">✎</span>
+        </button>`;
+      }).join('') : '<div class="empty">Noch keine Eingaben.</div>'}
+    </div>`;
+
+  document.getElementById('view-chart').innerHTML = bars + history;
+}
+
+/* ---------- Nummernpad ---------- */
+function openPad(id){
+  padTarget = id; padValue = ''; padEditId = null;
+  const p = state.players.find(x=>x.id===id);
+  document.getElementById('pad-title').textContent = 'Punkte für ' + p.name;
+  document.getElementById('pad-display').textContent = '0';
+  document.getElementById('pad-ok').textContent = 'Hinzufügen';
+  document.getElementById('pad-delete').style.display = 'none';
+  document.getElementById('pad-modal').classList.add('open');
+}
+function openPadEdit(logId){
+  const e = state.log.find(l=>l.id===logId);
+  if(!e) return;
+  const p = state.players.find(x=>x.id===e.playerId);
+  padTarget = null; padEditId = logId; padValue = String(e.points);
+  document.getElementById('pad-title').textContent = 'Eintrag bearbeiten – ' + (p?p.name:'');
+  document.getElementById('pad-display').textContent = padValue;
+  document.getElementById('pad-ok').textContent = 'Speichern';
+  document.getElementById('pad-delete').style.display = '';
+  document.getElementById('pad-modal').classList.add('open');
+}
+function closePad(){ document.getElementById('pad-modal').classList.remove('open'); }
+function padDelete(){
+  const id = padEditId;
+  closePad();
+  if(id) deleteLogEntry(id);
+}
+function padKey(n){
+  if(padValue.length >= 3) return;
+  padValue = (padValue + n).replace(/^0+(?=\d)/,'');
+  document.getElementById('pad-display').textContent = padValue || '0';
+}
+function padBack(){
+  padValue = padValue.slice(0,-1);
+  document.getElementById('pad-display').textContent = padValue || '0';
+}
+function padClear(){
+  padValue = '';
+  document.getElementById('pad-display').textContent = '0';
+}
+function padConfirm(){
+  const pts = parseInt(padValue || '0', 10);
+  const editId = padEditId, target = padTarget;
+  closePad();
+  if(editId){
+    if(pts > 0) editLogEntry(editId, pts);
+    else deleteLogEntry(editId);
+  }else if(pts > 0 && target){
+    addPoints(target, pts);
+  }
+}
+
+/* ==================== IMPOSTER ==================== */
+const CATEGORIES = {
+  'Städte': { emoji:'🌆', words:['Berlin','Paris','London','New York','Tokio','Rom','Madrid','Wien','Amsterdam','Barcelona','Lissabon','Prag','Budapest','Istanbul','Dubai','Sydney','Los Angeles','Chicago','Toronto','Rio de Janeiro','Kapstadt','Moskau','Peking','Hongkong','Singapur','Bangkok','Mumbai','Kairo','Athen','Stockholm','Oslo','Kopenhagen','Zürich','München','Hamburg','Köln','Venedig','Florenz','Dublin','Las Vegas'] },
+  'Ü18 Begriffe': { emoji:'🔞', words:['Handschellen','Striptease','Dessous','Lapdance','One-Night-Stand','Seitensprung','Knutschfleck','Dirty Talk','Massageöl','Rotlichtviertel','Junggesellenabschied','Verführung','Aktfoto','Peepshow','Bettgeflüster','Kamasutra','Stripclub','Poledance','Aphrodisiakum','Nacktbaden','FKK-Strand','Casanova','Playboy','Blind Date','Tinder-Date','Flitterwochen','Bettkante','Morgen danach','Hotelzimmer','Whirlpool','Champagnerfrühstück','Liebesschwur','Kuschelalarm','Pikantes Foto','Bettgeschichte','Schürzenjäger','Nachtclub','Verbotene Liebe','Wilde Nacht','Techtelmechtel'] },
+  'Berufe': { emoji:'🧑‍🚒', words:['Arzt','Lehrer','Polizist','Feuerwehrmann','Pilot','Koch','Bäcker','Friseur','Anwalt','Richter','Zahnarzt','Tierarzt','Ingenieur','Architekt','Elektriker','Klempner','Gärtner','Landwirt','Kellner','Barkeeper','Metzger','Schreiner','Maler','Mechaniker','Busfahrer','Taxifahrer','Astronaut','Wissenschaftler','Apotheker','Krankenpfleger','Journalist','Fotograf','Schauspieler','Sänger','Tänzer','Profifußballer','Briefträger','Bibliothekar','Programmierer','Schornsteinfeger'] },
+  'Tiere': { emoji:'🦁', words:['Hund','Katze','Elefant','Löwe','Tiger','Giraffe','Zebra','Affe','Pinguin','Delfin','Wal','Hai','Adler','Eule','Papagei','Schlange','Krokodil','Schildkröte','Frosch','Biene','Schmetterling','Spinne','Ameise','Pferd','Kuh','Schwein','Schaf','Ziege','Huhn','Ente','Fuchs','Wolf','Bär','Igel','Eichhörnchen','Hase','Maus','Fledermaus','Känguru','Panda'] },
+  'Essen & Trinken': { emoji:'🍕', words:['Pizza','Spaghetti','Burger','Pommes','Döner','Sushi','Schnitzel','Bratwurst','Brezel','Käsekuchen','Schokolade','Eis','Gummibärchen','Popcorn','Salat','Suppe','Lasagne','Pfannkuchen','Müsli','Joghurt','Käse','Brot','Honig','Marmelade','Kaffee','Tee','Cola','Orangensaft','Bier','Wein','Sekt','Smoothie','Milchshake','Apfel','Banane','Erdbeere','Wassermelone','Avocado','Currywurst','Raclette'] },
+  'Sport & Freizeit': { emoji:'⚽️', words:['Fußball','Basketball','Tennis','Golf','Schwimmen','Joggen','Radfahren','Skifahren','Snowboarden','Surfen','Klettern','Wandern','Yoga','Boxen','Karate','Tanzen','Reiten','Angeln','Segeln','Tauchen','Volleyball','Handball','Tischtennis','Badminton','Bowling','Billard','Darts','Schach','Skateboarden','Eislaufen','Turnen','Marathon','Fitnessstudio','Zumba','Pilates','Rudern','Hockey','Minigolf','Trampolin','Camping'] },
+  'Alltagsgegenstände': { emoji:'🧴', words:['Zahnbürste','Handtuch','Kissen','Wecker','Spiegel','Kamm','Schere','Regenschirm','Schlüssel','Geldbeutel','Brille','Sonnenbrille','Armbanduhr','Handy','Kopfhörer','Fernbedienung','Laptop','Ladekabel','Glühbirne','Kerze','Feuerzeug','Besen','Staubsauger','Waschmaschine','Kühlschrank','Mikrowelle','Toaster','Wasserkocher','Pfanne','Topf','Teller','Tasse','Gabel','Messer','Löffel','Flasche','Rucksack','Mülleimer','Bügeleisen','Gießkanne'] }
+};
+
+let imp = { players: [], category: null, roles: [], word: null, revealIndex: 0, starter: null };
+
+function openImposter(){ show('scr-imp-setup'); }
+
+function impAddPlayer(){
+  const inp = document.getElementById('imp-name-input');
+  const name = inp.value.trim();
+  if(!name) return;
+  imp.players.push(name);
+  inp.value=''; inp.focus();
+  impRenderSetup();
+}
+function impRemovePlayer(i){
+  imp.players.splice(i,1);
+  impRenderSetup();
+}
+function impRenderSetup(){
+  const list = document.getElementById('imp-setup-list');
+  if(!imp.players.length){
+    list.innerHTML = '<div class="empty">Noch keine Spieler.<br>Füge oben Namen hinzu.</div>';
+  }else{
+    list.innerHTML = imp.players.map((n,i)=>`
+      <div class="prow">
+        <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
+        <span>${esc(n)}</span>
+        <button class="del" onclick="impRemovePlayer(${i})">✕</button>
+      </div>`).join('');
+  }
+  document.getElementById('imp-next-btn').disabled = imp.players.length < 3;
+}
+function impRenderCats(){
+  document.getElementById('cat-grid').innerHTML = Object.keys(CATEGORIES).map(c=>`
+    <button class="cat-btn" onclick="impPickCategory('${c}')">
+      <span class="emoji">${CATEGORIES[c].emoji}</span>
+      <b>${c}</b>
+      <small>${CATEGORIES[c].words.length} Wörter</small>
+    </button>`).join('');
+}
+function impPickCategory(c){
+  imp.category = c;
+  impStartRound();
+}
+
+function impStartRound(){
+  const n = imp.players.length;
+  // Imposter gleichverteilt zufällig bestimmen
+  const imposterIdx = Math.floor(Math.random()*n);
+  imp.roles = imp.players.map((_,i)=> i===imposterIdx ? 'imposter' : 'innocent');
+  // Wort ziehen
+  const words = CATEGORIES[imp.category].words;
+  imp.word = words[Math.floor(Math.random()*words.length)];
+  // Startspieler gewichtet: Unschuldige Gewicht 4, Imposter Gewicht 1
+  // → Imposter beginnt 4x unwahrscheinlicher als jeder einzelne Unschuldige
+  const weights = imp.roles.map(r => r==='imposter' ? 1 : 4);
+  const sum = weights.reduce((a,b)=>a+b,0);
+  let r = Math.random()*sum;
+  let starterIdx = 0;
+  for(let i=0;i<n;i++){ r -= weights[i]; if(r<0){ starterIdx=i; break; } }
+  imp.starter = imp.players[starterIdx];
+  imp.revealIndex = 0;
+  impShowPass();
+}
+function impShowPass(){
+  document.getElementById('imp-pass-name').textContent = imp.players[imp.revealIndex];
+  document.getElementById('imp-pass-progress').textContent =
+    `Spieler ${imp.revealIndex+1} von ${imp.players.length}`;
+  show('scr-imp-pass');
+}
+function impShowRole(){
+  const i = imp.revealIndex;
+  const role = imp.roles[i];
+  document.getElementById('imp-role-playername').textContent = imp.players[i];
+  const card = document.getElementById('imp-role-card');
+  if(role==='innocent'){
+    card.className = 'role-card innocent';
+    card.innerHTML = `
+      <div class="role-label">Deine Rolle</div>
+      <div class="role-name">Unschuldig</div>
+      <div class="word-label">Das geheime Wort lautet:</div>
+      <div class="word">${esc(imp.word)}</div>`;
+  }else{
+    card.className = 'role-card imposter';
+    card.innerHTML = `
+      <div class="role-label">Deine Rolle</div>
+      <div class="role-name">Imposter</div>
+      <p>Du kennst das Wort <b>nicht</b>.<br>Bluffe dich durch und flieg nicht auf!</p>`;
+  }
+  show('scr-imp-role');
+}
+function impNextPlayer(){
+  imp.revealIndex++;
+  if(imp.revealIndex < imp.players.length){
+    impShowPass();
+  }else{
+    document.getElementById('imp-final-name').textContent = imp.starter;
+    show('scr-imp-final');
+  }
+}
+function impQuit(){
+  if(confirm('Runde abbrechen und zum Menü zurück?')) show('scr-menu');
+}
+
+/* ---------- Hilfsfunktionen ---------- */
+function esc(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- Start ---------- */
+loadState().then(()=>{ renderSetup(); });
+</script>
+</body>
+</html>
