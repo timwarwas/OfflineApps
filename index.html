@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="color-scheme" content="light dark">
-<title>Spiele-Hub</title>
+<title>Anwendungssammlung</title>
 <style>
   :root{
     --bg:#12152B; --surface:#1C2142; --surface2:#252B55; --line:#333A6B;
@@ -127,6 +126,166 @@
   .h-row .h-pts{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
   .h-row .h-edit{color:var(--muted);font-size:13px;margin-left:10px}
 
+  /* ---------- Workout: Setup ---------- */
+  .field{margin-bottom:18px}
+  .field > label{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-bottom:8px}
+  .stepper{display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
+  .stepper .val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stepper .val small{font-size:14px;color:var(--muted);font-weight:600;margin-left:3px}
+  .stepper button{width:42px;height:42px;border-radius:12px;background:var(--surface2);
+    border:1px solid var(--line);color:var(--text);font-size:24px;font-weight:700}
+  .stepper button:active{background:var(--line)}
+  .area-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .area-chip{background:var(--surface);border:2px solid var(--line);border-radius:16px;
+    padding:14px;color:var(--text);text-align:left;display:flex;align-items:center;gap:10px}
+  .area-chip .em{font-size:22px}
+  .area-chip b{font-size:15px;font-weight:700}
+  .area-chip.on{border-color:var(--mint);background:var(--surface2)}
+  .area-chip .check{margin-left:auto;color:var(--mint);font-weight:800;opacity:0}
+  .area-chip.on .check{opacity:1}
+  .est{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:14px 16px;text-align:center;color:var(--muted);font-size:14px;margin-bottom:18px}
+  .est b{color:var(--gold-text);font-size:18px}
+
+  /* ---------- Workout: Run ---------- */
+  #scr-wk-run{display:none}
+  #scr-wk-run.active{display:flex;flex-direction:column;min-height:100dvh}
+  .wk-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .wk-top .wk-quit{background:var(--surface);border:1px solid var(--line);color:var(--muted);
+    width:40px;height:40px;border-radius:12px;font-size:18px}
+  .wk-progress{color:var(--muted);font-size:14px;font-weight:700}
+  .wk-phase{text-align:center;letter-spacing:.16em;text-transform:uppercase;
+    font-size:14px;font-weight:800;margin:4px 0 2px}
+  .wk-phase.exercise{color:var(--mint)}
+  .wk-phase.pause{color:var(--gold-text)}
+  .wk-phase.ready{color:var(--blue)}
+  .ring-wrap{position:relative;width:min(72vw,260px);aspect-ratio:1;margin:10px auto 4px}
+  .ring-wrap svg.ring{width:100%;height:100%;transform:rotate(-90deg)}
+  .ring-bg{fill:none;stroke:var(--surface2);stroke-width:10}
+  .ring-fg{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1s linear, stroke .3s}
+  .ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:68px;font-weight:800;font-variant-numeric:tabular-nums}
+  .wk-name{text-align:center;font-size:24px;font-weight:800;margin-top:6px;padding:0 10px}
+  .wk-next-label{text-align:center;color:var(--muted);font-size:14px;margin-top:10px}
+  .demo{width:150px;height:170px;margin:6px auto 0;color:var(--mint)}
+  .demo-wrap{position:relative;width:170px;margin:6px auto 0}
+  .demo-gif{width:170px;max-height:200px;object-fit:contain;display:block;margin:0 auto;border-radius:14px;background:var(--surface)}
+  .wk-phase-pause ~ .demo, .demo.pausecol{color:var(--gold-text)}
+  .wk-spacer{flex:1}
+  .wk-controls{display:flex;gap:10px;margin-top:14px}
+  .wk-controls button{flex:1;padding:15px;border-radius:16px;font-weight:800;font-size:16px;
+    background:var(--surface);border:1px solid var(--line);color:var(--text)}
+  .wk-controls .main{flex:1.4;background:var(--mint);border-color:var(--mint);color:#08251A}
+
+  /* ---------- Übungs-Animationen (SVG-Figur) ---------- */
+  .figure{width:100%;height:100%}
+  .figure *{transform-box:view-box}
+  .figure line,.figure circle{stroke:currentColor;stroke-width:5.5;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .al,.ar{transform-origin:50px 36px}
+  .ll,.lr{transform-origin:50px 66px}
+  .fu{transform-origin:50px 66px}
+  .fb{transform-origin:50px 60px}
+  .demo.horizontal .figure{transform:rotate(90deg)}
+
+  .m-squat .fb{animation:sqB 1.5s ease-in-out infinite}
+  .m-squat .ll{animation:sqLL 1.5s ease-in-out infinite}
+  .m-squat .lr{animation:sqLR 1.5s ease-in-out infinite}
+  @keyframes sqB{0%,100%{transform:translateY(0)}50%{transform:translateY(15px)}}
+  @keyframes sqLL{0%,100%{transform:rotate(0)}50%{transform:rotate(15deg)}}
+  @keyframes sqLR{0%,100%{transform:rotate(0)}50%{transform:rotate(-15deg)}}
+
+  .m-jj .fb{animation:jjB .9s ease-in-out infinite}
+  .m-jj .al{animation:jjAL .9s ease-in-out infinite}
+  .m-jj .ar{animation:jjAR .9s ease-in-out infinite}
+  .m-jj .ll{animation:jjLL .9s ease-in-out infinite}
+  .m-jj .lr{animation:jjLR .9s ease-in-out infinite}
+  @keyframes jjB{0%,100%{transform:translateY(4px)}50%{transform:translateY(-6px)}}
+  @keyframes jjAL{0%,100%{transform:rotate(0)}50%{transform:rotate(155deg)}}
+  @keyframes jjAR{0%,100%{transform:rotate(0)}50%{transform:rotate(-155deg)}}
+  @keyframes jjLL{0%,100%{transform:rotate(0)}50%{transform:rotate(16deg)}}
+  @keyframes jjLR{0%,100%{transform:rotate(0)}50%{transform:rotate(-16deg)}}
+
+  .m-highknees .ll{animation:hkL .5s ease-in-out infinite}
+  .m-highknees .lr{animation:hkL .5s ease-in-out infinite;animation-delay:-.25s}
+  .m-highknees .al{animation:hkAR .5s ease-in-out infinite}
+  .m-highknees .ar{animation:hkAR .5s ease-in-out infinite;animation-delay:-.25s}
+  @keyframes hkL{0%,100%{transform:rotate(0)}50%{transform:rotate(48deg)}}
+  @keyframes hkAR{0%,100%{transform:rotate(0)}50%{transform:rotate(30deg)}}
+
+  .m-jump .fb{animation:jpB .85s cubic-bezier(.3,0,.35,1) infinite}
+  .m-jump .ll{animation:jpL .85s ease-in-out infinite}
+  .m-jump .lr{animation:jpLr .85s ease-in-out infinite}
+  @keyframes jpB{0%,100%{transform:translateY(6px)}45%{transform:translateY(-24px)}60%{transform:translateY(-24px)}}
+  @keyframes jpL{0%,100%{transform:rotate(0)}50%{transform:rotate(10deg)}}
+  @keyframes jpLr{0%,100%{transform:rotate(0)}50%{transform:rotate(-10deg)}}
+
+  .m-lunge .fb{animation:luB 1.7s ease-in-out infinite}
+  .m-lunge .ll{animation:luLL 1.7s ease-in-out infinite}
+  .m-lunge .lr{animation:luLR 1.7s ease-in-out infinite}
+  @keyframes luB{0%,100%{transform:translateY(0)}50%{transform:translateY(12px)}}
+  @keyframes luLL{0%,100%{transform:rotate(0)}50%{transform:rotate(-24deg)}}
+  @keyframes luLR{0%,100%{transform:rotate(0)}50%{transform:rotate(24deg)}}
+
+  .m-twist .fu{animation:twU 1.2s ease-in-out infinite}
+  @keyframes twU{0%,100%{transform:rotate(-17deg)}50%{transform:rotate(17deg)}}
+
+  .m-armcircle .al{animation:acA 1.5s linear infinite}
+  .m-armcircle .ar{animation:acA 1.5s linear infinite}
+  @keyframes acA{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+  .m-crunch .fu{animation:crU 1.5s ease-in-out infinite}
+  @keyframes crU{0%,100%{transform:rotate(0)}50%{transform:rotate(-40deg)}}
+
+  .m-pushup .al{animation:puA 1.2s ease-in-out infinite}
+  .m-pushup .ar{animation:puA 1.2s ease-in-out infinite}
+  .m-pushup .fu{animation:puU 1.2s ease-in-out infinite}
+  @keyframes puA{0%,100%{transform:rotate(0)}50%{transform:rotate(34deg)}}
+  @keyframes puU{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+
+  .m-plank .fb{animation:plB 2.6s ease-in-out infinite}
+  @keyframes plB{0%,100%{transform:translateY(0)}50%{transform:translateY(2.5px)}}
+
+  .m-mountain .ll{animation:mtL .6s ease-in-out infinite}
+  .m-mountain .lr{animation:mtL .6s ease-in-out infinite;animation-delay:-.3s}
+  @keyframes mtL{0%,100%{transform:rotate(0)}50%{transform:rotate(42deg)}}
+
+  .m-superman .al{animation:spmA 1.9s ease-in-out infinite}
+  .m-superman .ar{animation:spmA 1.9s ease-in-out infinite}
+  .m-superman .ll{animation:spmL 1.9s ease-in-out infinite}
+  .m-superman .lr{animation:spmL 1.9s ease-in-out infinite}
+  @keyframes spmA{0%,100%{transform:rotate(0)}50%{transform:rotate(-16deg)}}
+  @keyframes spmL{0%,100%{transform:rotate(0)}50%{transform:rotate(16deg)}}
+
+  /* ---------- Workout: Vorschau/Plan ---------- */
+  .plan-total{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:12px 16px;text-align:center;color:var(--muted);font-size:14px;margin-bottom:16px}
+  .plan-total b{color:var(--gold-text);font-size:18px}
+  .plan-row{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:12px 12px 12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+  .plan-num{width:26px;height:26px;border-radius:8px;background:var(--surface2);border:1px solid var(--line);
+    color:var(--muted);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .plan-info{min-width:0;flex:1}
+  .plan-info .pn{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .plan-info .pd{color:var(--muted);font-size:13px;margin-top:2px}
+  .plan-info .pd .pause{color:var(--gold-text)}
+  .plan-move{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+  .plan-move button{width:32px;height:24px;border-radius:7px;background:var(--surface2);
+    border:1px solid var(--line);color:var(--text);font-size:13px;display:flex;align-items:center;justify-content:center}
+  .plan-move button:disabled{opacity:.3}
+  .plan-edit{width:40px;height:40px;border-radius:11px;background:var(--surface2);border:1px solid var(--line);
+    color:var(--text);font-size:17px;flex-shrink:0}
+  .plan-add{width:100%;background:var(--surface);border:1px dashed var(--line);color:var(--muted);
+    font-weight:700;padding:14px;border-radius:16px;margin-bottom:16px}
+  .set-divider{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--mint);margin:14px 2px 8px}
+
+  .edit-field{margin-bottom:14px}
+  .edit-field > label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .edit-select{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:14px;
+    color:var(--text);padding:14px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
+  .sheet .stepper{background:var(--surface2)}
+
   /* ---------- Helles Farbschema (automatisch je nach System-Einstellung) ---------- */
   @media (prefers-color-scheme: light){
     :root{
@@ -193,8 +352,8 @@
 <!-- ========== HAUPTMENÜ ========== -->
 <div class="screen active" id="scr-menu">
   <div class="hero">
-    <div class="kicker">Spieleabend</div>
-    <h1>Wähle dein Spiel</h1>
+    <div class="kicker">Deine Apps</div>
+    <h1>Anwendungssammlung</h1>
   </div>
   <div class="games">
     <button class="game-card" onclick="openFlip7()">
@@ -211,10 +370,17 @@
         <p>Einer kennt das Wort nicht · Findet ihn!</p>
       </div>
     </button>
+    <button class="game-card" onclick="openWorkout()">
+      <div class="icon" style="background:var(--mint)">🏋️</div>
+      <div>
+        <h2>Workout</h2>
+        <p>Intervall-Training · Timer & Übungen</p>
+      </div>
+    </button>
     <div class="game-card soon">
       <div class="icon" style="background:var(--violet)">?</div>
       <div>
-        <h2>Nächstes Spiel</h2>
+        <h2>Nächste App</h2>
         <p>Hier ist Platz für mehr</p>
       </div>
       <span class="chip">Bald</span>
@@ -349,6 +515,153 @@
   <button class="ghost" onclick="show('scr-menu')">Zurück zum Menü</button>
 </div>
 
+<!-- ========== WORKOUT: SETUP ========== -->
+<div class="screen" id="scr-wk-setup">
+  <header>
+    <button class="back" onclick="show('scr-menu')">‹</button>
+    <div>
+      <h1>Workout</h1>
+      <div class="sub">Stell dir dein Training ein</div>
+    </div>
+  </header>
+
+  <div class="field">
+    <label>Übungsdauer</label>
+    <div class="stepper">
+      <button onclick="wkAdjust('exDur',-5)">−</button>
+      <span class="val"><span id="wk-exDur">30</span><small>Sek.</small></span>
+      <button onclick="wkAdjust('exDur',5)">+</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Pausendauer</label>
+    <div class="stepper">
+      <button onclick="wkAdjust('pauseDur',-5)">−</button>
+      <span class="val"><span id="wk-pauseDur">15</span><small>Sek.</small></span>
+      <button onclick="wkAdjust('pauseDur',5)">+</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Zielzeit gesamt</label>
+    <div class="stepper">
+      <button onclick="wkAdjust('target',-5)">−</button>
+      <span class="val"><span id="wk-target">15</span><small>Min.</small></span>
+      <button onclick="wkAdjust('target',5)">+</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Sätze (Übungen werden wiederholt)</label>
+    <div class="stepper">
+      <button onclick="wkAdjust('sets',-1)">−</button>
+      <span class="val"><span id="wk-sets">1</span><small>×</small></span>
+      <button onclick="wkAdjust('sets',1)">+</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Welche Bereiche?</label>
+    <div class="area-grid" id="wk-areas"></div>
+  </div>
+
+  <div class="est" id="wk-est"></div>
+  <button class="primary" id="wk-start-btn" onclick="wkStart()">Weiter zur Vorschau</button>
+</div>
+
+<!-- ========== WORKOUT: VORSCHAU/PLAN ========== -->
+<div class="screen" id="scr-wk-plan">
+  <header>
+    <button class="back" onclick="show('scr-wk-setup')">‹</button>
+    <div>
+      <h1>Dein Plan</h1>
+      <div class="sub">Verschieben, bearbeiten, löschen</div>
+    </div>
+  </header>
+  <div class="plan-total" id="wk-plan-total"></div>
+  <div id="wk-plan-list"></div>
+  <button class="plan-add" onclick="wkPlanAdd()">＋ Übung hinzufügen</button>
+  <button class="primary" id="wk-begin-btn" onclick="wkBegin()">Los geht's</button>
+</div>
+
+<!-- ========== WORKOUT: RUN ========== -->
+<div class="screen" id="scr-wk-run">
+  <div class="wk-top">
+    <button class="wk-quit" onclick="wkQuit()">✕</button>
+    <span class="wk-progress" id="wk-count"></span>
+  </div>
+  <div class="wk-phase" id="wk-phase-label"></div>
+  <div class="ring-wrap">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+      <circle class="ring-fg" id="wk-ring" cx="60" cy="60" r="52"></circle>
+    </svg>
+    <div class="ring-num" id="wk-time">0</div>
+  </div>
+  <div class="wk-name" id="wk-name"></div>
+  <div id="wk-demo-slot"></div>
+  <div class="wk-spacer"></div>
+  <div class="wk-controls">
+    <button onclick="wkSkip()">Überspringen ›</button>
+    <button class="main" id="wk-pause-btn" onclick="wkTogglePause()">Pause</button>
+  </div>
+</div>
+
+<!-- ========== WORKOUT: FERTIG ========== -->
+<div class="screen" id="scr-wk-done">
+  <header>
+    <button class="back" onclick="show('scr-menu')">‹</button>
+    <div>
+      <h1>Geschafft! 🎉</h1>
+      <div class="sub">Starke Leistung</div>
+    </div>
+  </header>
+  <div class="center-stage">
+    <div class="big-name" style="color:var(--mint)" id="wk-done-summary"></div>
+    <div class="hint" id="wk-done-detail"></div>
+  </div>
+  <button class="primary" onclick="wkStart()">Nochmal (gleiche Einstellung)</button>
+  <button class="ghost" onclick="show('scr-wk-setup')">Einstellungen ändern</button>
+  <button class="ghost" onclick="show('scr-menu')">Zurück zum Menü</button>
+</div>
+
+<!-- ========== WORKOUT: ÜBUNG BEARBEITEN ========== -->
+<div class="modal" id="wk-edit-modal" onclick="if(event.target===this)wkEditClose()">
+  <div class="sheet">
+    <h3 style="margin-bottom:16px">Übung bearbeiten</h3>
+    <div class="edit-field">
+      <label>Übung</label>
+      <select class="edit-select" id="wk-edit-select" onchange="wkEditChangeExercise(this.value)"></select>
+    </div>
+    <div class="edit-field">
+      <label>Übungsdauer</label>
+      <div class="stepper">
+        <button onclick="wkEditAdjust('dur',-5)">−</button>
+        <span class="val"><span id="wk-edit-dur">30</span><small>Sek.</small></span>
+        <button onclick="wkEditAdjust('dur',5)">+</button>
+      </div>
+    </div>
+    <div class="edit-field" id="wk-edit-pause-wrap">
+      <label>Pause danach</label>
+      <div class="stepper">
+        <button onclick="wkEditAdjust('pause',-5)">−</button>
+        <span class="val"><span id="wk-edit-pause">15</span><small>Sek.</small></span>
+        <button onclick="wkEditAdjust('pause',5)">+</button>
+      </div>
+    </div>
+    <div class="edit-field">
+      <label>Eigene GIF-URL (optional – leer = Animation)</label>
+      <input class="edit-select" id="wk-edit-gif" type="url" inputmode="url" autocapitalize="off"
+        autocomplete="off" placeholder="https://…/uebung.gif" oninput="wkEditGif(this.value)">
+    </div>
+    <div class="sheet-actions">
+      <button class="cancel danger" onclick="wkEditDelete()">Löschen</button>
+      <button class="ok" onclick="wkEditClose()">Fertig</button>
+    </div>
+  </div>
+</div>
+
 <!-- ========== NUMMERNPAD ========== -->
 <div class="modal" id="pad-modal" onclick="if(event.target===this)closePad()">
   <div class="sheet">
@@ -413,6 +726,7 @@ function show(id){
   if(id==='scr-game') renderGame();
   if(id==='scr-imp-setup') impRenderSetup();
   if(id==='scr-imp-cat') impRenderCats();
+  if(id==='scr-wk-setup') wkRenderSetup();
 }
 function openFlip7(){
   show(state.players.length ? 'scr-game' : 'scr-setup');
@@ -753,11 +1067,415 @@ function impQuit(){
   if(confirm('Runde abbrechen und zum Menü zurück?')) show('scr-menu');
 }
 
+/* ==================== WORKOUT ==================== */
+// anim-Typen: squat, jj, highknees, jump, lunge, twist, armcircle,
+//             crunch(h), pushup(h), plank(h), mountain(h), superman(h)
+const HORIZONTAL = ['crunch','pushup','plank','mountain','superman'];
+const WK_EXERCISES = [
+  // Beine & Po
+  {name:'Kniebeugen', tags:['beine'], anim:'squat'},
+  {name:'Sumo-Kniebeugen', tags:['beine'], anim:'squat'},
+  {name:'Ausfallschritte', tags:['beine'], anim:'lunge'},
+  {name:'Rückwärts-Ausfallschritte', tags:['beine'], anim:'lunge'},
+  {name:'Wadenheben', tags:['beine'], anim:'squat'},
+  {name:'Wall Sit (Wandsitzen)', tags:['beine'], anim:'squat'},
+  {name:'Glute Bridge', tags:['beine','core'], anim:'plank'},
+  {name:'Gesprungene Kniebeugen', tags:['beine','cardio'], anim:'jump'},
+  {name:'Ausfallschritt-Sprünge', tags:['beine','cardio'], anim:'jump'},
+  {name:'Einbeiniges Wadenheben', tags:['beine'], anim:'squat'},
+  // Bauch & Core
+  {name:'Crunches', tags:['core'], anim:'crunch'},
+  {name:'Sit-ups', tags:['core'], anim:'crunch'},
+  {name:'Beinheben', tags:['core'], anim:'crunch'},
+  {name:'Russian Twists', tags:['core'], anim:'twist'},
+  {name:'Fahrrad-Crunches', tags:['core'], anim:'twist'},
+  {name:'Plank (Unterarmstütz)', tags:['core'], anim:'plank'},
+  {name:'Seitlicher Unterarmstütz', tags:['core'], anim:'plank'},
+  {name:'Käfer (Dead Bug)', tags:['core'], anim:'crunch'},
+  {name:'Bergsteiger', tags:['core','cardio'], anim:'mountain'},
+  {name:'Scheibenwischer', tags:['core'], anim:'twist'},
+  // Arme & Brust
+  {name:'Liegestütze', tags:['arme'], anim:'pushup'},
+  {name:'Enge Liegestütze', tags:['arme'], anim:'pushup'},
+  {name:'Pike Push-ups', tags:['arme'], anim:'pushup'},
+  {name:'Trizeps-Dips', tags:['arme'], anim:'pushup'},
+  {name:'Breite Liegestütze', tags:['arme'], anim:'pushup'},
+  {name:'Arm-Kreisen', tags:['arme'], anim:'armcircle'},
+  {name:'Schulterdrücken (Schattenboxen)', tags:['arme'], anim:'armcircle'},
+  {name:'Boxschläge', tags:['arme','cardio'], anim:'armcircle'},
+  // Rücken
+  {name:'Superman', tags:['ruecken'], anim:'superman'},
+  {name:'Vierfüßler-Diagonale (Bird Dog)', tags:['ruecken','core'], anim:'superman'},
+  {name:'Schwimmer', tags:['ruecken'], anim:'superman'},
+  {name:'Rückenstrecker', tags:['ruecken'], anim:'superman'},
+  // Cardio
+  {name:'Hampelmänner', tags:['cardio'], anim:'jj'},
+  {name:'High Knees', tags:['cardio'], anim:'highknees'},
+  {name:'Burpees', tags:['cardio'], anim:'jump'},
+  {name:'Skater-Sprünge', tags:['cardio','beine'], anim:'jump'},
+  {name:'Butt Kicks (Fersen-Sprint)', tags:['cardio'], anim:'highknees'},
+  {name:'Seilspringen (ohne Seil)', tags:['cardio'], anim:'jump'},
+  {name:'Standlauf schnell', tags:['cardio'], anim:'highknees'},
+  {name:'Squat-Jumps mit Twist', tags:['cardio','beine'], anim:'jump'},
+];
+const WK_AREAS = [
+  {key:'beine',   em:'🦵', label:'Beine & Po'},
+  {key:'core',    em:'🎯', label:'Bauch & Core'},
+  {key:'arme',    em:'💪', label:'Arme & Brust'},
+  {key:'ruecken', em:'🧍', label:'Rücken'},
+  {key:'cardio',  em:'❤️‍🔥', label:'Cardio'},
+];
+// Best-Effort-GIFs (Wikimedia Commons). Wird geladen, sonst greift die Animation als Fallback.
+// Eigene GIF-URLs lassen sich pro Übung im Bearbeiten-Fenster hinterlegen.
+const CG='https://commons.wikimedia.org/wiki/Special:FilePath/';
+const GIF_LIB = {
+  'Liegestütze':CG+'Push-up.gif',
+  'Enge Liegestütze':CG+'Push-up.gif',
+  'Breite Liegestütze':CG+'Push-up.gif',
+  'Kniebeugen':CG+'Squats.gif',
+  'Sumo-Kniebeugen':CG+'Squats.gif',
+  'Hampelmänner':CG+'Jumping-jack.gif',
+  'Sit-ups':CG+'Sit-up.gif',
+  'Crunches':CG+'Crunch.gif',
+  'Plank (Unterarmstütz)':CG+'Plank.gif',
+  'Ausfallschritte':CG+'Lunge.gif',
+  'Rückwärts-Ausfallschritte':CG+'Lunge.gif',
+  'Burpees':CG+'Burpee.gif',
+  'Bergsteiger':CG+'Mountain-climber.gif',
+  'High Knees':CG+'High-knees.gif',
+};
+
+let wkSettings = { exDur:30, pauseDur:15, target:15, sets:1, areas:['beine','core','arme','ruecken','cardio'], gifs:{} };
+let wk = { queue:[], idx:0, phase:'idle', remaining:0, phaseTotal:0, timer:null, paused:false, audio:null, wakelock:null };
+const RING_CIRC = 2 * Math.PI * 52;
+
+async function wkSave(){
+  const json = JSON.stringify(wkSettings);
+  try{ await window.storage.set('wk-settings', json); return; }catch(e){}
+  try{ localStorage.setItem('wk-settings', json); }catch(e){}
+}
+async function wkLoad(){
+  let json=null;
+  try{ const r=await window.storage.get('wk-settings'); if(r&&r.value) json=r.value; }catch(e){}
+  if(!json){ try{ json=localStorage.getItem('wk-settings'); }catch(e){} }
+  if(json){ try{ const s=JSON.parse(json); if(s&&s.areas) wkSettings=s; }catch(e){} }
+  if(!wkSettings.gifs) wkSettings.gifs={};
+}
+// effektive GIF-URL: eigene Angabe hat Vorrang, sonst Bibliothek, sonst leer (=Animation)
+function effectiveGif(name){
+  if(Object.prototype.hasOwnProperty.call(wkSettings.gifs,name)) return wkSettings.gifs[name];
+  return GIF_LIB[name]||'';
+}
+
+function openWorkout(){ show('scr-wk-setup'); }
+
+function wkAdjust(key,delta){
+  const limits={exDur:[10,120],pauseDur:[0,60],target:[5,60],sets:[1,6]};
+  const [min,max]=limits[key];
+  wkSettings[key]=Math.min(max,Math.max(min,wkSettings[key]+delta));
+  wkSave(); wkRenderSetup();
+}
+function wkToggleArea(key){
+  const i=wkSettings.areas.indexOf(key);
+  if(i>=0) wkSettings.areas.splice(i,1); else wkSettings.areas.push(key);
+  wkSave(); wkRenderSetup();
+}
+function wkPool(){
+  return WK_EXERCISES.filter(e=>e.tags.some(t=>wkSettings.areas.includes(t)));
+}
+function wkRenderSetup(){
+  document.getElementById('wk-exDur').textContent=wkSettings.exDur;
+  document.getElementById('wk-pauseDur').textContent=wkSettings.pauseDur;
+  document.getElementById('wk-target').textContent=wkSettings.target;
+  document.getElementById('wk-sets').textContent=wkSettings.sets;
+  document.getElementById('wk-areas').innerHTML=WK_AREAS.map(a=>`
+    <button class="area-chip ${wkSettings.areas.includes(a.key)?'on':''}" onclick="wkToggleArea('${a.key}')">
+      <span class="em">${a.em}</span><b>${a.label}</b><span class="check">✓</span>
+    </button>`).join('');
+  const perBlock=wkSettings.exDur+wkSettings.pauseDur;
+  const totalCount=Math.max(1,Math.round(wkSettings.target*60/perBlock));
+  const unique=Math.max(1,Math.round(totalCount/wkSettings.sets));
+  const pool=wkPool().length;
+  const btn=document.getElementById('wk-start-btn');
+  if(!wkSettings.areas.length || pool===0){
+    document.getElementById('wk-est').innerHTML='Bitte mindestens einen Bereich auswählen.';
+    btn.disabled=true;
+  }else{
+    const setsTxt = wkSettings.sets>1
+      ? `<b>${unique}</b> Übungen × <b>${wkSettings.sets}</b> Sätze = ${unique*wkSettings.sets} gesamt`
+      : `Ca. <b>${unique}</b> Übungen`;
+    document.getElementById('wk-est').innerHTML=`${setsTxt} · ${pool} im Pool`;
+    btn.disabled=false;
+  }
+}
+
+/* ---------- animierte Figur / GIF ---------- */
+function figureHTML(anim,extra){
+  const horiz=HORIZONTAL.includes(anim)?' horizontal':'';
+  const ex=extra?' '+extra:'';
+  return `<div class="demo m-${anim}${horiz}${ex}">
+    <svg class="figure" viewBox="0 0 100 120">
+      <g class="fb">
+        <g class="fu">
+          <circle class="hd" cx="50" cy="18" r="9"></circle>
+          <line class="sp" x1="50" y1="27" x2="50" y2="66"></line>
+          <g class="al"><line x1="50" y1="36" x2="33" y2="55"></line></g>
+          <g class="ar"><line x1="50" y1="36" x2="67" y2="55"></line></g>
+        </g>
+        <g class="ll"><line x1="50" y1="66" x2="41" y2="104"></line></g>
+        <g class="lr"><line x1="50" y1="66" x2="59" y2="104"></line></g>
+      </g>
+    </svg></div>`;
+}
+// Zeigt zuerst die Animation; sobald das GIF geladen ist, wird darauf umgeschaltet.
+// Lädt das GIF nicht (404/offline), bleibt die Animation stehen.
+function demoHTML(item,isPause){
+  const svg=figureHTML(item.anim, isPause?'pausecol':'');
+  if(item.gif){
+    return `<div class="demo-wrap">${svg}<img class="demo-gif" style="display:none" alt="" src="${esc(item.gif)}"
+      onload="this.style.display='block';const s=this.parentNode.querySelector('.demo');if(s)s.style.display='none';"
+      onerror="this.remove()"></div>`;
+  }
+  return svg;
+}
+
+/* ---------- Töne ---------- */
+function beep(freq,dur,vol){
+  if(!wk.audio) return;
+  try{
+    const ctx=wk.audio, o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='sine'; o.frequency.value=freq;
+    g.gain.setValueAtTime(0,ctx.currentTime);
+    g.gain.linearRampToValueAtTime(vol,ctx.currentTime+0.02);
+    g.gain.linearRampToValueAtTime(0,ctx.currentTime+dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime+dur+0.02);
+  }catch(e){}
+}
+
+/* ---------- Ablaufsteuerung ---------- */
+function wkStart(){
+  const pool=wkPool();
+  if(!pool.length){ alert('Bitte mindestens einen Bereich auswählen.'); return; }
+  const perBlock=wkSettings.exDur+wkSettings.pauseDur;
+  const totalCount=Math.max(1,Math.round(wkSettings.target*60/perBlock));
+  const unique=Math.max(1,Math.round(totalCount/wkSettings.sets));
+  // Basis-Übungsfolge ziehen, ohne direkte Wiederholung
+  const base=[]; let last=null;
+  const shuffled=()=>[...pool].sort(()=>Math.random()-0.5);
+  let bag=shuffled();
+  for(let i=0;i<unique;i++){
+    if(!bag.length) bag=shuffled();
+    let pick=bag.shift();
+    if(pick.name===last && bag.length){ bag.push(pick); pick=bag.shift(); }
+    base.push(pick); last=pick.name;
+  }
+  // Sätze: gleiche Folge mehrfach hintereinander
+  wk.plan=[];
+  for(let s=0;s<wkSettings.sets;s++){
+    base.forEach(e=>wk.plan.push({
+      name:e.name, anim:e.anim, tags:e.tags,
+      dur:wkSettings.exDur, pause:wkSettings.pauseDur,
+      gif:effectiveGif(e.name),
+      set: wkSettings.sets>1 ? s+1 : 0
+    }));
+  }
+  show('scr-wk-plan'); wkRenderPlan();
+}
+
+/* ---------- Vorschau/Plan bearbeiten ---------- */
+function wkPlanTotal(){
+  let t=0;
+  wk.plan.forEach((it,i)=>{ t+=it.dur; if(i<wk.plan.length-1) t+=it.pause; });
+  return t;
+}
+function wkRenderPlan(){
+  const list=document.getElementById('wk-plan-list');
+  let lastSet=null;
+  list.innerHTML=wk.plan.map((it,i)=>{
+    const isLast=i===wk.plan.length-1;
+    let header='';
+    if(it.set && it.set!==lastSet){ header=`<div class="set-divider">Satz ${it.set}</div>`; lastSet=it.set; }
+    return header + `
+    <div class="plan-row">
+      <div class="plan-num">${i+1}</div>
+      <div class="plan-info">
+        <div class="pn">${esc(it.name)}</div>
+        <div class="pd">${it.dur} Sek.${isLast?'' : ` · <span class="pause">Pause ${it.pause} Sek.</span>`}${it.gif?' · 🎞️ GIF':''}</div>
+      </div>
+      <div class="plan-move">
+        <button onclick="wkMove(${i},-1)" ${i===0?'disabled':''}>▲</button>
+        <button onclick="wkMove(${i},1)" ${isLast?'disabled':''}>▼</button>
+      </div>
+      <button class="plan-edit" onclick="wkEditOpen(${i})">✎</button>
+    </div>`;
+  }).join('') || '<div class="empty">Keine Übungen. Füge welche hinzu.</div>';
+  const t=wkPlanTotal(), m=Math.floor(t/60), s=t%60;
+  document.getElementById('wk-plan-total').innerHTML=
+    `<b>${wk.plan.length}</b> Übungen · Gesamtzeit ca. <b>${m}:${String(s).padStart(2,'0')}</b> Min`;
+  document.getElementById('wk-begin-btn').disabled=wk.plan.length===0;
+}
+function wkMove(i,dir){
+  const j=i+dir;
+  if(j<0||j>=wk.plan.length) return;
+  [wk.plan[i],wk.plan[j]]=[wk.plan[j],wk.plan[i]];
+  wkRenderPlan();
+}
+function wkPlanAdd(){
+  const pool=wkPool().length?wkPool():WK_EXERCISES;
+  const e=pool[Math.floor(Math.random()*pool.length)];
+  wk.plan.push({name:e.name,anim:e.anim,tags:e.tags,dur:wkSettings.exDur,pause:wkSettings.pauseDur,gif:effectiveGif(e.name)});
+  wkRenderPlan();
+  wkEditOpen(wk.plan.length-1);
+}
+let wkEditIdx=null;
+function wkEditOpen(i){
+  wkEditIdx=i;
+  const it=wk.plan[i];
+  const sel=document.getElementById('wk-edit-select');
+  sel.innerHTML=WK_EXERCISES.map((e,idx)=>
+    `<option value="${idx}" ${e.name===it.name?'selected':''}>${e.name}</option>`).join('');
+  document.getElementById('wk-edit-dur').textContent=it.dur;
+  document.getElementById('wk-edit-pause').textContent=it.pause;
+  document.getElementById('wk-edit-gif').value=it.gif||'';
+  document.getElementById('wk-edit-pause-wrap').style.display=(i===wk.plan.length-1)?'none':'';
+  document.getElementById('wk-edit-modal').classList.add('open');
+}
+function wkEditAdjust(key,delta){
+  if(wkEditIdx===null) return;
+  const limits={dur:[5,120],pause:[0,90]};
+  const [min,max]=limits[key];
+  const it=wk.plan[wkEditIdx];
+  it[key]=Math.min(max,Math.max(min,it[key]+delta));
+  document.getElementById('wk-edit-'+key).textContent=it[key];
+  wkRenderPlan();
+}
+function wkEditChangeExercise(idx){
+  if(wkEditIdx===null) return;
+  const e=WK_EXERCISES[parseInt(idx,10)];
+  const it=wk.plan[wkEditIdx];
+  it.name=e.name; it.anim=e.anim; it.tags=e.tags;
+  it.gif=effectiveGif(e.name);
+  document.getElementById('wk-edit-gif').value=it.gif||'';
+  wkRenderPlan();
+}
+function wkEditGif(val){
+  if(wkEditIdx===null) return;
+  const it=wk.plan[wkEditIdx];
+  const v=val.trim();
+  it.gif=v;
+  // Für diese Übung merken (bleibt auch bei neuem Plan erhalten)
+  wkSettings.gifs[it.name]=v;
+  wkSave();
+}
+function wkEditDelete(){
+  if(wkEditIdx===null) return;
+  wk.plan.splice(wkEditIdx,1);
+  wkEditIdx=null;
+  document.getElementById('wk-edit-modal').classList.remove('open');
+  wkRenderPlan();
+}
+function wkEditClose(){
+  wkEditIdx=null;
+  document.getElementById('wk-edit-modal').classList.remove('open');
+  wkRenderPlan();
+}
+
+/* ---------- Training läuft ---------- */
+function wkBegin(){
+  if(!wk.plan.length) return;
+  try{ wk.audio = wk.audio || new (window.AudioContext||window.webkitAudioContext)(); if(wk.audio.state==='suspended') wk.audio.resume(); }catch(e){}
+  try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').then(l=>wk.wakelock=l).catch(()=>{}); }catch(e){}
+  wk.idx=0; wk.paused=false; wk.pauseNext=0;
+  clearInterval(wk.timer);
+  wk.timer=setInterval(wkTick,1000);
+  show('scr-wk-run');
+  wkEnterReady();
+}
+function wkEnterReady(){
+  wk.phase='ready'; wk.remaining=5; wk.phaseTotal=5;
+  wkRenderPhase('Bereit machen','ready', wk.plan[0], 1);
+}
+function wkEnterExercise(i){
+  wk.idx=i; wk.phase='exercise';
+  wk.remaining=wk.plan[i].dur; wk.phaseTotal=wk.plan[i].dur;
+  wkRenderPhase('Übung','exercise', wk.plan[i], i+1);
+}
+function wkEnterPause(nextIdx,dur){
+  wk.phase='pause'; wk.pauseNext=nextIdx;
+  wk.remaining=dur; wk.phaseTotal=dur;
+  wkRenderPhase('Pause','pause', wk.plan[nextIdx], nextIdx+1, 'Als Nächstes:');
+}
+function wkAdvance(){
+  if(wk.phase==='ready'){ wkEnterExercise(0); return; }
+  if(wk.phase==='exercise'){
+    if(wk.idx>=wk.plan.length-1){ wkFinish(); return; }
+    const p=wk.plan[wk.idx].pause;
+    if(p>0) wkEnterPause(wk.idx+1,p); else wkEnterExercise(wk.idx+1);
+    return;
+  }
+  if(wk.phase==='pause'){ wkEnterExercise(wk.pauseNext); return; }
+}
+function wkTick(){
+  if(wk.paused || wk.phase==='idle' || wk.phase==='done') return;
+  wk.remaining--;
+  if(wk.remaining>0){
+    if(wk.remaining<=5) beep(820,0.12,0.22);
+    wkUpdateTime();
+  }else{
+    beep(1150,0.4,0.28);
+    wkUpdateTime();
+    wkAdvance();
+  }
+}
+function wkRenderPhase(label,cls,item,progressIdx,nextLabel){
+  const lbl=document.getElementById('wk-phase-label');
+  lbl.textContent=label; lbl.className='wk-phase '+cls;
+  document.getElementById('wk-name').textContent=item.name;
+  document.getElementById('wk-count').textContent=`Übung ${progressIdx} / ${wk.plan.length}`;
+  const slot=document.getElementById('wk-demo-slot');
+  slot.innerHTML=demoHTML(item, cls==='pause');
+  const ring=document.getElementById('wk-ring');
+  const color = cls==='exercise' ? getCss('--mint') : cls==='pause' ? getCss('--gold-text') : getCss('--blue');
+  ring.style.stroke=color;
+  ring.setAttribute('stroke-dasharray', RING_CIRC);
+  wkUpdateTime();
+}
+function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function wkUpdateTime(){
+  document.getElementById('wk-time').textContent=wk.remaining;
+  const frac = wk.phaseTotal>0 ? wk.remaining/wk.phaseTotal : 0;
+  document.getElementById('wk-ring').style.strokeDashoffset = RING_CIRC*(1-frac);
+}
+function wkTogglePause(){
+  wk.paused=!wk.paused;
+  document.getElementById('wk-pause-btn').textContent = wk.paused ? 'Weiter' : 'Pause';
+}
+function wkSkip(){ wkAdvance(); }
+function wkFinish(){
+  clearInterval(wk.timer); wk.phase='done';
+  wkReleaseLock();
+  const total=wkPlanTotal();
+  const m=Math.floor(total/60), s=total%60;
+  document.getElementById('wk-done-summary').textContent=`${wk.plan.length} Übungen`;
+  document.getElementById('wk-done-detail').textContent=
+    `Gesamtzeit ca. ${m} Min ${s>0?s+' Sek':''} · Bereiche: ${wkSettings.areas.map(a=>WK_AREAS.find(x=>x.key===a).label).join(', ')}`;
+  show('scr-wk-done');
+}
+function wkQuit(){
+  if(!confirm('Training abbrechen?')) return;
+  clearInterval(wk.timer); wk.phase='idle';
+  wkReleaseLock();
+  show('scr-wk-plan'); wkRenderPlan();
+}
+function wkReleaseLock(){ try{ if(wk.wakelock){ wk.wakelock.release(); wk.wakelock=null; } }catch(e){} }
+
 /* ---------- Hilfsfunktionen ---------- */
 function esc(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* ---------- Start ---------- */
 loadState().then(()=>{ renderSetup(); });
+wkLoad();
 </script>
 </body>
 </html>
