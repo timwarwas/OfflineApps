@@ -1227,16 +1227,11 @@ function figureHTML(anim,extra){
       </g>
     </svg></div>`;
 }
-// Zeigt zuerst die Animation; sobald das GIF geladen ist, wird darauf umgeschaltet.
-// Lädt das GIF nicht (404/offline), bleibt die Animation stehen.
-function demoHTML(item,isPause){
-  const svg=figureHTML(item.anim, isPause?'pausecol':'');
-  if(item.gif){
-    return `<div class="demo-wrap">${svg}<img class="demo-gif" style="display:none" alt="" src="${esc(item.gif)}"
-      onload="this.style.display='block';const s=this.parentNode.querySelector('.demo');if(s)s.style.display='none';"
-      onerror="this.remove()"></div>`;
-  }
-  return svg;
+// Zeigt nur ein GIF, falls hinterlegt. Kein GIF oder Ladefehler => nichts (kein Strichmännchen).
+function demoHTML(item){
+  if(!item.gif) return '';
+  return `<div class="demo-wrap"><img class="demo-gif" alt="" src="${esc(item.gif)}"
+    onerror="const w=this.closest('.demo-wrap'); if(w) w.remove();"></div>`;
 }
 
 /* ---------- Töne ---------- */
@@ -1434,7 +1429,7 @@ function wkRenderPhase(label,cls,item,progressIdx,nextLabel){
   document.getElementById('wk-name').textContent=item.name;
   document.getElementById('wk-count').textContent=`Übung ${progressIdx} / ${wk.plan.length}`;
   const slot=document.getElementById('wk-demo-slot');
-  slot.innerHTML=demoHTML(item, cls==='pause');
+  slot.innerHTML=demoHTML(item);
   const ring=document.getElementById('wk-ring');
   const color = cls==='exercise' ? getCss('--mint') : cls==='pause' ? getCss('--gold-text') : getCss('--blue');
   ring.style.stroke=color;
