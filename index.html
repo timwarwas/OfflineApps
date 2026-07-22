@@ -126,12 +126,35 @@
   .h-row .h-pts{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
   .h-row .h-edit{color:var(--muted);font-size:13px;margin-left:10px}
 
-  /* ---------- Workout: Setup ---------- */
+  /* ---------- Punkte-Tracker ---------- */
+  .seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:14px}
+  .seg button{flex:1;padding:11px;border-radius:11px;background:none;color:var(--muted);font-weight:700;font-size:15px}
+  .seg button.on{background:var(--surface2);color:var(--text)}
+  .tr-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px;margin-bottom:12px}
+  .tr-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .tr-head .tn{font-size:17px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tr-head .tv{margin-left:auto;font-size:32px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0}
+  .tr-head button.tv{background:none;border:1px dashed var(--line);border-radius:12px;padding:2px 12px}
+  .tr-head button.tv:active{background:var(--surface2)}
+  .tr-head .crown{font-size:16px;flex-shrink:0}
+  .tr-btns{display:flex;gap:7px}
+  .tr-btns button{flex:1;padding:12px 4px;border-radius:12px;font-weight:800;font-size:15px;
+    background:var(--surface2);border:1px solid var(--line);color:var(--text)}
+  .tr-btns button.minus{color:var(--coral)}
+  .tr-btns button.plus{color:var(--mint)}
+  .tr-btns button.num{background:var(--blue);border-color:var(--blue);color:#fff;flex:1.1}
+  .tr-out{opacity:.5}
+  .tr-out .tv{text-decoration:line-through}
   .field{margin-bottom:18px}
   .field > label{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-bottom:8px}
   .stepper{display:flex;align-items:center;justify-content:space-between;
     background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
   .stepper .val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stepper button.tapval{width:auto;min-width:88px;height:42px;background:none;border:1px dashed var(--line);
+    border-radius:12px;padding:0 14px;color:var(--text);font-weight:800;font-size:22px}
+  .stepper button.tapval:active{background:var(--surface2)}
+  .tap-hint{font-weight:600;font-size:12px;opacity:.75}
   .stepper .val small{font-size:14px;color:var(--muted);font-weight:600;margin-left:3px}
   .stepper button{width:42px;height:42px;border-radius:12px;background:var(--surface2);
     border:1px solid var(--line);color:var(--text);font-size:24px;font-weight:700}
@@ -356,19 +379,13 @@
     <h1>Anwendungssammlung</h1>
   </div>
   <div class="games">
-    <button class="game-card" onclick="openFlip7()">
-      <div class="icon" style="background:var(--yellow)">7</div>
+    <button class="game-card" onclick="show('scr-spiele')">
+      <div class="icon" style="background:var(--yellow)">🎲</div>
       <div>
-        <h2>Flip7</h2>
-        <p>Punktezähler · Erster bei 200 gewinnt</p>
+        <h2>Spiele</h2>
+        <p>Flip7 · Imposter · Punkte-Tracker</p>
       </div>
-    </button>
-    <button class="game-card" onclick="openImposter()">
-      <div class="icon" style="background:var(--coral)">🕵️</div>
-      <div>
-        <h2>Imposter</h2>
-        <p>Einer kennt das Wort nicht · Findet ihn!</p>
-      </div>
+      <span class="chip">3 Apps</span>
     </button>
     <button class="game-card" onclick="openWorkout()">
       <div class="icon" style="background:var(--mint)">🏋️</div>
@@ -388,10 +405,44 @@
   </div>
 </div>
 
+<!-- ========== ORDNER: SPIELE ========== -->
+<div class="screen" id="scr-spiele">
+  <header>
+    <button class="back" onclick="show('scr-menu')">‹</button>
+    <div>
+      <h1>Spiele</h1>
+      <div class="sub">Wähle ein Spiel</div>
+    </div>
+  </header>
+  <div class="games">
+    <button class="game-card" onclick="openFlip7()">
+      <div class="icon" style="background:var(--yellow)">7</div>
+      <div>
+        <h2>Flip7</h2>
+        <p>Punktezähler · Erster bei 200 gewinnt</p>
+      </div>
+    </button>
+    <button class="game-card" onclick="openImposter()">
+      <div class="icon" style="background:var(--coral)">🕵️</div>
+      <div>
+        <h2>Imposter</h2>
+        <p>Einer kennt das Wort nicht · Findet ihn!</p>
+      </div>
+    </button>
+    <button class="game-card" onclick="openTracker()">
+      <div class="icon" style="background:var(--blue)">🎯</div>
+      <div>
+        <h2>Punkte-Tracker</h2>
+        <p>Für alle Brett- & Kartenspiele</p>
+      </div>
+    </button>
+  </div>
+</div>
+
 <!-- ========== SPIELER-SETUP ========== -->
 <div class="screen" id="scr-setup">
   <header>
-    <button class="back" onclick="show('scr-menu')">‹</button>
+    <button class="back" onclick="show('scr-spiele')">‹</button>
     <div>
       <h1>Flip7 · Spieler</h1>
       <div class="sub">Wer spielt mit?</div>
@@ -408,7 +459,7 @@
 <!-- ========== SPIEL ========== -->
 <div class="screen" id="scr-game">
   <header>
-    <button class="back" onclick="show('scr-menu')">‹</button>
+    <button class="back" onclick="show('scr-spiele')">‹</button>
     <div>
       <h1>Flip7</h1>
       <div class="sub" id="round-info"></div>
@@ -438,7 +489,7 @@
 <!-- ========== IMPOSTER: SPIELER ========== -->
 <div class="screen" id="scr-imp-setup">
   <header>
-    <button class="back" onclick="show('scr-menu')">‹</button>
+    <button class="back" onclick="show('scr-spiele')">‹</button>
     <div>
       <h1>Imposter · Spieler</h1>
       <div class="sub">Mindestens 3 Spieler</div>
@@ -512,7 +563,76 @@
   </div>
   <button class="primary" onclick="impStartRound()">Neue Runde (gleiche Gruppe)</button>
   <button class="ghost" onclick="show('scr-imp-cat')">Kategorie ändern</button>
-  <button class="ghost" onclick="show('scr-menu')">Zurück zum Menü</button>
+  <button class="ghost" onclick="show('scr-spiele')">Zurück zu Spiele</button>
+</div>
+
+<!-- ========== TRACKER: SETUP ========== -->
+<div class="screen" id="scr-tr-setup">
+  <header>
+    <button class="back" onclick="show('scr-spiele')">‹</button>
+    <div>
+      <h1>Punkte-Tracker</h1>
+      <div class="sub">Für alle Brett- & Kartenspiele</div>
+    </div>
+  </header>
+
+  <div class="field">
+    <label>Was möchtest du zählen?</label>
+    <div class="seg" id="tr-mode-seg">
+      <button onclick="trSetMode('punkte')">Punkte</button>
+      <button onclick="trSetMode('leben')">Leben</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Startwert <span class="tap-hint">– auf die Zahl tippen zum Eingeben</span></label>
+    <div class="stepper">
+      <button onclick="trAdjustCfg('start',-5)">−</button>
+      <button class="val tapval" onclick="trOpenCfgPad('start')"><span id="tr-start">0</span></button>
+      <button onclick="trAdjustCfg('start',5)">+</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Schnell-Buttons (Schrittweite)</label>
+    <div class="stepper">
+      <button onclick="trAdjustCfg('step',-1)">−</button>
+      <button class="val tapval" onclick="trOpenCfgPad('step')">± <span id="tr-step">1</span></button>
+      <button onclick="trAdjustCfg('step',1)">+</button>
+    </div>
+  </div>
+
+  <div class="player-input">
+    <input id="tr-name-input" type="text" placeholder="Name eingeben" autocomplete="off" enterkeyhint="done">
+    <button class="add-btn" onclick="trAddPlayer()">+</button>
+  </div>
+  <div class="plist" id="tr-setup-list"></div>
+  <button class="primary" id="tr-start-btn" onclick="trStart()" disabled>Los geht's</button>
+</div>
+
+<!-- ========== TRACKER: ÜBERSICHT ========== -->
+<div class="screen" id="scr-tr-game">
+  <header>
+    <button class="back" onclick="show('scr-spiele')">‹</button>
+    <div>
+      <h1 id="tr-title">Punkte</h1>
+      <div class="sub" id="tr-sub"></div>
+    </div>
+  </header>
+
+  <div class="toggle">
+    <button id="tr-tab-list" class="on" onclick="trSetView('list')">Liste</button>
+    <button id="tr-tab-chart" onclick="trSetView('chart')">Diagramm</button>
+  </div>
+
+  <div id="tr-view-list"></div>
+  <div id="tr-view-chart" class="chart" style="display:none"></div>
+
+  <div class="footer-actions">
+    <button class="ghost" onclick="trUndo()">↩︎ Letzte Änderung rückgängig</button>
+    <button class="ghost danger" onclick="trReset()">Auf Startwert zurücksetzen</button>
+    <button class="ghost" onclick="show('scr-tr-setup')">Spieler & Einstellungen</button>
+  </div>
 </div>
 
 <!-- ========== WORKOUT: SETUP ========== -->
@@ -529,7 +649,7 @@
     <label>Übungsdauer</label>
     <div class="stepper">
       <button onclick="wkAdjust('exDur',-5)">−</button>
-      <span class="val"><span id="wk-exDur">30</span><small>Sek.</small></span>
+      <button class="val tapval" onclick="wkOpenCfgPad('exDur')"><span id="wk-exDur">30</span><small>Sek.</small></button>
       <button onclick="wkAdjust('exDur',5)">+</button>
     </div>
   </div>
@@ -538,7 +658,7 @@
     <label>Pausendauer</label>
     <div class="stepper">
       <button onclick="wkAdjust('pauseDur',-5)">−</button>
-      <span class="val"><span id="wk-pauseDur">15</span><small>Sek.</small></span>
+      <button class="val tapval" onclick="wkOpenCfgPad('pauseDur')"><span id="wk-pauseDur">15</span><small>Sek.</small></button>
       <button onclick="wkAdjust('pauseDur',5)">+</button>
     </div>
   </div>
@@ -547,7 +667,7 @@
     <label>Zielzeit gesamt</label>
     <div class="stepper">
       <button onclick="wkAdjust('target',-5)">−</button>
-      <span class="val"><span id="wk-target">15</span><small>Min.</small></span>
+      <button class="val tapval" onclick="wkOpenCfgPad('target')"><span id="wk-target">15</span><small>Min.</small></button>
       <button onclick="wkAdjust('target',5)">+</button>
     </div>
   </div>
@@ -556,7 +676,7 @@
     <label>Sätze (Übungen werden wiederholt)</label>
     <div class="stepper">
       <button onclick="wkAdjust('sets',-1)">−</button>
-      <span class="val"><span id="wk-sets">1</span><small>×</small></span>
+      <button class="val tapval" onclick="wkOpenCfgPad('sets')"><span id="wk-sets">1</span><small>×</small></button>
       <button onclick="wkAdjust('sets',1)">+</button>
     </div>
   </div>
@@ -638,7 +758,7 @@
       <label>Übungsdauer</label>
       <div class="stepper">
         <button onclick="wkEditAdjust('dur',-5)">−</button>
-        <span class="val"><span id="wk-edit-dur">30</span><small>Sek.</small></span>
+        <button class="val tapval" onclick="wkOpenEditPad('dur')"><span id="wk-edit-dur">30</span><small>Sek.</small></button>
         <button onclick="wkEditAdjust('dur',5)">+</button>
       </div>
     </div>
@@ -646,7 +766,7 @@
       <label>Pause danach</label>
       <div class="stepper">
         <button onclick="wkEditAdjust('pause',-5)">−</button>
-        <span class="val"><span id="wk-edit-pause">15</span><small>Sek.</small></span>
+        <button class="val tapval" onclick="wkOpenEditPad('pause')"><span id="wk-edit-pause">15</span><small>Sek.</small></button>
         <button onclick="wkEditAdjust('pause',5)">+</button>
       </div>
     </div>
@@ -672,6 +792,7 @@
       <button onclick="padKey(4)">4</button><button onclick="padKey(5)">5</button><button onclick="padKey(6)">6</button>
       <button onclick="padKey(7)">7</button><button onclick="padKey(8)">8</button><button onclick="padKey(9)">9</button>
       <button class="fn" onclick="padClear()">C</button><button onclick="padKey(0)">0</button><button class="fn" onclick="padBack()">⌫</button>
+      <button class="fn" id="pad-sign" style="display:none;grid-column:1/-1" onclick="padToggleSign()">± Vorzeichen wechseln</button>
     </div>
     <div class="sheet-actions">
       <button class="cancel" onclick="closePad()">Abbrechen</button>
@@ -692,7 +813,7 @@ lightMode.addEventListener('change', e=>{
   renderSetup(); impRenderSetup(); renderGame();
 });
 let state = { players: [], view: 'list', log: [] }; // log: {playerId, points}
-let padTarget = null, padValue = '', padEditId = null;
+let padTarget = null, padValue = '', padEditId = null, padTrackerId = null, padNeg = false, padCfg = null, padPrefilled = false;
 
 /* ---------- Persistenz: Claude-Speicher, sonst Browser-Speicher (z.B. GitHub Pages) ---------- */
 async function saveState(){
@@ -727,6 +848,8 @@ function show(id){
   if(id==='scr-imp-setup') impRenderSetup();
   if(id==='scr-imp-cat') impRenderCats();
   if(id==='scr-wk-setup') wkRenderSetup();
+  if(id==='scr-tr-setup') trRenderSetup();
+  if(id==='scr-tr-game') trRenderGame();
 }
 function openFlip7(){
   show(state.players.length ? 'scr-game' : 'scr-setup');
@@ -747,6 +870,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
   document.getElementById('imp-name-input').addEventListener('keydown', e=>{
     if(e.key==='Enter') impAddPlayer();
+  });
+  document.getElementById('tr-name-input').addEventListener('keydown', e=>{
+    if(e.key==='Enter') trAddPlayer();
   });
 });
 function removePlayer(id){
@@ -904,54 +1030,108 @@ function renderGame(){
 
 /* ---------- Nummernpad ---------- */
 function openPad(id){
-  padTarget = id; padValue = ''; padEditId = null;
+  padTarget = id; padValue = ''; padEditId = null; padTrackerId = null; padNeg = false; padCfg = null; padPrefilled = false;
   const p = state.players.find(x=>x.id===id);
   document.getElementById('pad-title').textContent = 'Punkte für ' + p.name;
   document.getElementById('pad-display').textContent = '0';
   document.getElementById('pad-ok').textContent = 'Hinzufügen';
   document.getElementById('pad-delete').style.display = 'none';
+  document.getElementById('pad-sign').style.display = 'none';
   document.getElementById('pad-modal').classList.add('open');
 }
 function openPadEdit(logId){
   const e = state.log.find(l=>l.id===logId);
   if(!e) return;
   const p = state.players.find(x=>x.id===e.playerId);
-  padTarget = null; padEditId = logId; padValue = String(e.points);
+  padTarget = null; padEditId = logId; padTrackerId = null; padNeg = false; padCfg = null; padValue = String(e.points); padPrefilled = true;
   document.getElementById('pad-title').textContent = 'Eintrag bearbeiten – ' + (p?p.name:'');
   document.getElementById('pad-display').textContent = padValue;
   document.getElementById('pad-ok').textContent = 'Speichern';
   document.getElementById('pad-delete').style.display = '';
+  document.getElementById('pad-sign').style.display = 'none';
   document.getElementById('pad-modal').classList.add('open');
 }
-function closePad(){ document.getElementById('pad-modal').classList.remove('open'); }
+function closePad(){ padCfg=null; document.getElementById('pad-modal').classList.remove('open'); }
 function padDelete(){
   const id = padEditId;
   closePad();
   if(id) deleteLogEntry(id);
 }
 function padKey(n){
-  if(padValue.length >= 3) return;
+  if(padPrefilled){ padValue=''; padPrefilled=false; }
+  if(padValue.length >= 4) return;
   padValue = (padValue + n).replace(/^0+(?=\d)/,'');
-  document.getElementById('pad-display').textContent = padValue || '0';
+  padUpdateDisplay();
 }
 function padBack(){
+  padPrefilled=false;
   padValue = padValue.slice(0,-1);
-  document.getElementById('pad-display').textContent = padValue || '0';
+  padUpdateDisplay();
 }
 function padClear(){
-  padValue = '';
-  document.getElementById('pad-display').textContent = '0';
+  padValue = ''; padNeg = false; padPrefilled=false;
+  padUpdateDisplay();
 }
 function padConfirm(){
-  const pts = parseInt(padValue || '0', 10);
-  const editId = padEditId, target = padTarget;
+  const raw = parseInt(padValue || '0', 10);
+  const editId = padEditId, target = padTarget, trId = padTrackerId, neg = padNeg, cfg = padCfg;
   closePad();
-  if(editId){
-    if(pts > 0) editLogEntry(editId, pts);
-    else deleteLogEntry(editId);
-  }else if(pts > 0 && target){
-    addPoints(target, pts);
+  if(cfg){
+    const v = isNaN(raw) ? 0 : raw;
+    const clamped = Math.min(cfg.max, Math.max(cfg.min, v));
+    cfg.apply(clamped);
+    return;
   }
+  if(trId){
+    if(raw > 0) trChange(trId, neg ? -raw : raw);
+  }else if(editId){
+    if(raw > 0) editLogEntry(editId, raw);
+    else deleteLogEntry(editId);
+  }else if(raw > 0 && target){
+    addPoints(target, raw);
+  }
+}
+
+/* ---------- Zahlenpad für Einstellungswerte ---------- */
+function openCfgPad(title, current, min, max, applyFn){
+  padTarget=null; padEditId=null; padTrackerId=null; padNeg=false;
+  padValue = String(current); padPrefilled = true;
+  padCfg = {min, max, apply: applyFn};
+  document.getElementById('pad-title').textContent = title + ` (${min}–${max})`;
+  document.getElementById('pad-display').textContent = padValue;
+  document.getElementById('pad-ok').textContent = 'Übernehmen';
+  document.getElementById('pad-delete').style.display = 'none';
+  document.getElementById('pad-sign').style.display = 'none';
+  document.getElementById('pad-modal').classList.add('open');
+}
+function trOpenCfgPad(key){
+  const limits={start:[0,999],step:[1,99]};
+  const [min,max]=limits[key];
+  const title = key==='start' ? 'Startwert' : 'Schrittweite';
+  openCfgPad(title, tr[key], min, max, v=>{
+    if(key==='start') trSetStart(v);
+    else { tr[key]=v; trSave(); trRenderSetup(); }
+  });
+}
+function wkOpenCfgPad(key){
+  const limits={exDur:[5,600],pauseDur:[0,300],target:[1,180],sets:[1,20]};
+  const titles={exDur:'Übungsdauer (Sek.)',pauseDur:'Pausendauer (Sek.)',target:'Zielzeit (Min.)',sets:'Sätze'};
+  const [min,max]=limits[key];
+  openCfgPad(titles[key], wkSettings[key], min, max, v=>{ wkSettings[key]=v; wkSave(); wkRenderSetup(); });
+}
+function wkOpenEditPad(key){
+  if(wkEditIdx===null) return;
+  const limits={dur:[5,600],pause:[0,300]};
+  const titles={dur:'Übungsdauer (Sek.)',pause:'Pause danach (Sek.)'};
+  const [min,max]=limits[key];
+  const idx=wkEditIdx;
+  openCfgPad(titles[key], wk.plan[idx][key], min, max, v=>{
+    wk.plan[idx][key]=v;
+    document.getElementById('wk-edit-'+key).textContent=v;
+    wkRenderPlan();
+    wkEditIdx=idx;
+    document.getElementById('wk-edit-modal').classList.add('open');
+  });
 }
 
 /* ==================== IMPOSTER ==================== */
@@ -1064,7 +1244,207 @@ function impNextPlayer(){
   }
 }
 function impQuit(){
-  if(confirm('Runde abbrechen und zum Menü zurück?')) show('scr-menu');
+  if(confirm('Runde abbrechen und zum Menü zurück?')) show('scr-spiele');
+}
+
+/* ==================== PUNKTE-TRACKER ==================== */
+let tr = { mode:'punkte', start:0, step:1, players:[], log:[], view:'list' };
+
+async function trSave(){
+  const json=JSON.stringify(tr);
+  try{ await window.storage.set('tracker-state', json); return; }catch(e){}
+  try{ localStorage.setItem('tracker-state', json); }catch(e){}
+}
+async function trLoad(){
+  let json=null;
+  try{ const r=await window.storage.get('tracker-state'); if(r&&r.value) json=r.value; }catch(e){}
+  if(!json){ try{ json=localStorage.getItem('tracker-state'); }catch(e){} }
+  if(json){ try{ const s=JSON.parse(json); if(s&&s.players) tr=s; if(!tr.log) tr.log=[]; }catch(e){} }
+}
+function openTracker(){ show(tr.players.length ? 'scr-tr-game' : 'scr-tr-setup'); }
+
+function trSetMode(m){
+  tr.mode=m;
+  if(m==='leben' && tr.start===0){ tr.step=1; trSetStart(20); return; }
+  if(m==='punkte' && tr.start===20){ trSetStart(0); return; }
+  trSave(); trRenderSetup();
+}
+function trSetStart(newVal){
+  const old = tr.start;
+  tr.start = newVal;
+  // Spieler, die noch auf dem alten Startwert stehen (also unverändert sind), mitziehen
+  tr.players.forEach(p=>{
+    const touched = tr.log.some(l=>l.playerId===p.id);
+    if(!touched || p.value===old) p.value = newVal;
+  });
+  trSave(); trRenderSetup();
+}
+function trAdjustCfg(key,delta){
+  const limits={start:[0,999],step:[1,99]};
+  const [min,max]=limits[key];
+  const v=Math.min(max,Math.max(min,tr[key]+delta));
+  if(key==='start') trSetStart(v);
+  else { tr[key]=v; trSave(); trRenderSetup(); }
+}
+function trAddPlayer(){
+  const inp=document.getElementById('tr-name-input');
+  const name=inp.value.trim();
+  if(!name) return;
+  tr.players.push({id:Date.now()+''+Math.random(), name, value:tr.start});
+  inp.value=''; inp.focus();
+  trSave(); trRenderSetup();
+}
+function trRemovePlayer(id){
+  tr.players=tr.players.filter(p=>p.id!==id);
+  tr.log=tr.log.filter(l=>l.playerId!==id);
+  trSave(); trRenderSetup();
+}
+function trRenderSetup(){
+  document.getElementById('tr-start').textContent=tr.start;
+  document.getElementById('tr-step').textContent=tr.step;
+  const segs=document.querySelectorAll('#tr-mode-seg button');
+  segs[0].classList.toggle('on', tr.mode==='punkte');
+  segs[1].classList.toggle('on', tr.mode==='leben');
+  const list=document.getElementById('tr-setup-list');
+  list.innerHTML = tr.players.length ? tr.players.map((p,i)=>`
+    <div class="prow">
+      <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
+      <span>${esc(p.name)}</span>
+      <button class="del" onclick="trRemovePlayer('${p.id}')">✕</button>
+    </div>`).join('') : '<div class="empty">Noch keine Spieler.<br>Füge oben Namen hinzu.</div>';
+  document.getElementById('tr-start-btn').disabled = tr.players.length<1;
+}
+function trStart(){
+  // Alle Spieler ohne bisherige Änderung auf den aktuellen Startwert setzen
+  tr.players.forEach(p=>{
+    const touched = tr.log.some(l=>l.playerId===p.id);
+    if(!touched || typeof p.value!=='number') p.value = tr.start;
+  });
+  trSave(); show('scr-tr-game');
+}
+function trChange(id,delta){
+  const p=tr.players.find(x=>x.id===id);
+  if(!p) return;
+  p.value+=delta;
+  tr.log.push({playerId:id, delta});
+  trSave(); trRenderGame();
+}
+function trUndo(){
+  const last=tr.log.pop();
+  if(!last) return;
+  const p=tr.players.find(x=>x.id===last.playerId);
+  if(p) p.value-=last.delta;
+  trSave(); trRenderGame();
+}
+function trReset(){
+  const s = Number(tr.start)||0;
+  if(!confirm('Alle auf den Startwert ('+s+') zurücksetzen?')) return;
+  tr.start = s;
+  tr.players.forEach(p=>{ p.value = s; });
+  tr.log=[];
+  trSave(); trRenderGame();
+}
+function trSetView(v){
+  tr.view=v; trSave();
+  document.getElementById('tr-tab-list').classList.toggle('on', v==='list');
+  document.getElementById('tr-tab-chart').classList.toggle('on', v==='chart');
+  document.getElementById('tr-view-list').style.display = v==='list'?'':'none';
+  document.getElementById('tr-view-chart').style.display = v==='chart'?'':'none';
+}
+function trRenderGame(){
+  trSetView(tr.view||'list');
+  const isLife = tr.mode==='leben';
+  document.getElementById('tr-title').textContent = isLife?'Leben':'Punkte';
+  document.getElementById('tr-sub').textContent =
+    `${tr.players.length} Spieler · Start ${tr.start} · Schritt ±${tr.step}`;
+
+  const values=tr.players.map(p=>p.value);
+  const best = values.length ? Math.max(...values) : 0;
+
+  document.getElementById('tr-view-list').innerHTML = tr.players.map((p,i)=>{
+    const color=COLORS[i%COLORS.length];
+    const out = isLife && p.value<=0;
+    return `
+    <div class="tr-card ${out?'tr-out':''}">
+      <div class="tr-head">
+        <span class="dot" style="background:${color}"></span>
+        <span class="tn">${esc(p.name)}</span>
+        ${out?'<span class="crown">💀</span>':(p.value===best&&values.length>1?'<span class="crown">👑</span>':'')}
+        <button class="tv tapval-inline" style="color:${color}" onclick="trOpenValuePad('${p.id}')">${p.value}</button>
+      </div>
+      <div class="tr-btns">
+        <button class="minus" onclick="trChange('${p.id}',-${tr.step*5})">−${tr.step*5}</button>
+        <button class="minus" onclick="trChange('${p.id}',-${tr.step})">−${tr.step}</button>
+        <button class="plus" onclick="trChange('${p.id}',${tr.step})">+${tr.step}</button>
+        <button class="plus" onclick="trChange('${p.id}',${tr.step*5})">+${tr.step*5}</button>
+        <button class="num" onclick="trOpenPad('${p.id}')">123</button>
+      </div>
+    </div>`;
+  }).join('') || '<div class="empty">Keine Spieler.</div>';
+
+  // Diagramm
+  const sorted=[...tr.players].sort((a,b)=>b.value-a.value);
+  const maxAbs = Math.max(1, ...tr.players.map(p=>Math.abs(p.value)));
+  const bars = sorted.map((p,idx)=>{
+    const i=tr.players.indexOf(p);
+    const pct=Math.min(100, Math.abs(p.value)/maxAbs*100);
+    const rankCls=idx===0?'r1':idx===1?'r2':idx===2?'r3':'';
+    return `
+    <div class="bar-row">
+      <div class="rank ${rankCls}">${idx+1}.</div>
+      <div class="bar-info">
+        <div class="bar-label"><b>${esc(p.name)}</b><span>${p.value}</span></div>
+        <div class="bar-bg">
+          <div class="bar-fill" style="width:${pct}%;background:${COLORS[i%COLORS.length]}"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const recent=[...tr.log].slice(-8).reverse();
+  const history=`
+    <div class="history">
+      <h4>Letzte Änderungen</h4>
+      ${recent.length ? recent.map(e=>{
+        const p=tr.players.find(x=>x.id===e.playerId);
+        if(!p) return '';
+        const i=tr.players.indexOf(p);
+        return `<div class="h-row">
+          <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
+          <span class="h-name">${esc(p.name)}</span>
+          <span class="h-pts" style="color:${e.delta<0?'var(--coral)':'var(--mint)'}">${e.delta>0?'+':''}${e.delta}</span>
+        </div>`;
+      }).join('') : '<div class="empty">Noch keine Änderungen.</div>'}
+    </div>`;
+
+  document.getElementById('tr-view-chart').innerHTML = bars + history;
+}
+function trOpenValuePad(id){
+  const p=tr.players.find(x=>x.id===id);
+  if(!p) return;
+  openCfgPad('Wert setzen – '+p.name, p.value, 0, 999, v=>{
+    const delta = v - p.value;
+    if(delta!==0){ p.value=v; tr.log.push({playerId:id, delta}); }
+    trSave(); trRenderGame();
+  });
+}
+function trOpenPad(id){
+  const p=tr.players.find(x=>x.id===id);
+  padTarget=null; padEditId=null; padTrackerId=id; padValue=''; padNeg=false; padCfg=null; padPrefilled=false;
+  document.getElementById('pad-title').textContent = (tr.mode==='leben'?'Leben':'Punkte')+' ändern – '+p.name;
+  document.getElementById('pad-display').textContent='0';
+  document.getElementById('pad-ok').textContent='Übernehmen';
+  document.getElementById('pad-delete').style.display='none';
+  document.getElementById('pad-sign').style.display='';
+  document.getElementById('pad-modal').classList.add('open');
+}
+function padToggleSign(){
+  padNeg=!padNeg;
+  padUpdateDisplay();
+}
+function padUpdateDisplay(){
+  const v=padValue||'0';
+  document.getElementById('pad-display').textContent=(padNeg&&v!=='0'?'−':'')+v;
 }
 
 /* ==================== WORKOUT ==================== */
@@ -1471,6 +1851,7 @@ function esc(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&
 /* ---------- Start ---------- */
 loadState().then(()=>{ renderSetup(); });
 wkLoad();
+trLoad();
 </script>
 </body>
 </html>
