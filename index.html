@@ -835,8 +835,9 @@
 <div class="modal" id="ask-modal" onclick="if(event.target===this)askClose()">
   <div class="sheet">
     <h3 id="ask-text" style="color:var(--text);font-size:18px;font-weight:800;margin-bottom:6px">Sicher?</h3>
+    <p id="ask-detail" style="color:var(--muted);font-size:14px;line-height:1.45;margin-top:8px;display:none"></p>
     <div class="sheet-actions" style="margin-top:18px">
-      <button class="cancel" onclick="askClose()">Abbrechen</button>
+      <button class="cancel" id="ask-no" onclick="askClose()">Zurück</button>
       <button class="ok" id="ask-ok" onclick="askConfirmYes()">Ja</button>
     </div>
   </div>
@@ -1004,11 +1005,13 @@ function undoLast(){
   saveState(); renderGame();
 }
 function resetGame(){
-  ask('Alle Punkte löschen und neu starten?', ()=>{
+  ask('Punkte aller Spieler löschen?', ()=>{
     state.players.forEach(p=>p.scores=[]);
     state.log = [];
     saveState(); renderGame();
-  }, 'Löschen');
+  }, 'Ja, löschen', null,
+  {detail:'Alle Punktestände werden auf 0 gesetzt und der Eingabe-Verlauf geleert. Die Spieler bleiben erhalten. Das lässt sich nicht rückgängig machen.',
+   noLabel:'Nein, behalten'});
 }
 
 /* ---------- Rendering ---------- */
@@ -1386,7 +1389,9 @@ function impNextPlayer(){
   }
 }
 function impQuit(){
-  ask('Runde abbrechen und zurück zu Spiele?', ()=>show('scr-spiele'), 'Abbrechen');
+  ask('Laufende Runde beenden?', ()=>show('scr-spiele'), 'Ja, beenden', null,
+  {detail:'Die aktuelle Rollenverteilung geht verloren und du landest wieder in der Spiele-Übersicht.',
+   noLabel:'Nein, weiterspielen'});
 }
 
 /* ==================== PUNKTE-TRACKER ==================== */
@@ -1480,12 +1485,14 @@ function trUndo(){
 }
 function trReset(){
   const s = Number(tr.start)||0;
-  ask('Alle auf den Startwert ('+s+') zurücksetzen?', ()=>{
+  ask('Alle Werte auf '+s+' zurücksetzen?', ()=>{
     tr.start = s;
     tr.players.forEach(p=>{ p.value = s; });
     tr.log=[];
     trSave(); trRenderGame();
-  }, 'Zurücksetzen');
+  }, 'Ja, zurücksetzen', null,
+  {detail:'Jeder Spieler startet wieder bei '+s+' und der Änderungsverlauf wird geleert. Die Spieler bleiben erhalten.',
+   noLabel:'Nein, behalten'});
 }
 function trSetView(v){
   tr.view=v; trSave();
@@ -1984,22 +1991,29 @@ function wkQuit(){
   // Timer während der Rückfrage anhalten
   const wasPaused = wk.paused;
   wk.paused = true;
-  ask('Training beenden?', ()=>{
+  ask('Training jetzt beenden?', ()=>{
     clearInterval(wk.timer); wk.timer=null;
     wk.phase='idle'; wk.paused=false;
     wkReleaseLock();
     show('scr-wk-plan'); wkRenderPlan();
-  }, 'Beenden', ()=>{ wk.paused = wasPaused; });
+  }, 'Ja, beenden', ()=>{ wk.paused = wasPaused; },
+  {detail:'Der Timer stoppt und du kommst zurück zur Plan-Übersicht. Dein Plan bleibt gespeichert, das Training beginnt beim nächsten Start von vorn.',
+   noLabel:'Nein, weitermachen'});
 }
 function wkReleaseLock(){ try{ if(wk.wakelock){ wk.wakelock.release(); wk.wakelock=null; } }catch(e){} }
 
 /* ==================== BESTÄTIGUNG / HINWEIS ==================== */
 // Ersetzt confirm()/alert(), da diese im iPhone-Homescreen-Modus blockiert werden
 let askCallback=null, askCancelCb=null;
-function ask(text, onYes, okLabel, onNo){
+function ask(text, onYes, okLabel, onNo, opts){
+  opts = opts || {};
   askCallback=onYes; askCancelCb=onNo||null;
   document.getElementById('ask-text').textContent=text;
+  const det=document.getElementById('ask-detail');
+  det.textContent = opts.detail || '';
+  det.style.display = opts.detail ? '' : 'none';
   document.getElementById('ask-ok').textContent=okLabel||'Ja';
+  document.getElementById('ask-no').textContent=opts.noLabel||'Zurück';
   document.getElementById('ask-modal').classList.add('open');
 }
 function askClose(){
