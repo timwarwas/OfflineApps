@@ -34,6 +34,12 @@
 
   /* ---------- Hauptmenü ---------- */
   .hero{margin:8px 0 26px}
+  .hero-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+  .qr-btn{font-size:22px;flex-shrink:0}
+  .qr-box{background:#fff;padding:14px;border-radius:16px;display:inline-block;margin:14px auto 10px;min-width:160px;min-height:60px}
+  .qr-box .qr-msg{color:#333;font-size:13px;padding:10px;max-width:200px}
+  .qr-box img, .qr-box canvas{display:block}
+  .qr-url{color:var(--muted);font-size:13px;word-break:break-all;padding:0 6px;margin-bottom:6px}
   .hero .kicker{color:var(--gold-text);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
   .hero h1{font-size:34px;line-height:1.1;margin-top:6px}
   .games{display:grid;gap:14px}
@@ -93,6 +99,19 @@
   .sc-top .total{margin-left:auto;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
   .sc-missing{color:var(--muted);font-size:14px;margin-top:2px}
   .sc-missing b{color:var(--mint);font-weight:800}
+  .sc-meta{display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap}
+  .sc-meta .gap{background:var(--surface2);border:1px solid var(--line);color:var(--coral);
+    font-size:13px;font-weight:800;padding:3px 9px;border-radius:99px}
+  .sc-meta .lead{background:var(--surface2);border:1px solid var(--line);color:var(--gold-text);
+    font-size:13px;font-weight:800;padding:3px 9px;border-radius:99px}
+  .sc-meta .miss{color:var(--muted);font-size:13px}
+  .sc-meta .miss b{color:var(--mint);font-weight:800}
+  .rank-badge{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:14px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);flex-shrink:0}
+  .rank-badge.r1{background:var(--yellow);color:#12152B;border-color:var(--yellow)}
+  .rank-badge.r2{background:#C8CEEE;color:#12152B;border-color:#C8CEEE}
+  .rank-badge.r3{background:#E8A46B;color:#12152B;border-color:#E8A46B}
+  .bar-label .gap{color:var(--coral);font-weight:800}
   .winner-tag{color:#12152B;background:var(--yellow);font-size:12px;font-weight:800;
     padding:3px 9px;border-radius:99px}
   .track{height:8px;background:var(--surface2);border-radius:99px;margin:12px 0;overflow:hidden}
@@ -175,8 +194,13 @@
   #scr-wk-run{display:none}
   #scr-wk-run.active{display:flex;flex-direction:column;min-height:100dvh}
   .wk-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-  .wk-top .wk-quit{background:var(--surface);border:1px solid var(--line);color:var(--muted);
-    width:40px;height:40px;border-radius:12px;font-size:18px}
+  .wk-top .wk-quit{background:var(--surface);border:1px solid var(--line);color:var(--coral);
+    min-width:64px;height:40px;border-radius:12px;font-size:14px;font-weight:800;padding:0 12px}
+  .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
+    background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    padding:13px 18px;border-radius:14px;font-size:15px;font-weight:600;max-width:86%;text-align:center;
+    opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
   .wk-progress{color:var(--muted);font-size:14px;font-weight:700}
   .wk-phase{text-align:center;letter-spacing:.16em;text-transform:uppercase;
     font-size:14px;font-weight:800;margin:4px 0 2px}
@@ -375,8 +399,13 @@
 <!-- ========== HAUPTMENÜ ========== -->
 <div class="screen active" id="scr-menu">
   <div class="hero">
-    <div class="kicker">Deine Apps</div>
-    <h1>Anwendungssammlung</h1>
+    <div class="hero-row">
+      <div>
+        <div class="kicker">Deine Apps</div>
+        <h1>Anwendungssammlung</h1>
+      </div>
+      <button class="back qr-btn" onclick="openQr()" aria-label="Seite per QR-Code teilen">▦</button>
+    </div>
   </div>
   <div class="games">
     <button class="game-card" onclick="show('scr-spiele')">
@@ -443,6 +472,7 @@
 <div class="screen" id="scr-setup">
   <header>
     <button class="back" onclick="show('scr-spiele')">‹</button>
+    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
     <div>
       <h1>Flip7 · Spieler</h1>
       <div class="sub">Wer spielt mit?</div>
@@ -460,6 +490,7 @@
 <div class="screen" id="scr-game">
   <header>
     <button class="back" onclick="show('scr-spiele')">‹</button>
+    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
     <div>
       <h1>Flip7</h1>
       <div class="sub" id="round-info"></div>
@@ -490,6 +521,7 @@
 <div class="screen" id="scr-imp-setup">
   <header>
     <button class="back" onclick="show('scr-spiele')">‹</button>
+    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
     <div>
       <h1>Imposter · Spieler</h1>
       <div class="sub">Mindestens 3 Spieler</div>
@@ -503,16 +535,30 @@
   <button class="primary" id="imp-next-btn" onclick="show('scr-imp-cat')" disabled>Weiter zur Kategorie</button>
 </div>
 
-<!-- ========== IMPOSTER: KATEGORIE ========== -->
+<!-- ========== IMPOSTER: KATEGORIE / MODUS ========== -->
 <div class="screen" id="scr-imp-cat">
   <header>
     <button class="back" onclick="show('scr-imp-setup')">‹</button>
+    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
     <div>
-      <h1>Kategorie wählen</h1>
-      <div class="sub">Aus welchem Thema kommt das Wort?</div>
+      <h1>Modus wählen</h1>
+      <div class="sub">Wörter oder Szenarien</div>
     </div>
   </header>
-  <div class="cat-grid" id="cat-grid"></div>
+  <div class="toggle">
+    <button id="imp-mode-word" class="on" onclick="impSetMode('word')">Wörter</button>
+    <button id="imp-mode-scn" onclick="impSetMode('scenario')">Szenarien</button>
+  </div>
+  <div id="imp-word-panel">
+    <div class="cat-grid" id="cat-grid"></div>
+  </div>
+  <div id="imp-scenario-panel" style="display:none">
+    <div class="est" style="text-align:left;line-height:1.5">
+      Jeder Unschuldige bekommt denselben <b>Ort</b> und eine eigene <b>Rolle</b> (z.B. Pilot, Stewardess).
+      Der <b>Imposter</b> kennt weder Ort noch Rolle und muss mitraten. Das Szenario wird zufällig gewählt.
+    </div>
+    <button class="primary" onclick="impStartScenario()">Zufälliges Szenario starten</button>
+  </div>
 </div>
 
 <!-- ========== IMPOSTER: WEITERGEBEN ========== -->
@@ -562,7 +608,7 @@
     <div class="hint">Beschreibt reihum das Wort mit je einem Begriff – aber verratet es nicht zu deutlich. Dann wird abgestimmt, wer der Imposter ist!</div>
   </div>
   <button class="primary" onclick="impStartRound()">Neue Runde (gleiche Gruppe)</button>
-  <button class="ghost" onclick="show('scr-imp-cat')">Kategorie ändern</button>
+  <button class="ghost" onclick="show('scr-imp-cat')">Modus / Kategorie ändern</button>
   <button class="ghost" onclick="show('scr-spiele')">Zurück zu Spiele</button>
 </div>
 
@@ -570,6 +616,7 @@
 <div class="screen" id="scr-tr-setup">
   <header>
     <button class="back" onclick="show('scr-spiele')">‹</button>
+    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
     <div>
       <h1>Punkte-Tracker</h1>
       <div class="sub">Für alle Brett- & Kartenspiele</div>
@@ -614,6 +661,7 @@
 <div class="screen" id="scr-tr-game">
   <header>
     <button class="back" onclick="show('scr-spiele')">‹</button>
+    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
     <div>
       <h1 id="tr-title">Punkte</h1>
       <div class="sub" id="tr-sub"></div>
@@ -694,6 +742,7 @@
 <div class="screen" id="scr-wk-plan">
   <header>
     <button class="back" onclick="show('scr-wk-setup')">‹</button>
+    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
     <div>
       <h1>Dein Plan</h1>
       <div class="sub">Verschieben, bearbeiten, löschen</div>
@@ -708,7 +757,7 @@
 <!-- ========== WORKOUT: RUN ========== -->
 <div class="screen" id="scr-wk-run">
   <div class="wk-top">
-    <button class="wk-quit" onclick="wkQuit()">✕</button>
+    <button class="wk-quit" onclick="wkQuit()">✕ Ende</button>
     <span class="wk-progress" id="wk-count"></span>
   </div>
   <div class="wk-phase" id="wk-phase-label"></div>
@@ -778,6 +827,30 @@
     <div class="sheet-actions">
       <button class="cancel danger" onclick="wkEditDelete()">Löschen</button>
       <button class="ok" onclick="wkEditClose()">Fertig</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== BESTÄTIGUNG ========== -->
+<div class="modal" id="ask-modal" onclick="if(event.target===this)askClose()">
+  <div class="sheet">
+    <h3 id="ask-text" style="color:var(--text);font-size:18px;font-weight:800;margin-bottom:6px">Sicher?</h3>
+    <div class="sheet-actions" style="margin-top:18px">
+      <button class="cancel" onclick="askClose()">Abbrechen</button>
+      <button class="ok" id="ask-ok" onclick="askConfirmYes()">Ja</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== QR-CODE TEILEN ========== -->
+<div class="modal" id="qr-modal" onclick="if(event.target===this)closeQr()">
+  <div class="sheet" style="text-align:center">
+    <h3>Seite teilen</h3>
+    <div class="qr-box" id="qr-box"></div>
+    <div class="qr-url" id="qr-url"></div>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="copyQrUrl()" id="qr-copy">Link kopieren</button>
+      <button class="ok" onclick="closeQr()">Fertig</button>
     </div>
   </div>
 </div>
@@ -931,10 +1004,11 @@ function undoLast(){
   saveState(); renderGame();
 }
 function resetGame(){
-  if(!confirm('Alle Punkte löschen und neu starten?')) return;
-  state.players.forEach(p=>p.scores=[]);
-  state.log = [];
-  saveState(); renderGame();
+  ask('Alle Punkte löschen und neu starten?', ()=>{
+    state.players.forEach(p=>p.scores=[]);
+    state.log = [];
+    saveState(); renderGame();
+  }, 'Löschen');
 }
 
 /* ---------- Rendering ---------- */
@@ -955,27 +1029,35 @@ function renderGame(){
   const over = state.players.filter(p=>total(p)>=GOAL);
   const maxOver = over.length ? Math.max(...over.map(p=>total(p))) : null;
 
-  /* Listenansicht */
-  document.getElementById('view-list').innerHTML = state.players.map((p,i)=>{
+  /* Listenansicht – sortiert nach Punkten, mit Platz und Rückstand zum Vordermann */
+  const ranked = [...state.players].sort((a,b)=>total(b)-total(a));
+  document.getElementById('view-list').innerHTML = ranked.map((p,idx)=>{
+    const i = state.players.indexOf(p);
     const t = total(p);
     const missing = Math.max(0, GOAL - t);
     const pct = Math.min(100, t/GOAL*100);
     const color = COLORS[i%COLORS.length];
     const reached = t >= GOAL;
     const won = reached && t === maxOver;
+    const rankCls = idx===0?'r1':idx===1?'r2':idx===2?'r3':'';
+    // Rückstand zum Platz davor
+    const gapAhead = idx>0 ? total(ranked[idx-1]) - t : 0;
+    const gapTxt = idx===0
+      ? (state.players.length>1 ? '<span class="lead">Führung</span>' : '')
+      : `<span class="gap">−${gapAhead} zu Platz ${idx}</span>`;
     return `
     <div class="score-card">
       <div class="sc-top">
-        <span class="dot" style="background:${color}"></span>
+        <span class="rank-badge ${rankCls}">${idx+1}.</span>
         <span class="name">${esc(p.name)}</span>
         ${won ? '<span class="winner-tag">🏆 Gewonnen!</span>' :
           reached ? '<span class="winner-tag" style="background:var(--surface2);color:var(--muted)">🎯 200 erreicht</span>' : ''}
         <span class="total" style="color:${color}">${t}</span>
       </div>
-      <div class="sc-missing">${
-        won ? 'Höchste Punktzahl – Sieg!' :
-        reached ? 'Ziel erreicht, aber jemand hat mehr Punkte' :
-        `Fehlen noch <b>${missing}</b> Punkte`}</div>
+      <div class="sc-meta">
+        ${gapTxt}
+        <span class="miss">${won ? 'Höchste Punktzahl – Sieg!' : reached ? 'jemand hat mehr' : `noch <b>${missing}</b> bis 200`}</span>
+      </div>
       <div class="track"><i style="width:${pct}%;background:${color}"></i></div>
       <div class="sc-actions">
         <button onclick="addPoints('${p.id}',1)">+1</button>
@@ -994,11 +1076,13 @@ function renderGame(){
     const i = state.players.indexOf(p);
     const rankCls = idx===0?'r1':idx===1?'r2':idx===2?'r3':'';
     const won = t >= GOAL && t === maxOver;
+    const gapAhead = idx>0 ? total(sorted[idx-1]) - t : 0;
+    const gapTxt = idx>0 ? ` · <span class="gap">−${gapAhead}</span>` : '';
     return `
     <div class="bar-row">
       <div class="rank ${rankCls}">${idx+1}.</div>
       <div class="bar-info">
-        <div class="bar-label"><b>${won?'🏆 ':''}${esc(p.name)}</b><span>${t} / ${GOAL}</span></div>
+        <div class="bar-label"><b>${won?'🏆 ':''}${esc(p.name)}</b><span>${t} / ${GOAL}${gapTxt}</span></div>
         <div class="bar-bg">
           <div class="bar-fill" style="width:${pct}%;background:${COLORS[i%COLORS.length]}"></div>
           <div class="goal-line"></div>
@@ -1145,7 +1229,25 @@ const CATEGORIES = {
   'Alltagsgegenstände': { emoji:'🧴', words:['Zahnbürste','Handtuch','Kissen','Wecker','Spiegel','Kamm','Schere','Regenschirm','Schlüssel','Geldbeutel','Brille','Sonnenbrille','Armbanduhr','Handy','Kopfhörer','Fernbedienung','Laptop','Ladekabel','Glühbirne','Kerze','Feuerzeug','Besen','Staubsauger','Waschmaschine','Kühlschrank','Mikrowelle','Toaster','Wasserkocher','Pfanne','Topf','Teller','Tasse','Gabel','Messer','Löffel','Flasche','Rucksack','Mülleimer','Bügeleisen','Gießkanne'] }
 };
 
-let imp = { players: [], category: null, roles: [], word: null, revealIndex: 0, starter: null };
+const SCENARIOS = [
+  {name:'Flugzeug', emoji:'✈️', roles:['Pilot','Co-Pilot','Flugbegleiterin','Air Marshall','Fluglotse','Bodenpersonal','Bordmechaniker','Passagier','Steward','Sicherheitsbegleiter']},
+  {name:'Krankenhaus', emoji:'🏥', roles:['Chefarzt','Chirurg','Krankenpfleger','Anästhesist','Patient','Empfangskraft','Sanitäter','Hebamme','Reinigungskraft','Stationsarzt']},
+  {name:'Restaurant', emoji:'🍽️', roles:['Küchenchef','Kellner','Sommelier','Tellerwäscher','Gastgeber','Barkeeper','Gast','Souschef','Aushilfe','Restaurantkritiker']},
+  {name:'Schule', emoji:'🏫', roles:['Lehrer','Schüler','Direktor','Hausmeister','Sekretärin','Schulpsychologe','Sportlehrer','Vertretungslehrer','Küchenpersonal','Referendar']},
+  {name:'Hotel', emoji:'🏨', roles:['Rezeptionist','Zimmermädchen','Hotelmanager','Page','Concierge','Hotelkoch','Gast','Portier','Nachtwächter','Barkeeper']},
+  {name:'Kreuzfahrtschiff', emoji:'🚢', roles:['Kapitän','Matrose','Animateur','Schiffskoch','Passagier','Bordarzt','Kellner','Maschinist','Bademeister','Bordsängerin']},
+  {name:'Bank', emoji:'🏦', roles:['Bankberater','Kassierer','Filialleiter','Wachmann','Kunde','Vermögensberater','Auszubildender','Reinigungskraft','Geldbote','IT-Techniker']},
+  {name:'Filmset', emoji:'🎬', roles:['Regisseur','Hauptdarsteller','Kameramann','Maskenbildner','Statist','Produzent','Tontechniker','Stuntman','Drehbuchautor','Beleuchter']},
+  {name:'Baustelle', emoji:'🏗️', roles:['Polier','Maurer','Kranführer','Architekt','Elektriker','Bauleiter','Dachdecker','Zimmermann','Bauhelfer','Statiker']},
+  {name:'Fußballstadion', emoji:'🏟️', roles:['Spieler','Schiedsrichter','Trainer','Fan','Stadionsprecher','Ordner','Physiotherapeut','Bratwurstverkäufer','Kameramann','Balljunge']},
+  {name:'Zoo', emoji:'🦁', roles:['Tierpfleger','Tierarzt','Besucher','Kassierer','Zoodirektor','Gärtner','Souvenirverkäufer','Reinigungskraft','Tierführer','Falkner']},
+  {name:'Flughafen', emoji:'🛫', roles:['Check-in-Personal','Sicherheitskontrolleur','Zollbeamter','Gepäckträger','Passagier','Info-Schalter','Pilot','Reinigungskraft','Duty-Free-Verkäufer','Fluglotse']},
+  {name:'Supermarkt', emoji:'🛒', roles:['Kassierer','Filialleiter','Regalauffüller','Metzger','Bäcker','Kunde','Wachmann','Reinigungskraft','Lieferant','Auszubildender']},
+  {name:'Polizeirevier', emoji:'🚓', roles:['Kommissar','Streifenpolizist','Wachhabender','Verdächtiger','Anwalt','Spurensicherung','Praktikant','Empfang','Hundeführer','Zeuge']},
+  {name:'Theater', emoji:'🎭', roles:['Schauspieler','Regisseur','Souffleur','Bühnenbildner','Zuschauer','Platzanweiser','Beleuchter','Kostümbildner','Intendant','Orchestermusiker']},
+  {name:'Bauernhof', emoji:'🚜', roles:['Bauer','Melker','Traktorfahrer','Tierarzt','Erntehelfer','Hofladen-Verkäufer','Praktikant','Imker','Schäfer','Hufschmied']},
+];
+let imp = { players: [], mode:'word', category: null, scenario:null, scenarioEmoji:'', assign:[], roles: [], word: null, revealIndex: 0, starter: null };
 
 function openImposter(){ show('scr-imp-setup'); }
 
@@ -1182,29 +1284,54 @@ function impRenderCats(){
       <b>${c}</b>
       <small>${CATEGORIES[c].words.length} Wörter</small>
     </button>`).join('');
+  impSetMode(imp.mode||'word');
+}
+function impSetMode(m){
+  imp.mode=m;
+  document.getElementById('imp-mode-word').classList.toggle('on', m==='word');
+  document.getElementById('imp-mode-scn').classList.toggle('on', m==='scenario');
+  document.getElementById('imp-word-panel').style.display = m==='word'?'':'none';
+  document.getElementById('imp-scenario-panel').style.display = m==='scenario'?'':'none';
 }
 function impPickCategory(c){
+  imp.mode='word';
   imp.category = c;
   impStartRound();
 }
-
-function impStartRound(){
+function impStartScenario(){
+  imp.mode='scenario';
+  impStartRound();
+}
+// Imposter + Startspieler bestimmen (für beide Modi gleich)
+function impPrepareRoles(){
   const n = imp.players.length;
-  // Imposter gleichverteilt zufällig bestimmen
   const imposterIdx = Math.floor(Math.random()*n);
   imp.roles = imp.players.map((_,i)=> i===imposterIdx ? 'imposter' : 'innocent');
-  // Wort ziehen
-  const words = CATEGORIES[imp.category].words;
-  imp.word = words[Math.floor(Math.random()*words.length)];
   // Startspieler gewichtet: Unschuldige Gewicht 4, Imposter Gewicht 1
-  // → Imposter beginnt 4x unwahrscheinlicher als jeder einzelne Unschuldige
   const weights = imp.roles.map(r => r==='imposter' ? 1 : 4);
   const sum = weights.reduce((a,b)=>a+b,0);
-  let r = Math.random()*sum;
-  let starterIdx = 0;
+  let r = Math.random()*sum, starterIdx = 0;
   for(let i=0;i<n;i++){ r -= weights[i]; if(r<0){ starterIdx=i; break; } }
   imp.starter = imp.players[starterIdx];
   imp.revealIndex = 0;
+}
+function impStartRound(){
+  impPrepareRoles();
+  if(imp.mode==='scenario'){
+    const scn = SCENARIOS[Math.floor(Math.random()*SCENARIOS.length)];
+    imp.scenario = scn.name;
+    imp.scenarioEmoji = scn.emoji;
+    // Rollen an Unschuldige verteilen (bei Bedarf mit Wiederholung)
+    let bag = [...scn.roles].sort(()=>Math.random()-0.5);
+    imp.assign = imp.players.map((_,i)=>{
+      if(imp.roles[i]==='imposter') return '';
+      if(!bag.length) bag = [...scn.roles].sort(()=>Math.random()-0.5);
+      return bag.shift();
+    });
+  }else{
+    const words = CATEGORIES[imp.category].words;
+    imp.word = words[Math.floor(Math.random()*words.length)];
+  }
   impShowPass();
 }
 function impShowPass(){
@@ -1218,7 +1345,22 @@ function impShowRole(){
   const role = imp.roles[i];
   document.getElementById('imp-role-playername').textContent = imp.players[i];
   const card = document.getElementById('imp-role-card');
-  if(role==='innocent'){
+  if(imp.mode==='scenario'){
+    if(role==='innocent'){
+      card.className = 'role-card innocent';
+      card.innerHTML = `
+        <div class="role-label">Dein Ort ${imp.scenarioEmoji}</div>
+        <div class="role-name">${esc(imp.scenario)}</div>
+        <div class="word-label">Deine Rolle</div>
+        <div class="word">${esc(imp.assign[i])}</div>`;
+    }else{
+      card.className = 'role-card imposter';
+      card.innerHTML = `
+        <div class="role-label">Deine Rolle</div>
+        <div class="role-name">Imposter</div>
+        <p>Du kennst <b>weder den Ort noch deine Rolle</b>.<br>Hör gut zu, tu so als gehörst du dazu – und flieg nicht auf!</p>`;
+    }
+  }else if(role==='innocent'){
     card.className = 'role-card innocent';
     card.innerHTML = `
       <div class="role-label">Deine Rolle</div>
@@ -1244,7 +1386,7 @@ function impNextPlayer(){
   }
 }
 function impQuit(){
-  if(confirm('Runde abbrechen und zum Menü zurück?')) show('scr-spiele');
+  ask('Runde abbrechen und zurück zu Spiele?', ()=>show('scr-spiele'), 'Abbrechen');
 }
 
 /* ==================== PUNKTE-TRACKER ==================== */
@@ -1338,11 +1480,12 @@ function trUndo(){
 }
 function trReset(){
   const s = Number(tr.start)||0;
-  if(!confirm('Alle auf den Startwert ('+s+') zurücksetzen?')) return;
-  tr.start = s;
-  tr.players.forEach(p=>{ p.value = s; });
-  tr.log=[];
-  trSave(); trRenderGame();
+  ask('Alle auf den Startwert ('+s+') zurücksetzen?', ()=>{
+    tr.start = s;
+    tr.players.forEach(p=>{ p.value = s; });
+    tr.log=[];
+    trSave(); trRenderGame();
+  }, 'Zurücksetzen');
 }
 function trSetView(v){
   tr.view=v; trSave();
@@ -1631,7 +1774,7 @@ function beep(freq,dur,vol){
 /* ---------- Ablaufsteuerung ---------- */
 function wkStart(){
   const pool=wkPool();
-  if(!pool.length){ alert('Bitte mindestens einen Bereich auswählen.'); return; }
+  if(!pool.length){ notify('Bitte mindestens einen Bereich auswählen.'); return; }
   const perBlock=wkSettings.exDur+wkSettings.pauseDur;
   const totalCount=Math.max(1,Math.round(wkSettings.target*60/perBlock));
   const unique=Math.max(1,Math.round(totalCount/wkSettings.sets));
@@ -1838,12 +1981,91 @@ function wkFinish(){
   show('scr-wk-done');
 }
 function wkQuit(){
-  if(!confirm('Training abbrechen?')) return;
-  clearInterval(wk.timer); wk.phase='idle';
-  wkReleaseLock();
-  show('scr-wk-plan'); wkRenderPlan();
+  // Timer während der Rückfrage anhalten
+  const wasPaused = wk.paused;
+  wk.paused = true;
+  ask('Training beenden?', ()=>{
+    clearInterval(wk.timer); wk.timer=null;
+    wk.phase='idle'; wk.paused=false;
+    wkReleaseLock();
+    show('scr-wk-plan'); wkRenderPlan();
+  }, 'Beenden', ()=>{ wk.paused = wasPaused; });
 }
 function wkReleaseLock(){ try{ if(wk.wakelock){ wk.wakelock.release(); wk.wakelock=null; } }catch(e){} }
+
+/* ==================== BESTÄTIGUNG / HINWEIS ==================== */
+// Ersetzt confirm()/alert(), da diese im iPhone-Homescreen-Modus blockiert werden
+let askCallback=null, askCancelCb=null;
+function ask(text, onYes, okLabel, onNo){
+  askCallback=onYes; askCancelCb=onNo||null;
+  document.getElementById('ask-text').textContent=text;
+  document.getElementById('ask-ok').textContent=okLabel||'Ja';
+  document.getElementById('ask-modal').classList.add('open');
+}
+function askClose(){
+  const no=askCancelCb;
+  askCallback=null; askCancelCb=null;
+  document.getElementById('ask-modal').classList.remove('open');
+  if(no) no();
+}
+function askConfirmYes(){
+  const cb=askCallback;
+  askCallback=null; askCancelCb=null;
+  document.getElementById('ask-modal').classList.remove('open');
+  if(cb) cb();
+}
+function notify(text){
+  let t=document.getElementById('toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='toast'; t.className='toast';
+    document.body.appendChild(t);
+  }
+  t.textContent=text;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ==================== QR-CODE TEILEN ==================== */
+let qrLibLoading=null;
+function qrUrl(){ return window.location.href.split('#')[0].split('?')[0]; }
+function loadQrLib(){
+  if(window.QRCode) return Promise.resolve();
+  if(qrLibLoading) return qrLibLoading;
+  qrLibLoading=new Promise((res,rej)=>{
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    s.onload=res;
+    s.onerror=()=>{ qrLibLoading=null; rej(); };
+    document.head.appendChild(s);
+  });
+  return qrLibLoading;
+}
+function openQr(){
+  const url=qrUrl();
+  document.getElementById('qr-url').textContent=url;
+  const box=document.getElementById('qr-box');
+  box.innerHTML='<div class="qr-msg">QR-Code wird erstellt…</div>';
+  document.getElementById('qr-modal').classList.add('open');
+  loadQrLib().then(()=>{
+    box.innerHTML='';
+    new QRCode(box,{text:url,width:200,height:200,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  }).catch(()=>{
+    box.innerHTML='<div class="qr-msg">QR-Code konnte nicht erstellt werden (offline?).<br>Teile stattdessen den Link unten.</div>';
+  });
+}
+function closeQr(){ document.getElementById('qr-modal').classList.remove('open'); }
+function copyQrUrl(){
+  const url=qrUrl();
+  const btn=document.getElementById('qr-copy');
+  const done=()=>{ btn.textContent='Kopiert ✓'; setTimeout(()=>btn.textContent='Link kopieren',1500); };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(()=>{ notify('Kopieren nicht möglich – Link bitte markieren.'); });
+  }else{
+    notify('Kopieren nicht möglich – Link bitte markieren.');
+  }
+}
 
 /* ---------- Hilfsfunktionen ---------- */
 function esc(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
