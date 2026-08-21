@@ -333,6 +333,52 @@
     color:var(--text);padding:14px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
   .sheet .stepper{background:var(--surface2)}
 
+  /* ---------- Poker-Assistent ---------- */
+  .pk-slots{display:flex;gap:10px;flex-wrap:wrap}
+  .pk-board{gap:8px}
+  .pk-slot{position:relative;width:56px;height:78px;border-radius:12px;background:var(--surface);
+    border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:15px;color:var(--muted)}
+  .pk-board .pk-slot{width:48px;height:68px;font-size:13px}
+  .pk-slot.filled{border-style:solid;background:var(--surface2)}
+  .pk-slot.spade{color:var(--text)}
+  .pk-slot.heart{color:var(--coral);border-color:var(--coral)}
+  .pk-slot.diamond{color:var(--blue);border-color:var(--blue)}
+  .pk-slot.club{color:var(--mint);border-color:var(--mint)}
+  .pk-slot .clr{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;
+    background:var(--coral);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--bg)}
+  .pk-slot-label{width:100%;flex-basis:100%;color:var(--muted);font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
+  .pk-slot-label:first-child{margin-top:0}
+  .pk-result{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px;margin:18px 0;text-align:center}
+  .pk-result-empty{color:var(--muted);font-size:14px}
+  .pk-result-loading{color:var(--muted);font-size:14px}
+  .pk-headline{font-size:15px;color:var(--muted);font-weight:700;margin-bottom:4px}
+  .pk-pct{font-size:52px;font-weight:800;color:var(--mint);font-variant-numeric:tabular-nums;line-height:1}
+  .pk-breakdown{display:flex;justify-content:center;gap:18px;margin-top:14px;flex-wrap:wrap}
+  .pk-breakdown .item{text-align:center}
+  .pk-breakdown .n{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+  .pk-breakdown .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+  .pk-hand-name{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);
+    color:var(--gold-text);font-weight:700;font-size:14px}
+  .pk-nuts{margin-top:10px;border-radius:14px;padding:12px 14px;font-size:14px}
+  .pk-nuts-sole{background:rgba(67,223,160,.14);border:1px solid var(--mint);color:var(--mint);font-weight:800}
+  .pk-nuts-tied{background:rgba(255,212,71,.14);border:1px solid var(--gold-text);color:var(--gold-text);font-weight:700}
+  .pk-nuts-behind{background:var(--surface2);border:1px solid var(--line);text-align:left}
+  .pk-nuts-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+  .pk-nuts-val{color:var(--coral);font-weight:800;font-size:15px;margin-top:2px}
+  .pk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:56vh;overflow-y:auto;margin:14px 0}
+  .pk-cell{height:44px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;gap:3px;font-weight:800;font-size:14px}
+  .pk-cell.current{outline:2px solid var(--mint)}
+  .pk-cell.used{opacity:.2;pointer-events:none}
+  .pk-cell.spade{color:var(--text)}
+  .pk-cell.heart{color:var(--coral)}
+  .pk-cell.diamond{color:var(--blue)}
+  .pk-cell.club{color:var(--mint)}
+
   /* ---------- Helles Farbschema (automatisch je nach System-Einstellung) ---------- */
   @media (prefers-color-scheme: light){
     :root{
@@ -463,6 +509,13 @@
       <div>
         <h2>Punkte-Tracker</h2>
         <p>Für alle Brett- & Kartenspiele</p>
+      </div>
+    </button>
+    <button class="game-card" onclick="openPoker()">
+      <div class="icon" style="background:var(--violet)">🃏</div>
+      <div>
+        <h2>Poker-Assistent</h2>
+        <p>Gewinnwahrscheinlichkeit live berechnen</p>
       </div>
     </button>
   </div>
@@ -831,6 +884,54 @@
   </div>
 </div>
 
+<!-- ========== POKER-ASSISTENT ========== -->
+<div class="screen" id="scr-poker">
+  <header>
+    <button class="back" onclick="show('scr-spiele')">‹</button>
+    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
+    <div>
+      <h1>Poker-Assistent</h1>
+      <div class="sub">Live-Gewinnwahrscheinlichkeit</div>
+    </div>
+  </header>
+
+  <div class="field">
+    <label>Anzahl Gegner am Tisch</label>
+    <div class="stepper">
+      <button onclick="pkAdjustOpp(-1)">−</button>
+      <span class="val" id="pk-opp">1</span>
+      <button onclick="pkAdjustOpp(1)">+</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Deine Karten</label>
+    <div class="pk-slots" id="pk-hero-slots"></div>
+  </div>
+
+  <div class="field">
+    <label>Board <span class="tap-hint">– Flop, Turn, River</span></label>
+    <div class="pk-slots pk-board" id="pk-board-slots"></div>
+  </div>
+
+  <div class="pk-result" id="pk-result">
+    <div class="pk-result-empty">Wähle deine 2 Karten, um die Gewinnwahrscheinlichkeit zu sehen.</div>
+  </div>
+
+  <button class="ghost danger" onclick="pkReset()">↺ Neue Runde (schnell zurücksetzen)</button>
+</div>
+
+<!-- ========== POKER: KARTENRASTER ========== -->
+<div class="modal" id="pk-picker-modal" onclick="if(event.target===this)pkClosePicker()">
+  <div class="sheet">
+    <h3 id="pk-picker-title">Karte wählen</h3>
+    <div class="pk-grid" id="pk-grid"></div>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="pkClosePicker()">Fertig</button>
+    </div>
+  </div>
+</div>
+
 <!-- ========== BESTÄTIGUNG ========== -->
 <div class="modal" id="ask-modal" onclick="if(event.target===this)askClose()">
   <div class="sheet">
@@ -924,6 +1025,7 @@ function show(id){
   if(id==='scr-wk-setup') wkRenderSetup();
   if(id==='scr-tr-setup') trRenderSetup();
   if(id==='scr-tr-game') trRenderGame();
+  if(id==='scr-poker'){ pkRenderSlots(); poker.result?pkRenderResult():document.getElementById('pk-result').innerHTML='<div class="pk-result-empty">Wähle deine 2 Karten, um die Gewinnwahrscheinlichkeit zu sehen.</div>'; }
 }
 function openFlip7(){
   show(state.players.length ? 'scr-game' : 'scr-setup');
@@ -1597,6 +1699,316 @@ function padUpdateDisplay(){
   document.getElementById('pad-display').textContent=(padNeg&&v!=='0'?'−':'')+v;
 }
 
+/* ==================== POKER-ASSISTENT ==================== */
+const PK_RANKS = [
+  {v:14,l:'A'},{v:13,l:'K'},{v:12,l:'Q'},{v:11,l:'J'},{v:10,l:'10'},
+  {v:9,l:'9'},{v:8,l:'8'},{v:7,l:'7'},{v:6,l:'6'},{v:5,l:'5'},{v:4,l:'4'},{v:3,l:'3'},{v:2,l:'2'}
+];
+const PK_SUITS = [
+  {k:'s',sym:'♠',cls:'spade'},{k:'h',sym:'♥',cls:'heart'},
+  {k:'d',sym:'♦',cls:'diamond'},{k:'c',sym:'♣',cls:'club'}
+];
+const PK_SUIT_BY_KEY = Object.fromEntries(PK_SUITS.map(s=>[s.k,s]));
+const PK_CATEGORY_NAMES = ['Hochkarte','Ein Paar','Zwei Paare','Drilling','Straße','Flush','Full House','Vierling','Straight Flush'];
+const PK_RW_S = {2:'Zwei',3:'Drei',4:'Vier',5:'Fünf',6:'Sechs',7:'Sieben',8:'Acht',9:'Neun',10:'Zehn',11:'Bube',12:'Dame',13:'König',14:'Ass'};
+const PK_RW_P = {2:'Zweien',3:'Dreien',4:'Vieren',5:'Fünfen',6:'Sechsen',7:'Siebenen',8:'Achten',9:'Neunen',10:'Zehnen',11:'Buben',12:'Damen',13:'Könige',14:'Asse'};
+// Wandelt einen Score wieder in einen lesbaren deutschen Hand-Namen um
+function pkDescribeScore(score){
+  let rem=score;
+  const category=Math.floor(rem/Math.pow(15,5)); rem%=Math.pow(15,5);
+  const k=[];
+  for(let i=4;i>=0;i--){ const div=Math.pow(15,i); k.push(Math.floor(rem/div)); rem%=div; }
+  switch(category){
+    case 8: return k[0]===14 ? 'Royal Flush' : `Straight Flush (${PK_RW_S[k[0]]} hoch)`;
+    case 7: return `Vierling ${PK_RW_P[k[0]]}`;
+    case 6: return `Full House, ${PK_RW_P[k[0]]} über ${PK_RW_P[k[1]]}`;
+    case 5: return `Flush (${PK_RW_S[k[0]]} hoch)`;
+    case 4: return `Straße bis ${PK_RW_S[k[0]]}`;
+    case 3: return `Drilling ${PK_RW_P[k[0]]}`;
+    case 2: return `Zwei Paare, ${PK_RW_P[k[0]]} & ${PK_RW_P[k[1]]}`;
+    case 1: return `Ein Paar ${PK_RW_P[k[0]]}`;
+    default: return `Hochkarte ${PK_RW_S[k[0]]}`;
+  }
+}
+// Bestmögliche Hand, die irgendjemand mit dem aktuellen Board haben könnte ("die Nuts")
+function pkComputeNuts(heroIds, boardIds){
+  const usedIds = new Set([...heroIds, ...boardIds]);
+  const remaining = pkFullDeck().filter(c=>!usedIds.has(c.id));
+  const boardCards = boardIds.map(pkIdToCard);
+  let best=-1;
+  for(let i=0;i<remaining.length;i++){
+    for(let j=i+1;j<remaining.length;j++){
+      const combo=[remaining[i],remaining[j]].concat(boardCards);
+      const sc=pkBestOfN(combo);
+      if(sc>best) best=sc;
+    }
+  }
+  return best;
+}
+// alle 5er-Kombinationen aus 7 Karten (einmalig berechnet)
+const PK_COMBO5_7 = (function(){
+  const res=[], all=[0,1,2,3,4,5,6];
+  (function rec(start,combo){
+    if(combo.length===5){ res.push(combo.slice()); return; }
+    for(let i=start;i<7;i++){ combo.push(all[i]); rec(i+1,combo); combo.pop(); }
+  })(0,[]);
+  return res;
+})();
+
+let poker = { opp:1, hero:[null,null], board:[null,null,null,null,null], result:null };
+let pkPickerGroup=null, pkPickerIndex=null, pkPickerEditOnly=false;
+let pkCalcTimer=null, pkCalcSeq=0;
+
+async function pkSave(){
+  const json=JSON.stringify(poker);
+  try{ await window.storage.set('poker-state', json); return; }catch(e){}
+  try{ localStorage.setItem('poker-state', json); }catch(e){}
+}
+async function pkLoad(){
+  let json=null;
+  try{ const r=await window.storage.get('poker-state'); if(r&&r.value) json=r.value; }catch(e){}
+  if(!json){ try{ json=localStorage.getItem('poker-state'); }catch(e){} }
+  if(json){ try{ const s=JSON.parse(json); if(s&&s.hero&&s.board) poker=s; poker.result=null; }catch(e){} }
+}
+function openPoker(){ show('scr-poker'); }
+
+function pkIdToCard(id){ const m=id.match(/^(\d+)([shdc])$/); return {r:+m[1], s:m[2]}; }
+function pkCardLabel(id){
+  const c=pkIdToCard(id);
+  const rl=PK_RANKS.find(r=>r.v===c.r).l;
+  return {rank:rl, sym:PK_SUIT_BY_KEY[c.s].sym, cls:PK_SUIT_BY_KEY[c.s].cls};
+}
+function pkUsedIds(){
+  return new Set([...poker.hero, ...poker.board].filter(Boolean));
+}
+
+/* ---------- Slots rendern ---------- */
+function pkRenderSlots(){
+  document.getElementById('pk-opp').textContent = poker.opp;
+  document.getElementById('pk-hero-slots').innerHTML = poker.hero.map((id,i)=>pkSlotHTML('hero',i,id)).join('');
+  const labels=['Flop','Flop','Flop','Turn','River'];
+  let html='';
+  poker.board.forEach((id,i)=>{
+    if(i===0 || labels[i]!==labels[i-1]) html+=`<span class="pk-slot-label">${labels[i]}</span>`;
+    html+=pkSlotHTML('board',i,id);
+  });
+  document.getElementById('pk-board-slots').innerHTML=html;
+}
+function pkSlotHTML(group,index,id){
+  if(!id) return `<button class="pk-slot" onclick="pkOpenPicker('${group}',${index})">+</button>`;
+  const lb=pkCardLabel(id);
+  return `<button class="pk-slot filled ${lb.cls}" onclick="pkOpenPicker('${group}',${index})">
+    ${lb.rank}${lb.sym}
+    <span class="clr" onclick="event.stopPropagation();pkClearSlot('${group}',${index})">✕</span>
+  </button>`;
+}
+function pkClearSlot(group,index){
+  poker[group][index]=null;
+  pkSave(); pkRenderSlots(); pkScheduleCalc();
+}
+function pkAdjustOpp(delta){
+  poker.opp=Math.min(8,Math.max(1,poker.opp+delta));
+  pkSave(); pkRenderSlots(); pkScheduleCalc();
+}
+
+/* ---------- Kartenraster (schnelle Auswahl) ---------- */
+function pkOpenPicker(group,index){
+  pkPickerGroup=group; pkPickerIndex=index;
+  pkPickerEditOnly = !!poker[group][index];
+  document.getElementById('pk-picker-title').textContent =
+    group==='hero' ? `Deine Karte ${index+1}` : (index<3?'Board – Flop':(index===3?'Board – Turn':'Board – River'));
+  pkRenderGrid();
+  document.getElementById('pk-picker-modal').classList.add('open');
+}
+function pkClosePicker(){
+  document.getElementById('pk-picker-modal').classList.remove('open');
+}
+function pkRenderGrid(){
+  const used = pkUsedIds();
+  const currentId = poker[pkPickerGroup][pkPickerIndex];
+  let html='';
+  PK_RANKS.forEach(rk=>{
+    PK_SUITS.forEach(su=>{
+      const id = rk.v+su.k;
+      const isUsed = used.has(id) && id!==currentId;
+      const isCurrent = id===currentId;
+      html+=`<button class="pk-cell ${su.cls} ${isUsed?'used':''} ${isCurrent?'current':''}"
+        onclick="pkSelectCard('${id}')">${rk.l}${su.sym}</button>`;
+    });
+  });
+  document.getElementById('pk-grid').innerHTML=html;
+}
+function pkSelectCard(id){
+  poker[pkPickerGroup][pkPickerIndex]=id;
+  pkSave(); pkRenderSlots(); pkScheduleCalc();
+  if(pkPickerEditOnly){ pkClosePicker(); return; }
+  const arr=poker[pkPickerGroup];
+  let next=-1;
+  for(let i=pkPickerIndex+1;i<arr.length;i++){ if(!arr[i]){ next=i; break; } }
+  if(next===-1){ pkClosePicker(); return; }
+  pkPickerIndex=next;
+  document.getElementById('pk-picker-title').textContent =
+    pkPickerGroup==='hero' ? `Deine Karte ${next+1}` : (next<3?'Board – Flop':(next===3?'Board – Turn':'Board – River'));
+  pkRenderGrid();
+}
+
+/* ---------- Berechnung (Monte-Carlo-Simulation) ---------- */
+function pkFullDeck(){
+  let d=[];
+  for(let r=2;r<=14;r++) for(const s of ['s','h','d','c']) d.push({r,s,id:r+''+s});
+  return d;
+}
+function pkShuffleDraw(deck,count){
+  const n=deck.length;
+  for(let i=0;i<count;i++){
+    const j=i+Math.floor(Math.random()*(n-i));
+    const tmp=deck[i]; deck[i]=deck[j]; deck[j]=tmp;
+  }
+}
+function pkEvaluate5(cards){
+  const ranks = cards.map(c=>c.r).sort((a,b)=>b-a);
+  const suits = cards.map(c=>c.s);
+  const isFlush = suits.every(s=>s===suits[0]);
+  const uniq = [...new Set(ranks)];
+  let isStraight=false, straightHigh=0;
+  if(uniq.length===5){
+    if(uniq[0]-uniq[4]===4){ isStraight=true; straightHigh=uniq[0]; }
+    else if(uniq[0]===14 && uniq[1]===5 && uniq[2]===4 && uniq[3]===3 && uniq[4]===2){ isStraight=true; straightHigh=5; }
+  }
+  const countMap={};
+  ranks.forEach(r=>countMap[r]=(countMap[r]||0)+1);
+  const groups = Object.keys(countMap).map(r=>({r:+r,c:countMap[r]})).sort((a,b)=> b.c-a.c || b.r-a.r);
+  let category, kick=[];
+  if(isStraight && isFlush){ category=8; kick=[straightHigh]; }
+  else if(groups[0].c===4){ category=7; kick=[groups[0].r, groups[1].r]; }
+  else if(groups[0].c===3 && groups[1] && groups[1].c===2){ category=6; kick=[groups[0].r, groups[1].r]; }
+  else if(isFlush){ category=5; kick=ranks.slice(); }
+  else if(isStraight){ category=4; kick=[straightHigh]; }
+  else if(groups[0].c===3){ category=3; kick=[groups[0].r, ...groups.slice(1).map(g=>g.r)]; }
+  else if(groups[0].c===2 && groups[1] && groups[1].c===2){ category=2; kick=[groups[0].r, groups[1].r, groups[2]?groups[2].r:0]; }
+  else if(groups[0].c===2){ category=1; kick=[groups[0].r, ...groups.slice(1).map(g=>g.r)]; }
+  else { category=0; kick=ranks.slice(); }
+  while(kick.length<5) kick.push(0);
+  let score=category;
+  for(let i=0;i<5;i++){ score = score*15 + kick[i]; }
+  return score;
+}
+function pkBest5of7(cards7){
+  let best=-1;
+  for(const combo of PK_COMBO5_7){
+    const hand=[cards7[combo[0]],cards7[combo[1]],cards7[combo[2]],cards7[combo[3]],cards7[combo[4]]];
+    const sc=pkEvaluate5(hand);
+    if(sc>best) best=sc;
+  }
+  return best;
+}
+function pkScheduleCalc(){
+  clearTimeout(pkCalcTimer);
+  const heroIds = poker.hero.filter(Boolean);
+  if(heroIds.length<2){
+    poker.result=null;
+    document.getElementById('pk-result').innerHTML =
+      '<div class="pk-result-empty">Wähle deine 2 Karten, um die Gewinnwahrscheinlichkeit zu sehen.</div>';
+    return;
+  }
+  document.getElementById('pk-result').innerHTML = '<div class="pk-result-loading">Berechne Wahrscheinlichkeit…</div>';
+  const mySeq = ++pkCalcSeq;
+  pkCalcTimer=setTimeout(()=>{
+    if(mySeq!==pkCalcSeq) return; // veraltete Berechnung verwerfen
+    const res = pkRunSimulation();
+    if(mySeq!==pkCalcSeq) return;
+    poker.result=res;
+    pkRenderResult();
+  }, 220);
+}
+function pkRunSimulation(){
+  const heroIds = poker.hero.filter(Boolean);
+  const boardIds = poker.board.filter(Boolean);
+  const usedIds = new Set([...heroIds, ...boardIds]);
+  const deck = pkFullDeck().filter(c=>!usedIds.has(c.id));
+  const heroCards = heroIds.map(pkIdToCard);
+  const boardCards = boardIds.map(pkIdToCard);
+  const neededBoard = 5-boardCards.length;
+  const opp = poker.opp;
+  const drawCount = neededBoard + 2*opp;
+  const trials = opp<=3 ? 2800 : (opp<=6 ? 1700 : 1000);
+  let win=0, tie=0, lose=0;
+  for(let t=0;t<trials;t++){
+    pkShuffleDraw(deck, drawCount);
+    const extraBoard = deck.slice(0,neededBoard);
+    const fullBoard = boardCards.concat(extraBoard);
+    const heroScore = pkBest5of7(heroCards.concat(fullBoard));
+    let idx=neededBoard, oppMax=-1;
+    for(let o=0;o<opp;o++){
+      const oh=[deck[idx],deck[idx+1]].concat(fullBoard); idx+=2;
+      const sc=pkBest5of7(oh);
+      if(sc>oppMax) oppMax=sc;
+    }
+    if(heroScore>oppMax) win++; else if(heroScore===oppMax) tie++; else lose++;
+  }
+  let handName=null, nutsText=null, holdsNuts=null;
+  if(boardCards.length>=3){
+    // beste Hand aus Hero + aktuellem Board
+    const combined = heroCards.concat(boardCards);
+    const heroBestScore = pkBestOfN(combined);
+    handName = pkDescribeScore(heroBestScore);
+    // Bestmögliche Hand, die irgendjemand mit diesem Board haben könnte ("die Nuts")
+    const nutsScore = pkComputeNuts(heroIds, boardIds);
+    nutsText = pkDescribeScore(nutsScore);
+    holdsNuts = heroBestScore > nutsScore ? 'sole' : (heroBestScore === nutsScore ? 'tied' : 'behind');
+  }
+  return { win:win/trials*100, tie:tie/trials*100, lose:lose/trials*100, handName, nutsText, holdsNuts };
+}
+// beste 5er-Hand aus einer beliebigen Anzahl Karten (5,6 oder 7) – für die aktuelle Handanzeige
+function pkBestOfN(cards){
+  const n=cards.length;
+  if(n===5) return pkEvaluate5(cards);
+  const idxAll=[...Array(n).keys()];
+  let best=-1;
+  (function rec(start,combo){
+    if(combo.length===5){ best=Math.max(best, pkEvaluate5(combo.map(i=>cards[i]))); return; }
+    for(let i=start;i<n;i++){ combo.push(idxAll[i]); rec(i+1,combo); combo.pop(); }
+  })(0,[]);
+  return best;
+}
+function pkRenderResult(){
+  const r=poker.result;
+  if(!r) return;
+  let nutsBlock='';
+  if(r.nutsText){
+    if(r.holdsNuts==='sole'){
+      nutsBlock = `<div class="pk-nuts pk-nuts-sole">🔥 Du hältst aktuell die Nuts – niemand kann dich schlagen!</div>`;
+    }else if(r.holdsNuts==='tied'){
+      nutsBlock = `<div class="pk-nuts pk-nuts-tied">🤝 Du teilst dir aktuell die bestmögliche Hand (${r.nutsText}).</div>`;
+    }else{
+      nutsBlock = `<div class="pk-nuts pk-nuts-behind">
+        <div class="pk-nuts-label">Bestmögliche Hand gerade</div>
+        <div class="pk-nuts-val">${r.nutsText}</div>
+      </div>`;
+    }
+  }
+  document.getElementById('pk-result').innerHTML = `
+    <div class="pk-headline">Gewinnwahrscheinlichkeit</div>
+    <div class="pk-pct">${r.win.toFixed(1)}%</div>
+    <div class="pk-breakdown">
+      <div class="item"><div class="n" style="color:var(--mint)">${r.win.toFixed(1)}%</div><div class="l">Sieg</div></div>
+      <div class="item"><div class="n" style="color:var(--gold-text)">${r.tie.toFixed(1)}%</div><div class="l">Unentschieden</div></div>
+      <div class="item"><div class="n" style="color:var(--coral)">${r.lose.toFixed(1)}%</div><div class="l">Niederlage</div></div>
+    </div>
+    ${r.handName ? `<div class="pk-hand-name">Deine aktuelle Hand: ${r.handName}</div>` : ''}
+    ${nutsBlock}
+  `;
+}
+function pkReset(){
+  poker.hero=[null,null];
+  poker.board=[null,null,null,null,null];
+  poker.result=null;
+  pkSave(); pkRenderSlots();
+  document.getElementById('pk-result').innerHTML =
+    '<div class="pk-result-empty">Wähle deine 2 Karten, um die Gewinnwahrscheinlichkeit zu sehen.</div>';
+  notify('Neue Runde – Karten zurückgesetzt');
+}
+
 /* ==================== WORKOUT ==================== */
 // anim-Typen: squat, jj, highknees, jump, lunge, twist, armcircle,
 //             crunch(h), pushup(h), plank(h), mountain(h), superman(h)
@@ -1655,24 +2067,48 @@ const WK_AREAS = [
   {key:'ruecken', em:'🧍', label:'Rücken'},
   {key:'cardio',  em:'❤️‍🔥', label:'Cardio'},
 ];
-// Best-Effort-GIFs (Wikimedia Commons). Wird geladen, sonst greift die Animation als Fallback.
-// Eigene GIF-URLs lassen sich pro Übung im Bearbeiten-Fenster hinterlegen.
-const CG='https://commons.wikimedia.org/wiki/Special:FilePath/';
+// Eigene GIFs (im Ordner /gifs neben index.html). Eigene GIF-URLs im Bearbeiten-Fenster überschreiben diese bei Bedarf.
 const GIF_LIB = {
-  'Liegestütze':CG+'Push-up.gif',
-  'Enge Liegestütze':CG+'Push-up.gif',
-  'Breite Liegestütze':CG+'Push-up.gif',
-  'Kniebeugen':CG+'Squats.gif',
-  'Sumo-Kniebeugen':CG+'Squats.gif',
-  'Hampelmänner':CG+'Jumping-jack.gif',
-  'Sit-ups':CG+'Sit-up.gif',
-  'Crunches':CG+'Crunch.gif',
-  'Plank (Unterarmstütz)':CG+'Plank.gif',
-  'Ausfallschritte':CG+'Lunge.gif',
-  'Rückwärts-Ausfallschritte':CG+'Lunge.gif',
-  'Burpees':CG+'Burpee.gif',
-  'Bergsteiger':CG+'Mountain-climber.gif',
-  'High Knees':CG+'High-knees.gif',
+  'Kniebeugen':'gifs/kniebeugen.gif',
+  'Sumo-Kniebeugen':'gifs/sumo_kniebeugen.gif',
+  'Ausfallschritte':'gifs/ausfallschritte.gif',
+  'Rückwärts-Ausfallschritte':'gifs/rueckwaerts_ausfallschritte.gif',
+  'Wadenheben':'gifs/wadenheben.gif',
+  'Wall Sit (Wandsitzen)':'gifs/wall_sit_wandsitzen.gif',
+  'Glute Bridge':'gifs/glute_bridge.gif',
+  'Gesprungene Kniebeugen':'gifs/gesprungene_kniebeugen.gif',
+  'Ausfallschritt-Sprünge':'gifs/ausfallschritt_spruenge.gif',
+  'Einbeiniges Wadenheben':'gifs/einbeiniges_wadenheben.gif',
+  'Crunches':'gifs/crunches.gif',
+  'Sit-ups':'gifs/sit_ups.gif',
+  'Beinheben':'gifs/beinheben.gif',
+  'Russian Twists':'gifs/russian_twists.gif',
+  'Fahrrad-Crunches':'gifs/fahrrad_crunches.gif',
+  'Plank (Unterarmstütz)':'gifs/plank_unterarmstuetz.gif',
+  'Seitlicher Unterarmstütz':'gifs/seitlicher_unterarmstuetz.gif',
+  'Käfer (Dead Bug)':'gifs/kaefer_dead_bug.gif',
+  'Bergsteiger':'gifs/bergsteiger.gif',
+  'Scheibenwischer':'gifs/scheibenwischer.gif',
+  'Liegestütze':'gifs/liegestuetze.gif',
+  'Enge Liegestütze':'gifs/enge_liegestuetze.gif',
+  'Pike Push-ups':'gifs/pike_push_ups.gif',
+  'Trizeps-Dips':'gifs/trizeps_dips.gif',
+  'Breite Liegestütze':'gifs/breite_liegestuetze.gif',
+  'Arm-Kreisen':'gifs/arm_kreisen.gif',
+  'Schulterdrücken (Schattenboxen)':'gifs/schulterdruecken_schattenboxen.gif',
+  'Boxschläge':'gifs/boxschlaege.gif',
+  'Superman':'gifs/superman.gif',
+  'Vierfüßler-Diagonale (Bird Dog)':'gifs/vierfuessler_diagonale_bird_dog.gif',
+  'Schwimmer':'gifs/schwimmer.gif',
+  'Rückenstrecker':'gifs/rueckenstrecker.gif',
+  'Hampelmänner':'gifs/hampelmaenner.gif',
+  'High Knees':'gifs/high_knees.gif',
+  'Burpees':'gifs/burpees.gif',
+  'Skater-Sprünge':'gifs/skater_spruenge.gif',
+  'Butt Kicks (Fersen-Sprint)':'gifs/butt_kicks_fersen_sprint.gif',
+  'Seilspringen (ohne Seil)':'gifs/seilspringen_ohne_seil.gif',
+  'Standlauf schnell':'gifs/standlauf_schnell.gif',
+  'Squat-Jumps mit Twist':'gifs/squat_jumps_mit_twist.gif',
 };
 
 let wkSettings = { exDur:30, pauseDur:15, target:15, sets:1, areas:['beine','core','arme','ruecken','cardio'], gifs:{} };
@@ -2088,6 +2524,7 @@ function esc(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&
 loadState().then(()=>{ renderSetup(); });
 wkLoad();
 trLoad();
+pkLoad();
 </script>
 </body>
 </html>
