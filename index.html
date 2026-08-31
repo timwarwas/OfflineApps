@@ -214,6 +214,7 @@
   .ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     font-size:68px;font-weight:800;font-variant-numeric:tabular-nums}
   .wk-name{text-align:center;font-size:24px;font-weight:800;margin-top:6px;padding:0 10px}
+  .wk-name-en{text-align:center;font-size:14px;font-weight:600;color:var(--muted);margin-top:2px;padding:0 10px}
   .wk-next-label{text-align:center;color:var(--muted);font-size:14px;margin-top:10px}
   .demo{width:150px;height:170px;margin:6px auto 0;color:var(--mint)}
   .demo-wrap{position:relative;width:170px;margin:6px auto 0}
@@ -379,6 +380,46 @@
   .pk-cell.diamond{color:var(--blue)}
   .pk-cell.club{color:var(--mint)}
 
+  /* ---------- Briefe ---------- */
+  .lt-form{display:flex;flex-direction:column;margin-bottom:16px}
+  .lt-form label{font-size:13px;font-weight:700;color:var(--muted);margin:12px 0 6px}
+  .lt-form input,.lt-form textarea{
+    background:var(--surface);border:1px solid var(--line);border-radius:14px;color:var(--text);
+    padding:13px 14px;font-size:16px;font-family:inherit;outline:none;width:100%;resize:vertical}
+  .lt-form input:focus,.lt-form textarea:focus{border-color:var(--blue)}
+  .lt-sep{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--blue);margin:22px 0 4px;padding-top:14px;border-top:1px solid var(--line)}
+  .lt-step{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--violet);margin:20px 0 10px}
+  .lt-hint{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:13px 15px;color:var(--muted);font-size:13px;line-height:1.5;margin:14px 0}
+  .lt-error{color:var(--coral);font-size:14px;font-weight:700;min-height:20px;text-align:center}
+  .lt-profile-row{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:18px;
+    padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:10px;color:var(--text);text-align:left}
+  .lt-profile-row:active{background:var(--surface2)}
+  .lt-avatar{width:44px;height:44px;border-radius:14px;background:var(--blue);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;flex-shrink:0}
+  .lt-profile-row .pname{font-size:17px;font-weight:800}
+  .lt-profile-row .pmeta{color:var(--muted);font-size:13px;margin-top:2px}
+  .lt-profile-row .lock{margin-left:auto;font-size:17px}
+  .lt-sender-card{background:var(--surface);border:1px solid var(--mint);border-radius:16px;
+    padding:14px 16px;margin-bottom:6px;font-size:14px;line-height:1.5}
+  .lt-sender-card .t{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--mint);margin-bottom:5px}
+  .lt-ai-links{display:flex;gap:10px;margin-top:10px}
+  .lt-ai-link{flex:1;text-align:center;background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:13px;color:var(--text);text-decoration:none;font-weight:700;font-size:15px}
+  .lt-preview-box{background:#fff;color:#111;border-radius:12px;padding:22px 20px;
+    font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.55;margin-bottom:16px;
+    box-shadow:0 4px 18px rgba(0,0,0,.25)}
+  .lt-preview-box .p-from{font-size:9px;color:#555;border-bottom:.5px solid #999;padding-bottom:3px;margin-bottom:14px}
+  .lt-preview-box .p-to{margin-bottom:24px;white-space:pre-line}
+  .lt-preview-box .p-date{text-align:right;margin-bottom:22px;font-size:12px}
+  .lt-preview-box .p-subject{font-weight:bold;margin-bottom:18px}
+  .lt-preview-box .p-body{white-space:pre-wrap;margin-bottom:22px}
+  .lt-preview-box .p-sign{white-space:pre-line}
+  .lt-preview-box .p-sign .nm{margin-top:26px}
+
   /* ---------- Helles Farbschema (automatisch je nach System-Einstellung) ---------- */
   @media (prefers-color-scheme: light){
     :root{
@@ -469,6 +510,13 @@
         <p>Intervall-Training · Timer & Übungen</p>
       </div>
     </button>
+    <button class="game-card" onclick="openLetter()">
+      <div class="icon" style="background:var(--blue)">✉️</div>
+      <div>
+        <h2>Briefe</h2>
+        <p>Profile · Briefkopf · KI-Textentwurf</p>
+      </div>
+    </button>
     <div class="game-card soon">
       <div class="icon" style="background:var(--violet)">?</div>
       <div>
@@ -478,6 +526,163 @@
       <span class="chip">Bald</span>
     </div>
   </div>
+</div>
+
+<!-- ========== BRIEFE: PROFILE ========== -->
+<div class="screen" id="scr-lt-profiles">
+  <header>
+    <button class="back" onclick="show('scr-menu')">‹</button>
+    <div>
+      <h1>Briefe</h1>
+      <div class="sub">Profil wählen</div>
+    </div>
+  </header>
+  <div id="lt-profile-list"></div>
+  <button class="plan-add" onclick="ltNewProfile()">＋ Neues Profil anlegen</button>
+  <div class="lt-hint">🔒 Deine Adressdaten werden mit deinem Passwort verschlüsselt gespeichert und sind ohne Passwort nicht lesbar.</div>
+</div>
+
+<!-- ========== BRIEFE: PROFIL ANLEGEN ========== -->
+<div class="screen" id="scr-lt-newprofile">
+  <header>
+    <button class="back" onclick="show('scr-lt-profiles')">‹</button>
+    <div>
+      <h1>Neues Profil</h1>
+      <div class="sub">Absenderdaten für den Briefkopf</div>
+    </div>
+  </header>
+  <div class="lt-form" id="lt-new-form">
+    <label>Profilname (sichtbar in der Liste)</label>
+    <input id="lt-n-profile" type="text" placeholder="z. B. Tim" autocomplete="off">
+    <label>Passwort</label>
+    <input id="lt-n-pass" type="password" placeholder="Passwort zum Entsperren" autocomplete="new-password">
+    <label>Passwort wiederholen</label>
+    <input id="lt-n-pass2" type="password" placeholder="Passwort bestätigen" autocomplete="new-password">
+    <div class="lt-sep">Absender (erscheint im Briefkopf und in der Signatur)</div>
+    <label>Vor- und Nachname</label>
+    <input id="lt-n-name" type="text" placeholder="Tim Mustermann" autocomplete="off">
+    <label>Straße und Hausnummer</label>
+    <input id="lt-n-street" type="text" placeholder="Musterstraße 12" autocomplete="off">
+    <label>PLZ und Ort</label>
+    <input id="lt-n-city" type="text" placeholder="70173 Stuttgart" autocomplete="off">
+    <label>E-Mail (optional)</label>
+    <input id="lt-n-mail" type="text" placeholder="tim@example.com" autocomplete="off">
+    <label>Telefon (optional)</label>
+    <input id="lt-n-phone" type="text" placeholder="0170 1234567" autocomplete="off">
+  </div>
+  <button class="primary" onclick="ltCreateProfile()">Profil verschlüsselt speichern</button>
+</div>
+
+<!-- ========== BRIEFE: ENTSPERREN ========== -->
+<div class="screen" id="scr-lt-unlock">
+  <header>
+    <button class="back" onclick="show('scr-lt-profiles')">‹</button>
+    <div>
+      <h1 id="lt-unlock-name">Profil</h1>
+      <div class="sub">Passwort eingeben</div>
+    </div>
+  </header>
+  <div class="center-stage">
+    <div style="font-size:52px">🔒</div>
+    <div class="hint">Die Adressdaten sind verschlüsselt. Gib dein Passwort ein, um das Profil zu öffnen.</div>
+    <div class="lt-form" style="width:100%">
+      <input id="lt-unlock-pass" type="password" placeholder="Passwort" autocomplete="current-password" enterkeyhint="go">
+    </div>
+    <div id="lt-unlock-error" class="lt-error"></div>
+  </div>
+  <button class="primary" onclick="ltUnlock()">Entsperren</button>
+  <button class="ghost danger" onclick="ltDeleteProfilePrompt()">Profil löschen</button>
+</div>
+
+<!-- ========== BRIEFE: BRIEF SCHREIBEN ========== -->
+<div class="screen" id="scr-lt-editor">
+  <header>
+    <button class="back" onclick="ltLock()">‹</button>
+    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
+    <div>
+      <h1 id="lt-editor-title">Brief</h1>
+      <div class="sub" id="lt-editor-sub"></div>
+    </div>
+  </header>
+
+  <div class="lt-sender-card" id="lt-sender-card"></div>
+
+  <div class="lt-form">
+    <div class="lt-sep">Empfänger</div>
+    <label>Name / Firma</label>
+    <input id="lt-r-name" type="text" placeholder="Firma Muster GmbH" oninput="ltSaveDraft()">
+    <label>Zusatz (optional)</label>
+    <input id="lt-r-extra" type="text" placeholder="z. B. Abteilung Kundenservice" oninput="ltSaveDraft()">
+    <label>Straße und Hausnummer</label>
+    <input id="lt-r-street" type="text" placeholder="Beispielweg 5" oninput="ltSaveDraft()">
+    <label>PLZ und Ort</label>
+    <input id="lt-r-city" type="text" placeholder="10115 Berlin" oninput="ltSaveDraft()">
+
+    <div class="lt-sep">Brief</div>
+    <label>Betreff</label>
+    <input id="lt-subject" type="text" placeholder="Kündigung meines Vertrags Nr. 12345" oninput="ltSaveDraft()">
+    <label>Anrede</label>
+    <input id="lt-salutation" type="text" placeholder="Sehr geehrte Damen und Herren," oninput="ltSaveDraft()">
+    <label>Brieftext</label>
+    <textarea id="lt-body" rows="10" placeholder="Hier deinen Text schreiben – oder unten den KI-Assistenten nutzen." oninput="ltSaveDraft()"></textarea>
+    <label>Grußformel</label>
+    <input id="lt-closing" type="text" placeholder="Mit freundlichen Grüßen" oninput="ltSaveDraft()">
+  </div>
+
+  <button class="primary" style="background:var(--violet);color:#fff" onclick="show('scr-lt-ai')">✨ Text mit KI entwerfen</button>
+  <button class="ghost" onclick="ltPreview()">👁 Vorschau &amp; Drucken / PDF</button>
+  <button class="ghost danger" onclick="ltClearDraft()">Brief leeren</button>
+</div>
+
+<!-- ========== BRIEFE: KI-ASSISTENT ========== -->
+<div class="screen" id="scr-lt-ai">
+  <header>
+    <button class="back" onclick="show('scr-lt-editor')">‹</button>
+    <div>
+      <h1>KI-Textentwurf</h1>
+      <div class="sub">In 3 Schritten zum Brieftext</div>
+    </div>
+  </header>
+
+  <div class="lt-form">
+    <div class="lt-step">Schritt 1 · Was soll im Brief stehen?</div>
+    <textarea id="lt-ai-input" rows="5" placeholder="Stichworte genügen, z. B.: Vertrag Nr. 12345 zum nächstmöglichen Termin kündigen, um Bestätigung bitten"></textarea>
+    <label>Tonfall</label>
+    <div class="seg" id="lt-tone-seg">
+      <button onclick="ltSetTone('formell')">Formell</button>
+      <button onclick="ltSetTone('freundlich')">Freundlich</button>
+      <button onclick="ltSetTone('bestimmt')">Bestimmt</button>
+    </div>
+  </div>
+
+  <div class="lt-step">Schritt 2 · Prompt kopieren &amp; KI öffnen</div>
+  <button class="primary" onclick="ltCopyPrompt()">📋 Prompt kopieren</button>
+  <div class="lt-ai-links">
+    <a class="lt-ai-link" href="https://claude.ai/new" target="_blank" rel="noopener">Claude öffnen</a>
+    <a class="lt-ai-link" href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT öffnen</a>
+  </div>
+  <div class="lt-hint">Prompt dort einfügen, Antwort der KI markieren und kopieren – dann hierher zurückkommen.</div>
+
+  <div class="lt-step">Schritt 3 · Antwort einfügen</div>
+  <div class="lt-form">
+    <textarea id="lt-ai-output" rows="7" placeholder="Antwort der KI hier einfügen"></textarea>
+  </div>
+  <button class="primary" onclick="ltInsertAI()">In den Brief übernehmen</button>
+  <button class="ghost" onclick="ltPastePrompt()">📥 Aus Zwischenablage einfügen</button>
+</div>
+
+<!-- ========== BRIEFE: VORSCHAU ========== -->
+<div class="screen" id="scr-lt-preview">
+  <header>
+    <button class="back" onclick="show('scr-lt-editor')">‹</button>
+    <div>
+      <h1>Vorschau</h1>
+      <div class="sub">DIN-5008-Layout</div>
+    </div>
+  </header>
+  <div id="lt-preview-box" class="lt-preview-box"></div>
+  <button class="primary" onclick="ltPrint()">🖨 Drucken / Als PDF sichern</button>
+  <button class="ghost" onclick="ltCopyLetter()">📋 Brieftext kopieren</button>
 </div>
 
 <!-- ========== ORDNER: SPIELE ========== -->
@@ -783,7 +988,7 @@
   </div>
 
   <div class="field">
-    <label>Welche Bereiche?</label>
+    <label>Welche Bereiche? <span class="tap-hint">– Bauch &amp; unterer Rücken werden automatisch gemeinsam ausgeglichen trainiert</span></label>
     <div class="area-grid" id="wk-areas"></div>
   </div>
 
@@ -822,6 +1027,7 @@
     <div class="ring-num" id="wk-time">0</div>
   </div>
   <div class="wk-name" id="wk-name"></div>
+  <div class="wk-name-en" id="wk-name-en"></div>
   <div id="wk-demo-slot"></div>
   <div class="wk-spacer"></div>
   <div class="wk-controls">
@@ -1025,6 +1231,9 @@ function show(id){
   if(id==='scr-wk-setup') wkRenderSetup();
   if(id==='scr-tr-setup') trRenderSetup();
   if(id==='scr-tr-game') trRenderGame();
+  if(id==='scr-lt-profiles') ltRenderProfiles();
+  if(id==='scr-lt-editor') ltRenderEditor();
+  if(id==='scr-lt-ai') ltSetTone(ltTone);
   if(id==='scr-poker'){ pkRenderSlots(); poker.result?pkRenderResult():document.getElementById('pk-result').innerHTML='<div class="pk-result-empty">Wähle deine 2 Karten, um die Gewinnwahrscheinlichkeit zu sehen.</div>'; }
 }
 function openFlip7(){
@@ -1050,6 +1259,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('tr-name-input').addEventListener('keydown', e=>{
     if(e.key==='Enter') trAddPlayer();
   });
+  const unlockInput=document.getElementById('lt-unlock-pass');
+  if(unlockInput) unlockInput.addEventListener('keydown', e=>{ if(e.key==='Enter') ltUnlock(); });
 });
 function removePlayer(id){
   state.players = state.players.filter(p=>p.id!==id);
@@ -1699,6 +1910,272 @@ function padUpdateDisplay(){
   document.getElementById('pad-display').textContent=(padNeg&&v!=='0'?'−':'')+v;
 }
 
+/* ==================== BRIEFE ==================== */
+let letterProfiles = [];      // [{id, name, blob:{salt,iv,data}}]
+let ltActive = null;          // {id, name, sender:{...}}
+let ltDraft = { rName:'', rExtra:'', rStreet:'', rCity:'', subject:'', salutation:'', body:'', closing:'' };
+let ltTone = 'formell';
+let ltPendingDeleteId = null;
+
+/* ---------- Speicherung ---------- */
+async function ltSave(){
+  const json=JSON.stringify(letterProfiles);
+  try{ await window.storage.set('letter-profiles', json); return; }catch(e){}
+  try{ localStorage.setItem('letter-profiles', json); }catch(e){}
+}
+async function ltLoad(){
+  let json=null;
+  try{ const r=await window.storage.get('letter-profiles'); if(r&&r.value) json=r.value; }catch(e){}
+  if(!json){ try{ json=localStorage.getItem('letter-profiles'); }catch(e){} }
+  if(json){ try{ const p=JSON.parse(json); if(Array.isArray(p)) letterProfiles=p; }catch(e){} }
+}
+async function ltSaveDraftStore(){
+  const json=JSON.stringify(ltDraft);
+  try{ await window.storage.set('letter-draft', json); return; }catch(e){}
+  try{ localStorage.setItem('letter-draft', json); }catch(e){}
+}
+async function ltLoadDraft(){
+  let json=null;
+  try{ const r=await window.storage.get('letter-draft'); if(r&&r.value) json=r.value; }catch(e){}
+  if(!json){ try{ json=localStorage.getItem('letter-draft'); }catch(e){} }
+  if(json){ try{ const d=JSON.parse(json); if(d) ltDraft=Object.assign(ltDraft,d); }catch(e){} }
+}
+
+/* ---------- Verschlüsselung (AES-GCM mit passwortabgeleitetem Schlüssel) ---------- */
+function ltB64(buf){ let s=''; const b=new Uint8Array(buf); for(let i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s); }
+function ltUnB64(str){ const s=atob(str); const b=new Uint8Array(s.length); for(let i=0;i<s.length;i++) b[i]=s.charCodeAt(i); return b; }
+async function ltDeriveKey(password, salt){
+  const enc=new TextEncoder();
+  const km=await crypto.subtle.importKey('raw',enc.encode(password),{name:'PBKDF2'},false,['deriveKey']);
+  return crypto.subtle.deriveKey(
+    {name:'PBKDF2',salt,iterations:150000,hash:'SHA-256'},
+    km,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function ltEncrypt(password, obj){
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const key=await ltDeriveKey(password,salt);
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(JSON.stringify(obj)));
+  return {salt:ltB64(salt), iv:ltB64(iv), data:ltB64(ct)};
+}
+async function ltDecrypt(password, blob){
+  const key=await ltDeriveKey(password, ltUnB64(blob.salt));
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:ltUnB64(blob.iv)},key,ltUnB64(blob.data));
+  return JSON.parse(new TextDecoder().decode(pt));
+}
+
+/* ---------- Profile ---------- */
+function openLetter(){
+  if(ltActive) show('scr-lt-editor'); else show('scr-lt-profiles');
+}
+function ltRenderProfiles(){
+  const list=document.getElementById('lt-profile-list');
+  list.innerHTML = letterProfiles.length ? letterProfiles.map(p=>`
+    <button class="lt-profile-row" onclick="ltOpenUnlock('${p.id}')">
+      <span class="lt-avatar">${esc((p.name||'?').charAt(0).toUpperCase())}</span>
+      <span>
+        <span class="pname">${esc(p.name)}</span>
+        <span class="pmeta">Adressdaten verschlüsselt</span>
+      </span>
+      <span class="lock">🔒</span>
+    </button>`).join('') : '<div class="empty">Noch kein Profil.<br>Lege unten dein erstes Profil an.</div>';
+}
+function ltNewProfile(){
+  ['lt-n-profile','lt-n-pass','lt-n-pass2','lt-n-name','lt-n-street','lt-n-city','lt-n-mail','lt-n-phone']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  show('scr-lt-newprofile');
+}
+async function ltCreateProfile(){
+  const v=id=>document.getElementById(id).value.trim();
+  const profile=v('lt-n-profile'), pass=v('lt-n-pass'), pass2=v('lt-n-pass2');
+  if(!profile){ notify('Bitte einen Profilnamen eingeben.'); return; }
+  if(pass.length<4){ notify('Passwort muss mindestens 4 Zeichen haben.'); return; }
+  if(pass!==pass2){ notify('Die Passwörter stimmen nicht überein.'); return; }
+  if(!v('lt-n-name')){ notify('Bitte deinen Namen eingeben.'); return; }
+  const sender={ name:v('lt-n-name'), street:v('lt-n-street'), city:v('lt-n-city'), mail:v('lt-n-mail'), phone:v('lt-n-phone') };
+  try{
+    const blob=await ltEncrypt(pass, sender);
+    letterProfiles.push({ id:Date.now()+''+Math.random(), name:profile, blob });
+    await ltSave();
+    notify('Profil verschlüsselt gespeichert.');
+    show('scr-lt-profiles');
+  }catch(e){ notify('Verschlüsselung fehlgeschlagen.'); }
+}
+function ltOpenUnlock(id){
+  ltPendingDeleteId=id;
+  const p=letterProfiles.find(x=>x.id===id);
+  if(!p) return;
+  document.getElementById('lt-unlock-name').textContent=p.name;
+  document.getElementById('lt-unlock-pass').value='';
+  document.getElementById('lt-unlock-error').textContent='';
+  show('scr-lt-unlock');
+  setTimeout(()=>{ const el=document.getElementById('lt-unlock-pass'); if(el) el.focus(); },250);
+}
+async function ltUnlock(){
+  const p=letterProfiles.find(x=>x.id===ltPendingDeleteId);
+  if(!p) return;
+  const pass=document.getElementById('lt-unlock-pass').value;
+  const errEl=document.getElementById('lt-unlock-error');
+  errEl.textContent='';
+  try{
+    const sender=await ltDecrypt(pass, p.blob);
+    ltActive={ id:p.id, name:p.name, sender };
+    document.getElementById('lt-unlock-pass').value='';
+    show('scr-lt-editor');
+  }catch(e){
+    errEl.textContent='Falsches Passwort.';
+  }
+}
+function ltLock(){
+  ltActive=null;
+  show('scr-lt-profiles');
+}
+function ltDeleteProfilePrompt(){
+  const p=letterProfiles.find(x=>x.id===ltPendingDeleteId);
+  if(!p) return;
+  ask('Profil „'+p.name+'" löschen?', async ()=>{
+    letterProfiles=letterProfiles.filter(x=>x.id!==p.id);
+    await ltSave();
+    ltActive=null;
+    show('scr-lt-profiles');
+    notify('Profil gelöscht.');
+  }, 'Ja, löschen', null,
+  {detail:'Die verschlüsselten Adressdaten dieses Profils werden endgültig entfernt. Das lässt sich nicht rückgängig machen.',
+   noLabel:'Nein, behalten'});
+}
+
+/* ---------- Editor ---------- */
+function ltRenderEditor(){
+  if(!ltActive){ show('scr-lt-profiles'); return; }
+  const s=ltActive.sender;
+  document.getElementById('lt-editor-title').textContent='Brief · '+ltActive.name;
+  document.getElementById('lt-editor-sub').textContent='Absender wird automatisch eingesetzt';
+  document.getElementById('lt-sender-card').innerHTML=
+    `<div class="t">🔓 Absender (aus deinem Profil)</div>
+     ${esc(s.name)}<br>${esc(s.street)}<br>${esc(s.city)}` +
+     (s.mail?`<br>${esc(s.mail)}`:'') + (s.phone?`<br>${esc(s.phone)}`:'');
+  const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||''; };
+  set('lt-r-name',ltDraft.rName); set('lt-r-extra',ltDraft.rExtra);
+  set('lt-r-street',ltDraft.rStreet); set('lt-r-city',ltDraft.rCity);
+  set('lt-subject',ltDraft.subject);
+  set('lt-salutation',ltDraft.salutation||'Sehr geehrte Damen und Herren,');
+  set('lt-body',ltDraft.body);
+  set('lt-closing',ltDraft.closing||'Mit freundlichen Grüßen');
+}
+function ltSaveDraft(){
+  const v=id=>{ const el=document.getElementById(id); return el?el.value:''; };
+  ltDraft={ rName:v('lt-r-name'), rExtra:v('lt-r-extra'), rStreet:v('lt-r-street'), rCity:v('lt-r-city'),
+    subject:v('lt-subject'), salutation:v('lt-salutation'), body:v('lt-body'), closing:v('lt-closing') };
+  ltSaveDraftStore();
+}
+function ltClearDraft(){
+  ask('Brief leeren?', ()=>{
+    ltDraft={ rName:'', rExtra:'', rStreet:'', rCity:'', subject:'', salutation:'Sehr geehrte Damen und Herren,', body:'', closing:'Mit freundlichen Grüßen' };
+    ltSaveDraftStore(); ltRenderEditor(); notify('Brief geleert.');
+  }, 'Ja, leeren', null,
+  {detail:'Empfänger, Betreff und Text werden gelöscht. Dein Profil bleibt erhalten.', noLabel:'Nein, behalten'});
+}
+
+/* ---------- KI-Assistent (Prompt-Brücke, kein API-Schlüssel nötig) ---------- */
+function ltSetTone(t){
+  ltTone=t;
+  const btns=document.querySelectorAll('#lt-tone-seg button');
+  const order=['formell','freundlich','bestimmt'];
+  btns.forEach((b,i)=>b.classList.toggle('on', order[i]===t));
+}
+function ltBuildPrompt(){
+  const inp=document.getElementById('lt-ai-input').value.trim();
+  const s=ltActive?ltActive.sender:{name:''};
+  const toneTxt={formell:'sachlich und formell',freundlich:'freundlich und höflich',bestimmt:'bestimmt und nachdrücklich, aber sachlich'}[ltTone];
+  let p='Schreibe den Fließtext für einen deutschen Geschäftsbrief.\n\n';
+  p+='Anliegen: '+(inp||'(bitte hier das Anliegen ergänzen)')+'\n';
+  if(ltDraft.rName) p+='Empfänger: '+ltDraft.rName+'\n';
+  if(ltDraft.subject) p+='Betreff: '+ltDraft.subject+'\n';
+  p+='Absender: '+(s.name||'')+'\n';
+  p+='Tonfall: '+toneTxt+'\n\n';
+  p+='Vorgaben:\n';
+  p+='- Nur den reinen Brieftext ausgeben, ohne Anrede und ohne Grußformel.\n';
+  p+='- Keine Platzhalter in eckigen Klammern verwenden.\n';
+  p+='- Kurze, klare Absätze, insgesamt maximal etwa 200 Wörter.\n';
+  p+='- Keine Einleitung wie "Hier ist dein Brief", nur der Text selbst.';
+  return p;
+}
+function ltCopyPrompt(){
+  const p=ltBuildPrompt();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(p).then(()=>notify('Prompt kopiert – jetzt KI öffnen.'))
+      .catch(()=>notify('Kopieren nicht möglich.'));
+  }else notify('Kopieren wird nicht unterstützt.');
+}
+function ltPastePrompt(){
+  if(navigator.clipboard && navigator.clipboard.readText){
+    navigator.clipboard.readText().then(t=>{
+      document.getElementById('lt-ai-output').value=t;
+      notify('Aus Zwischenablage eingefügt.');
+    }).catch(()=>notify('Zugriff auf Zwischenablage nicht erlaubt – bitte manuell einfügen.'));
+  }else notify('Bitte manuell einfügen.');
+}
+function ltInsertAI(){
+  const txt=document.getElementById('lt-ai-output').value.trim();
+  if(!txt){ notify('Bitte zuerst die KI-Antwort einfügen.'); return; }
+  ltDraft.body=txt;
+  ltSaveDraftStore();
+  ltRenderEditor();
+  show('scr-lt-editor');
+  notify('Text in den Brief übernommen.');
+}
+
+/* ---------- Vorschau & Druck ---------- */
+function ltLetterDate(){
+  const d=new Date();
+  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function ltBuildPreviewHTML(){
+  const s=ltActive.sender, d=ltDraft;
+  const fromLine=[s.name,s.street,s.city].filter(Boolean).join(' · ');
+  const to=[d.rName,d.rExtra,d.rStreet,d.rCity].filter(Boolean).join('\n');
+  const contact=[s.mail,s.phone].filter(Boolean).join(' · ');
+  return `<div class="p-from">${esc(fromLine)}</div>
+    <div class="p-to">${esc(to)}</div>
+    <div class="p-date">${esc((s.city||'').replace(/^\d+\s*/,''))}${s.city?', ':''}${ltLetterDate()}</div>
+    <div class="p-subject">${esc(d.subject)}</div>
+    <div class="p-body">${esc(d.salutation)}\n\n${esc(d.body)}</div>
+    <div class="p-sign">${esc(d.closing)}<div class="nm">${esc(s.name)}</div>${contact?`<div style="font-size:11px;color:#555;margin-top:14px">${esc(contact)}</div>`:''}</div>`;
+}
+function ltPreview(){
+  if(!ltActive){ show('scr-lt-profiles'); return; }
+  ltSaveDraft();
+  document.getElementById('lt-preview-box').innerHTML=ltBuildPreviewHTML();
+  show('scr-lt-preview');
+}
+function ltPrint(){
+  const w=window.open('','_blank');
+  if(!w){ notify('Bitte Pop-ups für diese Seite erlauben.'); return; }
+  w.document.write(`<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Brief</title>
+    <style>
+      @page{size:A4;margin:25mm 20mm 20mm 25mm}
+      body{font-family:Georgia,'Times New Roman',serif;font-size:11pt;line-height:1.5;color:#000}
+      .p-from{font-size:8pt;color:#444;border-bottom:.5pt solid #888;padding-bottom:2mm;margin-bottom:10mm}
+      .p-to{margin-bottom:20mm;white-space:pre-line}
+      .p-date{text-align:right;margin-bottom:14mm}
+      .p-subject{font-weight:bold;margin-bottom:8mm}
+      .p-body{white-space:pre-wrap;margin-bottom:12mm}
+      .p-sign{white-space:pre-line}
+      .p-sign .nm{margin-top:18mm}
+    </style></head><body>${ltBuildPreviewHTML()}</body></html>`);
+  w.document.close();
+  setTimeout(()=>{ w.focus(); w.print(); },400);
+}
+function ltCopyLetter(){
+  const s=ltActive.sender, d=ltDraft;
+  const txt=[[s.name,s.street,s.city].filter(Boolean).join('\n'),'',
+    [d.rName,d.rExtra,d.rStreet,d.rCity].filter(Boolean).join('\n'),'',
+    ltLetterDate(),'',d.subject,'',d.salutation,'',d.body,'',d.closing,'',s.name].join('\n');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>notify('Brief kopiert.')).catch(()=>notify('Kopieren nicht möglich.'));
+  }else notify('Kopieren wird nicht unterstützt.');
+}
+
 /* ==================== POKER-ASSISTENT ==================== */
 const PK_RANKS = [
   {v:14,l:'A'},{v:13,l:'K'},{v:12,l:'Q'},{v:11,l:'J'},{v:10,l:'10'},
@@ -2014,7 +2491,7 @@ function pkReset(){
 //             crunch(h), pushup(h), plank(h), mountain(h), superman(h)
 const HORIZONTAL = ['crunch','pushup','plank','mountain','superman'];
 const WK_EXERCISES = [
-  // Beine & Po
+  // ===== Beine & Po (20) =====
   {name:'Kniebeugen', tags:['beine'], anim:'squat'},
   {name:'Sumo-Kniebeugen', tags:['beine'], anim:'squat'},
   {name:'Ausfallschritte', tags:['beine'], anim:'lunge'},
@@ -2025,7 +2502,18 @@ const WK_EXERCISES = [
   {name:'Gesprungene Kniebeugen', tags:['beine','cardio'], anim:'jump'},
   {name:'Ausfallschritt-Sprünge', tags:['beine','cardio'], anim:'jump'},
   {name:'Einbeiniges Wadenheben', tags:['beine'], anim:'squat'},
-  // Bauch & Core
+  {name:'Seitliche Ausfallschritte', tags:['beine'], anim:'lunge'},
+  {name:'Curtsy Lunges', tags:['beine'], anim:'lunge'},
+  {name:'Step-ups', tags:['beine'], anim:'squat'},
+  {name:'Bulgarian Split Squats', tags:['beine'], anim:'lunge'},
+  {name:'Einbeiniges Hüftheben', tags:['beine','core'], anim:'plank'},
+  {name:'Sumo-Puls-Kniebeugen', tags:['beine'], anim:'squat'},
+  {name:'Kniebeugen-Pulse', tags:['beine'], anim:'squat'},
+  {name:'Seitliches Beinheben', tags:['beine'], anim:'lunge'},
+  {name:'Donkey Kicks (Eselstritte)', tags:['beine'], anim:'plank'},
+  {name:'Feuerhydranten', tags:['beine'], anim:'plank'},
+
+  // ===== Bauch & Core (22) =====
   {name:'Crunches', tags:['core'], anim:'crunch'},
   {name:'Sit-ups', tags:['core'], anim:'crunch'},
   {name:'Beinheben', tags:['core'], anim:'crunch'},
@@ -2036,7 +2524,20 @@ const WK_EXERCISES = [
   {name:'Käfer (Dead Bug)', tags:['core'], anim:'crunch'},
   {name:'Bergsteiger', tags:['core','cardio'], anim:'mountain'},
   {name:'Scheibenwischer', tags:['core'], anim:'twist'},
-  // Arme & Brust
+  {name:'V-Ups', tags:['core'], anim:'crunch'},
+  {name:'Hohlkörper-Halten', tags:['core'], anim:'plank'},
+  {name:'Beckenheben (Reverse Crunch)', tags:['core'], anim:'crunch'},
+  {name:'Plank-Jacks', tags:['core','cardio'], anim:'mountain'},
+  {name:'Zehenspitzen-Touches', tags:['core'], anim:'crunch'},
+  {name:'Seitliche Crunches', tags:['core'], anim:'crunch'},
+  {name:'Langsame Bergsteiger', tags:['core'], anim:'mountain'},
+  {name:'Plank-Schulterklopfen', tags:['core'], anim:'plank'},
+  {name:'Sit-up mit Twist', tags:['core'], anim:'twist'},
+  {name:'Beinkreisen (liegend)', tags:['core'], anim:'crunch'},
+  {name:'Ellenbogen-zu-Knie-Crunches', tags:['core'], anim:'twist'},
+  {name:'Plank-Hüftabsenken', tags:['core'], anim:'plank'},
+
+  // ===== Arme & Brust (16) =====
   {name:'Liegestütze', tags:['arme'], anim:'pushup'},
   {name:'Enge Liegestütze', tags:['arme'], anim:'pushup'},
   {name:'Pike Push-ups', tags:['arme'], anim:'pushup'},
@@ -2045,12 +2546,40 @@ const WK_EXERCISES = [
   {name:'Arm-Kreisen', tags:['arme'], anim:'armcircle'},
   {name:'Schulterdrücken (Schattenboxen)', tags:['arme'], anim:'armcircle'},
   {name:'Boxschläge', tags:['arme','cardio'], anim:'armcircle'},
-  // Rücken
+  {name:'Diamant-Liegestütze', tags:['arme'], anim:'pushup'},
+  {name:'Schräge Liegestütze (Hände erhöht)', tags:['arme'], anim:'pushup'},
+  {name:'Schräge Liegestütze (Füße erhöht)', tags:['arme'], anim:'pushup'},
+  {name:'Liegestütz-Schulterklopfen', tags:['arme'], anim:'pushup'},
+  {name:'Arm-Scheren', tags:['arme'], anim:'armcircle'},
+  {name:'Plank-zu-Liegestütz', tags:['arme','core'], anim:'pushup'},
+  {name:'Trizeps-Kickbacks (ohne Gewicht)', tags:['arme'], anim:'armcircle'},
+  {name:'Schulterkreisen rückwärts', tags:['arme'], anim:'armcircle'},
+
+  // ===== Rücken / unterer Rücken (22) =====
   {name:'Superman', tags:['ruecken'], anim:'superman'},
   {name:'Vierfüßler-Diagonale (Bird Dog)', tags:['ruecken','core'], anim:'superman'},
   {name:'Schwimmer', tags:['ruecken'], anim:'superman'},
   {name:'Rückenstrecker', tags:['ruecken'], anim:'superman'},
-  // Cardio
+  {name:'Good Mornings (Körpergewicht)', tags:['ruecken'], anim:'superman'},
+  {name:'Superman-Pulse', tags:['ruecken'], anim:'superman'},
+  {name:'Superman mit Armstreckung', tags:['ruecken'], anim:'superman'},
+  {name:'Reverse Snow Angels', tags:['ruecken'], anim:'superman'},
+  {name:'Bird-Dog-Pulse', tags:['ruecken','core'], anim:'superman'},
+  {name:'Kobra-Haltung (Cobra Pose)', tags:['ruecken'], anim:'superman'},
+  {name:'Heuschrecken-Haltung (Locust Pose)', tags:['ruecken'], anim:'superman'},
+  {name:'Brücke mit Armstreckung', tags:['ruecken'], anim:'superman'},
+  {name:'Reverse Hyperextension', tags:['ruecken'], anim:'superman'},
+  {name:'Schattenrudern (Bent-over Row)', tags:['ruecken'], anim:'superman'},
+  {name:'Y-Heben (Bauchlage)', tags:['ruecken'], anim:'superman'},
+  {name:'T-Heben (Bauchlage)', tags:['ruecken'], anim:'superman'},
+  {name:'W-Heben (Bauchlage)', tags:['ruecken'], anim:'superman'},
+  {name:'Seitliches Rückenheben', tags:['ruecken'], anim:'superman'},
+  {name:'Superman mit Beinpause', tags:['ruecken'], anim:'superman'},
+  {name:'Rumpfheben im Liegen', tags:['ruecken'], anim:'superman'},
+  {name:'Diagonales Rückenheben', tags:['ruecken'], anim:'superman'},
+  {name:'Rücken-Extension langsam', tags:['ruecken'], anim:'superman'},
+
+  // ===== Cardio (20) =====
   {name:'Hampelmänner', tags:['cardio'], anim:'jj'},
   {name:'High Knees', tags:['cardio'], anim:'highknees'},
   {name:'Burpees', tags:['cardio'], anim:'jump'},
@@ -2059,6 +2588,18 @@ const WK_EXERCISES = [
   {name:'Seilspringen (ohne Seil)', tags:['cardio'], anim:'jump'},
   {name:'Standlauf schnell', tags:['cardio'], anim:'highknees'},
   {name:'Squat-Jumps mit Twist', tags:['cardio','beine'], anim:'jump'},
+  {name:'Sternsprünge (Star Jumps)', tags:['cardio'], anim:'jump'},
+  {name:'Strecksprünge (Tuck Jumps)', tags:['cardio'], anim:'jump'},
+  {name:'Seitliche Sprünge', tags:['cardio'], anim:'jump'},
+  {name:'Boxer-Shuffle', tags:['cardio'], anim:'highknees'},
+  {name:'Sprint auf der Stelle', tags:['cardio'], anim:'highknees'},
+  {name:'Überkreuz-Hampelmänner (Cross Jacks)', tags:['cardio'], anim:'jj'},
+  {name:'Seitliche Squat-Sprünge', tags:['cardio','beine'], anim:'jump'},
+  {name:'Halber Burpee (ohne Liegestütz)', tags:['cardio'], anim:'jump'},
+  {name:'Hampelmänner mit Kniehub', tags:['cardio'], anim:'jj'},
+  {name:'Doppel-Sprünge simuliert', tags:['cardio'], anim:'jump'},
+  {name:'Schnelle Wechselsprünge', tags:['cardio','beine'], anim:'jump'},
+  {name:'Explosive Kniebeugen-Sprünge', tags:['cardio','beine'], anim:'jump'},
 ];
 const WK_AREAS = [
   {key:'beine',   em:'🦵', label:'Beine & Po'},
@@ -2146,8 +2687,16 @@ function wkToggleArea(key){
   if(i>=0) wkSettings.areas.splice(i,1); else wkSettings.areas.push(key);
   wkSave(); wkRenderSetup();
 }
+// Gegenspieler-Muskelgruppen: wird eine davon gewählt, fließt die andere automatisch mit ein
+const WK_ANTAGONISTS = { core:'ruecken', ruecken:'core' };
+function wkEffectiveAreas(areas){
+  const s = new Set(areas);
+  areas.forEach(a=>{ if(WK_ANTAGONISTS[a]) s.add(WK_ANTAGONISTS[a]); });
+  return s;
+}
 function wkPool(){
-  return WK_EXERCISES.filter(e=>e.tags.some(t=>wkSettings.areas.includes(t)));
+  const eff = wkEffectiveAreas(wkSettings.areas);
+  return WK_EXERCISES.filter(e=>e.tags.some(t=>eff.has(t)));
 }
 function wkRenderSetup(){
   document.getElementById('wk-exDur').textContent=wkSettings.exDur;
@@ -2193,6 +2742,110 @@ function figureHTML(anim,extra){
       </g>
     </svg></div>`;
 }
+
+// Englische Übungsnamen (Anzeige unter dem deutschen Namen)
+const EX_EN = {
+  'Kniebeugen':'Squats',
+  'Sumo-Kniebeugen':'Sumo Squats',
+  'Ausfallschritte':'Forward Lunges',
+  'Rückwärts-Ausfallschritte':'Reverse Lunges',
+  'Wadenheben':'Calf Raises',
+  'Wall Sit (Wandsitzen)':'Wall Sit',
+  'Glute Bridge':'Glute Bridge',
+  'Gesprungene Kniebeugen':'Jump Squats',
+  'Ausfallschritt-Sprünge':'Jumping Lunges',
+  'Einbeiniges Wadenheben':'Single-Leg Calf Raises',
+  'Seitliche Ausfallschritte':'Side Lunges',
+  'Curtsy Lunges':'Curtsy Lunges',
+  'Step-ups':'Step-Ups',
+  'Bulgarian Split Squats':'Bulgarian Split Squats',
+  'Einbeiniges Hüftheben':'Single-Leg Glute Bridge',
+  'Sumo-Puls-Kniebeugen':'Sumo Squat Pulses',
+  'Kniebeugen-Pulse':'Squat Pulses',
+  'Seitliches Beinheben':'Standing Side Leg Raises',
+  'Donkey Kicks (Eselstritte)':'Donkey Kicks',
+  'Feuerhydranten':'Fire Hydrants',
+  'Crunches':'Crunches',
+  'Sit-ups':'Sit-Ups',
+  'Beinheben':'Lying Leg Raises',
+  'Russian Twists':'Russian Twists',
+  'Fahrrad-Crunches':'Bicycle Crunches',
+  'Plank (Unterarmstütz)':'Forearm Plank',
+  'Seitlicher Unterarmstütz':'Side Plank',
+  'Käfer (Dead Bug)':'Dead Bug',
+  'Bergsteiger':'Mountain Climbers',
+  'Scheibenwischer':'Windshield Wipers',
+  'V-Ups':'V-Ups',
+  'Hohlkörper-Halten':'Hollow Body Hold',
+  'Beckenheben (Reverse Crunch)':'Reverse Crunch',
+  'Plank-Jacks':'Plank Jacks',
+  'Zehenspitzen-Touches':'Toe Touches',
+  'Seitliche Crunches':'Oblique Crunches',
+  'Langsame Bergsteiger':'Slow Mountain Climbers',
+  'Plank-Schulterklopfen':'Plank Shoulder Taps',
+  'Sit-up mit Twist':'Twisting Sit-Ups',
+  'Beinkreisen (liegend)':'Lying Leg Circles',
+  'Ellenbogen-zu-Knie-Crunches':'Standing Elbow-to-Knee Crunches',
+  'Plank-Hüftabsenken':'Plank Hip Dips',
+  'Liegestütze':'Push-Ups',
+  'Enge Liegestütze':'Close-Grip Push-Ups',
+  'Pike Push-ups':'Pike Push-Ups',
+  'Trizeps-Dips':'Triceps Dips',
+  'Breite Liegestütze':'Wide Push-Ups',
+  'Arm-Kreisen':'Arm Circles',
+  'Schulterdrücken (Schattenboxen)':'Shadow Shoulder Press',
+  'Boxschläge':'Shadow Boxing Punches',
+  'Diamant-Liegestütze':'Diamond Push-Ups',
+  'Schräge Liegestütze (Hände erhöht)':'Incline Push-Ups',
+  'Schräge Liegestütze (Füße erhöht)':'Decline Push-Ups',
+  'Liegestütz-Schulterklopfen':'Push-Up Shoulder Taps',
+  'Arm-Scheren':'Arm Scissors',
+  'Plank-zu-Liegestütz':'Plank-Up (Up-Down Plank)',
+  'Trizeps-Kickbacks (ohne Gewicht)':'Bodyweight Triceps Kickbacks',
+  'Schulterkreisen rückwärts':'Backward Shoulder Rolls',
+  'Superman':'Superman',
+  'Vierfüßler-Diagonale (Bird Dog)':'Bird Dog',
+  'Schwimmer':'Swimmers',
+  'Rückenstrecker':'Back Extensions',
+  'Good Mornings (Körpergewicht)':'Bodyweight Good Mornings',
+  'Superman-Pulse':'Superman Pulses',
+  'Superman mit Armstreckung':'Superman Hold with Arm Extension',
+  'Reverse Snow Angels':'Reverse Snow Angels',
+  'Bird-Dog-Pulse':'Bird Dog Pulses',
+  'Kobra-Haltung (Cobra Pose)':'Cobra Pose',
+  'Heuschrecken-Haltung (Locust Pose)':'Locust Pose',
+  'Brücke mit Armstreckung':'Glute Bridge with Overhead Reach',
+  'Reverse Hyperextension':'Reverse Hyperextension',
+  'Schattenrudern (Bent-over Row)':'Bodyweight Bent-Over Row',
+  'Y-Heben (Bauchlage)':'Prone Y-Raises',
+  'T-Heben (Bauchlage)':'Prone T-Raises',
+  'W-Heben (Bauchlage)':'Prone W-Raises',
+  'Seitliches Rückenheben':'Side-Lying Back Raises',
+  'Superman mit Beinpause':'Superman with Alternating Leg Lifts',
+  'Rumpfheben im Liegen':'Prone Torso Raises',
+  'Diagonales Rückenheben':'Prone Alternating Superman',
+  'Rücken-Extension langsam':'Slow Back Extensions',
+  'Hampelmänner':'Jumping Jacks',
+  'High Knees':'High Knees',
+  'Burpees':'Burpees',
+  'Skater-Sprünge':'Skater Jumps',
+  'Butt Kicks (Fersen-Sprint)':'Butt Kicks',
+  'Seilspringen (ohne Seil)':'Invisible Jump Rope',
+  'Standlauf schnell':'Running in Place',
+  'Squat-Jumps mit Twist':'Twisting Jump Squats',
+  'Sternsprünge (Star Jumps)':'Star Jumps',
+  'Strecksprünge (Tuck Jumps)':'Tuck Jumps',
+  'Seitliche Sprünge':'Lateral Hops',
+  'Boxer-Shuffle':'Boxer Shuffle',
+  'Sprint auf der Stelle':'Sprint in Place',
+  'Überkreuz-Hampelmänner (Cross Jacks)':'Cross Jacks',
+  'Seitliche Squat-Sprünge':'Lateral Squat Jumps',
+  'Halber Burpee (ohne Liegestütz)':'Half Burpees',
+  'Hampelmänner mit Kniehub':'Jumping Jacks with Knee Raise',
+  'Doppel-Sprünge simuliert':'Double-Under Simulation',
+  'Schnelle Wechselsprünge':'Fast Split Jumps',
+  'Explosive Kniebeugen-Sprünge':'Explosive Squat Jumps',
+};
 // Zeigt nur ein GIF, falls hinterlegt. Kein GIF oder Ladefehler => nichts (kein Strichmännchen).
 function demoHTML(item){
   if(!item.gif) return '';
@@ -2214,6 +2867,62 @@ function beep(freq,dur,vol){
   }catch(e){}
 }
 
+/* ---------- Ausgeglichene Übungsauswahl (Gegenspieler-Muskeln im Gleichgewicht) ---------- */
+function wkShuffled(arr){ return [...arr].sort(()=>Math.random()-0.5); }
+function wkDrawFrom(arr,count){
+  if(!arr.length || count<=0) return [];
+  const out=[]; let bag=wkShuffled(arr); let last=null;
+  for(let i=0;i<count;i++){
+    if(!bag.length) bag=wkShuffled(arr);
+    let pick=bag.shift();
+    if(arr.length>1 && pick.name===last && bag.length){ bag.push(pick); pick=bag.shift(); }
+    out.push(pick); last=pick.name;
+  }
+  return out;
+}
+// Baut die Basis-Übungsfolge: jeder gewählte Bereich bekommt einen fairen Anteil;
+// Bauch & unterer Rücken werden dabei als ein gemeinsamer, ausgeglichener Topf behandelt.
+function wkBuildBaseSequence(unique){
+  const selected = wkSettings.areas;
+  const hasTorso = selected.includes('core') || selected.includes('ruecken');
+  const otherAreas = selected.filter(a=>a!=='core' && a!=='ruecken');
+  const buckets = otherAreas.map(a=>({type:'simple', area:a}));
+  if(hasTorso) buckets.push({type:'torso'});
+  if(!buckets.length) return [];
+
+  const counts = buckets.map(()=>Math.floor(unique/buckets.length));
+  let remainder = unique - counts.reduce((a,b)=>a+b,0);
+  for(let i=0;i<buckets.length && remainder>0;i++){ counts[i]++; remainder--; }
+
+  let result=[];
+  buckets.forEach((b,i)=>{
+    if(b.type==='simple'){
+      const arr = WK_EXERCISES.filter(e=>e.tags.includes(b.area));
+      result = result.concat(wkDrawFrom(arr, counts[i]));
+    }else{
+      // Rumpf-Topf: Bauch und unterer Rücken je zur Hälfte
+      const coreArr = WK_EXERCISES.filter(e=>e.tags.includes('core'));
+      const backArr = WK_EXERCISES.filter(e=>e.tags.includes('ruecken'));
+      const n = counts[i];
+      const half = Math.floor(n/2);
+      const coreCount = Math.random()<0.5 ? half : (n-half);
+      const backCount = n - coreCount;
+      result = result.concat(wkDrawFrom(coreArr, coreCount));
+      result = result.concat(wkDrawFrom(backArr, backCount));
+    }
+  });
+
+  // Reihenfolge mischen, direkte Wiederholungen möglichst vermeiden
+  result = wkShuffled(result);
+  for(let i=1;i<result.length;i++){
+    if(result[i].name===result[i-1].name){
+      const swapIdx = result.findIndex((e,idx)=>idx>i && e.name!==result[i-1].name);
+      if(swapIdx>-1){ const tmp=result[i]; result[i]=result[swapIdx]; result[swapIdx]=tmp; }
+    }
+  }
+  return result;
+}
+
 /* ---------- Ablaufsteuerung ---------- */
 function wkStart(){
   const pool=wkPool();
@@ -2221,16 +2930,7 @@ function wkStart(){
   const perBlock=wkSettings.exDur+wkSettings.pauseDur;
   const totalCount=Math.max(1,Math.round(wkSettings.target*60/perBlock));
   const unique=Math.max(1,Math.round(totalCount/wkSettings.sets));
-  // Basis-Übungsfolge ziehen, ohne direkte Wiederholung
-  const base=[]; let last=null;
-  const shuffled=()=>[...pool].sort(()=>Math.random()-0.5);
-  let bag=shuffled();
-  for(let i=0;i<unique;i++){
-    if(!bag.length) bag=shuffled();
-    let pick=bag.shift();
-    if(pick.name===last && bag.length){ bag.push(pick); pick=bag.shift(); }
-    base.push(pick); last=pick.name;
-  }
+  const base = wkBuildBaseSequence(unique);
   // Sätze: gleiche Folge mehrfach hintereinander
   wk.plan=[];
   for(let s=0;s<wkSettings.sets;s++){
@@ -2393,6 +3093,7 @@ function wkRenderPhase(label,cls,item,progressIdx,nextLabel){
   const lbl=document.getElementById('wk-phase-label');
   lbl.textContent=label; lbl.className='wk-phase '+cls;
   document.getElementById('wk-name').textContent=item.name;
+  document.getElementById('wk-name-en').textContent=EX_EN[item.name]||'';
   document.getElementById('wk-count').textContent=`Übung ${progressIdx} / ${wk.plan.length}`;
   const slot=document.getElementById('wk-demo-slot');
   slot.innerHTML=demoHTML(item);
@@ -2525,6 +3226,8 @@ loadState().then(()=>{ renderSetup(); });
 wkLoad();
 trLoad();
 pkLoad();
+ltLoad();
+ltLoadDraft();
 </script>
 </body>
 </html>
