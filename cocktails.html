@@ -1,0 +1,3882 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cocktailübersicht – Rezepte als technische Zeichnung</title>
+<meta name="description" content="Cocktailrezepte als technisches Zeichnungsblatt: Glas-Schnittzeichnung mit farbigen Zutatenschichten, Legende und Schriftfeld. Läuft ohne Server im Browser.">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M6 6h20L18 17v7h5v2H9v-2h5v-7z' fill='none' stroke='%23000' stroke-width='2'/%3E%3Cpath d='M9.5 9.5h13L18 15h-4z' fill='%23C8102E'/%3E%3C/svg%3E">
+<style>*{box-sizing:border-box}
+:root{
+  --desk:#D6D7CE;      /* Zeichentisch */
+  --desk-dk:#BFC1B6;
+  --panel:#FFFFFF;
+  --ink:#000000;
+  --ink-2:#4A4C46;
+  --ink-3:#7C7F76;
+  --rule:#B9BBB1;
+  --rule-2:#E2E3DC;
+  --signal:#C8102E;    /* Revisionsrot – einziger Akzent */
+  --focus:#1D4ED8;
+  --font:'Helvetica Neue',Helvetica,Arial,sans-serif;
+}
+html,body{margin:0;height:100%}
+body{
+  font-family:var(--font);font-size:14px;line-height:1.45;color:var(--ink);
+  background:var(--desk);
+  -webkit-text-size-adjust:100%;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--focus)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+
+/* ---------- Kopfleiste ---------- */
+.bar{
+  position:sticky;top:0;z-index:30;background:var(--panel);
+  border-bottom:1px solid var(--rule);
+  display:flex;align-items:stretch;flex-wrap:wrap;gap:0;
+}
+.brand{display:flex;align-items:center;gap:10px;padding:10px 14px;border-right:1px solid var(--rule-2)}
+.brand b{font-size:15px;letter-spacing:.02em}
+.brand span{font-size:11px;color:var(--ink-3)}
+.brand svg{display:block}
+.bar .projsel{display:flex;align-items:center;gap:6px;padding:8px 12px;border-right:1px solid var(--rule-2);flex:1 1 200px;min-width:0}
+.bar .projsel select{flex:1;min-width:0}
+.tabs{display:flex;margin-left:auto}
+.tabs button{
+  appearance:none;background:none;border:0;border-left:1px solid var(--rule-2);
+  padding:12px 18px;font-size:13px;color:var(--ink-2);position:relative;white-space:nowrap;
+}
+.tabs button[aria-selected="true"]{color:var(--ink);font-weight:700}
+.tabs button[aria-selected="true"]::after{
+  content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--signal);
+}
+.tabs .cnt{display:inline-block;margin-left:6px;font-size:11px;color:var(--ink-3);font-weight:400}
+
+/* ---------- Grundraster ---------- */
+main{padding:14px;max-width:1500px;margin:0 auto}
+.panel{background:var(--panel);border:1px solid var(--rule)}
+.panel>h2{
+  margin:0;padding:9px 12px;font-size:12px;letter-spacing:.06em;font-weight:700;
+  border-bottom:1px solid var(--rule-2);display:flex;align-items:center;gap:8px;
+}
+.panel>h2 .sub{font-weight:400;color:var(--ink-3);letter-spacing:0}
+.pad{padding:12px}
+.split{display:grid;grid-template-columns:340px 1fr;gap:14px;align-items:start}
+@media(max-width:900px){.split{grid-template-columns:1fr}}
+
+/* ---------- Bedienelemente ---------- */
+.field{display:block;margin-bottom:10px}
+.field>span{display:block;font-size:11px;color:var(--ink-3);margin-bottom:3px}
+input[type=text],input[type=number],input[type=date],select,textarea{
+  width:100%;padding:6px 8px;border:1px solid var(--rule);background:#FBFBF9;border-radius:2px;
+}
+textarea{min-height:64px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1;min-width:0}
+.btn{
+  border:1px solid var(--ink);background:var(--panel);padding:7px 12px;border-radius:2px;
+  font-size:13px;line-height:1.2;
+}
+.btn:hover{background:#F0F0EA}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.primary:hover{background:#222}
+.btn.danger{border-color:var(--signal);color:var(--signal)}
+.btn.small{padding:4px 8px;font-size:12px}
+.btn.ghost{border-color:var(--rule)}
+.btn[disabled]{opacity:.4;cursor:default}
+.chk{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-size:13px}
+.chk input{width:16px;height:16px;flex:none}
+.hint{font-size:12px;color:var(--ink-3)}
+
+/* ---------- Fundus ---------- */
+.filters{display:flex;gap:8px;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--rule-2)}
+.filters input[type=text]{flex:2 1 200px}
+.filters select{flex:1 1 130px}
+.grid{
+  display:grid;gap:1px;background:var(--rule-2);
+  grid-template-columns:repeat(auto-fill,minmax(168px,1fr));
+}
+.tile{background:var(--panel);padding:8px;display:flex;flex-direction:column;gap:6px}
+.tile .art{background:#fff;height:150px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.tile .art svg{max-height:100%;width:auto}
+.tile h3{margin:0;font-size:13px;line-height:1.25}
+.tile .meta{font-size:11px;color:var(--ink-3);margin-top:-2px}
+.tile .acts{display:flex;gap:5px;margin-top:auto}
+.tile .acts .btn{flex:1;text-align:center}
+.tile.inproj{box-shadow:inset 3px 0 0 var(--signal)}
+.badge{display:inline-block;font-size:10px;border:1px solid var(--rule);padding:0 4px;color:var(--ink-3)}
+
+/* ---------- Projektliste ---------- */
+.plist{list-style:none;margin:0;padding:0}
+.plist li{display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--rule-2)}
+.plist .num{font-size:11px;color:var(--ink-3);width:22px;text-align:right;flex:none;font-variant-numeric:tabular-nums}
+.plist .thumb{width:44px;height:56px;flex:none;background:#fff;border:1px solid var(--rule-2)}
+.plist .thumb svg{width:100%;height:100%}
+.plist .txt{flex:1;min-width:0}
+.plist .txt b{font-size:13px;display:block}
+.plist .txt small{color:var(--ink-3);font-size:11px}
+.plist .acts{display:flex;gap:4px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.empty{padding:28px 16px;text-align:center;color:var(--ink-3)}
+
+/* ---------- Blattvorschau ---------- */
+.viewer{background:var(--desk-dk);padding:12px;overflow:auto;max-height:76vh}
+.viewer .sheet{
+  background:#fff;margin:0 auto;box-shadow:0 1px 0 rgba(0,0,0,.25),0 6px 18px rgba(0,0,0,.16);
+}
+.viewer .sheet svg{display:block;width:100%;height:auto}
+.vbar{display:flex;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--rule-2);flex-wrap:wrap}
+.vbar .sp{flex:1}
+.pagenav{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
+
+/* ---------- Zutatenzeilen im Editor ---------- */
+.ings{display:flex;flex-direction:column;gap:6px}
+.ing{display:grid;grid-template-columns:20px 1fr 62px 84px 74px 30px;gap:5px;align-items:center}
+.ing .h{font-size:10px;color:var(--ink-3)}
+.ing .pos{font-size:11px;color:var(--ink-3);text-align:right;font-variant-numeric:tabular-nums}
+@media(max-width:640px){
+  .ing{grid-template-columns:20px 1fr 30px;grid-auto-rows:auto}
+  .ing>select.u,.ing>input.a,.ing>select.p{grid-column:2/4}
+}
+.garnpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:4px;max-height:190px;overflow:auto;border:1px solid var(--rule);padding:8px;background:#FBFBF9}
+.garnpick label{display:flex;gap:6px;align-items:center;font-size:12px}
+
+/* ---------- Dialog ---------- */
+dialog{
+  border:1px solid var(--ink);padding:0;background:var(--panel);width:min(980px,96vw);
+  max-height:92vh;overflow:auto;border-radius:2px;
+}
+dialog::backdrop{background:rgba(30,32,28,.55)}
+.dlg-head{position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--rule);
+  padding:10px 14px;display:flex;align-items:center;gap:10px;z-index:2}
+.dlg-head h2{margin:0;font-size:15px;flex:1}
+.dlg-body{padding:14px}
+.dlg-foot{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--rule);
+  padding:10px 14px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.edsplit{display:grid;grid-template-columns:1fr 260px;gap:16px;align-items:start}
+@media(max-width:760px){.edsplit{grid-template-columns:1fr}}
+.livebox{background:#fff;border:1px solid var(--rule);position:sticky;top:56px}
+.livebox svg{display:block;width:100%;height:auto}
+
+/* ---------- Meldungen ---------- */
+#toast{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:60;
+  background:var(--ink);color:#fff;padding:9px 15px;border-radius:2px;font-size:13px;
+  opacity:0;pointer-events:none;transition:opacity .18s;max-width:92vw;
+}
+#toast.on{opacity:1}
+.revtable{width:100%;border-collapse:collapse;font-size:12px}
+.revtable th,.revtable td{border:1px solid var(--rule-2);padding:3px 5px;text-align:left}
+.revtable th{font-size:10px;color:var(--ink-3);font-weight:600}
+.notelist{list-style:none;margin:0;padding:0}
+.notelist li{display:flex;gap:6px;align-items:flex-start;margin-bottom:5px}
+.notelist .n{font-size:11px;color:var(--ink-3);width:16px;flex:none;padding-top:7px;text-align:right}
+.qrbox{text-align:center;padding:8px}
+.qrbox svg{max-width:100%;height:auto;border:1px solid var(--rule-2)}
+.linkout{width:100%;font-size:11px;word-break:break-all;background:#FBFBF9;border:1px solid var(--rule);padding:6px;max-height:96px;overflow:auto}
+
+@media print{
+  body{background:#fff}
+  .bar,main,#toast{display:none !important}
+  #printarea{display:block !important}
+  #printarea .sheet{page-break-after:always;break-after:page}
+  #printarea .sheet:last-child{page-break-after:auto;break-after:auto}
+  #printarea svg{width:100%;height:auto;display:block}
+}
+#printarea{display:none}
+</style>
+<style id="pagestyle">@page{size:594mm 420mm;margin:0}</style>
+</head>
+<body>
+<a href="index.html" id="backToHub" title="Zurück zur Anwendungssammlung">‹ Übersicht</a>
+<style>
+#backToHub{position:fixed;left:10px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;
+  background:#12152B;color:#F2F3FF;text-decoration:none;font-weight:700;font-size:14px;
+  padding:11px 16px;border-radius:99px;box-shadow:0 3px 14px rgba(0,0,0,.35)}
+@media print{#backToHub{display:none}}
+</style>
+<header class="bar" id="bar"></header>
+<main id="view"></main>
+<div id="printarea"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
+<input type="file" id="fileimp" accept=".json,application/json" style="display:none">
+<noscript><p style="padding:20px">Diese Anwendung braucht JavaScript. Sie läuft vollständig im Browser; es werden keine Daten an einen Server gesendet.</p></noscript>
+<script>'use strict';
+
+/* ===== 01_glasses.js ===== */
+
+/* ============================================================
+   Glasbibliothek (Anhang B)
+   Profil = Innenraum (Kavität) als Stützpunkte [y, halbeBreite] in mm,
+   y = 0 am Kavitätsboden, nach oben steigend.
+   smooth: Stützpunkte werden als weiche Kurve interpoliert.
+   ============================================================ */
+var GLASSES = [
+  { id:'tumbler', name:'Tumbler / Old-Fashioned-Glas', vol:300, kind:'tumbler',
+    prof:[[0,14.5],[30,16.5]], wall:1.6, base:5.0 },
+  { id:'highball', name:'Highball / Longdrinkglas', vol:350, kind:'tumbler',
+    prof:[[0,11.0],[45,12.4]], wall:1.3, base:4.0 },
+  { id:'collins', name:'Collins-Glas', vol:380, kind:'tumbler',
+    prof:[[0,9.6],[52,10.8]], wall:1.2, base:3.6 },
+  { id:'coupe', name:'Coupette / Cocktailschale', vol:180, kind:'stem', smooth:true,
+    prof:[[0,3.0],[2.5,8.5],[7,13.5],[12,16.0]], wall:1.2, base:0.8, stem:15, foot:12, footH:1.8 },
+  { id:'martini', name:'Martiniglas', vol:180, kind:'stem',
+    prof:[[0,1.2],[17,17.5]], wall:1.2, base:0.6, stem:16, foot:12, footH:1.8 },
+  { id:'nick_nora', name:'Nick & Nora', vol:150, kind:'stem', smooth:true,
+    prof:[[0,2.2],[3.5,7.5],[9,10.8],[13,10.2]], wall:1.1, base:0.8, stem:14, foot:10.5, footH:1.6 },
+  { id:'hurricane', name:'Hurricane-Glas', vol:450, kind:'stem', smooth:true,
+    prof:[[0,5.5],[7,12.5],[19,14.5],[32,10.5],[40,12.5]], wall:1.3, base:1.0, stem:8, foot:12.5, footH:2.0 },
+  { id:'tiki', name:'Tiki-Becher', vol:400, kind:'mug', relief:true,
+    prof:[[0,12.0],[44,13.6]], wall:2.0, base:5.0 },
+  { id:'flute', name:'Sektflöte', vol:180, kind:'stem', smooth:true,
+    prof:[[0,2.6],[5,6.2],[26,7.8],[36,7.2]], wall:1.1, base:0.8, stem:16, foot:10.5, footH:1.6 },
+  { id:'wine', name:'Weinglas', vol:400, kind:'stem', smooth:true,
+    prof:[[0,3.6],[5,12.5],[17,14.6],[29,10.8]], wall:1.1, base:0.8, stem:14, foot:12, footH:1.8 },
+  { id:'copa', name:'Copa- / Ballonglas', vol:600, kind:'stem', smooth:true,
+    prof:[[0,4.5],[6,16.5],[18,19.5],[30,15.0]], wall:1.2, base:0.9, stem:12, foot:13.5, footH:2.0 },
+  { id:'mule', name:'Kupferbecher', vol:400, kind:'mug', handle:true,
+    prof:[[0,12.6],[40,14.6]], wall:1.8, base:4.5 },
+  { id:'shot', name:'Shotglas', vol:50, kind:'tumbler',
+    prof:[[0,6.6],[15,8.4]], wall:1.4, base:4.0 },
+  { id:'margarita', name:'Margaritaglas', vol:300, kind:'stem', smooth:true,
+    prof:[[0,2.2],[3,7.0],[5.5,7.4],[7,12.5],[12,17.0],[14,18.0]], wall:1.2, base:0.8, stem:14, foot:12.5, footH:1.8 },
+  { id:'sling', name:'Sling-Glas', vol:350, kind:'tumbler',
+    prof:[[0,10.0],[44,13.6]], wall:1.2, base:4.0 },
+  { id:'irish_coffee', name:'Irish-Coffee-Glas', vol:250, kind:'stem', smooth:true, handle:true,
+    prof:[[0,4.0],[4,9.6],[22,10.8],[30,9.8]], wall:1.2, base:0.9, stem:5, foot:10.5, footH:1.8 }
+];
+var GLASS_BY_ID = {}; GLASSES.forEach(function(g){ GLASS_BY_ID[g.id] = g; });
+var FILL_RATIO = 0.85; // Fülllinie = 85 % der Innenhöhe
+
+
+/* ===== 02_ingredients.js ===== */
+
+/* ============================================================
+   Zutatenbibliothek (Anhang C)
+   class steuert die Schraffur (Anhang E), color die Flächenfarbe.
+   ============================================================ */
+function ING(id, name, cls, color, abv, abbr) {
+  return { id:id, name:name, cls:cls, color:color, abv:abv||0, abbr:abbr||'' };
+}
+var INGREDIENTS = [
+  /* --- Spirituosen --- */
+  ING('rum_weiss','Weißer Rum','spirit','#F7F0DC',40,'WR'),
+  ING('rum_braun','Brauner Rum','spirit','#C98A45',40,'BR'),
+  ING('rum_dunkel','Dunkler Rum','spirit','#8A4A20',40,'DR'),
+  ING('rum_overproof','Overproof-Rum','spirit','#A65A25',63,'OR'),
+  ING('cachaca','Cachaça','spirit','#F4EFD8',40,'CA'),
+  ING('gin','Gin','spirit','#E7F1F4',42,'GIN'),
+  ING('sloe_gin','Sloe Gin','liqueur','#B23A55',26,'SG'),
+  ING('wodka','Wodka','spirit','#F2F7FA',40,'WO'),
+  ING('tequila','Tequila Blanco','spirit','#F3F3E2',38,'TQ'),
+  ING('tequila_rep','Tequila Reposado','spirit','#E2C079',38,'TR'),
+  ING('mezcal','Mezcal','spirit','#EFEBD4',42,'MZ'),
+  ING('bourbon','Bourbon','spirit','#C97C2A',40,'BO'),
+  ING('rye','Rye Whiskey','spirit','#BE7027',43,'RY'),
+  ING('scotch','Scotch Whisky','spirit','#C48432',40,'SC'),
+  ING('irish','Irish Whiskey','spirit','#D09548',40,'IW'),
+  ING('cognac','Cognac / Brandy','spirit','#A85F20',40,'CO'),
+  ING('pisco','Pisco','spirit','#F3EEDA',40,'PI'),
+  ING('calvados','Calvados','spirit','#D9A24E',40,'CV'),
+  ING('absinth','Absinth','spirit','#9DBF57',60,'AB'),
+  /* --- Liköre & Aperitifs --- */
+  ING('triple_sec','Triple Sec / Cointreau','liqueur','#F6E3B4',40,'TS'),
+  ING('blue_curacao','Blue Curaçao','liqueur','#2E8CD6',24,'BC'),
+  ING('grand_marnier','Grand Marnier','liqueur','#D9962E',40,'GM'),
+  ING('amaretto','Amaretto','liqueur','#B05F22',28,'AM'),
+  ING('kahlua','Kahlúa','liqueur','#4A2A18',20,'KA'),
+  ING('baileys','Baileys','dairy','#C9A882',17,'BA'),
+  ING('maraschino','Maraschino','liqueur','#EFE6D2',32,'MA'),
+  ING('cassis','Crème de Cassis','liqueur','#5C1B3A',20,'CC'),
+  ING('menthe_weiss','Weißer Crème de Menthe','liqueur','#EAF4EC',24,'CM'),
+  ING('menthe_gruen','Grüner Crème de Menthe','liqueur','#4FA86A',24,'CG'),
+  ING('cacao_weiss','Weißer Crème de Cacao','liqueur','#F0E8D8',24,'CX'),
+  ING('cacao_braun','Brauner Crème de Cacao','liqueur','#6B3A1E',24,'CD'),
+  ING('chambord','Chambord','liqueur','#7A1F3D',16,'CH'),
+  ING('midori','Midori','liqueur','#87C441',20,'MI'),
+  ING('st_germain','St-Germain','liqueur','#EDE0A8',20,'SM'),
+  ING('galliano','Galliano','liqueur','#E8C534',30,'GA'),
+  ING('drambuie','Drambuie','liqueur','#C98A2E',40,'DB'),
+  ING('campari','Campari','liqueur','#C6162C',25,'CP'),
+  ING('aperol','Aperol','liqueur','#E8621B',11,'AP'),
+  ING('wermut_rot','Roter Wermut','wine','#8E3320',16,'WR'),
+  ING('wermut_weiss','Trockener Wermut','wine','#E8DFA8',16,'WW'),
+  ING('sherry','Sherry','wine','#B8752E',17,'SH'),
+  ING('benedictine','Bénédictine','liqueur','#C89434',40,'BE'),
+  ING('cherry_brandy','Cherry Brandy','liqueur','#9E2233',24,'CB'),
+  ING('apricot_brandy','Apricot Brandy','liqueur','#E09A3C',24,'AT'),
+  ING('peachtree','Pfirsichlikör','liqueur','#F2B36A',18,'PL'),
+  ING('bananenlikoer','Bananenlikör','liqueur','#EBD24E',20,'BL'),
+  ING('kokoslikoer','Kokoslikör','liqueur','#F5F0E4',21,'KL'),
+  ING('chartreuse','Grüner Chartreuse','liqueur','#7FA83C',55,'GC'),
+  ING('falernum','Falernum','liqueur','#E4D9B4',11,'FA'),
+  ING('licor_43','Licor 43','liqueur','#E5B93F',31,'L43'),
+  ING('violette','Crème de Violette','liqueur','#8A6FB8',20,'CV'),
+  /* --- Säfte --- */
+  ING('limettensaft','Limettensaft','juice','#CFE07A',0,'LI'),
+  ING('zitronensaft','Zitronensaft','juice','#F2E469',0,'ZI'),
+  ING('orangensaft','Orangensaft','juice','#F79E22',0,'OS'),
+  ING('ananassaft','Ananassaft','juice','#F3CE4C',0,'AS'),
+  ING('cranberrysaft','Cranberrysaft','juice','#B4243C',0,'CR'),
+  ING('grapefruitsaft','Grapefruitsaft','juice','#F08A72',0,'GF'),
+  ING('tomatensaft','Tomatensaft','juice','#C0341F',0,'TO'),
+  ING('maracujasaft','Maracujasaft','juice','#F0B32C',0,'MJ'),
+  ING('pfirsichpueree','Pfirsichpüree','juice','#F5B278',0,'PP'),
+  ING('mangosaft','Mangosaft','juice','#F7B12C',0,'MG'),
+  ING('apfelsaft','Apfelsaft','juice','#E7CE6A',0,'AF'),
+  /* --- Sirupe --- */
+  ING('zuckersirup','Zuckersirup','syrup','#F6EFDC',0,'ZS'),
+  ING('grenadine','Grenadine','syrup','#C41E3A',0,'GR'),
+  ING('orgeat','Mandelsirup (Orgeat)','syrup','#EFE3CC',0,'OG'),
+  ING('zuckerrohrsirup','Zuckerrohrsirup','syrup','#D8B36A',0,'ZR'),
+  ING('honigsirup','Honigsirup','syrup','#E3A62A',0,'HS'),
+  ING('holunderblueten','Holunderblütensirup','syrup','#EDE6B0',0,'HB'),
+  ING('kokoscreme','Kokoscreme','dairy','#F7F3E8',0,'KC'),
+  ING('vanillesirup','Vanillesirup','syrup','#EFE0BE',0,'VS'),
+  ING('zimtsirup','Zimtsirup','syrup','#C08A4A',0,'ZM'),
+  ING('himbeersirup','Himbeersirup','syrup','#C2295A',0,'HI'),
+  /* --- Filler --- */
+  ING('soda','Sodawasser','filler','#EAF4F8',0,'SO'),
+  ING('tonic','Tonic Water','filler','#E4F0F5',0,'TN'),
+  ING('ginger_beer','Ginger Beer','filler','#E5C87E',0,'GB'),
+  ING('ginger_ale','Ginger Ale','filler','#EDD79A',0,'GL'),
+  ING('cola','Cola','filler','#5A2A14',0,'CL'),
+  ING('lemonade','Zitronenlimonade','filler','#F2EBA8',0,'LM'),
+  ING('bitter_lemon','Bitter Lemon','filler','#F0E6A0',0,'BM'),
+  ING('wasser','Wasser','filler','#EDF5F8',0,'WA'),
+  ING('eistee','Eistee','filler','#C99A4E',0,'ET'),
+  /* --- Wein & Sekt --- */
+  ING('prosecco','Prosecco','wine','#F0E7B8',11,'PR'),
+  ING('champagner','Champagner','wine','#F2E9BE',12,'CG'),
+  ING('weisswein','Weißwein','wine','#EFE6B4',12,'WW'),
+  ING('rotwein','Rotwein','wine','#6E1A28',13,'RW'),
+  /* --- Kaffee & Milch --- */
+  ING('espresso','Espresso','other','#3A2114',0,'ES'),
+  ING('kaffee','Kaffee','other','#4A2A16',0,'KF'),
+  ING('milch','Milch','dairy','#FAF7F0',0,'ML'),
+  ING('sahne','Sahne','dairy','#F8F2E4',0,'SA'),
+  ING('schlagsahne','Schlagsahne','dairy','#FBF7EE',0,'SS'),
+  /* --- Bitters & Aromen --- */
+  ING('angostura','Angostura Bitters','bitter','#7A2B18',44,'AN'),
+  ING('orange_bitters','Orange Bitters','bitter','#B4621C',28,'OB'),
+  ING('peychauds','Peychaud\u2019s Bitters','bitter','#A11E22',35,'PB'),
+  ING('tabasco','Tabasco','bitter','#C4211A',0,'TB'),
+  ING('worcester','Worcestershiresauce','bitter','#5A3218',0,'WS'),
+  /* --- Sonstiges --- */
+  ING('eiweiss','Eiweiß','dairy','#F8F6EE',0,'EW'),
+  ING('zucker_weiss','Weißer Zucker','other','#FBF8F0',0,'ZW'),
+  ING('rohrzucker','Brauner Zucker','other','#C89A5A',0,'BZ'),
+  ING('zuckerwuerfel','Zuckerwürfel','other','#FBF8F0',0,'ZK'),
+  ING('salz','Salz','other','#FBFBF8',0,'SZ'),
+  ING('pfeffer','Pfeffer','other','#5C544A',0,'PF'),
+  ING('sellerie_salz','Selleriesalz','other','#E4DEC8',0,'SL'),
+  ING('minze','Minze','other','#6FA84A',0,'MN'),
+  ING('basilikum','Basilikum','other','#4E8C3A',0,'BS'),
+  ING('gurke','Gurke','other','#B8D48A',0,'GU'),
+  ING('ingwer','Ingwer','other','#DCC088',0,'IG'),
+  ING('limette_stueck','Limettenachtel','other','#A8C84E',0,'LS'),
+  ING('rosmarin','Rosmarin','other','#5C7A46',0,'RO'),
+  ING('zimt','Zimt','other','#9E5A28',0,'ZT'),
+  ING('muskat','Muskat','other','#A87A48',0,'MU')
+];
+var ING_BY_ID = {}; INGREDIENTS.forEach(function(i){ ING_BY_ID[i.id] = i; });
+
+/* Zutatenklassen: Anzeigename + Schraffurart (Anhang E) */
+var ING_CLASSES = [
+  { id:'spirit',  name:'Spirituose',            hatch:'diag45' },
+  { id:'liqueur', name:'Likör',                 hatch:'diag45w' },
+  { id:'juice',   name:'Saft',                  hatch:'diag135' },
+  { id:'syrup',   name:'Sirup',                 hatch:'cross' },
+  { id:'filler',  name:'Filler / Softdrink',    hatch:'dots' },
+  { id:'wine',    name:'Wein / Sekt',           hatch:'horiz' },
+  { id:'bitter',  name:'Bitters / Aroma',       hatch:'dense' },
+  { id:'dairy',   name:'Sahne / Ei / Milch',    hatch:'wave' },
+  { id:'other',   name:'Sonstiges',             hatch:'tri' }
+];
+var CLASS_BY_ID = {}; ING_CLASSES.forEach(function(c){ CLASS_BY_ID[c.id] = c; });
+
+/* Einheiten */
+var UNITS = [
+  { id:'cl',   name:'cl',        ml:10 },
+  { id:'ml',   name:'ml',        ml:1 },
+  { id:'bl',   name:'Barlöffel', ml:5 },
+  { id:'dash', name:'Dash',      ml:1 },
+  { id:'spr',  name:'Spritzer',  ml:1 },
+  { id:'stk',  name:'Stück',     ml:3 },
+  { id:'tl',   name:'TL',        ml:5 },
+  { id:'fill', name:'auffüllen', ml:0 }
+];
+var UNIT_BY_ID = {}; UNITS.forEach(function(u){ UNIT_BY_ID[u.id] = u; });
+
+/* Zubereitungskürzel (Anhang D) */
+var PREPS = [
+  { id:'b', name:'im Glas bauen' },
+  { id:'f', name:'schütteln' },
+  { id:'r', name:'rühren' },
+  { id:'m', name:'muddlen / zerstoßen' },
+  { id:'l', name:'schichten / floaten' },
+  { id:'t', name:'toppen / auffüllen' },
+  { id:'s', name:'abseihen' },
+  { id:'d', name:'doppelt abseihen' },
+  { id:'z', name:'Zeste abspritzen' },
+  { id:'k', name:'Glasrand benetzen' },
+  { id:'w', name:'Glas ausschwenken / vorkühlen' }
+];
+var PREP_BY_ID = {}; PREPS.forEach(function(p){ PREP_BY_ID[p.id] = p; });
+
+/* Hauptmethoden mit Methodensymbol über dem Glas */
+var METHODS = [
+  { id:'f', name:'schütteln mit Eis und abseihen', sym:'shake' },
+  { id:'r', name:'im Rührglas rühren und abseihen', sym:'stir' },
+  { id:'b', name:'im Glas bauen', sym:'build' },
+  { id:'l', name:'schichten / floaten', sym:'layer' },
+  { id:'m', name:'im Glas muddlen und aufgießen', sym:'muddle' },
+  { id:'c', name:'mit Crushed Ice verrühren (Swizzle)', sym:'swizzle' },
+  { id:'x', name:'im Mixer / Blender', sym:'blend' }
+];
+var METHOD_BY_ID = {}; METHODS.forEach(function(m){ METHOD_BY_ID[m.id] = m; });
+
+
+/* ===== 03_garnish.js ===== */
+
+/* ============================================================
+   Garnituren, Eis und Zusätze (Anhang C, Kennbuchstaben)
+   key  = Kennbuchstabe für Zeichnung und Legende
+   pic  = Piktogramm-Zeichner (siehe 12_pictograms.js)
+   at   = Ansatzpunkt am Glas: rim | in | side | under
+   ============================================================ */
+function GAR(id, key, name, pic, at) {
+  return { id:id, key:key, name:name, pic:pic, at:at||'rim' };
+}
+var GARNISHES = [
+  GAR('kirsche',        'a', 'Cocktailkirsche',            'cherry',    'in'),
+  GAR('orangenscheibe', 'b', 'Orangenscheibe 1/8',         'orange',    'rim'),
+  GAR('zitronenscheibe','c', 'Zitronenscheibe 1/8',        'lemon',     'rim'),
+  GAR('limettenspalte', 'd', 'Limettenspalte 1/8',         'lime',      'rim'),
+  GAR('olive',          'e', 'Grüne Olive',                'olive',     'in'),
+  GAR('cocktailzwiebel','f', 'Cocktailzwiebel',            'onion',     'in'),
+  GAR('dash_angostura', 'g', 'Dash Angostura',             'dash',      'side'),
+  GAR('eiswuerfel',     'h', 'Eiswürfel',                  'icecube',   'in'),
+  GAR('limettenscheibe','i', 'Limettenscheibe',            'limeslice', 'rim'),
+  GAR('orangenzeste',   'j', 'Orangenzeste',               'peel',      'rim'),
+  GAR('tl_zucker',      'k', 'TL feiner Zucker',           'sugar',     'side'),
+  GAR('gurkenscheibe',  'l', 'Gurkenscheibe',              'cucumber',  'rim'),
+  GAR('zuckerwuerfel',  'm', 'Zuckerwürfel',               'sugarcube', 'in'),
+  GAR('zitronenzeste',  'n', 'Zitronenzeste',              'peel',      'rim'),
+  GAR('muskat',         'o', 'Muskat gerieben',            'grated',    'rim'),
+  GAR('minze',          'p', 'Minzzweig',                  'mint',      'rim'),
+  GAR('schirmchen',     'q', 'Cocktailschirmchen',         'umbrella',  'rim'),
+  GAR('ananasstueck',   'r', 'Ananasstück',                'pineapple', 'rim'),
+  GAR('dash_worcester', 's', 'Dash Worcestershiresauce',   'dash',      'side'),
+  GAR('sellerie',       't', 'Selleriestange',             'celery',    'in'),
+  GAR('spiess',         'u', 'Cocktailspieß',              'pick',      'rim'),
+  GAR('rosmarin',       'v', 'Rosmarinzweig',              'rosemary',  'rim'),
+  GAR('salzrand',       'w', 'Salzrand',                   'rimsalt',   'rim'),
+  GAR('zuckerrand',     'x', 'Zuckerrand',                 'rimsugar',  'rim'),
+  GAR('strohhalm',      'y', 'Strohhalm',                  'straw',     'rim'),
+  GAR('kaffeebohnen',   'z', 'Kaffeebohnen',               'beans',     'in'),
+  GAR('crushed_ice',   'aa', 'Crushed Ice',                'crushed',   'in'),
+  GAR('eiskugel',      'ab', 'Eiskugel / Eisblock',        'iceball',   'in'),
+  GAR('basilikum',     'ac', 'Basilikumblätter',           'basil',     'rim'),
+  GAR('ingwerscheibe', 'ad', 'Ingwerscheibe',              'ginger',    'rim'),
+  GAR('sahnehaube',    'ae', 'Sahnehaube',                 'cream',     'rim'),
+  GAR('zimtstange',    'af', 'Zimtstange',                 'cinnamon',  'in'),
+  GAR('physalis',      'ag', 'Physalis',                   'physalis',  'rim'),
+  GAR('tabasco_dash',  'ah', 'Spritzer Tabasco',           'dash',      'side'),
+  GAR('erdbeere',      'ai', 'Erdbeere',                   'berry',     'rim'),
+  GAR('gurkenband',    'aj', 'Gurkenband',                 'ribbon',    'in'),
+  GAR('orange_ganz',   'ak', 'Orangenscheibe ganz',        'orangefull','rim'),
+  GAR('zitrone_ganz',  'al', 'Zitronenscheibe ganz',       'lemonfull', 'rim')
+];
+var GAR_BY_ID = {}; GARNISHES.forEach(function(g){ GAR_BY_ID[g.id] = g; });
+
+/* Eisarten im Glas */
+var ICE_TYPES = [
+  { id:'none',    name:'ohne Eis',      gid:null },
+  { id:'cubes',   name:'Eiswürfel',     gid:'eiswuerfel' },
+  { id:'crushed', name:'Crushed Ice',   gid:'crushed_ice' },
+  { id:'ball',    name:'Eiskugel',      gid:'eiskugel' }
+];
+var ICE_BY_ID = {}; ICE_TYPES.forEach(function(i){ ICE_BY_ID[i.id] = i; });
+
+/* Kategorien für Filter */
+var CATEGORIES = ['Klassiker','Sour','Highball','Tiki','Sekt & Wein','Schichtcocktail','Alkoholfrei'];
+
+
+/* ===== 04_cocktails.js ===== */
+
+/* ============================================================
+   Cocktail-Fundus (Anhang A) – 64 Rezepte
+   Reihenfolge der Zutaten = Schichtung von unten nach oben.
+   ============================================================ */
+function C(id, name, cat, base, glass, ice, method, desc, ings, garn, tags, extra) {
+  var o = {
+    id:id, name:name, category:cat, baseSpirit:base, glass:glass, ice:ice,
+    method:method, description:desc,
+    ingredients: ings.map(function(a, i) {
+      return { pos:i+1, ingredientId:a[0], name:(ING_BY_ID[a[0]]||{}).name || a[0],
+               amount:(a[1]===null?null:a[1]), unit:a[2], prep:a[3]||'b' };
+    }),
+    garnish: (garn||[]).map(function(g) {
+      return (typeof g === 'string') ? { id:g, count:1 } : { id:g[0], count:g[1] };
+    }),
+    tags: tags||[], altName:null, note:null, noteRef:null
+  };
+  if (extra) for (var k in extra) o[k] = extra[k];
+  return o;
+}
+
+var COCKTAILS = [
+
+/* ---------- Klassiker / Short Drinks ---------- */
+C('old_fashioned','Old Fashioned','Klassiker','Whiskey','tumbler','ball','r',
+  'Der Urtyp des Cocktails: Whiskey, Zucker, Bitters, Zeste.',
+  [['zuckersirup',1,'cl','b'],['angostura',3,'dash','b'],['bourbon',6,'cl','r']],
+  ['orangenzeste','kirsche'],['klassiker','spirituosenlastig']),
+
+C('manhattan','Manhattan','Klassiker','Whiskey','nick_nora','none','r',
+  'New Yorker Klassiker aus Rye und rotem Wermut.',
+  [['angostura',2,'dash','r'],['wermut_rot',3,'cl','r'],['rye',6,'cl','r']],
+  ['kirsche'],['klassiker']),
+
+C('martini_dry','Martini (Dry)','Klassiker','Gin','martini','none','r',
+  'Trocken gerührt, eiskalt, mit Olive oder Zeste.',
+  [['wermut_weiss',1,'cl','r'],['gin',6,'cl','r']],
+  ['olive'],['klassiker','trocken']),
+
+C('negroni','Negroni','Klassiker','Gin','tumbler','ball','r',
+  'Zu gleichen Teilen Gin, Campari und roter Wermut.',
+  [['campari',3,'cl','r'],['wermut_rot',3,'cl','r'],['gin',3,'cl','r']],
+  ['orangenzeste'],['klassiker','bitter']),
+
+C('boulevardier','Boulevardier','Klassiker','Whiskey','tumbler','ball','r',
+  'Negroni-Variante mit Bourbon statt Gin.',
+  [['campari',3,'cl','r'],['wermut_rot',3,'cl','r'],['bourbon',4,'cl','r']],
+  ['orangenzeste'],['klassiker','bitter']),
+
+C('sazerac','Sazerac','Klassiker','Whiskey','tumbler','none','r',
+  'New Orleans: Glas mit Absinth ausschwenken, Rye rühren.',
+  [['absinth',1,'cl','w'],['zuckersirup',1,'cl','r'],['peychauds',4,'dash','r'],['rye',6,'cl','r']],
+  ['zitronenzeste'],['klassiker'],
+  { note:'Glas mit Absinth ausschwenken und Rest verwerfen, dann eiskalt einfüllen.' }),
+
+C('rob_roy','Rob Roy','Klassiker','Whiskey','nick_nora','none','r',
+  'Manhattan mit Scotch.',
+  [['angostura',2,'dash','r'],['wermut_rot',3,'cl','r'],['scotch',6,'cl','r']],
+  ['kirsche'],['klassiker']),
+
+C('vieux_carre','Vieux Carré','Klassiker','Whiskey','tumbler','cubes','r',
+  'Rye, Cognac und Bénédictine aus dem French Quarter.',
+  [['benedictine',1,'cl','r'],['angostura',1,'dash','r'],['peychauds',1,'dash','r'],
+   ['wermut_rot',2,'cl','r'],['cognac',2,'cl','r'],['rye',2,'cl','r']],
+  ['zitronenzeste'],['klassiker']),
+
+C('rusty_nail','Rusty Nail','Klassiker','Whiskey','tumbler','cubes','b',
+  'Scotch mit Drambuie, im Glas gebaut.',
+  [['drambuie',2.5,'cl','b'],['scotch',5,'cl','b']],
+  ['zitronenzeste'],['klassiker','einfach']),
+
+C('godfather','Godfather','Klassiker','Whiskey','tumbler','cubes','b',
+  'Scotch und Amaretto, zwei Zutaten, viel Wirkung.',
+  [['amaretto',2.5,'cl','b'],['scotch',5,'cl','b']],
+  [],['klassiker','einfach']),
+
+C('black_russian','Black Russian','Klassiker','Wodka','tumbler','cubes','b',
+  'Wodka und Kaffeelikör auf Eis.',
+  [['kahlua',2,'cl','b'],['wodka',5,'cl','b']],
+  [],['klassiker','einfach']),
+
+C('white_russian','White Russian','Klassiker','Wodka','tumbler','cubes','b',
+  'Black Russian mit Sahnehaube.',
+  [['kahlua',2,'cl','b'],['wodka',5,'cl','b'],['sahne',3,'cl','l']],
+  [],['klassiker','cremig']),
+
+C('espresso_martini','Espresso Martini','Klassiker','Wodka','coupe','none','f',
+  'Wodka, Kaffeelikör und frischer Espresso, dicht geschüttelt.',
+  [['zuckersirup',1,'cl','f'],['kahlua',2,'cl','f'],['espresso',3,'cl','f'],['wodka',5,'cl','f']],
+  [['kaffeebohnen',3]],['modern','kaffee']),
+
+/* ---------- Sours ---------- */
+C('whiskey_sour','Whiskey Sour','Sour','Whiskey','tumbler','cubes','f',
+  'Bourbon, Zitrone, Zucker – mit Eiweiß besonders samtig.',
+  [['zuckersirup',2,'cl','f'],['zitronensaft',3,'cl','f'],['eiweiss',2,'cl','f'],['bourbon',5,'cl','f']],
+  ['kirsche','orangenscheibe'],['sour','klassiker']),
+
+C('amaretto_sour','Amaretto Sour','Sour','Likör','tumbler','cubes','f',
+  'Mandeliger Sour mit einem Schuss Bourbon.',
+  [['zuckersirup',1,'cl','f'],['zitronensaft',3,'cl','f'],['eiweiss',2,'cl','f'],
+   ['bourbon',1.5,'cl','f'],['amaretto',4.5,'cl','f']],
+  ['kirsche'],['sour']),
+
+C('pisco_sour','Pisco Sour','Sour','Pisco','coupe','none','f',
+  'Peruanischer Klassiker mit Eiweißschaum und Angostura.',
+  [['zuckersirup',2,'cl','f'],['zitronensaft',3,'cl','f'],['eiweiss',2,'cl','f'],['pisco',6,'cl','f']],
+  [['dash_angostura',3]],['sour','schaum']),
+
+C('daiquiri','Daiquiri','Sour','Rum','coupe','none','f',
+  'Drei Zutaten, perfekt ausbalanciert.',
+  [['zuckersirup',2,'cl','f'],['limettensaft',2.5,'cl','f'],['rum_weiss',6,'cl','f']],
+  ['limettenscheibe'],['sour','klassiker']),
+
+C('margarita','Margarita','Sour','Tequila','margarita','none','f',
+  'Tequila, Limette, Triple Sec – mit Salzrand.',
+  [['triple_sec',2,'cl','f'],['limettensaft',2.5,'cl','f'],['tequila',5,'cl','f']],
+  ['salzrand','limettenspalte'],['sour','klassiker']),
+
+C('sidecar','Sidecar','Sour','Brandy','coupe','none','f',
+  'Cognac-Sour mit Orangenlikör und Zuckerrand.',
+  [['triple_sec',2,'cl','f'],['zitronensaft',2,'cl','f'],['cognac',5,'cl','f']],
+  ['zuckerrand','orangenzeste'],['sour','klassiker']),
+
+C('white_lady','White Lady','Sour','Gin','coupe','none','f',
+  'Gin, Cointreau, Zitrone, mit Eiweiß seidig.',
+  [['triple_sec',2,'cl','f'],['zitronensaft',2,'cl','f'],['eiweiss',1.5,'cl','f'],['gin',5,'cl','f']],
+  ['zitronenzeste'],['sour']),
+
+C('gimlet','Gimlet','Sour','Gin','coupe','none','f',
+  'Gin und Limette, kurz und klar.',
+  [['zuckersirup',1.5,'cl','f'],['limettensaft',2.5,'cl','f'],['gin',6,'cl','f']],
+  ['limettenscheibe'],['sour']),
+
+C('clover_club','Clover Club','Sour','Gin','coupe','none','f',
+  'Gin-Sour mit Himbeersirup und Eiweiß.',
+  [['himbeersirup',2,'cl','f'],['zitronensaft',2,'cl','f'],['eiweiss',2,'cl','f'],['gin',5,'cl','f']],
+  ['erdbeere'],['sour','fruchtig']),
+
+C('aviation','Aviation','Sour','Gin','coupe','none','f',
+  'Gin, Maraschino und Veilchenlikör – blassviolett.',
+  [['violette',1,'cl','f'],['maraschino',1.5,'cl','f'],['zitronensaft',2,'cl','f'],['gin',5,'cl','f']],
+  ['kirsche'],['sour','klassiker']),
+
+C('bees_knees','Bee\u2019s Knees','Sour','Gin','coupe','none','f',
+  'Gin-Sour mit Honigsirup.',
+  [['honigsirup',2,'cl','f'],['zitronensaft',2.5,'cl','f'],['gin',6,'cl','f']],
+  ['zitronenzeste'],['sour']),
+
+C('cosmopolitan','Cosmopolitan','Sour','Wodka','coupe','none','f',
+  'Wodka, Cranberry, Limette, Cointreau.',
+  [['triple_sec',1.5,'cl','f'],['limettensaft',1.5,'cl','f'],['cranberrysaft',3,'cl','f'],['wodka',4,'cl','f']],
+  ['orangenzeste'],['sour','modern']),
+
+C('kamikaze','Kamikaze','Sour','Wodka','coupe','none','f',
+  'Wodka, Triple Sec, Limette zu gleichen Teilen.',
+  [['triple_sec',3,'cl','f'],['limettensaft',3,'cl','f'],['wodka',3,'cl','f']],
+  ['limettenscheibe'],['sour']),
+
+C('lemon_drop','Lemon Drop','Sour','Wodka','coupe','none','f',
+  'Zitroniger Wodka-Sour mit Zuckerrand.',
+  [['zuckersirup',1.5,'cl','f'],['triple_sec',1.5,'cl','f'],['zitronensaft',2.5,'cl','f'],['wodka',5,'cl','f']],
+  ['zuckerrand','zitronenzeste'],['sour']),
+
+/* ---------- Highballs / Long Drinks ---------- */
+C('mojito','Mojito','Highball','Rum','highball','crushed','m',
+  'Kubanischer Klassiker mit Minze, Limette und Soda.',
+  [['limettensaft',3,'cl','m'],['rohrzucker',2,'bl','m'],['minze',8,'stk','m'],
+   ['rum_weiss',5,'cl','b'],['soda',null,'fill','t']],
+  ['minze','limettenspalte','strohhalm'],['klassiker','erfrischend']),
+
+C('cuba_libre','Cuba Libre','Highball','Rum','highball','cubes','b',
+  'Rum, Cola, viel Limette.',
+  [['limettensaft',2,'cl','b'],['rum_weiss',5,'cl','b'],['cola',null,'fill','t']],
+  ['limettenspalte','strohhalm'],['einfach']),
+
+C('gin_tonic','Gin Tonic','Highball','Gin','copa','cubes','b',
+  'Gin mit Tonic, kalt und aromatisch.',
+  [['gin',5,'cl','b'],['tonic',null,'fill','t']],
+  ['limettenscheibe','rosmarin'],['einfach','erfrischend']),
+
+C('moscow_mule','Moscow Mule','Highball','Wodka','mule','cubes','b',
+  'Wodka, Ginger Beer und Limette im Kupferbecher.',
+  [['limettensaft',2,'cl','b'],['wodka',5,'cl','b'],['ginger_beer',null,'fill','t']],
+  ['limettenspalte','minze'],['erfrischend']),
+
+C('dark_n_stormy','Dark \u2019n\u2019 Stormy','Highball','Rum','highball','cubes','b',
+  'Ginger Beer mit aufgeschwommenem dunklem Rum.',
+  [['limettensaft',1.5,'cl','b'],['ginger_beer',null,'fill','b'],['rum_dunkel',5,'cl','l']],
+  ['limettenspalte'],['schichtung']),
+
+C('tom_collins','Tom Collins','Highball','Gin','collins','cubes','b',
+  'Gin-Sour, lang gemacht mit Soda.',
+  [['zuckersirup',2,'cl','f'],['zitronensaft',3,'cl','f'],['gin',5,'cl','f'],['soda',null,'fill','t']],
+  ['zitronenscheibe','kirsche'],['klassiker','erfrischend']),
+
+C('john_collins','John Collins','Highball','Whiskey','collins','cubes','b',
+  'Collins mit Bourbon statt Gin.',
+  [['zuckersirup',2,'cl','f'],['zitronensaft',3,'cl','f'],['bourbon',5,'cl','f'],['soda',null,'fill','t']],
+  ['zitronenscheibe','kirsche'],['klassiker']),
+
+C('paloma','Paloma','Highball','Tequila','highball','cubes','b',
+  'Tequila mit Grapefruit und Soda, mexikanischer Alltagsdrink.',
+  [['limettensaft',1.5,'cl','b'],['grapefruitsaft',10,'cl','b'],['tequila',5,'cl','b'],['soda',null,'fill','t']],
+  ['salzrand','limettenspalte'],['erfrischend']),
+
+C('tequila_sunrise','Tequila Sunrise','Highball','Tequila','highball','cubes','b',
+  'Orangensaft mit Tequila, Grenadine sinkt zu Boden.',
+  [['grenadine',2,'cl','l'],['orangensaft',12,'cl','b'],['tequila',5,'cl','b']],
+  ['orangenscheibe','kirsche'],['fruchtig'],
+  { note:'Grenadine zuletzt langsam am Glasrand eingießen, sie sinkt nach unten.' }),
+
+C('sea_breeze','Sea Breeze','Highball','Wodka','highball','cubes','b',
+  'Wodka mit Cranberry und Grapefruit.',
+  [['grapefruitsaft',6,'cl','b'],['cranberrysaft',8,'cl','b'],['wodka',4,'cl','b']],
+  ['limettenspalte'],['fruchtig']),
+
+C('long_island','Long Island Iced Tea','Highball','Wodka','collins','cubes','b',
+  'Fünf weiße Spirituosen, Zitrone und ein Schuss Cola.',
+  [['zuckersirup',1,'cl','f'],['zitronensaft',2.5,'cl','f'],['triple_sec',1.5,'cl','f'],
+   ['wodka',1.5,'cl','f'],['gin',1.5,'cl','f'],['rum_weiss',1.5,'cl','f'],['tequila',1.5,'cl','f'],
+   ['cola',null,'fill','t']],
+  ['zitronenscheibe','strohhalm'],['stark'],
+  { altName:'Strong Island Iced Tea' }),
+
+C('screwdriver','Screwdriver','Highball','Wodka','highball','cubes','b',
+  'Wodka Orange, direkt im Glas gebaut.',
+  [['orangensaft',14,'cl','b'],['wodka',5,'cl','b']],
+  ['orangenscheibe'],['einfach']),
+
+C('bloody_mary','Bloody Mary','Highball','Wodka','highball','cubes','r',
+  'Herzhaft: Tomate, Wodka, Gewürze.',
+  [['worcester',3,'dash','r'],['tabasco',2,'dash','r'],['zitronensaft',1.5,'cl','r'],
+   ['tomatensaft',12,'cl','r'],['wodka',5,'cl','r']],
+  ['sellerie','zitronenscheibe'],['herzhaft'],
+  { note:'Salz, Pfeffer und Selleriesalz nach Geschmack.' }),
+
+C('horses_neck','Horse\u2019s Neck','Highball','Brandy','highball','cubes','b',
+  'Ginger Ale mit Brandy und langer Zitronenspirale.',
+  [['angostura',3,'dash','b'],['cognac',5,'cl','b'],['ginger_ale',null,'fill','t']],
+  ['zitronenzeste'],['klassiker']),
+
+C('americano','Americano','Highball','Likör','highball','cubes','b',
+  'Campari und Wermut mit Soda – der leichte Aperitif.',
+  [['campari',3,'cl','b'],['wermut_rot',3,'cl','b'],['soda',null,'fill','t']],
+  ['orangenscheibe'],['aperitif','bitter']),
+
+C('aperol_spritz','Aperol Spritz','Highball','Likör','wine','cubes','b',
+  '3 Teile Prosecco, 2 Teile Aperol, ein Spritzer Soda.',
+  [['aperol',6,'cl','b'],['prosecco',9,'cl','b'],['soda',3,'cl','t']],
+  ['orangenscheibe'],['aperitif','erfrischend']),
+
+C('hugo','Hugo','Highball','Wein/Sekt','wine','cubes','b',
+  'Holunderblüte, Minze, Limette und Prosecco.',
+  [['holunderblueten',3,'cl','b'],['limettensaft',1,'cl','b'],['minze',6,'stk','b'],
+   ['prosecco',10,'cl','b'],['soda',3,'cl','t']],
+  ['minze','limettenscheibe'],['aperitif','erfrischend']),
+
+/* ---------- Tiki / Tropisch ---------- */
+C('mai_tai','Mai Tai','Tiki','Rum','tumbler','crushed','f',
+  'Rum, Orgeat, Limette und Curaçao mit Rum-Float.',
+  [['orgeat',1.5,'cl','f'],['triple_sec',1.5,'cl','f'],['limettensaft',3,'cl','f'],
+   ['rum_weiss',3,'cl','f'],['rum_dunkel',3,'cl','l']],
+  ['minze','limettenspalte'],['tiki']),
+
+C('pina_colada','Piña Colada','Tiki','Rum','hurricane','crushed','x',
+  'Ananas, Kokos und Rum aus dem Blender.',
+  [['kokoscreme',4,'cl','x'],['ananassaft',12,'cl','x'],['sahne',2,'cl','x'],['rum_weiss',5,'cl','x']],
+  ['ananasstueck','kirsche','schirmchen'],['tiki','cremig']),
+
+C('zombie','Zombie','Tiki','Rum','sling','crushed','f',
+  'Drei Rumsorten, Fruchtsäfte, Falernum – mit Vorsicht.',
+  [['grenadine',1,'cl','f'],['falernum',1.5,'cl','f'],['limettensaft',2,'cl','f'],
+   ['ananassaft',3,'cl','f'],['maracujasaft',3,'cl','f'],['rum_weiss',3,'cl','f'],
+   ['rum_braun',3,'cl','f'],['rum_overproof',1.5,'cl','l']],
+  ['minze','ananasstueck','schirmchen'],['tiki','stark'],
+  { noteRef:1 }),
+
+C('planters_punch','Planter\u2019s Punch','Tiki','Rum','sling','cubes','f',
+  'Jamaikanischer Punch mit dunklem Rum und viel Saft.',
+  [['grenadine',1,'cl','f'],['zitronensaft',2,'cl','f'],['ananassaft',6,'cl','f'],
+   ['orangensaft',6,'cl','f'],['rum_dunkel',5,'cl','f'],['angostura',3,'dash','t']],
+  ['orangenscheibe','kirsche'],['tiki']),
+
+C('caipirinha','Caipirinha','Tiki','Cachaça','tumbler','crushed','m',
+  'Limette und Rohrzucker im Glas zerstoßen, Cachaça darauf.',
+  [['limette_stueck',8,'stk','m'],['rohrzucker',2,'bl','m'],['cachaca',6,'cl','b']],
+  ['strohhalm'],['klassiker','erfrischend']),
+
+C('sex_on_the_beach','Sex on the Beach','Tiki','Wodka','highball','cubes','b',
+  'Pfirsich, Orange und Cranberry mit Wodka.',
+  [['cranberrysaft',6,'cl','b'],['orangensaft',6,'cl','b'],['peachtree',2,'cl','b'],['wodka',4,'cl','b']],
+  ['orangenscheibe','kirsche'],['fruchtig']),
+
+C('swimming_pool','Swimming Pool','Tiki','Wodka','hurricane','crushed','x',
+  'Colada-Basis mit blauem Curaçao-Float.',
+  [['kokoscreme',3,'cl','x'],['ananassaft',10,'cl','x'],['sahne',2,'cl','x'],
+   ['wodka',3,'cl','x'],['rum_weiss',2,'cl','x'],['blue_curacao',2,'cl','l']],
+  ['ananasstueck','schirmchen'],['tiki','cremig']),
+
+C('blue_lagoon','Blue Lagoon','Tiki','Wodka','highball','cubes','b',
+  'Blau, zitronig, einfach.',
+  [['blue_curacao',3,'cl','b'],['wodka',4,'cl','b'],['lemonade',null,'fill','t']],
+  ['zitronenscheibe','kirsche'],['fruchtig']),
+
+C('bahama_mama','Bahama Mama','Tiki','Rum','hurricane','crushed','f',
+  'Kokos, Kaffee und zwei Rumsorten mit Ananas.',
+  [['grenadine',1,'cl','f'],['kokoslikoer',2,'cl','f'],['kahlua',1,'cl','f'],
+   ['zitronensaft',1.5,'cl','f'],['ananassaft',8,'cl','f'],['rum_weiss',2,'cl','f'],['rum_dunkel',2,'cl','f']],
+  ['ananasstueck','kirsche'],['tiki']),
+
+/* ---------- Sekt / Wein ---------- */
+C('bellini','Bellini','Sekt & Wein','Wein/Sekt','flute','none','b',
+  'Weißer Pfirsich und Prosecco, Venedig 1948.',
+  [['pfirsichpueree',5,'cl','b'],['prosecco',10,'cl','t']],
+  [],['aperitif']),
+
+C('mimosa','Mimosa','Sekt & Wein','Wein/Sekt','flute','none','b',
+  'Orangensaft und Champagner zu gleichen Teilen.',
+  [['orangensaft',7,'cl','b'],['champagner',7,'cl','t']],
+  ['orangenzeste'],['aperitif','einfach']),
+
+C('kir_royal','Kir Royal','Sekt & Wein','Wein/Sekt','flute','none','b',
+  'Cassis mit Champagner aufgefüllt.',
+  [['cassis',1.5,'cl','b'],['champagner',12,'cl','t']],
+  [],['aperitif','einfach']),
+
+C('french_75','French 75','Sekt & Wein','Gin','flute','none','f',
+  'Gin-Sour, mit Champagner verlängert.',
+  [['zuckersirup',1.5,'cl','f'],['zitronensaft',1.5,'cl','f'],['gin',3,'cl','f'],['champagner',8,'cl','t']],
+  ['zitronenzeste'],['klassiker','aperitif']),
+
+C('champagne_cocktail','Champagne Cocktail','Sekt & Wein','Wein/Sekt','flute','none','b',
+  'Zuckerwürfel mit Angostura, mit Champagner aufgegossen.',
+  [['zuckerwuerfel',1,'stk','b'],['angostura',4,'dash','b'],['cognac',1,'cl','b'],['champagner',12,'cl','t']],
+  ['zitronenzeste','zuckerwuerfel'],['klassiker']),
+
+/* ---------- Schichtcocktails ---------- */
+C('b52','B-52','Schichtcocktail','Likör','shot','none','l',
+  'Drei Liköre in drei sichtbaren Schichten.',
+  [['kahlua',2,'cl','b'],['baileys',2,'cl','l'],['grand_marnier',2,'cl','l']],
+  [],['shot','schichtung'],
+  { note:'Jede Zutat langsam über den Rücken eines Barlöffels gießen.', noteRef:2 }),
+
+C('pousse_cafe','Pousse-Café','Schichtcocktail','Likör','shot','none','l',
+  'Sechs Schichten nach Dichte, von schwer nach leicht.',
+  [['grenadine',1,'cl','b'],['cacao_braun',1,'cl','l'],['maraschino',1,'cl','l'],
+   ['blue_curacao',1,'cl','l'],['chartreuse',1,'cl','l'],['cognac',1,'cl','l']],
+  [],['schichtung'],
+  { altName:'Stars & Stripes', note:'Jede Zutat langsam über den Löffelrücken gießen. Vermischen sich die Schichten, heißt der Drink anders.', noteRef:2 }),
+
+/* ---------- Alkoholfrei ---------- */
+C('virgin_mojito','Virgin Mojito','Alkoholfrei','Alkoholfrei','highball','crushed','m',
+  'Mojito ohne Rum – Minze, Limette, Soda.',
+  [['limettensaft',3,'cl','m'],['rohrzucker',2,'bl','m'],['minze',8,'stk','m'],['soda',null,'fill','t']],
+  ['minze','limettenspalte','strohhalm'],['alkoholfrei','erfrischend'],
+  { altName:'Nojito' }),
+
+C('virgin_colada','Virgin Colada','Alkoholfrei','Alkoholfrei','hurricane','crushed','x',
+  'Ananas und Kokos, cremig gemixt.',
+  [['kokoscreme',4,'cl','x'],['ananassaft',14,'cl','x'],['sahne',2,'cl','x']],
+  ['ananasstueck','kirsche','schirmchen'],['alkoholfrei','cremig']),
+
+C('ipanema','Ipanema','Alkoholfrei','Alkoholfrei','tumbler','crushed','m',
+  'Caipirinha ohne Alkohol, mit Ginger Ale.',
+  [['limette_stueck',8,'stk','m'],['rohrzucker',2,'bl','m'],['maracujasaft',4,'cl','b'],
+   ['ginger_ale',null,'fill','t']],
+  ['limettenspalte','strohhalm'],['alkoholfrei','erfrischend']),
+
+C('shirley_temple','Shirley Temple','Alkoholfrei','Alkoholfrei','highball','cubes','b',
+  'Ginger Ale mit Grenadine – der Kinderklassiker.',
+  [['grenadine',2,'cl','b'],['ginger_ale',null,'fill','t']],
+  ['kirsche','orangenscheibe'],['alkoholfrei','einfach'])
+];
+
+var COCKTAIL_BY_ID = {}; COCKTAILS.forEach(function(c){ COCKTAIL_BY_ID[c.id] = c; });
+
+
+/* ===== 10_draw_core.js ===== */
+
+/* ============================================================
+   Zeichen-Kern
+   Alle Koordinaten in Millimetern auf dem Blatt, y nach unten.
+   Die Ops-Liste wird sowohl nach SVG (Bildschirm) als auch nach
+   PDF (Export) ausgegeben – identische Geometrie in beiden Wegen.
+   ============================================================ */
+
+var INK = '#000000';
+
+function Drw() { this.ops = []; }
+Drw.prototype.line = function (x1, y1, x2, y2, o) {
+  o = o || {}; this.ops.push({ t:'l', x1:x1, y1:y1, x2:x2, y2:y2,
+    w:o.w||0.18, c:o.c||INK, d:o.d||null }); return this;
+};
+Drw.prototype.path = function (segs, o) {
+  o = o || {}; this.ops.push({ t:'p', segs:segs, w:(o.w===0?0:(o.w||0.18)),
+    c:o.c||INK, fill:o.fill||null, close:!!o.close }); return this;
+};
+Drw.prototype.poly = function (pts, o) {
+  var segs = [['M', pts[0][0], pts[0][1]]];
+  for (var i = 1; i < pts.length; i++) segs.push(['L', pts[i][0], pts[i][1]]);
+  if (o && o.close) segs.push(['Z']);
+  return this.path(segs, o);
+};
+Drw.prototype.rect = function (x, y, w, h, o) {
+  return this.poly([[x,y],[x+w,y],[x+w,y+h],[x,y+h]], Object.assign({close:true}, o||{}));
+};
+Drw.prototype.circ = function (cx, cy, r, o) {
+  o = o || {}; this.ops.push({ t:'c', cx:cx, cy:cy, r:r, w:(o.w===0?0:(o.w||0.18)),
+    c:o.c||INK, fill:o.fill||null }); return this;
+};
+Drw.prototype.text = function (x, y, s, o) {
+  o = o || {}; if (s === null || s === undefined || s === '') return this;
+  this.ops.push({ t:'t', x:x, y:y, s:String(s), size:o.size||2.2, anchor:o.anchor||'start',
+    c:o.c||INK, bold:!!o.bold, rot:o.rot||0, ul:!!o.ul, ls:o.ls||0 }); return this;
+};
+Drw.prototype.clip = function (segs) { this.ops.push({ t:'k', segs:segs }); return this; };
+Drw.prototype.unclip = function () { this.ops.push({ t:'u' }); return this; };
+Drw.prototype.add = function (other) { this.ops = this.ops.concat(other.ops); return this; };
+
+/* ---------- Textmetrik: Helvetica (Standard-PDF-Font) ---------- */
+var HELV_W = (function () {
+  var w = {}, i;
+  var norm = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278];
+  for (i = 0; i < 16; i++) w[32 + i] = norm[i];
+  for (i = 48; i <= 57; i++) w[i] = 556;
+  var p2 = { 58:278,59:278,60:584,61:584,62:584,63:556,64:1015 };
+  for (var k in p2) w[k] = p2[k];
+  var uc = [667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611];
+  for (i = 0; i < 26; i++) w[65 + i] = uc[i];
+  var p3 = { 91:278,92:278,93:278,94:469,95:556,96:333 };
+  for (var k2 in p3) w[k2] = p3[k2];
+  var lc = [556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500];
+  for (i = 0; i < 26; i++) w[97 + i] = lc[i];
+  w[123]=334; w[124]=260; w[125]=334; w[126]=584;
+  return w;
+})();
+var HELVB_W = (function () {
+  var w = {}, i;
+  var norm = [278,333,474,556,556,889,722,238,333,333,389,584,278,333,278,278];
+  for (i = 0; i < 16; i++) w[32 + i] = norm[i];
+  for (i = 48; i <= 57; i++) w[i] = 556;
+  var p2 = { 58:333,59:333,60:584,61:584,62:584,63:611,64:975 };
+  for (var k in p2) w[k] = p2[k];
+  var uc = [722,722,722,722,667,611,778,722,278,556,722,611,833,722,778,667,778,722,667,611,722,667,944,667,667,611];
+  for (i = 0; i < 26; i++) w[65 + i] = uc[i];
+  var p3 = { 91:333,92:278,93:333,94:584,95:556,96:333 };
+  for (var k2 in p3) w[k2] = p3[k2];
+  var lc = [556,611,556,611,556,333,611,611,278,278,556,278,889,611,611,611,611,389,556,333,611,556,778,556,556,500];
+  for (i = 0; i < 26; i++) w[97 + i] = lc[i];
+  w[123]=389; w[124]=280; w[125]=389; w[126]=584;
+  return w;
+})();
+/* WinAnsi-Codes für die verwendeten Sonderzeichen */
+var WINANSI = { 'ä':228,'ö':246,'ü':252,'Ä':196,'Ö':214,'Ü':220,'ß':223,'é':233,'è':232,'ç':231,
+  'á':225,'à':224,'–':150,'—':151,'‘':145,'’':146,'“':147,'”':148,'·':183,'°':176,'×':215,'…':133,
+  'É':201,'Á':193,'ñ':241,'í':237,'ó':243,'ú':250,'â':226,'ê':234,'î':238,'ô':244,'û':251,'«':171,'»':187 };
+var WINANSI_EXTRA_W = { 228:556,246:556,252:556,196:667,214:778,220:722,223:556,233:556,232:556,231:500,
+  225:556,224:556,150:556,151:1000,145:222,146:222,147:333,148:333,183:278,176:400,215:584,133:1000,
+  201:667,193:667,241:556,237:278,243:556,250:556,226:556,234:556,238:278,244:556,251:556,171:556,187:556 };
+var WINANSI_EXTRA_WB = { 228:556,246:611,252:611,196:722,214:778,220:722,223:611,233:556,232:556,231:556,
+  225:556,224:556,150:556,151:1000,145:278,146:278,147:500,148:500,183:278,176:400,215:584,133:1000,
+  201:667,193:722,241:611,237:278,243:611,250:611,226:556,234:556,238:278,244:611,251:611,171:556,187:556 };
+
+function charCodeWA(ch) {
+  var c = ch.charCodeAt(0);
+  if (c < 127) return c;
+  if (WINANSI[ch] !== undefined) return WINANSI[ch];
+  return 63; /* ? */
+}
+function textWidth(s, size, bold, ls) {
+  var t = 0, tbl = bold ? HELVB_W : HELV_W, ex = bold ? WINANSI_EXTRA_WB : WINANSI_EXTRA_W;
+  for (var i = 0; i < s.length; i++) {
+    var c = charCodeWA(s[i]);
+    var w = (c < 127 ? tbl[c] : ex[c]);
+    t += (w === undefined ? 556 : w);
+  }
+  return t / 1000 * size + (ls || 0) * Math.max(0, s.length - 1);
+}
+
+/* ---------- Geometrie ---------- */
+function catmull(pts, samples) {
+  /* Catmull-Rom durch alle Punkte, gibt dichte Punktfolge zurück */
+  if (pts.length < 3) return pts.slice();
+  var p = [pts[0]].concat(pts, [pts[pts.length - 1]]), out = [];
+  for (var i = 0; i < p.length - 3; i++) {
+    var p0 = p[i], p1 = p[i+1], p2 = p[i+2], p3 = p[i+3];
+    for (var j = 0; j < samples; j++) {
+      var t = j / samples, t2 = t*t, t3 = t2*t;
+      out.push([
+        0.5*((2*p1[0]) + (-p0[0]+p2[0])*t + (2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*t2 + (-p0[0]+3*p1[0]-3*p2[0]+p3[0])*t3),
+        0.5*((2*p1[1]) + (-p0[1]+p2[1])*t + (2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*t2 + (-p0[1]+3*p1[1]-3*p2[1]+p3[1])*t3)
+      ]);
+    }
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+function bboxOf(pts) {
+  var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (var i = 0; i < pts.length; i++) {
+    if (pts[i][0] < x0) x0 = pts[i][0]; if (pts[i][0] > x1) x1 = pts[i][0];
+    if (pts[i][1] < y0) y0 = pts[i][1]; if (pts[i][1] > y1) y1 = pts[i][1];
+  }
+  return { x0:x0, y0:y0, x1:x1, y1:y1 };
+}
+function segsFromPts(pts, close) {
+  var s = [['M', pts[0][0], pts[0][1]]];
+  for (var i = 1; i < pts.length; i++) s.push(['L', pts[i][0], pts[i][1]]);
+  if (close) s.push(['Z']);
+  return s;
+}
+
+/* ---------- Schraffuren (Anhang E) ---------- */
+var HATCH_DEF = {
+  diag45:  { kind:'lines', ang:45,  sp:1.15 },
+  diag45w: { kind:'lines', ang:45,  sp:2.10 },
+  diag135: { kind:'lines', ang:135, sp:1.25 },
+  cross:   { kind:'cross', ang:45,  sp:1.90 },
+  horiz:   { kind:'lines', ang:0,   sp:1.30 },
+  dots:    { kind:'dots',  sp:1.70, r:0.20 },
+  dense:   { kind:'dots',  sp:0.95, r:0.22 },
+  wave:    { kind:'wave',  sp:1.60 },
+  tri:     { kind:'tri',   sp:2.20 }
+};
+
+function hatchLines(bb, ang, sp) {
+  var out = [], a = ang * Math.PI / 180;
+  var dx = Math.cos(a), dy = Math.sin(a);
+  var nx = -dy, ny = dx;                  /* Normale */
+  var cx = (bb.x0 + bb.x1) / 2, cy = (bb.y0 + bb.y1) / 2;
+  var diag = Math.hypot(bb.x1 - bb.x0, bb.y1 - bb.y0) / 2 + sp;
+  var n = Math.ceil(diag / sp);
+  for (var i = -n; i <= n; i++) {
+    var ox = cx + nx * i * sp, oy = cy + ny * i * sp;
+    out.push([[ox - dx * diag, oy - dy * diag], [ox + dx * diag, oy + dy * diag]]);
+  }
+  return out;
+}
+
+/* Erzeugt Farbfläche + Schraffur innerhalb eines Polygons */
+function fillHatched(drw, pts, cls, color, opt) {
+  opt = opt || {};
+  var segs = segsFromPts(pts, true), bb = bboxOf(pts);
+  var scale = opt.scale || 1;
+  var lw = opt.lw || 0.12;
+  var hc = opt.hatchColor || INK;
+  if (opt.color !== false && color) drw.path(segs, { fill:color, w:0 });
+  if (opt.mono) drw.path(segs, { fill:'#FFFFFF', w:0 });
+  var def = HATCH_DEF[(CLASS_BY_ID[cls] || {}).hatch] || HATCH_DEF.diag45;
+  if (opt.noHatch) { drw.path(segs, { w:lw, c:hc }); return; }
+  var sp = def.sp * (0.62 + 0.38 * scale);
+  drw.clip(segs);
+  var i, L;
+  if (def.kind === 'lines' || def.kind === 'cross') {
+    L = hatchLines(bb, def.ang, sp);
+    for (i = 0; i < L.length; i++) drw.line(L[i][0][0], L[i][0][1], L[i][1][0], L[i][1][1], { w:lw, c:hc });
+    if (def.kind === 'cross') {
+      L = hatchLines(bb, def.ang + 90, sp);
+      for (i = 0; i < L.length; i++) drw.line(L[i][0][0], L[i][0][1], L[i][1][0], L[i][1][1], { w:lw, c:hc });
+    }
+  } else if (def.kind === 'dots') {
+    var r = def.r * (0.7 + 0.3 * scale);
+    for (var y = bb.y0; y <= bb.y1; y += sp) {
+      var off = (Math.round((y - bb.y0) / sp) % 2) * sp / 2;
+      for (var x = bb.x0 - sp; x <= bb.x1 + sp; x += sp)
+        drw.rect(x + off - r, y - r, r * 2, r * 2, { w:0, fill:hc });
+    }
+  } else if (def.kind === 'wave') {
+    for (var yy = bb.y0; yy <= bb.y1; yy += sp) {
+      var pts2 = [], step = sp / 2;
+      for (var xx = bb.x0; xx <= bb.x1 + step; xx += step)
+        pts2.push([xx, yy + Math.sin((xx - bb.x0) / sp * Math.PI) * sp * 0.22]);
+      if (pts2.length > 1) drw.path(segsFromPts(pts2, false), { w:lw, c:hc });
+    }
+  } else if (def.kind === 'tri') {
+    var h = sp * 0.55;
+    for (var ty = bb.y0; ty <= bb.y1; ty += sp) {
+      var toff = (Math.round((ty - bb.y0) / sp) % 2) * sp / 2;
+      for (var tx = bb.x0 - sp; tx <= bb.x1 + sp; tx += sp)
+        drw.poly([[tx + toff, ty + h/2], [tx + toff + h*0.6, ty - h/2], [tx + toff - h*0.6, ty - h/2]],
+                 { close:true, w:lw, c:hc });
+    }
+  }
+  drw.unclip();
+  drw.path(segs, { w:lw, c:hc });
+}
+
+/* Musterfeld für die Legende */
+function hatchSwatch(drw, x, y, w, h, cls, color, opt) {
+  fillHatched(drw, [[x,y],[x+w,y],[x+w,y+h],[x,y+h]], cls, color,
+    Object.assign({ scale:1, lw:0.12 }, opt || {}));
+}
+
+/* ---------- Zahlformat ---------- */
+function fmtNum(n) {
+  if (n === null || n === undefined) return '';
+  var r = Math.round(n * 100) / 100;
+  return String(r).replace('.', ',');
+}
+function amountLabel(ing, unit) {
+  /* Liefert die Beschriftung einer Bezugslinie */
+  var u = UNIT_BY_ID[ing.unit] || { name:ing.unit, ml:10 };
+  if (ing.unit === 'fill') return 'auffüllen';
+  if (ing.unit === 'cl') {
+    var ml = ing.amount * 10;
+    if (unit === 'ml') return fmtNum(ml) + ' ml';
+    if (unit === 'oz') return fmtNum(Math.round(ml / 2.957) / 10) + ' oz. (' + fmtNum(ml) + ' ml)';
+    return fmtNum(ing.amount) + ' cl (' + fmtNum(ml) + ' ml)';
+  }
+  if (ing.unit === 'ml') return fmtNum(ing.amount) + ' ml';
+  return fmtNum(ing.amount) + ' ' + u.name;
+}
+function volLabel(ml, unit) {
+  if (unit === 'ml') return fmtNum(ml) + ' ml';
+  if (unit === 'oz') return fmtNum(Math.round(ml / 2.957) / 10) + ' oz. (' + fmtNum(ml) + ' ml)';
+  return fmtNum(ml / 10) + ' cl (' + fmtNum(ml) + ' ml)';
+}
+function mlOf(ing) {
+  var u = UNIT_BY_ID[ing.unit];
+  if (!u || ing.amount === null) return 0;
+  return ing.amount * u.ml;
+}
+
+
+/* ===== 11_pictograms.js ===== */
+
+/* ============================================================
+   Piktogramme (Garnitur/Zusätze) und Methodensymbole
+   Alle zeichnen zentriert um (x,y) in eine Box der Höhe s.
+   ============================================================ */
+function arcPts(cx, cy, r, a0, a1, n) {
+  var p = [], i;
+  for (i = 0; i <= n; i++) {
+    var a = a0 + (a1 - a0) * i / n;
+    p.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+  }
+  return p;
+}
+function leaf(drw, x, y, len, ang, lw) {
+  var a = ang * Math.PI / 180, dx = Math.cos(a) * len, dy = Math.sin(a) * len;
+  var mx = x + dx / 2, my = y + dy / 2, w = len * 0.34;
+  var px = -Math.sin(a) * w, py = Math.cos(a) * w;
+  drw.path([['M', x, y], ['C', mx + px, my + py, mx + px, my + py, x + dx, y + dy],
+            ['C', mx - px, my - py, mx - px, my - py, x, y]], { w:lw, c:INK });
+}
+
+function drawPic(drw, type, x, y, s, lw) {
+  lw = lw || 0.15;
+  var o = { w:lw, c:INK }, of = { w:lw, c:INK, fill:'#FFFFFF' }, i, p;
+  switch (type) {
+
+    case 'cherry':
+      drw.circ(x - s*0.06, y + s*0.18, s*0.28, of);
+      drw.path([['M', x - s*0.06, y - s*0.10], ['C', x + s*0.10, y - s*0.28, x + s*0.22, y - s*0.36, x + s*0.34, y - s*0.44]], o);
+      leaf(drw, x + s*0.30, y - s*0.44, s*0.26, -20, lw);
+      break;
+
+    case 'olive':
+      drw.path(segsFromPts(arcPts(x, y, s*0.30, 0, Math.PI*2, 22).map(function(q){ return [x + (q[0]-x)*0.86, q[1]]; }), true), of);
+      drw.circ(x, y, s*0.10, { w:lw, c:INK, fill:'#FFFFFF' });
+      break;
+
+    case 'onion':
+      drw.circ(x, y, s*0.28, of);
+      drw.path([['M', x - s*0.18, y - s*0.14], ['L', x + s*0.02, y - s*0.30]], o);
+      drw.path([['M', x - s*0.02, y + s*0.26], ['L', x + s*0.16, y + s*0.10]], o);
+      break;
+
+    case 'orange': case 'lemon': case 'lime': {
+      /* Achtelsegment */
+      var r = s*0.44, a0 = -Math.PI*0.72, a1 = -Math.PI*0.28;
+      p = [[x, y + r*0.42]].concat(arcPts(x, y + r*0.42, r, a0, a1, 10));
+      drw.path(segsFromPts(p, true), of);
+      drw.path(segsFromPts(arcPts(x, y + r*0.42, r*0.80, a0 + 0.10, a1 - 0.10, 8), false), { w:lw*0.8, c:INK });
+      for (i = 1; i <= 3; i++) {
+        var aa = a0 + (a1 - a0) * i / 4;
+        drw.line(x + Math.cos(aa)*r*0.14, y + r*0.42 + Math.sin(aa)*r*0.14,
+                 x + Math.cos(aa)*r*0.76, y + r*0.42 + Math.sin(aa)*r*0.76, { w:lw*0.7 });
+      }
+      break;
+    }
+
+    case 'limeslice': case 'orangefull': case 'lemonfull':
+      drw.circ(x, y, s*0.40, of);
+      drw.circ(x, y, s*0.31, { w:lw*0.8, c:INK });
+      for (i = 0; i < 6; i++) {
+        var ang = i * Math.PI / 3 + 0.3;
+        drw.line(x + Math.cos(ang)*s*0.05, y + Math.sin(ang)*s*0.05,
+                 x + Math.cos(ang)*s*0.29, y + Math.sin(ang)*s*0.29, { w:lw*0.7 });
+      }
+      break;
+
+    case 'dash':
+      drw.path([['M', x, y - s*0.34], ['C', x + s*0.24, y + s*0.02, x + s*0.18, y + s*0.30, x, y + s*0.30],
+                ['C', x - s*0.18, y + s*0.30, x - s*0.24, y + s*0.02, x, y - s*0.34]], of);
+      break;
+
+    case 'icecube':
+      drw.poly([[x - s*0.34, y - s*0.14],[x - s*0.06, y - s*0.34],[x + s*0.34, y - s*0.34],
+                [x + s*0.34, y + s*0.16],[x + s*0.06, y + s*0.34],[x - s*0.34, y + s*0.34]], Object.assign({close:true}, of));
+      drw.line(x - s*0.34, y - s*0.14, x + s*0.06, y - s*0.14, o);
+      drw.line(x + s*0.06, y - s*0.14, x + s*0.34, y - s*0.34, o);
+      drw.line(x + s*0.06, y - s*0.14, x + s*0.06, y + s*0.34, o);
+      break;
+
+    case 'iceball':
+      drw.circ(x, y, s*0.36, of);
+      drw.path(segsFromPts(arcPts(x, y, s*0.24, Math.PI*1.05, Math.PI*1.45, 6), false), { w:lw*0.8 });
+      break;
+
+    case 'crushed':
+      var cp = [[-0.30,-0.22],[0.02,-0.30],[0.28,-0.06],[-0.10,0.02],[0.16,0.24],[-0.26,0.18]];
+      for (i = 0; i < cp.length; i++)
+        drw.poly([[x + cp[i][0]*s, y + cp[i][1]*s],
+                  [x + cp[i][0]*s + s*0.15, y + cp[i][1]*s + s*0.04],
+                  [x + cp[i][0]*s + s*0.07, y + cp[i][1]*s + s*0.15]], Object.assign({close:true}, of));
+      break;
+
+    case 'sugarcube':
+      drw.poly([[x - s*0.30, y - s*0.10],[x - s*0.06, y - s*0.30],[x + s*0.30, y - s*0.30],
+                [x + s*0.30, y + s*0.12],[x + s*0.06, y + s*0.30],[x - s*0.30, y + s*0.30]], Object.assign({close:true}, of));
+      drw.line(x - s*0.30, y - s*0.10, x + s*0.06, y - s*0.10, o);
+      drw.line(x + s*0.06, y - s*0.10, x + s*0.30, y - s*0.30, o);
+      drw.line(x + s*0.06, y - s*0.10, x + s*0.06, y + s*0.30, o);
+      for (i = 0; i < 5; i++) drw.circ(x - s*0.22 + (i%3)*s*0.11, y + s*0.06 + Math.floor(i/3)*s*0.12, s*0.025, { w:0, fill:INK });
+      break;
+
+    case 'sugar':
+      drw.path(segsFromPts(arcPts(x, y + s*0.20, s*0.32, Math.PI, Math.PI*2, 12), false), o);
+      drw.line(x - s*0.32, y + s*0.20, x + s*0.32, y + s*0.20, o);
+      for (i = 0; i < 6; i++) drw.circ(x - s*0.20 + (i%3)*s*0.16, y - s*0.04 + Math.floor(i/3)*s*0.12, s*0.03, { w:0, fill:INK });
+      break;
+
+    case 'peel':
+      drw.path([['M', x - s*0.30, y - s*0.26], ['C', x + s*0.30, y - s*0.34, x - s*0.30, y + s*0.18, x + s*0.30, y + s*0.10]], o);
+      drw.path([['M', x - s*0.28, y - s*0.10], ['C', x + s*0.28, y - s*0.18, x - s*0.28, y + s*0.34, x + s*0.30, y + s*0.26]], o);
+      break;
+
+    case 'mint':
+      drw.line(x, y + s*0.34, x, y - s*0.20, o);
+      leaf(drw, x, y + s*0.10, s*0.30, -140, lw);
+      leaf(drw, x, y + s*0.10, s*0.30, -40, lw);
+      leaf(drw, x, y - s*0.12, s*0.26, -150, lw);
+      leaf(drw, x, y - s*0.12, s*0.26, -30, lw);
+      break;
+
+    case 'basil':
+      leaf(drw, x - s*0.02, y + s*0.16, s*0.40, -110, lw);
+      leaf(drw, x + s*0.02, y + s*0.16, s*0.36, -55, lw);
+      break;
+
+    case 'rosemary':
+      drw.line(x - s*0.22, y + s*0.32, x + s*0.16, y - s*0.32, o);
+      for (i = 0; i < 5; i++) {
+        var t = i / 5, bx = x - s*0.22 + (s*0.38)*t, by = y + s*0.32 - (s*0.64)*t;
+        drw.line(bx, by, bx - s*0.16, by - s*0.06, { w:lw*0.8 });
+        drw.line(bx, by, bx + s*0.14, by + s*0.02, { w:lw*0.8 });
+      }
+      break;
+
+    case 'umbrella':
+      drw.path(segsFromPts(arcPts(x, y - s*0.02, s*0.36, Math.PI, Math.PI*2, 14), true), of);
+      for (i = 1; i < 4; i++) drw.line(x, y - s*0.02, x - s*0.36 + i*s*0.24, y - s*0.02 + Math.sin(i/4*Math.PI)*0 - 0, { w:lw*0.7 });
+      drw.line(x, y - s*0.02, x, y + s*0.36, o);
+      break;
+
+    case 'pineapple':
+      drw.poly([[x - s*0.26, y + s*0.24],[x + s*0.26, y + s*0.24],[x + s*0.16, y - s*0.18],[x - s*0.16, y - s*0.18]], Object.assign({close:true}, of));
+      for (i = 0; i < 3; i++) drw.line(x - s*0.22 + i*s*0.16, y + s*0.24, x - s*0.10 + i*s*0.10, y - s*0.18, { w:lw*0.6 });
+      drw.line(x - s*0.10, y - s*0.18, x - s*0.20, y - s*0.36, { w:lw*0.8 });
+      drw.line(x, y - s*0.18, x, y - s*0.40, { w:lw*0.8 });
+      drw.line(x + s*0.10, y - s*0.18, x + s*0.20, y - s*0.36, { w:lw*0.8 });
+      break;
+
+    case 'celery':
+      drw.path([['M', x - s*0.14, y + s*0.40], ['C', x - s*0.20, y, x - s*0.16, y - s*0.20, x - s*0.20, y - s*0.40],
+                ['L', x + s*0.10, y - s*0.40], ['C', x + s*0.14, y - s*0.10, x + s*0.12, y + s*0.10, x + s*0.14, y + s*0.40], ['Z']], of);
+      drw.line(x - s*0.04, y + s*0.36, x - s*0.06, y - s*0.36, { w:lw*0.7 });
+      break;
+
+    case 'cucumber':
+      drw.circ(x, y, s*0.36, of);
+      drw.circ(x, y, s*0.24, { w:lw*0.8 });
+      for (i = 0; i < 5; i++) {
+        var ca = i * Math.PI * 2 / 5;
+        drw.circ(x + Math.cos(ca)*s*0.11, y + Math.sin(ca)*s*0.11, s*0.035, { w:0, fill:INK });
+      }
+      break;
+
+    case 'ginger':
+      drw.path(segsFromPts(arcPts(x, y, s*0.32, 0, Math.PI*2, 16).map(function(q, k){
+        return [q[0] + (k%3?0.01:-0.02)*s, q[1]]; }), true), of);
+      drw.circ(x, y, s*0.18, { w:lw*0.7 });
+      break;
+
+    case 'pick':
+      drw.line(x - s*0.30, y + s*0.34, x + s*0.30, y - s*0.34, o);
+      drw.circ(x + s*0.30, y - s*0.34, s*0.08, of);
+      drw.circ(x - s*0.02, y + s*0.02, s*0.14, of);
+      break;
+
+    case 'straw':
+      drw.line(x - s*0.16, y + s*0.38, x + s*0.10, y - s*0.20, o);
+      drw.line(x - s*0.04, y + s*0.40, x + s*0.22, y - s*0.18, o);
+      drw.line(x + s*0.10, y - s*0.20, x + s*0.22, y - s*0.18, o);
+      break;
+
+    case 'beans':
+      for (i = 0; i < 3; i++) {
+        var bx2 = x - s*0.20 + i*s*0.20, by2 = y - s*0.10 + (i%2)*s*0.20;
+        drw.path(segsFromPts(arcPts(bx2, by2, s*0.13, 0, Math.PI*2, 14).map(function(q){
+          return [bx2 + (q[0]-bx2)*0.78, q[1]]; }), true), of);
+        drw.line(bx2, by2 - s*0.12, bx2, by2 + s*0.12, { w:lw*0.7 });
+      }
+      break;
+
+    case 'grated':
+      for (i = 0; i < 9; i++)
+        drw.circ(x - s*0.30 + (i%3)*s*0.30 + (Math.floor(i/3)%2)*s*0.08,
+                 y - s*0.24 + Math.floor(i/3)*s*0.24, s*0.045, { w:0, fill:INK });
+      break;
+
+    case 'rimsalt': case 'rimsugar':
+      drw.path(segsFromPts(arcPts(x, y + s*0.34, s*0.40, Math.PI*1.15, Math.PI*1.85, 10), false), o);
+      for (i = 0; i < 7; i++) {
+        var rx = x - s*0.34 + i*s*0.113, ry = y + s*0.34 - Math.sqrt(Math.max(0, 0.16 - Math.pow((rx-x)/s,2)))*s - s*0.06;
+        if (type === 'rimsalt') drw.circ(rx, ry, s*0.045, { w:0, fill:INK });
+        else drw.rect(rx - s*0.04, ry - s*0.04, s*0.08, s*0.08, { w:lw*0.7 });
+      }
+      break;
+
+    case 'cream':
+      drw.path([['M', x - s*0.30, y + s*0.26], ['C', x - s*0.26, y - s*0.10, x - s*0.06, y - s*0.10, x - s*0.02, y + s*0.06],
+                ['C', x + s*0.02, y - s*0.20, x + s*0.26, y - s*0.16, x + s*0.30, y + s*0.26], ['Z']], of);
+      break;
+
+    case 'cinnamon':
+      drw.poly([[x - s*0.30, y - s*0.12],[x + s*0.30, y - s*0.12],[x + s*0.30, y + s*0.12],[x - s*0.30, y + s*0.12]], Object.assign({close:true}, of));
+      drw.circ(x - s*0.30, y, s*0.12, of);
+      drw.circ(x - s*0.30, y, s*0.05, { w:lw*0.7 });
+      break;
+
+    case 'physalis':
+      drw.circ(x, y + s*0.10, s*0.24, of);
+      for (i = 0; i < 3; i++) leaf(drw, x, y + s*0.02, s*0.30, -150 + i*45, lw);
+      break;
+
+    case 'berry':
+      drw.path([['M', x, y - s*0.26], ['C', x + s*0.30, y - s*0.20, x + s*0.24, y + s*0.34, x, y + s*0.36],
+                ['C', x - s*0.24, y + s*0.34, x - s*0.30, y - s*0.20, x, y - s*0.26]], of);
+      for (i = 0; i < 5; i++) drw.circ(x - s*0.12 + (i%3)*s*0.12, y - s*0.04 + Math.floor(i/3)*s*0.14, s*0.03, { w:0, fill:INK });
+      leaf(drw, x, y - s*0.24, s*0.20, -150, lw); leaf(drw, x, y - s*0.24, s*0.20, -30, lw);
+      break;
+
+    case 'ribbon':
+      drw.path([['M', x - s*0.34, y - s*0.10], ['C', x - s*0.10, y - s*0.34, x + s*0.10, y + s*0.14, x + s*0.34, y - s*0.10]], o);
+      drw.path([['M', x - s*0.34, y + s*0.12], ['C', x - s*0.10, y - s*0.12, x + s*0.10, y + s*0.36, x + s*0.34, y + s*0.12]], o);
+      break;
+
+    default:
+      drw.circ(x, y, s*0.30, of);
+  }
+}
+
+/* ---------- Methodensymbole über dem Glas ---------- */
+function drawMethodSym(drw, sym, x, y, s, lw) {
+  lw = lw || 0.18;
+  var o = { w:lw, c:INK }, i, p;
+  function wave(yy, amp, n, wdt) {
+    var pts = [], steps = n * 8;
+    for (var k = 0; k <= steps; k++) {
+      var t = k / steps;
+      pts.push([x - wdt/2 + wdt*t, yy + Math.sin(t * n * Math.PI * 2) * amp]);
+    }
+    drw.path(segsFromPts(pts, false), o);
+  }
+  switch (sym) {
+    case 'shake':
+      wave(y - s*0.30, s*0.10, 2, s*0.95);
+      wave(y,          s*0.10, 2, s*0.95);
+      wave(y + s*0.30, s*0.10, 2, s*0.95);
+      break;
+    case 'stir':
+      drw.circ(x, y, s*0.42, o);
+      p = [];
+      for (i = 0; i <= 40; i++) {
+        var a = i / 40 * Math.PI * 3.2, r = s*0.06 + (s*0.28) * (i/40);
+        p.push([x + Math.cos(a)*r, y + Math.sin(a)*r]);
+      }
+      drw.path(segsFromPts(p, false), { w:lw*0.85 });
+      break;
+    case 'swizzle':
+      drw.circ(x, y, s*0.42, o);
+      p = [];
+      for (i = 0; i <= 40; i++) {
+        var a2 = i / 40 * Math.PI * 3.2, r2 = s*0.06 + (s*0.24) * (i/40);
+        p.push([x + Math.cos(a2)*r2, y + Math.sin(a2)*r2]);
+      }
+      drw.path(segsFromPts(p, false), { w:lw*0.85 });
+      for (i = 0; i < 4; i++)
+        drw.circ(x - s*0.28 + (i%2)*s*0.56, y - s*0.28 + Math.floor(i/2)*s*0.56, s*0.06, { w:0, fill:INK });
+      break;
+    case 'layer':
+      drw.line(x, y - s*0.42, x, y + s*0.22, o);
+      drw.poly([[x - s*0.14, y + s*0.14],[x + s*0.14, y + s*0.14],[x, y + s*0.42]], { close:true, w:lw, c:INK, fill:INK });
+      drw.line(x - s*0.42, y + s*0.50, x + s*0.42, y + s*0.50, o);
+      break;
+    case 'build':
+      drw.line(x - s*0.30, y - s*0.44, x - s*0.30, y + s*0.34, o);
+      drw.line(x + s*0.30, y - s*0.44, x + s*0.30, y + s*0.34, o);
+      drw.line(x - s*0.30, y + s*0.34, x + s*0.30, y + s*0.34, o);
+      drw.line(x, y - s*0.52, x, y - s*0.06, { w:lw*0.9 });
+      drw.poly([[x - s*0.11, y - s*0.16],[x + s*0.11, y - s*0.16],[x, y + s*0.10]], { close:true, w:lw, c:INK, fill:INK });
+      break;
+    case 'muddle':
+      drw.rect(x - s*0.10, y - s*0.46, s*0.20, s*0.52, o);
+      drw.rect(x - s*0.24, y + s*0.06, s*0.48, s*0.20, o);
+      drw.line(x - s*0.40, y + s*0.42, x + s*0.40, y + s*0.42, o);
+      break;
+    case 'blend':
+      drw.poly([[x - s*0.26, y - s*0.44],[x + s*0.26, y - s*0.44],[x + s*0.18, y + s*0.30],[x - s*0.18, y + s*0.30]], Object.assign({close:true}, o));
+      drw.line(x - s*0.20, y + s*0.30, x + s*0.20, y + s*0.30, o);
+      drw.line(x - s*0.10, y + s*0.10, x + s*0.10, y - s*0.06, { w:lw*0.8 });
+      drw.line(x - s*0.10, y - s*0.06, x + s*0.10, y + s*0.10, { w:lw*0.8 });
+      break;
+  }
+}
+
+
+/* ===== 12_draw_cocktail.js ===== */
+
+/* ============================================================
+   Schnittzeichnung eines Cocktails ("Assembly")
+   ============================================================ */
+var BASE_CELL_W = 70, BASE_CELL_H = 78;
+
+/* Dichte Profilstützpunkte eines Glases (unskaliert) */
+function glassSamples(g) {
+  if (g._smp) return g._smp;
+  var pts = g.prof.map(function (p) { return [p[0], p[1]]; });
+  var s;
+  if (g.smooth && pts.length > 2) {
+    s = catmull(pts, 10);
+    s.sort(function (a, b) { return a[0] - b[0]; });
+  } else if (pts.length === 2) {
+    s = []; for (var i = 0; i <= 16; i++) {
+      var t = i / 16;
+      s.push([pts[0][0] + (pts[1][0] - pts[0][0]) * t, pts[0][1] + (pts[1][1] - pts[0][1]) * t]);
+    }
+  } else {
+    s = []; for (var k = 0; k < pts.length - 1; k++) {
+      for (var j = 0; j < 8; j++) {
+        var tt = j / 8;
+        s.push([pts[k][0] + (pts[k+1][0] - pts[k][0]) * tt, pts[k][1] + (pts[k+1][1] - pts[k][1]) * tt]);
+      }
+    }
+    s.push(pts[pts.length - 1]);
+  }
+  g._smp = s; return s;
+}
+function hwAt(g, y) {
+  var s = glassSamples(g);
+  if (y <= s[0][0]) return s[0][1];
+  if (y >= s[s.length-1][0]) return s[s.length-1][1];
+  for (var i = 1; i < s.length; i++) {
+    if (s[i][0] >= y) {
+      var t = (y - s[i-1][0]) / Math.max(1e-6, s[i][0] - s[i-1][0]);
+      return s[i-1][1] + (s[i][1] - s[i-1][1]) * t;
+    }
+  }
+  return s[s.length-1][1];
+}
+function glassCavityTop(g) { var s = glassSamples(g); return s[s.length-1][0]; }
+function glassMaxHw(g) {
+  var s = glassSamples(g), m = 0;
+  for (var i = 0; i < s.length; i++) m = Math.max(m, s[i][1]);
+  return m;
+}
+function glassTotalHeight(g) {
+  var h = glassCavityTop(g);
+  if (g.kind === 'stem') return h + (g.stem || 0) + (g.footH || 0) + (g.base || 0);
+  return h + (g.base || 0) + (g.wall || 0);
+}
+
+/* ---------- Schichtberechnung ---------- */
+function computeLayers(ck, cavTop) {
+  var g = GLASS_BY_ID[ck.glass] || GLASSES[0];
+  var ings = ck.ingredients.filter(function (i) { return i.ingredientId || i.name; });
+  if (!ings.length) return [];
+  var fillMax = cavTop * FILL_RATIO;
+  var vols = ings.map(function (i) { return Math.max(mlOf(i), 0); });
+  var fillIdx = -1;
+  ings.forEach(function (i, k) { if (i.unit === 'fill') fillIdx = k; });
+  var known = vols.reduce(function (a, b) { return a + b; }, 0);
+  if (fillIdx >= 0) {
+    var target = g.vol * 0.86;
+    vols[fillIdx] = Math.max(target - known, g.vol * 0.18);
+  }
+  var total = vols.reduce(function (a, b) { return a + b; }, 0);
+  if (total <= 0) return [];
+  var height;
+  if (fillIdx >= 0) height = fillMax;
+  else {
+    var frac = total / (g.vol * 0.52);
+    height = fillMax * Math.max(0.46, Math.min(1, frac));
+  }
+  var minH = Math.min(1.5, height / (ings.length * 1.6));
+  var h = vols.map(function (v) { return height * v / total; });
+  /* Mindesthöhen durchsetzen */
+  for (var pass = 0; pass < 6; pass++) {
+    var deficit = 0, freeSum = 0;
+    for (var i = 0; i < h.length; i++) {
+      if (h[i] < minH) deficit += (minH - h[i]); else freeSum += (h[i] - minH);
+    }
+    if (deficit <= 0.0001 || freeSum <= 0.0001) break;
+    var f = Math.max(0, 1 - deficit / freeSum);
+    for (var j = 0; j < h.length; j++) h[j] = h[j] < minH ? minH : minH + (h[j] - minH) * f;
+  }
+  var out = [], y = 0;
+  for (var m = 0; m < ings.length; m++) {
+    out.push({ ing: ings[m], y0: y, y1: y + h[m], ml: vols[m] });
+    y += h[m];
+  }
+  return out;
+}
+
+/* Polygon einer Schicht im Innenraum */
+function layerPolygon(g, y0, y1, S, cx, baseY) {
+  var pts = [], step = Math.max(0.35, (y1 - y0) / 14), y;
+  for (y = y0; y < y1; y += step) pts.push([cx - hwAt(g, y) * S, baseY - y * S]);
+  pts.push([cx - hwAt(g, y1) * S, baseY - y1 * S]);
+  var right = [];
+  for (y = y0; y < y1; y += step) right.push([cx + hwAt(g, y) * S, baseY - y * S]);
+  right.push([cx + hwAt(g, y1) * S, baseY - y1 * S]);
+  right.reverse();
+  return pts.concat(right);
+}
+
+/* ---------- Glasumriss ---------- */
+function drawGlassOutline(drw, g, S, cx, baseY, lw) {
+  var smp = glassSamples(g), wall = (g.wall || 1.2), i, p;
+  var outL = [], outR = [];
+  for (i = 0; i < smp.length; i++) {
+    outL.push([cx - (smp[i][1] + wall) * S, baseY - smp[i][0] * S]);
+    outR.push([cx + (smp[i][1] + wall) * S, baseY - smp[i][0] * S]);
+  }
+  var innL = [], innR = [];
+  for (i = 0; i < smp.length; i++) {
+    innL.push([cx - smp[i][1] * S, baseY - smp[i][0] * S]);
+    innR.push([cx + smp[i][1] * S, baseY - smp[i][0] * S]);
+  }
+  var o = { w:lw, c:INK };
+  if (g.kind === 'stem') {
+    var stemW = 2.6, sy = baseY + (g.stem || 10) * S, fy = sy + (g.footH || 2) * S;
+    var bowlBotL = outL[0], bowlBotR = outR[0];
+    var pathPts = outL.slice().reverse();      /* Kelch links von oben nach unten */
+    pathPts = outL.slice();                     /* unten -> oben links */
+    var seg = [['M', outL[outL.length-1][0], outL[outL.length-1][1]]];
+    for (i = outL.length - 2; i >= 0; i--) seg.push(['L', outL[i][0], outL[i][1]]);
+    seg.push(['C', cx - stemW/2*S - 1.2*S, baseY + 1.0*S, cx - stemW/2*S, baseY + 1.4*S, cx - stemW/2*S, baseY + 2.4*S]);
+    seg.push(['L', cx - stemW/2*S, sy - 0.8*S]);
+    seg.push(['C', cx - stemW/2*S, sy, cx - (g.foot||11)*0.5*S, sy + 0.2*S, cx - (g.foot||11)*S, sy + 0.9*S]);
+    seg.push(['L', cx - (g.foot||11)*S, fy]);
+    seg.push(['L', cx + (g.foot||11)*S, fy]);
+    seg.push(['L', cx + (g.foot||11)*S, sy + 0.9*S]);
+    seg.push(['C', cx + (g.foot||11)*0.5*S, sy + 0.2*S, cx + stemW/2*S, sy, cx + stemW/2*S, sy - 0.8*S]);
+    seg.push(['L', cx + stemW/2*S, baseY + 2.4*S]);
+    seg.push(['C', cx + stemW/2*S, baseY + 1.4*S, cx + stemW/2*S + 1.2*S, baseY + 1.0*S, outR[0][0], outR[0][1]]);
+    for (i = 1; i < outR.length; i++) seg.push(['L', outR[i][0], outR[i][1]]);
+    drw.path(seg, o);
+    /* Innenkontur */
+    var si = [['M', innL[innL.length-1][0], innL[innL.length-1][1]]];
+    for (i = innL.length - 2; i >= 0; i--) si.push(['L', innL[i][0], innL[i][1]]);
+    for (i = 0; i < innR.length; i++) si.push(['L', innR[i][0], innR[i][1]]);
+    drw.path(si, { w:lw*0.7, c:INK });
+    drw.line(outL[outL.length-1][0], outL[outL.length-1][1], innL[innL.length-1][0], innL[innL.length-1][1], o);
+    drw.line(outR[outR.length-1][0], outR[outR.length-1][1], innR[innR.length-1][0], innR[innR.length-1][1], o);
+  } else {
+    var bot = baseY + (g.base || 3) * S;
+    var seg2 = [['M', outL[outL.length-1][0], outL[outL.length-1][1]]];
+    for (i = outL.length - 2; i >= 0; i--) seg2.push(['L', outL[i][0], outL[i][1]]);
+    seg2.push(['L', outL[0][0], bot]);
+    seg2.push(['L', outR[0][0], bot]);
+    for (i = 0; i < outR.length; i++) seg2.push(['L', outR[i][0], outR[i][1]]);
+    drw.path(seg2, o);
+    var si2 = [['M', innL[innL.length-1][0], innL[innL.length-1][1]]];
+    for (i = innL.length - 2; i >= 0; i--) si2.push(['L', innL[i][0], innL[i][1]]);
+    si2.push(['L', innR[0][0], innR[0][1]]);
+    for (i = 1; i < innR.length; i++) si2.push(['L', innR[i][0], innR[i][1]]);
+    drw.path(si2, { w:lw*0.7, c:INK });
+    drw.line(outL[outL.length-1][0], outL[outL.length-1][1], innL[innL.length-1][0], innL[innL.length-1][1], o);
+    drw.line(outR[outR.length-1][0], outR[outR.length-1][1], innR[innR.length-1][0], innR[innR.length-1][1], o);
+    if (g.handle) {
+      var hx = outR[Math.floor(outR.length*0.7)][0], hy1 = baseY - glassCavityTop(g)*0.72*S, hy2 = baseY - glassCavityTop(g)*0.22*S;
+      drw.path([['M', hx, hy1], ['C', hx + 7*S, hy1, hx + 7*S, hy2, hx, hy2]], { w:lw, c:INK });
+      drw.path([['M', hx, hy1 + 1.2*S], ['C', hx + 5*S, hy1 + 1.2*S, hx + 5*S, hy2 - 1.2*S, hx, hy2 - 1.2*S]], { w:lw*0.7, c:INK });
+    }
+    if (g.relief) {
+      for (i = 1; i <= 3; i++) {
+        var ry = baseY - glassCavityTop(g) * (i / 4) * S;
+        drw.line(cx - (hwAt(g, glassCavityTop(g)*(i/4)) + wall*0.4) * S, ry,
+                 cx + (hwAt(g, glassCavityTop(g)*(i/4)) + wall*0.4) * S, ry, { w:lw*0.6, c:INK });
+      }
+    }
+  }
+}
+
+/* ---------- Eisdarstellung ---------- */
+function drawIce(drw, ck, g, S, cx, baseY, topY, lw, st) {
+  if (!ck.ice || ck.ice === 'none') return null;
+  var cav = glassCavityTop(g), i;
+  var yTop = Math.min(cav * FILL_RATIO, topY);
+  var anchor = null;
+  if (ck.ice === 'crushed') {
+    var n = 26;
+    for (i = 0; i < n; i++) {
+      var fy = cav * 0.12 + (yTop - cav * 0.12) * (i / n) + ((i % 3) * 0.6);
+      var hwc = hwAt(g, Math.min(fy, cav)) * 0.82;
+      var fx = (((i * 37) % 100) / 100 - 0.5) * 2 * hwc;
+      var px = cx + fx * S, py = baseY - fy * S, sz = 1.5 * S;
+      drw.poly([[px, py - sz*0.5], [px + sz*0.55, py - sz*0.1], [px + sz*0.25, py + sz*0.5], [px - sz*0.45, py + sz*0.3]],
+        { close:true, w:lw*0.7, c:INK, fill:'#FFFFFF' });
+      if (i === n - 3) anchor = [px, py];
+    }
+  } else if (ck.ice === 'ball') {
+    var r = Math.min(hwAt(g, cav*0.3) * 0.58, cav * 0.20, topY * 0.62);
+    var py2 = baseY - Math.max(r * 1.05, topY * 0.55) * S;
+    drw.circ(cx, py2, r * S, { w:lw, c:INK, fill:'#FFFFFF' });
+    drw.path(segsFromPts(arcPts(cx, py2, r*0.62*S, Math.PI*1.05, Math.PI*1.42, 6), false), { w:lw*0.7, c:INK });
+    anchor = [cx + r*0.7*S, py2 - r*0.5*S];
+  } else {
+    var cnt = st.iceCount || 3;
+    for (i = 0; i < cnt; i++) {
+      var lvl = 0.20 + i * 0.24;
+      var yy = cav * lvl, hw2 = hwAt(g, yy);
+      var side = (i % 2 ? 0.34 : -0.30);
+      var pxc = cx + hw2 * side * S, pyc = baseY - yy * S;
+      var cs = Math.min(hw2 * 0.86, 5.4) * S;
+      drw.poly([[pxc - cs*0.5, pyc - cs*0.18], [pxc - cs*0.12, pyc - cs*0.5],
+                [pxc + cs*0.5, pyc - cs*0.5], [pxc + cs*0.5, pyc + cs*0.18],
+                [pxc + cs*0.12, pyc + cs*0.5], [pxc - cs*0.5, pyc + cs*0.5]],
+        { close:true, w:lw*0.8, c:INK, fill:'#FFFFFF' });
+      drw.line(pxc - cs*0.5, pyc - cs*0.18, pxc + cs*0.12, pyc - cs*0.18, { w:lw*0.6, c:INK });
+      drw.line(pxc + cs*0.12, pyc - cs*0.18, pxc + cs*0.5, pyc - cs*0.5, { w:lw*0.6, c:INK });
+      drw.line(pxc + cs*0.12, pyc - cs*0.18, pxc + cs*0.12, pyc + cs*0.5, { w:lw*0.6, c:INK });
+      if (i === cnt - 1) anchor = [pxc, pyc - cs*0.3];
+    }
+  }
+  return anchor;
+}
+
+/* ---------- Hauptfunktion ---------- */
+/* opts: {scale, mono, showTable, unit, marks (Sammler für Legende)} */
+function drawCocktail(drw, ck, cellX, cellY, cellW, cellH, opts) {
+  opts = opts || {};
+  var S = opts.scale || 1;
+  var g = GLASS_BY_ID[ck.glass] || GLASSES[0];
+  var lw = Math.max(0.12, 0.20 * Math.min(1.15, Math.max(0.75, S)));
+  var fs = Math.max(1.55, Math.min(3.0, 2.50 * Math.pow(S, 0.40)));
+  var st = { iceCount: 3 }, plain = !!opts.plain;
+  var mxW = BASE_CELL_W * S, mxH = BASE_CELL_H * S;
+  if (cellW > mxW) { cellX += (cellW - mxW) / 2; cellW = mxW; }
+  if (cellH > mxH) { cellY += (cellH - mxH) / 2; cellH = mxH; }
+  var cav = glassCavityTop(g), maxHw = glassMaxHw(g), wall = g.wall || 1.2;
+  var Hg = glassTotalHeight(g) * S;
+  var cx = cellX + cellW * 0.5 - 1.5 * S;
+
+  var titleH = fs * 2.6 + (ck.altName ? fs * 1.4 : 0) + (ck.note ? fs * 2.6 : 0);
+  var methodH = 8 * S;
+  var usedH = methodH + Hg + titleH + 3;
+  var top = cellY + Math.max(1, (cellH - usedH) / 2);
+  var rimY = top + methodH;
+  var baseY = rimY + cav * S;          /* y des Kavitätsbodens */
+
+  /* --- Methodensymbol --- */
+  var meth = METHOD_BY_ID[ck.method] || METHOD_BY_ID['b'];
+  drawMethodSym(drw, meth.sym, cx, top + methodH * 0.42, 6.2 * S, lw);
+  if (opts.marks) opts.marks.methods[ck.method] = true;
+
+  /* --- Schichten --- */
+  var layers = computeLayers(ck, cav);
+  for (var i = 0; i < layers.length; i++) {
+    var L = layers[i];
+    var ing = ING_BY_ID[L.ing.ingredientId] || { cls:(L.ing.cls || 'other'), color:(L.ing.color || '#DDDDDD'), name:L.ing.name };
+    var poly = layerPolygon(g, L.y0, L.y1, S, cx, baseY);
+    fillHatched(drw, poly, ing.cls, ing.color, { scale:S, lw:lw*0.62, mono:opts.mono, color:!opts.mono, noHatch:opts.noHatch });
+    if (opts.marks) opts.marks.ings[L.ing.ingredientId || L.ing.name] =
+      { name: L.ing.name || ing.name, cls: ing.cls, color: ing.color, abbr: ing.abbr || '' };
+  }
+
+  /* --- Eis --- */
+  var topLayerY = layers.length ? layers[layers.length-1].y1 : cav * 0.5;
+  var iceAnchor = drawIce(drw, ck, g, S, cx, baseY, topLayerY, lw, st);
+
+  /* --- Glasumriss --- */
+  drawGlassOutline(drw, g, S, cx, baseY, lw);
+
+  /* --- Bezugslinien der Zutaten --- */
+  var outerHw = (maxHw + wall) * S;
+  var leftX  = cx - outerHw - 3.0 * S, rightX = cx + outerHw + 3.0 * S;
+  var lab = { l: [], r: [] };
+  for (var k = 0; !plain && k < layers.length; k++) {
+    var Ly = baseY - (layers[k].y0 + layers[k].y1) / 2 * S;
+    var side = (k % 2 === 0) ? 'l' : 'r';
+    lab[side].push({ y: Ly, txt: amountLabel(layers[k].ing, opts.unit || 'cl'),
+                     prep: layers[k].ing.prep, yc: (layers[k].y0 + layers[k].y1) / 2 });
+  }
+  var lineH = fs * 1.06, blockH = lineH * 2 + 0.5;
+  ['l','r'].forEach(function (side) {
+    var arr = lab[side];
+    arr.sort(function (a, b) { return a.y - b.y; });
+    for (var q = 1; q < arr.length; q++)
+      if (arr[q].y - arr[q-1].y < blockH) arr[q].y = arr[q-1].y + blockH;
+    var overflow = arr.length ? (arr[arr.length-1].y - (cellY + cellH - 4)) : 0;
+    if (overflow > 0) for (var q2 = 0; q2 < arr.length; q2++) arr[q2].y -= overflow;
+  });
+  var dimXpre = cellX + cellW - 2.2;
+  ['l','r'].forEach(function (side) {
+    var sx = side === 'l' ? -1 : 1;
+    var maxw = 0;
+    lab[side].forEach(function (it) {
+      var p = it.txt.split(' (');
+      maxw = Math.max(maxw, textWidth(p[0] + (it.prep ? ' (' + it.prep + ')' : ''), fs),
+                            textWidth(p.length > 1 ? '(' + p[1] : '', fs));
+    });
+    var tx = side === 'l' ? (cellX + 1.2 + maxw) : (dimXpre - 3.2 - maxw);
+    var edge = side === 'l' ? Math.min(tx + 1.4 * S, leftX) : Math.max(tx - 1.4 * S, rightX);
+    lab[side].forEach(function (it) {
+      var innerHw = hwAt(g, it.yc) * S;
+      var p0x = cx + sx * innerHw * 0.55, p0y = baseY - it.yc * S;
+      var p1x = cx + sx * (hwAt(g, it.yc) + wall) * S, p1y = p0y;
+      drw.circ(p0x, p0y, lw * 1.5, { w:0, fill:INK });
+      drw.path([['M', p0x, p0y], ['L', p1x, p1y], ['L', edge, it.y], ['L', tx, it.y]], { w:lw*0.8, c:INK });
+      var parts = it.txt.split(' (');
+      var l1 = parts[0], l2 = parts.length > 1 ? '(' + parts[1] : '';
+      if (it.prep) l1 += ' (' + it.prep + ')';
+      drw.text(tx, it.y - 0.3, l1, { size:fs, anchor: side==='l' ? 'end' : 'start' });
+      if (l2) drw.text(tx, it.y - 0.3 + lineH, l2, { size:fs, anchor: side==='l' ? 'end' : 'start' });
+    });
+  });
+
+  /* --- Maßlinie Glasvolumen --- */
+  var dimX = cellX + cellW - 2.2;
+  if (!plain) {
+  var yTopDim = rimY, yBotDim = baseY;
+  drw.line(dimX, yTopDim, dimX, yBotDim, { w:lw*0.8, c:INK });
+  [[yTopDim, 1], [yBotDim, -1]].forEach(function (a) {
+    drw.poly([[dimX, a[0]], [dimX - 0.55*S, a[0] + a[1]*1.5*S], [dimX + 0.55*S, a[0] + a[1]*1.5*S]],
+      { close:true, w:lw*0.6, c:INK, fill:INK });
+  });
+  drw.line(dimX - 3.5, yTopDim, dimX + 0.9, yTopDim, { w:lw*0.5, c:INK, d:[0.8,0.8] });
+  drw.line(dimX - 3.5, yBotDim, dimX + 0.9, yBotDim, { w:lw*0.5, c:INK, d:[0.8,0.8] });
+  drw.text(dimX - 0.9, (yTopDim + yBotDim) / 2, volLabel(g.vol, opts.unit || 'cl'),
+    { size:fs, anchor:'middle', rot:-90 });
+  }
+
+  /* --- Eis-Beschriftung --- */
+  if (!plain && iceAnchor && ck.ice && ck.ice !== 'none') {
+    var gi = GAR_BY_ID[(ICE_BY_ID[ck.ice] || {}).gid];
+    if (gi) {
+      var cnt = ck.ice === 'cubes' ? 3 : 1;
+      var sgn = iceAnchor[0] >= cx ? 1 : -1;
+      var lx = cx + sgn * (outerHw + 2.2 * S);
+      var ly = Math.max(rimY + 1.5 * S, iceAnchor[1] - 2.0 * S);
+      drw.path([['M', iceAnchor[0], iceAnchor[1]], ['L', lx - sgn * 2.0*S, ly], ['L', lx, ly]], { w:lw*0.7, c:INK });
+      drw.circ(iceAnchor[0], iceAnchor[1], lw*1.4, { w:0, fill:INK });
+      drw.text(lx + sgn * 0.6, ly + fs*0.35, (ck.ice === 'crushed' ? '' : cnt + ' ') + '(' + gi.key + ')',
+        { size:fs, anchor: sgn > 0 ? 'start' : 'end' });
+      if (opts.marks) opts.marks.gars[gi.id] = true;
+    }
+  }
+
+  /* --- Garnituren am Glasrand --- */
+  var rimHw = (hwAt(g, cav) + wall) * S;
+  var gcount = 0;
+  (ck.garnish || []).forEach(function (gr) {
+    var G = GAR_BY_ID[gr.id]; if (!G) return;
+    if (opts.marks) opts.marks.gars[G.id] = true;
+    var side = (gcount % 2 === 0) ? 1 : -1, idx = Math.floor(gcount / 2);
+    var ps = 5.4 * S;
+    var gx = cx + side * (rimHw * 0.92 + idx * ps * 1.15);
+    var gy = rimY - ps * 0.22;
+    if (G.at === 'in') {
+      gy = baseY - topLayerY * S + ps * 0.45;
+      gx = cx + side * Math.max(1, hwAt(g, topLayerY) * S - ps * 0.55);
+    } else if (G.at === 'side') {
+      gx = cx + side * (rimHw + ps * 0.7); gy = rimY + ps * 0.4;
+    }
+    drawPic(drw, G.pic, gx, gy, ps, lw * 0.8);
+    var tx2 = gx + side * ps * 0.62, tyG = gy - ps * 0.52;
+    if (G.at === 'in' && !plain) {
+      var ox = cx + side * (rimHw + 2.2 * S), oy = gy - ps * 0.75;
+      drw.path([['M', gx + side * ps * 0.35, gy], ['L', ox - side * 1.5 * S, oy], ['L', ox, oy]],
+        { w:lw*0.7, c:INK });
+      tx2 = ox + side * 0.6; tyG = oy + fs * 0.35;
+    }
+    if (!plain) drw.text(tx2, tyG, (gr.count || 1) + ' (' + G.key + ')',
+      { size:fs*0.95, anchor: side > 0 ? 'start' : 'end' });
+    gcount++;
+  });
+
+  /* --- Titel --- */
+  var ty = baseY + (g.kind === 'stem' ? ((g.stem||0) + (g.footH||0)) * S : (g.base||3) * S) + fs * 2.1;
+  var title = (ck.name || '').toUpperCase();
+  drw.text(cx, ty, title, { size:fs*1.2, anchor:'middle', bold:true });
+  var tw = textWidth(title, fs*1.2, true);
+  drw.line(cx - tw/2, ty + fs*0.42, cx + tw/2, ty + fs*0.42, { w:lw*0.8, c:INK });
+  var ny = ty + fs*1.7;
+  if (ck.altName && !plain) {
+    drw.text(cx, ny, '(Alternativname: ' + ck.altName + ')', { size:fs*0.9, anchor:'middle' });
+    ny += fs*1.3;
+  }
+  if (ck.note && !plain) {
+    var words = ck.note.split(' '), line = '', lines = [], maxw = cellW - 6;
+    words.forEach(function (w) {
+      var t = line ? line + ' ' + w : w;
+      if (textWidth(t, fs*0.85) > maxw) { lines.push(line); line = w; } else line = t;
+    });
+    if (line) lines.push(line);
+    lines.slice(0, 3).forEach(function (l, li) {
+      drw.text(cx, ny + li * fs, l, { size:fs*0.85, anchor:'middle' });
+    });
+    ny += Math.min(3, lines.length) * fs;
+  }
+  if (ck.noteRef) {
+    var hx2 = cx + textWidth(title, fs*1.2, true)/2 + fs*1.4, hy3 = ty - fs*0.3;
+    drw.poly([[hx2, hy3 - fs*0.85], [hx2 + fs*0.85, hy3 + fs*0.6], [hx2 - fs*0.85, hy3 + fs*0.6]],
+      { close:true, w:lw*0.8, c:INK });
+    drw.text(hx2, hy3 + fs*0.35, String(ck.noteRef), { size:fs*0.8, anchor:'middle' });
+  }
+
+  /* --- optionale Zutatentabelle --- */
+  if (opts.showTable) {
+    var tyy = ny + fs * 1.4, colX = cellX + 3;
+    ck.ingredients.forEach(function (ing, ii) {
+      var y2 = tyy + ii * fs * 1.15;
+      drw.text(colX, y2, String(ii+1), { size:fs*0.85 });
+      drw.text(colX + 4, y2, amountLabel(ing, 'cl').split(' (')[0], { size:fs*0.85 });
+      drw.text(colX + 17, y2, ing.name, { size:fs*0.85 });
+      drw.text(cellX + cellW - 3, y2, '(' + (ing.prep||'') + ')', { size:fs*0.85, anchor:'end' });
+    });
+  }
+}
+
+/* Sammler für die Legenden eines Blattes */
+function newMarks() { return { ings:{}, gars:{}, methods:{}, glasses:{} }; }
+
+
+/* ===== 13_draw_sheet.js ===== */
+
+/* ============================================================
+   Zeichnungsblatt ("Plan")
+   ============================================================ */
+var SHEET_SIZES = {
+  A4: [297, 210], A3: [420, 297], A2: [594, 420], A1: [841, 594], A0: [1189, 841]
+};
+function sheetDims(fmt, orientation) {
+  var d = SHEET_SIZES[fmt] || SHEET_SIZES.A2;
+  return orientation === 'portrait' ? { w:d[1], h:d[0] } : { w:d[0], h:d[1] };
+}
+
+function wrapText(s, maxw, size, bold) {
+  var words = String(s).split(/\s+/), line = '', out = [];
+  for (var i = 0; i < words.length; i++) {
+    var t = line ? line + ' ' + words[i] : words[i];
+    if (textWidth(t, size, bold) > maxw && line) { out.push(line); line = words[i]; }
+    else line = t;
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+/* Marks über das ganze Projekt sammeln (für die Legenden) */
+function collectMarks(cocktails) {
+  var m = newMarks();
+  cocktails.forEach(function (ck) {
+    m.methods[ck.method || 'b'] = true;
+    m.glasses[ck.glass] = true;
+    (ck.ingredients || []).forEach(function (ing) {
+      var I = ING_BY_ID[ing.ingredientId] || { cls:ing.cls || 'other', color:ing.color || '#DDDDDD', abbr:'' };
+      m.ings[ing.ingredientId || ing.name] = { name: ing.name || I.name, cls: I.cls, color: I.color, abbr: I.abbr || '' };
+    });
+    (ck.garnish || []).forEach(function (gr) { if (GAR_BY_ID[gr.id]) m.gars[gr.id] = true; });
+    var ic = ICE_BY_ID[ck.ice];
+    if (ic && ic.gid) m.gars[ic.gid] = true;
+  });
+  return m;
+}
+
+/* ---------- Layout ---------- */
+function computeSheetLayout(project) {
+  var s = project.settings, d = sheetDims(s.sheetFormat, s.orientation);
+  var W = d.w, H = d.h;
+  var ml = 20, mr = 10, mt = 10, mb = 10;                 /* Innenrahmen */
+  var RC = Math.max(112, Math.min(190, W * 0.255));       /* Legendenspalte */
+  var TB_H = Math.max(30, Math.min(42, H * 0.085));       /* Schriftfeld-Höhe */
+  var innerX = ml, innerY = mt, innerW = W - ml - mr, innerH = H - mt - mb;
+  var areaX = innerX, areaY = innerY;
+  var areaW = innerW - RC - 3;
+  var areaH = innerH - TB_H - 3;
+
+  var n = Math.max(1, project.cocktails.length);
+  var best = null;
+  for (var cols = 1; cols <= 14; cols++) {
+    var rows = Math.ceil(n / cols);
+    var cw = areaW / cols, chh = areaH / rows;
+    var sc = Math.min(cw / BASE_CELL_W, chh / BASE_CELL_H);
+    if (!best || sc > best.scale) best = { cols:cols, rows:rows, scale:sc };
+  }
+  var minScale = 0.85, maxScale = 1.35;
+  var pages = [];
+  if (best.scale >= minScale || project.settings.fitToOneSheet) {
+    best.scale = Math.max(project.settings.fitToOneSheet ? 0.34 : minScale, Math.min(maxScale, best.scale));
+    pages = [project.cocktails.slice()];
+  } else {
+    /* Kapazität bei Mindestmaßstab bestimmen */
+    var colsC = Math.max(1, Math.floor(areaW / (BASE_CELL_W * minScale)));
+    var rowsC = Math.max(1, Math.floor(areaH / (BASE_CELL_H * minScale)));
+    var cap = colsC * rowsC;
+    for (var i = 0; i < project.cocktails.length; i += cap) pages.push(project.cocktails.slice(i, i + cap));
+    best = { cols:colsC, rows:rowsC, scale:minScale };
+    var nn = Math.max(1, pages[0].length), b2 = null;
+    for (var c2 = 1; c2 <= 14; c2++) {
+      var r2 = Math.ceil(nn / c2);
+      if (r2 > rowsC) continue;
+      var sc2 = Math.min(areaW / c2 / BASE_CELL_W, areaH / r2 / BASE_CELL_H);
+      if (!b2 || sc2 > b2.scale) b2 = { cols:c2, rows:r2, scale:Math.min(maxScale, sc2) };
+    }
+    if (b2) best = b2;
+  }
+  if (!pages.length) pages = [[]];
+  return { W:W, H:H, ml:ml, mr:mr, mt:mt, mb:mb, RC:RC, TB_H:TB_H,
+           areaX:areaX, areaY:areaY, areaW:areaW, areaH:areaH,
+           cols:best.cols, rows:best.rows, scale:best.scale, pages:pages };
+}
+
+/* ---------- Rahmen mit Zonenkennzeichnung ---------- */
+function drawFrame(drw, L) {
+  var W = L.W, H = L.H;
+  drw.rect(5, 5, W - 10, H - 10, { w:0.35 });
+  drw.rect(L.ml, L.mt, W - L.ml - L.mr, H - L.mt - L.mb, { w:0.5 });
+  var zx = Math.max(4, Math.round((W - L.ml - L.mr) / 105)),
+      zy = Math.max(3, Math.round((H - L.mt - L.mb) / 105));
+  var i, x, y, letters = 'ABCDEFGHIJ';
+  for (i = 0; i < zx; i++) {
+    x = L.ml + (W - L.ml - L.mr) * (i + 0.5) / zx;
+    drw.text(x, L.mt - 2.6, String(i + 1), { size:3, anchor:'middle' });
+    drw.text(x, H - L.mb + 4.6, String(i + 1), { size:3, anchor:'middle' });
+    if (i > 0) {
+      var xd = L.ml + (W - L.ml - L.mr) * i / zx;
+      drw.line(xd, 5, xd, L.mt, { w:0.25 }); drw.line(xd, H - L.mb, xd, H - 5, { w:0.25 });
+    }
+  }
+  for (i = 0; i < zy; i++) {
+    y = L.mt + (H - L.mt - L.mb) * (i + 0.5) / zy;
+    drw.text(L.ml - 5.5, y + 1, letters[i], { size:3, anchor:'middle' });
+    drw.text(W - L.mr + 5.5, y + 1, letters[i], { size:3, anchor:'middle' });
+    if (i > 0) {
+      var yd = L.mt + (H - L.mt - L.mb) * i / zy;
+      drw.line(5, yd, L.ml, yd, { w:0.25 }); drw.line(W - L.mr, yd, W - 5, yd, { w:0.25 });
+    }
+  }
+}
+
+function boxTitle(drw, x, y, w, txt) {
+  drw.text(x + 1.6, y + 4.0, txt, { size:3.0, bold:true, ls:0.25 });
+  drw.line(x, y + 5.4, x + w, y + 5.4, { w:0.25 });
+  return y + 5.4;
+}
+
+/* ---------- Legenden ---------- */
+function drawGarnishLegend(drw, x, y, w, marks) {
+  var ids = GARNISHES.filter(function (g) { return marks.gars[g.id]; });
+  if (!ids.length) return y;
+  var cols = Math.max(2, Math.floor(w / 46));
+  var colw = w / cols, rowh = 9.2;
+  var rows = Math.ceil(ids.length / cols);
+  var h = 5.4 + rows * rowh + 2;
+  drw.rect(x, y, w, h, { w:0.35 });
+  var yy = boxTitle(drw, x, y, w, 'GARNITUREN UND ZUSÄTZE');
+  ids.forEach(function (g, i) {
+    var c = i % cols, r = Math.floor(i / cols);
+    var gx = x + c * colw + 5.5, gy = yy + 1.5 + r * rowh + rowh * 0.42;
+    drawPic(drw, g.pic, gx, gy, 7.0, 0.16);
+    var lines = wrapText('1 – ' + g.name + ' (' + g.key + ')', colw - 12, 2.5);
+    lines.slice(0, 2).forEach(function (l, li) {
+      drw.text(gx + 5.4, gy - 0.6 + li * 2.9, l, { size:2.5 });
+    });
+  });
+  return y + h + 3;
+}
+
+function drawMethodLegend(drw, x, y, w, marks) {
+  var ms = METHODS.filter(function (m) { return marks.methods[m.id]; });
+  if (!ms.length) return y;
+  var rowh = 10.5, h = 5.4 + ms.length * rowh + 2;
+  drw.rect(x, y, w, h, { w:0.35 });
+  var yy = boxTitle(drw, x, y, w, 'ZUBEREITUNGSMETHODEN');
+  ms.forEach(function (m, i) {
+    var gy = yy + 2 + i * rowh + rowh * 0.42;
+    drawMethodSym(drw, m.sym, x + 8, gy, 7.5, 0.2);
+    drw.text(x + 16, gy + 0.9, '(' + m.id + ')  ' + m.name, { size:2.6 });
+  });
+  return y + h + 3;
+}
+
+function drawPrepLegend(drw, x, y, w, usedPreps) {
+  var ps = PREPS.filter(function (p) { return usedPreps[p.id]; });
+  if (!ps.length) return y;
+  var cols = Math.max(1, Math.floor(w / 62)), colw = w / cols;
+  var rows = Math.ceil(ps.length / cols), rowh = 3.6;
+  var h = 5.4 + rows * rowh + 2.5;
+  drw.rect(x, y, w, h, { w:0.35 });
+  var yy = boxTitle(drw, x, y, w, 'ZUBEREITUNGSKÜRZEL JE ZUTAT');
+  ps.forEach(function (p, i) {
+    var c = i % cols, r = Math.floor(i / cols);
+    drw.text(x + 2 + c * colw, yy + 4.6 + r * rowh, '(' + p.id + ')  ' + p.name, { size:2.5 });
+  });
+  return y + h + 3;
+}
+
+function drawIngredientLegend(drw, x, y, w, marks, mono, maxH) {
+  var list = Object.keys(marks.ings).map(function (k) {
+    var v = marks.ings[k]; return { id:k, name:v.name, cls:v.cls, color:v.color, abbr:v.abbr };
+  });
+  if (!list.length) return y;
+  list.sort(function (a, b) { return a.name.localeCompare(b.name, 'de'); });
+  var cols = Math.max(1, Math.floor(w / 56)), rowh = 5.2, rows, h;
+  function calc() { rows = Math.ceil(list.length / cols); h = 5.4 + rows * rowh + 2.5; }
+  calc();
+  while (maxH && h > maxH && cols < 5) { cols++; calc(); }
+  while (maxH && h > maxH && rowh > 3.6) { rowh -= 0.2; calc(); }
+  if (maxH && h > maxH) {                     /* Notfall: Liste kürzen */
+    var fit = Math.max(1, Math.floor((maxH - 8) / rowh) * cols);
+    if (list.length > fit) list = list.slice(0, fit - 1).concat([{ name:'… weitere', cls:'other', color:'#FFFFFF', abbr:'' }]);
+    calc();
+  }
+  var colw = w / cols;
+  drw.rect(x, y, w, h, { w:0.35 });
+  var yy = boxTitle(drw, x, y, w, 'ZUTATEN – FARBE UND SCHRAFFUR');
+  list.forEach(function (it, i) {
+    var c = i % cols, r = Math.floor(i / cols);
+    var sx = x + 2 + c * colw, sy = yy + 2.2 + r * rowh;
+    hatchSwatch(drw, sx, sy, 12, rowh - 1.6, it.cls, it.color, { mono:mono, color:!mono, lw:0.12 });
+    if (it.abbr && mono) drw.text(sx + 6, sy + rowh * 0.55, it.abbr, { size:2.1, anchor:'middle', bold:true });
+    var nm = it.name;
+    while (textWidth(nm, 2.5) > colw - 17 && nm.length > 4) nm = nm.slice(0, -2);
+    if (nm !== it.name) nm = nm + '.';
+    drw.text(sx + 13.6, sy + rowh * 0.62, nm, { size:2.5 });
+  });
+  return y + h + 3;
+}
+
+function drawGeneralNotes(drw, x, y, w, h, notes) {
+  drw.rect(x, y, w, h, { w:0.35 });
+  var yy = boxTitle(drw, x, y, w, 'ALLGEMEINE HINWEISE');
+  var cy = yy + 4.2;
+  (notes || []).forEach(function (n, i) {
+    var lines = wrapText(n, w - 12, 2.5);
+    lines.forEach(function (l, li) {
+      if (cy > y + h - 1.5) return;
+      if (li === 0) {
+        drw.poly([[x + 3.2, cy - 2.4], [x + 6.4, cy + 0.6], [x + 0.0 + 0.0, cy + 0.6]], { close:true, w:0.2 });
+        drw.text(x + 3.2, cy + 0.1, String(i + 1), { size:1.9, anchor:'middle' });
+      }
+      drw.text(x + 8.4, cy, l, { size:2.5 });
+      cy += 3.2;
+    });
+    cy += 0.8;
+  });
+  return y + h;
+}
+
+/* ---------- Schriftfeld ---------- */
+function drawTitleBlock(drw, L, project, page, pages, qrMatrix) {
+  var tb = project.settings.titleBlock || {};
+  var x1 = L.W - L.mr, y1 = L.H - L.mb;
+  var w = L.RC + 92, h = L.TB_H;
+  var x = x1 - w, y = y1 - h;
+  drw.rect(x, y, w, h, { w:0.5 });
+
+  /* Aufteilung: links Titel, rechts Nummer/Blatt, ganz links QR */
+  var qrW = (qrMatrix ? h - 4 : 0);
+  var cx0 = x + (qrW ? qrW + 3 : 0);
+  if (qrMatrix) drawQrMatrix(drw, qrMatrix, x + 2, y + 2, h - 4);
+
+  var colR = 62;                        /* rechte Spalte: Nummer, Blatt, Rev */
+  var midX = x1 - colR;
+  drw.line(midX, y, midX, y1, { w:0.35 });
+
+  /* Titel */
+  var titleLines = wrapText(tb.title || 'HAPPY HOUR', midX - cx0 - 4, 5.0, true);
+  var ty = y + 6.4;
+  titleLines.slice(0, 3).forEach(function (l, i) {
+    drw.text(cx0 + 2.5, ty + i * 5.6, l, { size:5.0, bold:true, ls:0.3 });
+  });
+  var subY = ty + Math.min(3, titleLines.length) * 5.6;
+  if (project.subtitle) drw.text(cx0 + 2.5, subY, project.subtitle, { size:3.2 });
+
+  /* Fußzeile im Schriftfeld */
+  var fy = y1 - 3.0;
+  drw.line(cx0, fy - 4.2, midX, fy - 4.2, { w:0.25 });
+  var f1 = 'REZEPTE VON: ' + (tb.recipesBy || '—');
+  var f2 = 'ORT: ' + (tb.location || '—');
+  var f3 = 'DATUM: ' + (tb.date || '');
+  drw.text(cx0 + 2.5, fy, f1, { size:2.7 });
+  drw.text(cx0 + 2.5 + Math.max(58, textWidth(f1, 2.7) + 6), fy, f2, { size:2.7 });
+  drw.text(midX - 2.5, fy, f3, { size:2.7, anchor:'end' });
+
+  /* rechte Spalte */
+  var r1 = y + h * 0.34, r2 = y + h * 0.62;
+  drw.line(midX, r1, x1, r1, { w:0.25 });
+  drw.line(midX, r2, x1, r2, { w:0.25 });
+  drw.text(midX + 2, y + 3.6, 'MASSSTAB', { size:2.2 });
+  drw.text(midX + 2, y + 7.4, 'OHNE', { size:3.2, bold:true });
+  drw.text(midX + 30, y + 3.6, 'BLATTFORMAT', { size:2.2 });
+  drw.text(midX + 30, y + 7.4, project.settings.sheetFormat +
+    (project.settings.orientation === 'portrait' ? ' hoch' : ' quer'), { size:3.2, bold:true });
+  drw.text(midX + 2, r1 + 3.6, 'ZEICHNUNGSNUMMER', { size:2.2 });
+  drw.text(midX + 2, r1 + 8.2, tb.drawingNumber || '—', { size:4.0, bold:true });
+  drw.text(midX + 2, r2 + 3.6, 'BLATT', { size:2.2 });
+  drw.text(midX + 2, r2 + 7.6, page + ' von ' + pages, { size:3.0, bold:true });
+  drw.text(midX + 30, r2 + 3.6, 'REV.', { size:2.2 });
+  drw.text(midX + 30, r2 + 7.6, String(tb.revision === undefined ? '0' : tb.revision), { size:3.0, bold:true });
+  return { x:x, y:y, w:w, h:h };
+}
+
+function drawRevisionTable(drw, L, project, tbBox) {
+  var revs = (project.settings.revisions || []).slice(-6);
+  if (!revs.length) return;
+  var rowh = 4.4, headH = 4.6;
+  var w = 108, h = headH + revs.length * rowh;
+  var x = tbBox.x - w - 3, y = tbBox.y + tbBox.h - h;
+  drw.rect(x, y, w, h, { w:0.35 });
+  var cols = [0, 10, 62, 84, w];
+  drw.line(x, y + headH, x + w, y + headH, { w:0.25 });
+  var heads = ['REV', 'BESCHREIBUNG', 'DATUM', 'NAME'];
+  heads.forEach(function (t, i) {
+    drw.text(x + cols[i] + 1.4, y + 3.3, t, { size:2.2, bold:true });
+    if (i > 0) drw.line(x + cols[i], y, x + cols[i], y + h, { w:0.25 });
+  });
+  revs.slice().reverse().forEach(function (r, i) {
+    var ry = y + headH + i * rowh + 3.1;
+    drw.text(x + 1.4, ry, String(r.rev), { size:2.4 });
+    var d = r.text || '';
+    while (textWidth(d, 2.4) > cols[2] - cols[1] - 3 && d.length > 3) d = d.slice(0, -2);
+    drw.text(x + cols[1] + 1.4, ry, d, { size:2.4 });
+    drw.text(x + cols[2] + 1.4, ry, r.date || '', { size:2.4 });
+    drw.text(x + cols[3] + 1.4, ry, r.by || '', { size:2.4 });
+    if (i < revs.length - 1) drw.line(x, y + headH + (i+1)*rowh, x + w, y + headH + (i+1)*rowh, { w:0.15 });
+  });
+}
+
+/* ---------- QR-Matrix ins Schriftfeld ---------- */
+function drawQrMatrix(drw, m, x, y, size) {
+  var n = m.length, c = size / n;
+  drw.rect(x - 0.8, y - 0.8, size + 1.6, size + 1.6, { w:0, fill:'#FFFFFF' });
+  for (var r = 0; r < n; r++) {
+    var run = -1;
+    for (var q = 0; q <= n; q++) {
+      var on = q < n && m[r][q];
+      if (on && run < 0) run = q;
+      if (!on && run >= 0) {
+        drw.rect(x + run * c, y + r * c, (q - run) * c + 0.02, c + 0.02, { w:0, fill:INK });
+        run = -1;
+      }
+    }
+  }
+}
+
+/* ---------- Blatt zeichnen ---------- */
+function drawSheet(project, pageIdx, layout, qrMatrix) {
+  var L = layout || computeSheetLayout(project);
+  var drw = new Drw();
+  var s = project.settings, mono = s.colorMode === 'bw';
+  drw.rect(0, 0, L.W, L.H, { w:0, fill:'#FFFFFF' });
+  drawFrame(drw, L);
+
+  var list = L.pages[pageIdx] || [];
+  var marks = collectMarks(project.cocktails);
+  var usedPreps = {};
+  project.cocktails.forEach(function (ck) {
+    (ck.ingredients || []).forEach(function (i) {
+      String(i.prep || '').split('').forEach(function (p) { if (PREP_BY_ID[p]) usedPreps[p] = true; });
+    });
+  });
+
+  /* Cocktail-Raster */
+  var cw = L.areaW / L.cols, ch = L.areaH / L.rows;
+  list.forEach(function (ck, i) {
+    var c = i % L.cols, r = Math.floor(i / L.cols);
+    if (r >= L.rows) return;
+    drawCocktail(drw, ck, L.areaX + c * cw, L.areaY + r * ch, cw, ch, {
+      scale: L.scale, mono: mono, showTable: s.showNotesTable, unit: s.unit, marks: null
+    });
+  });
+
+  /* Legendenspalte */
+  var lx = L.W - L.mr - L.RC, ly = L.mt + 1, lw = L.RC;
+  ly = drawGarnishLegend(drw, lx, ly, lw, marks);
+  ly = drawMethodLegend(drw, lx, ly, lw, marks);
+  ly = drawPrepLegend(drw, lx, ly, lw, usedPreps);
+  var notesH = Math.min(60, 12 + (s.generalNotes || []).length * 6.6);
+  var notesY = L.H - L.mb - L.TB_H - 3 - notesH;
+  ly = drawIngredientLegend(drw, lx, ly, lw, marks, mono, notesY - ly - 3);
+  drawGeneralNotes(drw, lx, notesY, lw, notesH, s.generalNotes);
+
+  var tbBox = drawTitleBlock(drw, L, project, pageIdx + 1, L.pages.length, qrMatrix);
+  drawRevisionTable(drw, L, project, tbBox);
+  return drw;
+}
+
+
+/* ===== 14_render_svg.js ===== */
+
+/* ============================================================
+   Ausgabe der Ops-Liste als SVG (Bildschirm, Vorschau, Druck)
+   ============================================================ */
+var SVG_FONT = "'Helvetica Neue',Helvetica,Arial,sans-serif";
+
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function nn(v) { return (Math.round(v * 100) / 100); }
+
+function segsToD(segs) {
+  var d = '';
+  for (var i = 0; i < segs.length; i++) {
+    var s = segs[i];
+    if (s[0] === 'M') d += 'M' + nn(s[1]) + ' ' + nn(s[2]);
+    else if (s[0] === 'L') d += 'L' + nn(s[1]) + ' ' + nn(s[2]);
+    else if (s[0] === 'C') d += 'C' + nn(s[1]) + ' ' + nn(s[2]) + ' ' + nn(s[3]) + ' ' + nn(s[4]) + ' ' + nn(s[5]) + ' ' + nn(s[6]);
+    else if (s[0] === 'Z') d += 'Z';
+    d += ' ';
+  }
+  return d.trim();
+}
+
+function opsToSvg(ops, W, H, opt) {
+  opt = opt || {};
+  var out = [], defs = [], clipId = 0, open = 0;
+  for (var i = 0; i < ops.length; i++) {
+    var o = ops[i];
+    switch (o.t) {
+      case 'l':
+        out.push('<path d="M' + nn(o.x1) + ' ' + nn(o.y1) + 'L' + nn(o.x2) + ' ' + nn(o.y2) +
+          '" stroke="' + o.c + '" stroke-width="' + nn(o.w) + '" fill="none"' +
+          (o.d ? ' stroke-dasharray="' + o.d.join(' ') + '"' : '') + '/>');
+        break;
+      case 'p':
+        out.push('<path d="' + segsToD(o.segs) + '"' +
+          (o.fill ? ' fill="' + o.fill + '"' : ' fill="none"') +
+          (o.w > 0 ? ' stroke="' + o.c + '" stroke-width="' + nn(o.w) + '"' : '') + '/>');
+        break;
+      case 'c':
+        out.push('<circle cx="' + nn(o.cx) + '" cy="' + nn(o.cy) + '" r="' + nn(o.r) + '"' +
+          (o.fill ? ' fill="' + o.fill + '"' : ' fill="none"') +
+          (o.w > 0 ? ' stroke="' + o.c + '" stroke-width="' + nn(o.w) + '"' : '') + '/>');
+        break;
+      case 't':
+        var anc = o.anchor === 'middle' ? 'middle' : (o.anchor === 'end' ? 'end' : 'start');
+        out.push('<text x="' + nn(o.x) + '" y="' + nn(o.y) + '" font-size="' + nn(o.size) +
+          '" font-family="' + SVG_FONT + '" fill="' + o.c + '" text-anchor="' + anc + '"' +
+          (o.bold ? ' font-weight="700"' : '') +
+          (o.ls ? ' letter-spacing="' + nn(o.ls) + '"' : '') +
+          (o.rot ? ' transform="rotate(' + nn(o.rot) + ' ' + nn(o.x) + ' ' + nn(o.y) + ')"' : '') +
+          '>' + esc(o.s) + '</text>');
+        break;
+      case 'k':
+        clipId++;
+        defs.push('<clipPath id="cp' + clipId + '"><path d="' + segsToD(o.segs) + '"/></clipPath>');
+        out.push('<g clip-path="url(#cp' + clipId + ')">'); open++;
+        break;
+      case 'u':
+        if (open > 0) { out.push('</g>'); open--; }
+        break;
+    }
+  }
+  while (open-- > 0) out.push('</g>');
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + ' ' + H + '"' +
+    (opt.width ? ' width="' + opt.width + '"' : '') +
+    (opt.height ? ' height="' + opt.height + '"' : '') +
+    ' shape-rendering="geometricPrecision" style="' + (opt.style || '') + '">' +
+    '<defs>' + defs.join('') + '</defs>' + out.join('') + '</svg>';
+}
+
+/* Kleine Vorschau eines einzelnen Cocktails (Fundus-Kachel) */
+function cocktailPreviewSvg(ck, w, h, opt) {
+  opt = opt || {};
+  var drw = new Drw();
+  var cw = opt.plain ? 46 : BASE_CELL_W, chh = opt.plain ? 62 : BASE_CELL_H;
+  drawCocktail(drw, ck, 0, 0, cw, chh, { scale: opt.scale || 0.92, unit: opt.unit || 'cl',
+    mono: opt.mono, noHatch: opt.noHatch, plain: opt.plain });
+  return opsToSvg(drw.ops, cw, chh, { style:'width:100%;height:100%;display:block' });
+}
+
+
+/* ===== 15_render_pdf.js ===== */
+
+/* ============================================================
+   PDF-Erzeugung (rein clientseitig, echte Vektorgrafik)
+   Kein externer Code: eigener Writer für PDF 1.4.
+   ============================================================ */
+var MM2PT = 72 / 25.4;
+
+function pdfNum(v) {
+  var r = Math.round(v * 1000) / 1000;
+  return (Math.abs(r) < 0.0005) ? '0' : String(r);
+}
+function pdfStr(s) {
+  var out = '';
+  for (var i = 0; i < s.length; i++) {
+    var code = charCodeWA(s[i]);
+    var ch = String.fromCharCode(code);
+    if (ch === '(' || ch === ')' || ch === '\\') out += '\\' + ch;
+    else if (code < 32) out += ' ';
+    else out += ch;
+  }
+  return out;
+}
+function hexToRgb(h) {
+  if (!h) return [0, 0, 0];
+  h = h.replace('#', '');
+  if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  return [parseInt(h.slice(0,2),16)/255, parseInt(h.slice(2,4),16)/255, parseInt(h.slice(4,6),16)/255];
+}
+
+function opsToPdfContent(ops, H) {
+  var K = MM2PT, hp = H * K, c = [];
+  var curStroke = null, curFill = null, curW = null, curDash = null;
+  function X(x) { return pdfNum(x * K); }
+  function Y(y) { return pdfNum(hp - y * K); }
+  function setStroke(col) { if (col !== curStroke) { var r = hexToRgb(col); c.push(pdfNum(r[0]) + ' ' + pdfNum(r[1]) + ' ' + pdfNum(r[2]) + ' RG'); curStroke = col; } }
+  function setFill(col) { if (col !== curFill) { var r = hexToRgb(col); c.push(pdfNum(r[0]) + ' ' + pdfNum(r[1]) + ' ' + pdfNum(r[2]) + ' rg'); curFill = col; } }
+  function setW(w) { if (w !== curW) { c.push(pdfNum(w * K) + ' w'); curW = w; } }
+  function setDash(d) {
+    var k = d ? d.join(',') : '';
+    if (k !== curDash) {
+      c.push(d ? '[' + d.map(function (v) { return pdfNum(v * K); }).join(' ') + '] 0 d' : '[] 0 d');
+      curDash = k;
+    }
+  }
+  function emitSegs(segs) {
+    for (var i = 0; i < segs.length; i++) {
+      var s = segs[i];
+      if (s[0] === 'M') c.push(X(s[1]) + ' ' + Y(s[2]) + ' m');
+      else if (s[0] === 'L') c.push(X(s[1]) + ' ' + Y(s[2]) + ' l');
+      else if (s[0] === 'C') c.push(X(s[1]) + ' ' + Y(s[2]) + ' ' + X(s[3]) + ' ' + Y(s[4]) + ' ' + X(s[5]) + ' ' + Y(s[6]) + ' c');
+      else if (s[0] === 'Z') c.push('h');
+    }
+  }
+  function circleSegs(cx, cy, r) {
+    var k = 0.5522847498 * r;
+    return [['M', cx + r, cy],
+            ['C', cx + r, cy + k, cx + k, cy + r, cx, cy + r],
+            ['C', cx - k, cy + r, cx - r, cy + k, cx - r, cy],
+            ['C', cx - r, cy - k, cx - k, cy - r, cx, cy - r],
+            ['C', cx + k, cy - r, cx + r, cy - k, cx + r, cy], ['Z']];
+  }
+  c.push('1 J 1 j');
+  for (var i = 0; i < ops.length; i++) {
+    var o = ops[i];
+    switch (o.t) {
+      case 'l':
+        setStroke(o.c); setW(o.w); setDash(o.d);
+        c.push(X(o.x1) + ' ' + Y(o.y1) + ' m ' + X(o.x2) + ' ' + Y(o.y2) + ' l S');
+        break;
+      case 'p':
+        setDash(null);
+        if (o.fill) setFill(o.fill);
+        if (o.w > 0) { setStroke(o.c); setW(o.w); }
+        emitSegs(o.segs);
+        c.push(o.fill ? (o.w > 0 ? 'B' : 'f') : 'S');
+        break;
+      case 'c':
+        setDash(null);
+        if (o.fill) setFill(o.fill);
+        if (o.w > 0) { setStroke(o.c); setW(o.w); }
+        emitSegs(circleSegs(o.cx, o.cy, o.r));
+        c.push(o.fill ? (o.w > 0 ? 'B' : 'f') : 'S');
+        break;
+      case 't': {
+        setFill(o.c);
+        var size = o.size * K;
+        var w = textWidth(o.s, o.size, o.bold, o.ls) * K;
+        var phi = -(o.rot || 0) * Math.PI / 180;
+        var cs = Math.cos(phi), sn = Math.sin(phi);
+        var dx = o.anchor === 'middle' ? -w / 2 : (o.anchor === 'end' ? -w : 0);
+        var px = o.x * K + dx * cs, py = hp - o.y * K + dx * sn;
+        c.push('BT');
+        c.push('/' + (o.bold ? 'F2' : 'F1') + ' ' + pdfNum(size) + ' Tf');
+        if (o.ls) c.push(pdfNum(o.ls * K) + ' Tc');
+        c.push(pdfNum(cs) + ' ' + pdfNum(sn) + ' ' + pdfNum(-sn) + ' ' + pdfNum(cs) + ' ' +
+               pdfNum(px) + ' ' + pdfNum(py) + ' Tm');
+        c.push('(' + pdfStr(o.s) + ') Tj');
+        if (o.ls) c.push('0 Tc');
+        c.push('ET');
+        curFill = o.c;
+        break;
+      }
+      case 'k':
+        c.push('q'); setDash(null); emitSegs(o.segs); c.push('W n');
+        curStroke = curFill = curW = null;
+        break;
+      case 'u':
+        c.push('Q'); curStroke = curFill = curW = curDash = null;
+        break;
+    }
+  }
+  return c.join('\n');
+}
+
+function latin1Bytes(s) {
+  var b = new Uint8Array(s.length);
+  for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 0xFF;
+  return b;
+}
+
+async function maybeDeflate(bytes) {
+  if (typeof CompressionStream === 'undefined') return null;
+  try {
+    var cs = new CompressionStream('deflate');
+    var w = cs.writable.getWriter(); w.write(bytes); w.close();
+    var buf = await new Response(cs.readable).arrayBuffer();
+    return new Uint8Array(buf);
+  } catch (e) { return null; }
+}
+
+/* pages: [{ ops, W, H }] */
+async function buildPdf(pages, meta) {
+  meta = meta || {};
+  var objs = [];                 /* 1-basiert; objs[i] = Uint8Array */
+  function addObj(bytes) { objs.push(bytes); return objs.length; }
+
+  var fontR = addObj(latin1Bytes('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'));
+  var fontB = addObj(latin1Bytes('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'));
+
+  var pageObjIds = [], contentIds = [];
+  var pagesId = objs.length + 1 + pages.length * 2;   /* Platzhalter, wird später korrigiert */
+
+  var contents = [];
+  for (var i = 0; i < pages.length; i++) {
+    var txt = opsToPdfContent(pages[i].ops, pages[i].H);
+    var raw = latin1Bytes(txt);
+    var def = await maybeDeflate(raw);
+    contents.push({ raw: raw, def: def });
+  }
+
+  /* Objekte anlegen: für jede Seite Content + Page */
+  var pageIds = [];
+  for (var p = 0; p < pages.length; p++) {
+    var ct = contents[p];
+    var body = ct.def || ct.raw;
+    var head = '<< /Length ' + body.length + (ct.def ? ' /Filter /FlateDecode' : '') + ' >>\nstream\n';
+    var buf = new Uint8Array(head.length + body.length + 10);
+    buf.set(latin1Bytes(head), 0); buf.set(body, head.length);
+    buf.set(latin1Bytes('\nendstream'), head.length + body.length);
+    var cid = addObj(buf.slice(0, head.length + body.length + 10));
+    contentIds.push(cid);
+    pageIds.push(0);
+  }
+  var pagesObjId = objs.length + pages.length + 1;
+  for (var q = 0; q < pages.length; q++) {
+    var w = pages[q].W * MM2PT, h = pages[q].H * MM2PT;
+    var s = '<< /Type /Page /Parent ' + pagesObjId + ' 0 R /MediaBox [0 0 ' + pdfNum(w) + ' ' + pdfNum(h) + '] ' +
+      '/Resources << /Font << /F1 ' + fontR + ' 0 R /F2 ' + fontB + ' 0 R >> /ProcSet [/PDF /Text] >> ' +
+      '/Contents ' + contentIds[q] + ' 0 R >>';
+    pageIds[q] = addObj(latin1Bytes(s));
+  }
+  var kids = pageIds.map(function (id) { return id + ' 0 R'; }).join(' ');
+  var realPagesId = addObj(latin1Bytes('<< /Type /Pages /Count ' + pages.length + ' /Kids [' + kids + '] >>'));
+  /* Parent-Verweise korrigieren, falls die Schätzung abwich */
+  if (realPagesId !== pagesObjId) {
+    for (var r = 0; r < pageIds.length; r++) {
+      var str = '';
+      var arr = objs[pageIds[r] - 1];
+      for (var z = 0; z < arr.length; z++) str += String.fromCharCode(arr[z]);
+      str = str.replace('/Parent ' + pagesObjId + ' 0 R', '/Parent ' + realPagesId + ' 0 R');
+      objs[pageIds[r] - 1] = latin1Bytes(str);
+    }
+  }
+  var infoId = addObj(latin1Bytes('<< /Title (' + pdfStr(meta.title || 'Cocktailübersicht') +
+    ') /Producer (Cocktailübersicht) /Creator (Cocktailübersicht) /CreationDate (D:' +
+    (meta.date || '20260101000000') + ') >>'));
+  var catId = addObj(latin1Bytes('<< /Type /Catalog /Pages ' + realPagesId + ' 0 R >>'));
+
+  /* Datei zusammensetzen */
+  var parts = [], offset = 0, offsets = [];
+  function push(bytes) { parts.push(bytes); offset += bytes.length; }
+  push(latin1Bytes('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'));
+  for (var oi = 0; oi < objs.length; oi++) {
+    offsets.push(offset);
+    push(latin1Bytes((oi + 1) + ' 0 obj\n'));
+    push(objs[oi]);
+    push(latin1Bytes('\nendobj\n'));
+  }
+  var xrefPos = offset;
+  var xref = 'xref\n0 ' + (objs.length + 1) + '\n0000000000 65535 f \n';
+  for (var xi = 0; xi < offsets.length; xi++) {
+    var o2 = String(offsets[xi]); while (o2.length < 10) o2 = '0' + o2;
+    xref += o2 + ' 00000 n \n';
+  }
+  xref += 'trailer\n<< /Size ' + (objs.length + 1) + ' /Root ' + catId + ' 0 R /Info ' + infoId +
+    ' 0 R >>\nstartxref\n' + xrefPos + '\n%%EOF\n';
+  push(latin1Bytes(xref));
+
+  var total = parts.reduce(function (a, b) { return a + b.length; }, 0);
+  var out = new Uint8Array(total), pos = 0;
+  parts.forEach(function (b) { out.set(b, pos); pos += b.length; });
+  return out;
+}
+
+
+/* ===== 20_qr.js ===== */
+
+/* ============================================================
+   QR-Code – eigener Encoder, rein clientseitig
+   Byte-Modus, Fehlerkorrektur L oder M, Version 1..40
+   ============================================================ */
+var QR_ECC = {
+  /* [Fehlerkorrektur-Codewörter je Block, Anzahl Blöcke] je Version */
+  L: [[7,1],[10,1],[15,1],[20,1],[26,1],[18,2],[20,2],[24,2],[30,2],[18,4],
+      [20,4],[24,4],[26,4],[30,4],[22,6],[24,6],[28,6],[30,6],[28,7],[28,8],
+      [28,8],[28,9],[30,9],[30,10],[26,12],[28,12],[30,12],[30,13],[30,14],[30,15],
+      [30,16],[30,17],[30,18],[30,19],[30,19],[30,20],[30,21],[30,22],[30,24],[30,25]],
+  M: [[10,1],[16,1],[26,1],[18,2],[24,2],[16,4],[18,4],[22,4],[22,5],[26,5],
+      [30,5],[22,8],[22,9],[24,9],[24,10],[28,10],[28,11],[26,13],[26,14],[26,16],
+      [26,17],[28,17],[28,18],[28,20],[28,21],[28,23],[28,25],[28,26],[28,28],[28,29],
+      [28,31],[28,33],[28,35],[28,37],[28,38],[28,40],[28,43],[28,45],[28,47],[28,49]]
+};
+var QR_ECC_BITS = { L:1, M:0, Q:3, H:2 };
+
+/* GF(256) */
+var GF_EXP = new Uint8Array(512), GF_LOG = new Uint8Array(256);
+(function () {
+  var x = 1;
+  for (var i = 0; i < 255; i++) {
+    GF_EXP[i] = x; GF_LOG[x] = i;
+    x <<= 1; if (x & 0x100) x ^= 0x11D;
+  }
+  for (var j = 255; j < 512; j++) GF_EXP[j] = GF_EXP[j - 255];
+})();
+function gfMul(a, b) { return (a === 0 || b === 0) ? 0 : GF_EXP[GF_LOG[a] + GF_LOG[b]]; }
+
+function rsGenPoly(n) {
+  var p = [1];
+  for (var i = 0; i < n; i++) {
+    var np = new Array(p.length + 1).fill(0);
+    for (var j = 0; j < p.length; j++) {
+      np[j] ^= gfMul(p[j], 1);
+      np[j + 1] ^= gfMul(p[j], GF_EXP[i]);
+    }
+    p = np;
+  }
+  return p;
+}
+function rsEncode(data, ecLen) {
+  var gen = rsGenPoly(ecLen), res = new Array(data.length + ecLen).fill(0);
+  for (var i = 0; i < data.length; i++) res[i] = data[i];
+  for (var k = 0; k < data.length; k++) {
+    var f = res[k];
+    if (f === 0) continue;
+    for (var j = 0; j < gen.length; j++) res[k + j] ^= gfMul(gen[j], f);
+  }
+  return res.slice(data.length);
+}
+
+function qrAlignPositions(v) {
+  if (v === 1) return [];
+  var n = Math.floor(v / 7) + 2, last = 4 * v + 10, first = 6;
+  var step = (v === 32) ? 26 : Math.ceil((last - first) / (n - 1) / 2) * 2;
+  var pos = [first];
+  for (var i = n - 1; i >= 1; i--) pos.push(last - (n - 1 - i) * step);
+  pos.sort(function (a, b) { return a - b; });
+  return pos;
+}
+
+function qrReserved(v) {
+  var size = 4 * v + 17, i, j;
+  var res = [];
+  for (i = 0; i < size; i++) { res.push(new Array(size).fill(false)); }
+  function block(r, c, h, w) {
+    for (var a = 0; a < h; a++) for (var b = 0; b < w; b++) {
+      var rr = r + a, cc = c + b;
+      if (rr >= 0 && rr < size && cc >= 0 && cc < size) res[rr][cc] = true;
+    }
+  }
+  block(0, 0, 9, 9); block(0, size - 8, 9, 8); block(size - 8, 0, 8, 9);
+  for (i = 0; i < size; i++) { res[6][i] = true; res[i][6] = true; }
+  var ap = qrAlignPositions(v);
+  for (i = 0; i < ap.length; i++) for (j = 0; j < ap.length; j++) {
+    var r = ap[i], c = ap[j];
+    if ((r <= 8 && c <= 8) || (r <= 8 && c >= size - 9) || (r >= size - 9 && c <= 8)) continue;
+    block(r - 2, c - 2, 5, 5);
+  }
+  if (v >= 7) { block(0, size - 11, 6, 3); block(size - 11, 0, 3, 6); }
+  return res;
+}
+function qrTotalCodewords(v) {
+  var res = qrReserved(v), size = res.length, free = 0;
+  for (var i = 0; i < size; i++) for (var j = 0; j < size; j++) if (!res[i][j]) free++;
+  return Math.floor(free / 8);
+}
+
+function qrCapacityBytes(v, lvl) {
+  var t = qrTotalCodewords(v), e = QR_ECC[lvl][v - 1];
+  var dataCw = t - e[0] * e[1];
+  var cci = v < 10 ? 1 : 2;
+  return dataCw - 1 - cci - (v < 10 ? 0 : 0);   /* 4 Bit Modus + Zähler ≈ 1..3 Byte */
+}
+
+function qrBuild(text, lvl, forceVersion) {
+  lvl = lvl || 'M';
+  var bytes = new TextEncoder().encode(text);
+  var v = forceVersion || 0;
+  if (!v) {
+    for (var t = 1; t <= 40; t++) {
+      if (qrCapacityBytes(t, lvl) >= bytes.length) { v = t; break; }
+    }
+    if (!v) return null;
+  }
+  var size = 4 * v + 17;
+  var e = QR_ECC[lvl][v - 1], ecLen = e[0], blocks = e[1];
+  var totalCw = qrTotalCodewords(v);
+  var dataCw = totalCw - ecLen * blocks;
+  var cciBits = v < 10 ? 8 : 16;
+
+  /* Bitstrom */
+  var bits = [];
+  function put(val, len) { for (var i = len - 1; i >= 0; i--) bits.push((val >> i) & 1); }
+  put(4, 4); put(bytes.length, cciBits);
+  for (var i = 0; i < bytes.length; i++) put(bytes[i], 8);
+  var cap = dataCw * 8;
+  if (bits.length > cap) return null;
+  for (var t2 = 0; t2 < 4 && bits.length < cap; t2++) bits.push(0);
+  while (bits.length % 8) bits.push(0);
+  var pad = [0xEC, 0x11], pi = 0;
+  while (bits.length < cap) { put(pad[pi % 2], 8); pi++; }
+
+  var dcw = [];
+  for (var b = 0; b < bits.length; b += 8) {
+    var val = 0; for (var k = 0; k < 8; k++) val = (val << 1) | bits[b + k];
+    dcw.push(val);
+  }
+
+  /* Blöcke */
+  var shortLen = Math.floor(dataCw / blocks), longCount = dataCw % blocks;
+  var dblocks = [], eblocks = [], off = 0;
+  for (var bi = 0; bi < blocks; bi++) {
+    var len = shortLen + (bi >= blocks - longCount ? 1 : 0);
+    var d = dcw.slice(off, off + len); off += len;
+    dblocks.push(d); eblocks.push(rsEncode(d, ecLen));
+  }
+  var inter = [];
+  var maxLen = shortLen + (longCount ? 1 : 0);
+  for (var c = 0; c < maxLen; c++)
+    for (var bb = 0; bb < blocks; bb++) if (c < dblocks[bb].length) inter.push(dblocks[bb][c]);
+  for (var c2 = 0; c2 < ecLen; c2++)
+    for (var b2 = 0; b2 < blocks; b2++) inter.push(eblocks[b2][c2]);
+
+  /* Matrix */
+  var m = [], res = qrReserved(v), r, cc;
+  for (r = 0; r < size; r++) m.push(new Array(size).fill(0));
+  function finder(fr, fc) {
+    for (var a = -1; a <= 7; a++) for (var b3 = -1; b3 <= 7; b3++) {
+      var rr = fr + a, ccx = fc + b3;
+      if (rr < 0 || rr >= size || ccx < 0 || ccx >= size) continue;
+      var on = (a >= 0 && a <= 6 && (b3 === 0 || b3 === 6)) ||
+               (b3 >= 0 && b3 <= 6 && (a === 0 || a === 6)) ||
+               (a >= 2 && a <= 4 && b3 >= 2 && b3 <= 4);
+      m[rr][ccx] = on ? 1 : 0;
+    }
+  }
+  finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
+  for (var i2 = 8; i2 < size - 8; i2++) { m[6][i2] = (i2 % 2 === 0) ? 1 : 0; m[i2][6] = (i2 % 2 === 0) ? 1 : 0; }
+  var ap = qrAlignPositions(v);
+  for (var ai = 0; ai < ap.length; ai++) for (var aj = 0; aj < ap.length; aj++) {
+    var ar = ap[ai], ac = ap[aj];
+    if ((ar <= 8 && ac <= 8) || (ar <= 8 && ac >= size - 9) || (ar >= size - 9 && ac <= 8)) continue;
+    for (var da = -2; da <= 2; da++) for (var db = -2; db <= 2; db++)
+      m[ar + da][ac + db] = (Math.max(Math.abs(da), Math.abs(db)) !== 1) ? 1 : 0;
+  }
+  m[size - 8][8] = 1;
+
+  /* Daten platzieren */
+  var bitIdx = 0, dir = -1, col = size - 1;
+  var dataBits = [];
+  for (var q = 0; q < inter.length; q++) for (var w = 7; w >= 0; w--) dataBits.push((inter[q] >> w) & 1);
+  while (col > 0) {
+    if (col === 6) col--;
+    for (var rowc = (dir === -1 ? size - 1 : 0); rowc >= 0 && rowc < size; rowc += dir) {
+      for (var s2 = 0; s2 < 2; s2++) {
+        var cx = col - s2;
+        if (res[rowc][cx]) continue;
+        m[rowc][cx] = bitIdx < dataBits.length ? dataBits[bitIdx] : 0;
+        bitIdx++;
+      }
+    }
+    dir = -dir; col -= 2;
+  }
+
+  /* Maske wählen */
+  function maskFn(k, i, j) {
+    switch (k) {
+      case 0: return (i + j) % 2 === 0;
+      case 1: return i % 2 === 0;
+      case 2: return j % 3 === 0;
+      case 3: return (i + j) % 3 === 0;
+      case 4: return (Math.floor(i / 2) + Math.floor(j / 3)) % 2 === 0;
+      case 5: return ((i * j) % 2) + ((i * j) % 3) === 0;
+      case 6: return (((i * j) % 2) + ((i * j) % 3)) % 2 === 0;
+      case 7: return (((i + j) % 2) + ((i * j) % 3)) % 2 === 0;
+    }
+    return false;
+  }
+  function penalty(mm) {
+    var p = 0, i, j, run, dark = 0;
+    for (i = 0; i < size; i++) {
+      run = 1;
+      for (j = 1; j < size; j++) {
+        if (mm[i][j] === mm[i][j-1]) run++;
+        else { if (run >= 5) p += 3 + (run - 5); run = 1; }
+      }
+      if (run >= 5) p += 3 + (run - 5);
+      run = 1;
+      for (j = 1; j < size; j++) {
+        if (mm[j][i] === mm[j-1][i]) run++;
+        else { if (run >= 5) p += 3 + (run - 5); run = 1; }
+      }
+      if (run >= 5) p += 3 + (run - 5);
+    }
+    for (i = 0; i < size - 1; i++) for (j = 0; j < size - 1; j++)
+      if (mm[i][j] === mm[i][j+1] && mm[i][j] === mm[i+1][j] && mm[i][j] === mm[i+1][j+1]) p += 3;
+    var pat1 = [1,0,1,1,1,0,1,0,0,0,0], pat2 = [0,0,0,0,1,0,1,1,1,0,1];
+    function match(arr, pat) {
+      for (var z = 0; z < pat.length; z++) if (arr[z] !== pat[z]) return false;
+      return true;
+    }
+    for (i = 0; i < size; i++) for (j = 0; j + 11 <= size; j++) {
+      var rowA = [], colA = [];
+      for (var z2 = 0; z2 < 11; z2++) { rowA.push(mm[i][j+z2]); colA.push(mm[j+z2][i]); }
+      if (match(rowA, pat1) || match(rowA, pat2)) p += 40;
+      if (match(colA, pat1) || match(colA, pat2)) p += 40;
+    }
+    for (i = 0; i < size; i++) for (j = 0; j < size; j++) if (mm[i][j]) dark++;
+    var pct = dark * 100 / (size * size);
+    p += Math.floor(Math.abs(pct - 50) / 5) * 10;
+    return p;
+  }
+  function bch(data, poly, bits) {
+    var d = data << (bits - 1);
+    var g = poly, gl = 0, tmp = g;
+    while (tmp) { gl++; tmp >>= 1; }
+    var dl = 0, t3 = d; while (t3) { dl++; t3 >>= 1; }
+    while (dl >= gl) { d ^= g << (dl - gl); dl = 0; t3 = d; while (t3) { dl++; t3 >>= 1; } }
+    return d;
+  }
+  function applyFormat(mm, mask) {
+    var data = (QR_ECC_BITS[lvl] << 3) | mask;
+    var fmt = ((data << 10) | bch(data, 0x537, 11)) ^ 0x5412;
+    var bitsF = [];
+    for (var i = 14; i >= 0; i--) bitsF.push((fmt >> i) & 1);
+    /* bitsF[0] = MSB (Bit14); Platzierung nach Norm mit Index 0 = LSB */
+    var b = [];
+    for (var k = 0; k < 15; k++) b[k] = (fmt >> k) & 1;
+    for (var i2 = 0; i2 <= 5; i2++) mm[8][i2] = b[i2];
+    mm[8][7] = b[6]; mm[8][8] = b[7]; mm[7][8] = b[8];
+    for (var i3 = 9; i3 <= 14; i3++) mm[14 - i3][8] = b[i3];
+    for (var i4 = 0; i4 <= 7; i4++) mm[size - 1 - i4][8] = b[i4];
+    for (var i5 = 8; i5 <= 14; i5++) mm[8][size - 15 + i5] = b[i5];
+    mm[size - 8][8] = 1;
+    if (v >= 7) {
+      var vf = (v << 12) | bch(v, 0x1F25, 13);
+      for (var i6 = 0; i6 < 18; i6++) {
+        var bit = (vf >> i6) & 1;
+        var rr = Math.floor(i6 / 3), ccv = size - 11 + (i6 % 3);
+        mm[rr][ccv] = bit; mm[ccv][rr] = bit;
+      }
+    }
+  }
+  var bestM = null, bestP = Infinity;
+  for (var mk = 0; mk < 8; mk++) {
+    var cand = m.map(function (row) { return row.slice(); });
+    for (var i7 = 0; i7 < size; i7++) for (var j7 = 0; j7 < size; j7++)
+      if (!res[i7][j7] && maskFn(mk, i7, j7)) cand[i7][j7] ^= 1;
+    applyFormat(cand, mk);
+    var pen = penalty(cand);
+    if (pen < bestP) { bestP = pen; bestM = cand; }
+  }
+  return bestM.map(function (row) { return row.map(function (c3) { return !!c3; }); });
+}
+
+/* QR als SVG-String (für die Anzeige) */
+function qrToSvg(matrix, px, quiet) {
+  if (!matrix) return '';
+  quiet = quiet === undefined ? 2 : quiet;
+  var n = matrix.length, size = n + quiet * 2, rects = [];
+  for (var r = 0; r < n; r++) {
+    var run = -1;
+    for (var c = 0; c <= n; c++) {
+      var on = c < n && matrix[r][c];
+      if (on && run < 0) run = c;
+      if (!on && run >= 0) {
+        rects.push('<rect x="' + (run + quiet) + '" y="' + (r + quiet) + '" width="' + (c - run) + '" height="1"/>');
+        run = -1;
+      }
+    }
+  }
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + size + ' ' + size +
+    '" width="' + px + '" height="' + px + '" shape-rendering="crispEdges">' +
+    '<rect width="' + size + '" height="' + size + '" fill="#fff"/><g fill="#000">' +
+    rects.join('') + '</g></svg>';
+}
+
+
+/* ===== 21_share.js ===== */
+
+/* ============================================================
+   Teilen: kompaktes Projektformat, LZSS-Kompression, Base64-URL
+   ============================================================ */
+var B64U = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+function b64uEncode(bytes) {
+  var s = '', i;
+  for (i = 0; i + 2 < bytes.length; i += 3) {
+    var n = (bytes[i] << 16) | (bytes[i+1] << 8) | bytes[i+2];
+    s += B64U[(n >> 18) & 63] + B64U[(n >> 12) & 63] + B64U[(n >> 6) & 63] + B64U[n & 63];
+  }
+  var rem = bytes.length - i;
+  if (rem === 1) { var n1 = bytes[i] << 16; s += B64U[(n1 >> 18) & 63] + B64U[(n1 >> 12) & 63]; }
+  else if (rem === 2) {
+    var n2 = (bytes[i] << 16) | (bytes[i+1] << 8);
+    s += B64U[(n2 >> 18) & 63] + B64U[(n2 >> 12) & 63] + B64U[(n2 >> 6) & 63];
+  }
+  return s;
+}
+function b64uDecode(str) {
+  var map = {}, i;
+  for (i = 0; i < 64; i++) map[B64U[i]] = i;
+  var out = [], buf = 0, bits = 0;
+  for (i = 0; i < str.length; i++) {
+    var v = map[str[i]];
+    if (v === undefined) continue;
+    buf = (buf << 6) | v; bits += 6;
+    if (bits >= 8) { bits -= 8; out.push((buf >> bits) & 0xFF); }
+  }
+  return new Uint8Array(out);
+}
+
+/* ---------- LZSS ---------- */
+function lzssCompress(src) {
+  var out = [], pos = 0, n = src.length;
+  var head = {}, WIN = 4095, MAXL = 18, MINL = 3;
+  while (pos < n) {
+    var flagIdx = out.length; out.push(0);
+    var flags = 0;
+    for (var b = 0; b < 8 && pos < n; b++) {
+      var bestLen = 0, bestOff = 0;
+      if (pos + MINL <= n) {
+        var key = src[pos] + ',' + src[pos+1] + ',' + src[pos+2];
+        var list = head[key];
+        if (list) {
+          for (var li = list.length - 1; li >= 0 && list.length - li <= 48; li--) {
+            var cand = list[li], off = pos - cand;
+            if (off > WIN) break;
+            var l = 0;
+            while (l < MAXL && pos + l < n && src[cand + l] === src[pos + l]) l++;
+            if (l > bestLen) { bestLen = l; bestOff = off; if (l === MAXL) break; }
+          }
+        }
+      }
+      if (bestLen >= MINL) {
+        out.push((bestOff >> 4) & 0xFF);
+        out.push(((bestOff & 0x0F) << 4) | (bestLen - MINL));
+        for (var q = 0; q < bestLen; q++) {
+          if (pos + q + MINL <= n) {
+            var k2 = src[pos+q] + ',' + src[pos+q+1] + ',' + src[pos+q+2];
+            (head[k2] = head[k2] || []).push(pos + q);
+          }
+        }
+        pos += bestLen;
+      } else {
+        flags |= (1 << b);
+        if (pos + MINL <= n) {
+          var k3 = src[pos] + ',' + src[pos+1] + ',' + src[pos+2];
+          (head[k3] = head[k3] || []).push(pos);
+        }
+        out.push(src[pos]); pos++;
+      }
+    }
+    out[flagIdx] = flags;
+  }
+  return new Uint8Array(out);
+}
+function lzssDecompress(src) {
+  var out = [], pos = 0, n = src.length;
+  while (pos < n) {
+    var flags = src[pos++];
+    for (var b = 0; b < 8 && pos < n; b++) {
+      if (flags & (1 << b)) out.push(src[pos++]);
+      else {
+        var b1 = src[pos++], b2 = src[pos++];
+        if (b2 === undefined) break;
+        var off = (b1 << 4) | (b2 >> 4), len = (b2 & 0x0F) + 3, start = out.length - off;
+        for (var i = 0; i < len; i++) out.push(out[start + i]);
+      }
+    }
+  }
+  return new Uint8Array(out);
+}
+
+function compressToUrl(str) {
+  var bytes = new TextEncoder().encode(str);
+  return b64uEncode(lzssCompress(bytes));
+}
+function decompressFromUrl(s) {
+  return new TextDecoder().decode(lzssDecompress(b64uDecode(s)));
+}
+
+/* ---------- kompaktes Projektformat ---------- */
+function packIng(i) {
+  var known = !!ING_BY_ID[i.ingredientId];
+  return [i.ingredientId || '', known ? 0 : (i.name || ''), i.amount, i.unit, i.prep || '',
+          known ? 0 : (i.cls || 'other'), known ? 0 : (i.color || '#DDDDDD')];
+}
+function unpackIng(a, idx) {
+  var known = ING_BY_ID[a[0]];
+  return { pos: idx + 1, ingredientId: a[0], name: known ? known.name : (a[1] || a[0]),
+           amount: a[2] === undefined ? null : a[2], unit: a[3], prep: a[4] || '',
+           cls: known ? known.cls : (a[5] || 'other'), color: known ? known.color : (a[6] || '#DDDDDD') };
+}
+function packCocktail(ck) {
+  var src = COCKTAIL_BY_ID[ck.sourceId];
+  if (src && cocktailEquals(ck, src)) return ['=', ck.sourceId];
+  return [ck.sourceId || '', ck.name, ck.description || '', ck.category || '', ck.baseSpirit || '',
+          ck.glass, ck.ice || 'none', ck.method || 'b', ck.altName || '', ck.note || '',
+          ck.noteRef || 0, (ck.ingredients || []).map(packIng),
+          (ck.garnish || []).map(function (g) { return g.count === 1 ? g.id : [g.id, g.count]; }),
+          ck.tags || []];
+}
+function unpackCocktail(a) {
+  if (a[0] === '=') {
+    var s = COCKTAIL_BY_ID[a[1]];
+    return s ? cloneCocktail(s) : null;
+  }
+  return {
+    id: uid(), sourceId: a[0] || null, name: a[1], description: a[2], category: a[3],
+    baseSpirit: a[4], glass: a[5], ice: a[6], method: a[7],
+    altName: a[8] || null, note: a[9] || null, noteRef: a[10] || null,
+    ingredients: (a[11] || []).map(unpackIng),
+    garnish: (a[12] || []).map(function (g) {
+      return typeof g === 'string' ? { id:g, count:1 } : { id:g[0], count:g[1] };
+    }),
+    tags: a[13] || []
+  };
+}
+function packProject(project, library) {
+  var s = project.settings, tb = s.titleBlock || {};
+  return {
+    v: 1,
+    n: project.name, s: project.subtitle || '',
+    st: [s.unit, s.sheetFormat, s.orientation, s.fitToOneSheet ? 1 : 0, s.colorMode,
+         s.showNotesTable ? 1 : 0, s.qrInTitleBlock ? 1 : 0],
+    tb: [tb.title || '', tb.recipesBy || '', tb.location || '', tb.drawingNumber || '',
+         tb.revision || '0', tb.date || ''],
+    rv: (s.revisions || []).map(function (r) { return [r.rev, r.text, r.date, r.by]; }),
+    gn: s.generalNotes || [],
+    ck: (project.cocktails || []).map(packCocktail),
+    lib: (library || []).map(packCocktail)
+  };
+}
+function unpackProject(p) {
+  var st = p.st || [], tb = p.tb || [];
+  var proj = {
+    id: uid(), name: p.n || 'Importiertes Projekt', subtitle: p.s || '',
+    settings: {
+      unit: st[0] || 'cl', sheetFormat: st[1] || 'A2', orientation: st[2] || 'landscape',
+      fitToOneSheet: !!st[3], colorMode: st[4] || 'color', showNotesTable: !!st[5],
+      qrInTitleBlock: !!st[6],
+      titleBlock: { title: tb[0] || '', recipesBy: tb[1] || '', location: tb[2] || '',
+                    drawingNumber: tb[3] || '', revision: tb[4] || '0', date: tb[5] || '' },
+      revisions: (p.rv || []).map(function (r) { return { rev:r[0], text:r[1], date:r[2], by:r[3] }; }),
+      generalNotes: p.gn || []
+    },
+    cocktails: (p.ck || []).map(unpackCocktail).filter(Boolean)
+  };
+  proj.cocktails.forEach(function (c) { c.id = uid(); });
+  var lib = (p.lib || []).map(unpackCocktail).filter(Boolean);
+  return { project: proj, library: lib };
+}
+
+
+/* ===== 30_store.js ===== */
+
+/* ============================================================
+   Zustand, Speicherung im Browser, Export/Import
+   ============================================================ */
+var SCHEMA_VERSION = 1;
+var APP_VERSION = '1.0.0';
+var STORE_KEY = 'cocktailuebersicht.v1';
+
+function uid() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'id-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+
+function cloneCocktail(src) {
+  return {
+    id: uid(), sourceId: src.sourceId || src.id, name: src.name,
+    description: src.description || '', category: src.category, baseSpirit: src.baseSpirit,
+    glass: src.glass, ice: src.ice || 'none', method: src.method || 'b',
+    ingredients: (src.ingredients || []).map(function (i, k) {
+      return { pos:k+1, ingredientId:i.ingredientId, name:i.name, amount:i.amount,
+               unit:i.unit, prep:i.prep || '', cls:i.cls, color:i.color };
+    }),
+    garnish: (src.garnish || []).map(function (g) { return { id:g.id, count:g.count || 1 }; }),
+    altName: src.altName || null, note: src.note || null, noteRef: src.noteRef || null,
+    tags: (src.tags || []).slice()
+  };
+}
+function cocktailSignature(c) {
+  return JSON.stringify([c.name, c.description, c.glass, c.ice, c.method, c.altName, c.note, c.noteRef,
+    (c.ingredients || []).map(function (i) { return [i.ingredientId, i.name, i.amount, i.unit, i.prep]; }),
+    (c.garnish || []).map(function (g) { return [g.id, g.count]; })]);
+}
+function cocktailEquals(a, b) { return cocktailSignature(a) === cocktailSignature(b); }
+
+var DEFAULT_NOTES = [
+  'Mengen sind Richtwerte, nach Geschmack anpassen.',
+  'Eis immer zuerst ins Mixglas geben.',
+  'Bei Drinks mit Fruchtsaft die Spirituose zuletzt einfüllen.',
+  'Klare Drinks rühren, Drinks mit Saft, Sahne oder Ei schütteln.',
+  'Stielgläser bei kalten Drinks am Stiel halten.',
+  'Gläser vorkühlen, dann bleibt der Drink länger kalt.'
+];
+
+function newProject(name) {
+  var d = todayISO();
+  return {
+    id: uid(),
+    name: name || 'Neues Projekt',
+    subtitle: '',
+    settings: {
+      unit: 'cl', sheetFormat: 'A2', orientation: 'landscape',
+      fitToOneSheet: false, colorMode: 'color', showNotesTable: false, qrInTitleBlock: true,
+      titleBlock: {
+        title: 'HAPPY HOUR – ANLAGENSCHEMA & DETAILS DER MIXGETRÄNKE',
+        recipesBy: 'Selbsternannter Barmeister',
+        location: 'Bar',
+        drawingNumber: 'Z-4-' + d.slice(0, 4) + '-001',
+        revision: '0',
+        date: d
+      },
+      revisions: [{ rev:'0', text:'Erstausgabe', date:d, by:'' }],
+      generalNotes: DEFAULT_NOTES.slice()
+    },
+    cocktails: []
+  };
+}
+
+var Store = {
+  state: null,
+  load: function () {
+    var raw = null;
+    try { raw = localStorage.getItem(STORE_KEY); } catch (e) { raw = null; }
+    if (raw) {
+      try {
+        var s = JSON.parse(raw);
+        if (s && s.projects && s.projects.length) { this.state = this.migrate(s); return this.state; }
+      } catch (e) { /* defekter Stand wird verworfen */ }
+    }
+    var p = newProject('Mein erstes Projekt');
+    this.state = { schemaVersion: SCHEMA_VERSION, appVersion: APP_VERSION,
+                   projects: [p], activeId: p.id, customLibrary: [],
+                   ui: { unit:'cl', tab:'fundus' } };
+    return this.state;
+  },
+  migrate: function (s) {
+    s.schemaVersion = s.schemaVersion || 1;
+    s.customLibrary = s.customLibrary || [];
+    s.ui = s.ui || { unit:'cl', tab:'fundus' };
+    s.projects.forEach(function (p) {
+      p.settings = p.settings || newProject().settings;
+      p.settings.generalNotes = p.settings.generalNotes || DEFAULT_NOTES.slice();
+      p.settings.revisions = p.settings.revisions || [];
+      p.settings.titleBlock = p.settings.titleBlock || newProject().settings.titleBlock;
+      p.cocktails = p.cocktails || [];
+    });
+    if (!s.projects.some(function (p) { return p.id === s.activeId; })) s.activeId = s.projects[0].id;
+    return s;
+  },
+  save: function () {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(this.state));
+      return true;
+    } catch (e) {
+      toast('Speichern fehlgeschlagen: Der Browser-Speicher ist voll oder gesperrt.');
+      return false;
+    }
+  },
+  project: function () {
+    var s = this.state;
+    return s.projects.filter(function (p) { return p.id === s.activeId; })[0] || s.projects[0];
+  },
+  setActive: function (id) { this.state.activeId = id; this.save(); },
+  addProject: function (name) {
+    var p = newProject(name);
+    this.state.projects.push(p);
+    this.state.activeId = p.id;
+    this.save();
+    return p;
+  },
+  removeProject: function (id) {
+    this.state.projects = this.state.projects.filter(function (p) { return p.id !== id; });
+    if (!this.state.projects.length) this.state.projects.push(newProject('Neues Projekt'));
+    if (!this.state.projects.some(function (p) { return p.id === this.state.activeId; }, this))
+      this.state.activeId = this.state.projects[0].id;
+    this.save();
+  },
+  duplicateProject: function (id) {
+    var src = this.state.projects.filter(function (p) { return p.id === id; })[0];
+    if (!src) return;
+    var copy = JSON.parse(JSON.stringify(src));
+    copy.id = uid(); copy.name = src.name + ' (Kopie)';
+    copy.cocktails.forEach(function (c) { c.id = uid(); });
+    this.state.projects.push(copy); this.state.activeId = copy.id; this.save();
+    return copy;
+  },
+  allCocktails: function () {
+    var lib = this.state.customLibrary.map(function (c) {
+      var o = JSON.parse(JSON.stringify(c)); o.custom = true; return o;
+    });
+    return lib.concat(COCKTAILS);
+  },
+  addRevision: function (text, by) {
+    var p = this.project(), revs = p.settings.revisions;
+    var last = revs.length ? parseInt(revs[revs.length - 1].rev, 10) : -1;
+    revs.push({ rev: String(isNaN(last) ? revs.length : last + 1), text: text || 'Änderung',
+                date: todayISO(), by: by || '' });
+    p.settings.titleBlock.revision = revs[revs.length - 1].rev;
+    this.save();
+  }
+};
+
+/* ---------- Export / Import ---------- */
+function buildExport(project, library) {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    app: 'cocktailuebersicht',
+    appVersion: APP_VERSION,
+    exportedAt: new Date().toISOString(),
+    project: {
+      id: project.id, name: project.name, subtitle: project.subtitle,
+      settings: project.settings,
+      cocktails: project.cocktails
+    },
+    customLibrary: library || []
+  };
+}
+function validateImport(obj) {
+  if (!obj || typeof obj !== 'object') return 'Die Datei enthält keine gültigen Daten.';
+  if (obj.app !== 'cocktailuebersicht') return 'Diese Datei stammt nicht aus der Cocktailübersicht.';
+  if (!obj.project || !Array.isArray(obj.project.cocktails)) return 'Im Projekt fehlen die Cocktails.';
+  if (obj.schemaVersion > SCHEMA_VERSION) return 'Die Datei wurde mit einer neueren Version erstellt.';
+  return null;
+}
+function normalizeImportedProject(p) {
+  var base = newProject(p.name || 'Importiertes Projekt');
+  base.subtitle = p.subtitle || '';
+  base.settings = Object.assign(base.settings, p.settings || {});
+  base.settings.titleBlock = Object.assign(newProject().settings.titleBlock, (p.settings || {}).titleBlock || {});
+  base.cocktails = (p.cocktails || []).map(function (c) {
+    var n = cloneCocktail(c); n.sourceId = c.sourceId || null; return n;
+  });
+  return base;
+}
+
+
+/* ===== 40_ui.js ===== */
+
+/* ============================================================
+   Oberfläche
+   ============================================================ */
+var UI = { tab:'fundus', search:'', fCat:'', fBase:'', fGlass:'', fTag:'', page:0, zoom:0, prevTimer:null };
+
+function el(tag, attrs, kids) {
+  var e = document.createElement(tag);
+  if (attrs) for (var k in attrs) {
+    if (k === 'html') e.innerHTML = attrs[k];
+    else if (k === 'text') e.textContent = attrs[k];
+    else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), attrs[k]);
+    else if (attrs[k] !== null && attrs[k] !== undefined && attrs[k] !== false) e.setAttribute(k, attrs[k]);
+  }
+  (kids || []).forEach(function (c) { if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
+  return e;
+}
+function $(s, r) { return (r || document).querySelector(s); }
+function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); return n; }
+var toastTimer = null;
+function toast(msg) {
+  var t = $('#toast'); if (!t) return;
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.classList.remove('on'); }, 2600);
+}
+function selectOf(opts, val, onch, cls) {
+  var s = el('select', { class:cls || '', onchange:onch });
+  opts.forEach(function (o) {
+    s.appendChild(el('option', { value:o[0], selected: String(o[0]) === String(val) ? 'selected' : null }, [o[1]]));
+  });
+  s.value = val;
+  return s;
+}
+function field(label, control) { return el('label', { class:'field' }, [el('span', { text:label }), control]); }
+function download(filename, blob) {
+  var url = URL.createObjectURL(blob);
+  var a = el('a', { href:url, download:filename });
+  document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1500);
+}
+
+/* ---------- Kopfleiste ---------- */
+function renderBar() {
+  var s = Store.state, p = Store.project();
+  var bar = clear($('#bar'));
+  bar.appendChild(el('div', { class:'brand' }, [
+    el('div', {}, [
+      el('b', { text:'Cocktailübersicht' }),
+      el('br'),
+      el('span', { text:'Rezepte als technische Zeichnung' })
+    ])
+  ]));
+  var sel = selectOf(s.projects.map(function (pr) { return [pr.id, pr.name]; }), s.activeId, function (e) {
+    Store.setActive(e.target.value); UI.page = 0; render();
+  });
+  bar.appendChild(el('div', { class:'projsel' }, [
+    el('span', { class:'hint', text:'Projekt' }), sel,
+    el('button', { class:'btn small ghost', title:'Neues Projekt', onclick:function () {
+      var n = prompt('Name des neuen Projekts:', 'Projekt ' + (s.projects.length + 1));
+      if (n) { Store.addProject(n); UI.page = 0; render(); }
+    }, text:'+' })
+  ]));
+  var tabs = el('div', { class:'tabs' });
+  [['fundus', 'Fundus', COCKTAILS.length + Store.state.customLibrary.length],
+   ['project', 'Mein Projekt', p.cocktails.length],
+   ['output', 'Ausgabe', null]].forEach(function (t) {
+    tabs.appendChild(el('button', {
+      role:'tab', 'aria-selected': UI.tab === t[0] ? 'true' : 'false',
+      onclick:function () { UI.tab = t[0]; render(); }
+    }, [t[1], t[2] === null ? null : el('span', { class:'cnt', text:String(t[2]) })]));
+  });
+  bar.appendChild(tabs);
+}
+
+/* ---------- Fundus ---------- */
+function shortGlass(id) {
+  var n = (GLASS_BY_ID[id] || {}).name || id;
+  return n.split(' / ')[0].replace('-Glas', '').replace('glas', '');
+}
+function inProject(sourceId) {
+  return Store.project().cocktails.some(function (c) { return c.sourceId === sourceId; });
+}
+function renderFundus(root) {
+  var all = Store.allCocktails();
+  var tags = {}; all.forEach(function (c) { (c.tags || []).forEach(function (t) { tags[t] = 1; }); });
+
+  var panel = el('div', { class:'panel' });
+  panel.appendChild(el('h2', {}, ['Fundus', el('span', { class:'sub', text:'Vorlagen zum Übernehmen und Anpassen' })]));
+
+  var f = el('div', { class:'filters' });
+  var inp = el('input', { type:'text', placeholder:'Suchen nach Name oder Zutat …', value:UI.search });
+  inp.addEventListener('input', function () { UI.search = inp.value; renderGrid(); });
+  f.appendChild(inp);
+  f.appendChild(selectOf([['', 'Alle Kategorien']].concat(CATEGORIES.map(function (c) { return [c, c]; })),
+    UI.fCat, function (e) { UI.fCat = e.target.value; renderGrid(); }));
+  var bases = {}; all.forEach(function (c) { if (c.baseSpirit) bases[c.baseSpirit] = 1; });
+  f.appendChild(selectOf([['', 'Alle Basisspirituosen']].concat(Object.keys(bases).sort().map(function (b) { return [b, b]; })),
+    UI.fBase, function (e) { UI.fBase = e.target.value; renderGrid(); }));
+  f.appendChild(selectOf([['', 'Alle Gläser']].concat(GLASSES.map(function (g) { return [g.id, g.name]; })),
+    UI.fGlass, function (e) { UI.fGlass = e.target.value; renderGrid(); }));
+  f.appendChild(selectOf([['', 'Alle Merkmale']].concat(Object.keys(tags).sort().map(function (t) { return [t, t]; })),
+    UI.fTag, function (e) { UI.fTag = e.target.value; renderGrid(); }));
+  f.appendChild(el('button', { class:'btn primary', onclick:function () { openEditor(null); } , text:'Eigenen Cocktail anlegen' }));
+  panel.appendChild(f);
+
+  var grid = el('div', { class:'grid' });
+  panel.appendChild(grid);
+  root.appendChild(panel);
+
+  function matches(c) {
+    var q = UI.search.trim().toLowerCase();
+    if (q) {
+      var hay = (c.name + ' ' + (c.altName || '') + ' ' + (c.description || '') + ' ' +
+        (c.ingredients || []).map(function (i) { return i.name; }).join(' ')).toLowerCase();
+      if (hay.indexOf(q) < 0) return false;
+    }
+    if (UI.fCat && c.category !== UI.fCat) return false;
+    if (UI.fBase && c.baseSpirit !== UI.fBase) return false;
+    if (UI.fGlass && c.glass !== UI.fGlass) return false;
+    if (UI.fTag && (c.tags || []).indexOf(UI.fTag) < 0) return false;
+    return true;
+  }
+  function renderGrid() {
+    clear(grid);
+    var list = all.filter(matches);
+    if (!list.length) {
+      grid.appendChild(el('div', { class:'empty', text:'Kein Cocktail passt zu dieser Auswahl. Filter zurücksetzen oder einen eigenen anlegen.' }));
+      return;
+    }
+    list.forEach(function (c) {
+      var tile = el('div', { class:'tile' + (inProject(c.sourceId || c.id) ? ' inproj' : '') });
+      tile.appendChild(el('div', { class:'art', html: cocktailPreviewSvg(c, 0, 0, { scale:1.0, plain:true }) }));
+      tile.appendChild(el('h3', { text:c.name }));
+      tile.appendChild(el('div', { class:'meta',
+        text:(c.category || '') + ' · ' + shortGlass(c.glass) }));
+      if (c.custom) tile.appendChild(el('div', {}, [el('span', { class:'badge', text:'eigen' })]));
+      var acts = el('div', { class:'acts' }, [
+        el('button', { class:'btn small primary', onclick:function () {
+          var p = Store.project();
+          p.cocktails.push(cloneCocktail(c)); Store.save();
+          toast(c.name + ' ins Projekt übernommen.'); render();
+        }, text:'Übernehmen' }),
+        el('button', { class:'btn small', onclick:function () { openEditor(c, { fromLibrary:true }); }, text:'Anpassen' })
+      ]);
+      if (c.custom) acts.appendChild(el('button', { class:'btn small danger', title:'Aus eigener Sammlung löschen',
+        onclick:function () {
+          if (!confirm('„' + c.name + '“ aus der eigenen Sammlung löschen?')) return;
+          Store.state.customLibrary = Store.state.customLibrary.filter(function (x) { return x.id !== c.id; });
+          Store.save(); render();
+        }, text:'×' }));
+      tile.appendChild(acts);
+      grid.appendChild(tile);
+    });
+  }
+  renderGrid();
+}
+
+/* ---------- Mein Projekt ---------- */
+function renderProject(root) {
+  var p = Store.project();
+  var left = el('div', { class:'panel' });
+  left.appendChild(el('h2', {}, ['Projektangaben']));
+  var body = el('div', { class:'pad' });
+  body.appendChild(field('Projektname', el('input', { type:'text', value:p.name,
+    oninput:function (e) { p.name = e.target.value; saveSoon(); renderBar(); } })));
+  body.appendChild(field('Untertitel auf dem Blatt', el('input', { type:'text', value:p.subtitle || '',
+    placeholder:'z. B. Karte für den 40. Geburtstag',
+    oninput:function (e) { p.subtitle = e.target.value; saveSoon(); } })));
+  body.appendChild(el('div', { class:'row' }, [
+    el('button', { class:'btn', onclick:function () { UI.tab = 'output'; render(); }, text:'Zur Ausgabe' }),
+    el('button', { class:'btn ghost', onclick:function () {
+      Store.duplicateProject(p.id); render(); toast('Projekt dupliziert.');
+    }, text:'Projekt duplizieren' }),
+    el('button', { class:'btn danger', onclick:function () {
+      if (!confirm('Projekt „' + p.name + '“ endgültig löschen?')) return;
+      Store.removeProject(p.id); UI.page = 0; render();
+    }, text:'Projekt löschen' })
+  ]));
+  left.appendChild(body);
+
+  var right = el('div', { class:'panel' });
+  right.appendChild(el('h2', {}, ['Cocktails auf dem Blatt',
+    el('span', { class:'sub', text:p.cocktails.length + ' ausgewählt – Reihenfolge bestimmt die Anordnung' })]));
+  if (!p.cocktails.length) {
+    right.appendChild(el('div', { class:'empty' }, [
+      el('p', { text:'Noch nichts ausgewählt.' }),
+      el('button', { class:'btn primary', onclick:function () { UI.tab = 'fundus'; render(); }, text:'Im Fundus stöbern' })
+    ]));
+  } else {
+    var ul = el('ul', { class:'plist' });
+    p.cocktails.forEach(function (c, i) {
+      var li = el('li', {}, [
+        el('span', { class:'num', text:String(i + 1) }),
+        el('span', { class:'thumb', html: cocktailPreviewSvg(c, 0, 0, { scale:1.0, plain:true }) }),
+        el('span', { class:'txt' }, [
+          el('b', { text:c.name }),
+          el('small', { text:shortGlass(c.glass) + ' · ' +
+            (c.ingredients || []).length + ' Zutaten' +
+            (c.sourceId && COCKTAIL_BY_ID[c.sourceId] && !cocktailEquals(c, COCKTAIL_BY_ID[c.sourceId]) ? ' · geändert' : '') })
+        ]),
+        el('span', { class:'acts' }, [
+          el('button', { class:'btn small ghost', title:'nach oben', disabled: i === 0 ? 'disabled' : null,
+            onclick:function () { var t = p.cocktails[i-1]; p.cocktails[i-1] = c; p.cocktails[i] = t; Store.save(); render(); }, text:'↑' }),
+          el('button', { class:'btn small ghost', title:'nach unten', disabled: i === p.cocktails.length - 1 ? 'disabled' : null,
+            onclick:function () { var t = p.cocktails[i+1]; p.cocktails[i+1] = c; p.cocktails[i] = t; Store.save(); render(); }, text:'↓' }),
+          el('button', { class:'btn small', onclick:function () { openEditor(c, { inProject:true }); }, text:'Bearbeiten' }),
+          el('button', { class:'btn small ghost', title:'duplizieren', onclick:function () {
+            p.cocktails.splice(i + 1, 0, cloneCocktail(c)); Store.save(); render();
+          }, text:'⧉' }),
+          el('button', { class:'btn small danger', title:'entfernen', onclick:function () {
+            p.cocktails.splice(i, 1); Store.save(); render();
+          }, text:'×' })
+        ])
+      ]);
+      ul.appendChild(li);
+    });
+    right.appendChild(ul);
+    right.appendChild(el('div', { class:'pad' }, [
+      el('button', { class:'btn ghost small', onclick:function () {
+        if (!confirm('Alle Cocktails aus dem Projekt entfernen?')) return;
+        p.cocktails = []; Store.save(); render();
+      }, text:'Alle entfernen' })
+    ]));
+  }
+  root.appendChild(el('div', { class:'split' }, [left, right]));
+}
+
+var saveTimer = null;
+function saveSoon() { clearTimeout(saveTimer); saveTimer = setTimeout(function () { Store.save(); }, 400); }
+
+/* ---------- Ausgabe ---------- */
+function renderOutput(root) {
+  var p = Store.project(), s = p.settings;
+  var left = el('div', {});
+  var setP = el('div', { class:'panel' });
+  setP.appendChild(el('h2', {}, ['Blatteinstellungen']));
+  var b = el('div', { class:'pad' });
+  b.appendChild(el('div', { class:'row' }, [
+    field('Format', selectOf(Object.keys(SHEET_SIZES).map(function (k) { return [k, k]; }), s.sheetFormat,
+      function (e) { s.sheetFormat = e.target.value; UI.page = 0; UI.zoom = 0; changed(); })),
+    field('Ausrichtung', selectOf([['landscape', 'Quer'], ['portrait', 'Hoch']], s.orientation,
+      function (e) { s.orientation = e.target.value; UI.page = 0; UI.zoom = 0; changed(); }))
+  ]));
+  b.appendChild(el('div', { class:'row' }, [
+    field('Mengeneinheit', selectOf([['cl', 'cl (mit ml)'], ['ml', 'ml'], ['oz', 'oz (mit ml)']], s.unit,
+      function (e) { s.unit = e.target.value; changed(); })),
+    field('Darstellung', selectOf([['color', 'Farbe'], ['bw', 'Schwarzweiß']], s.colorMode,
+      function (e) { s.colorMode = e.target.value; changed(); }))
+  ]));
+  [['fitToOneSheet', 'Alles auf ein Blatt zwingen (kleinerer Maßstab)'],
+   ['showNotesTable', 'Zutatentabelle unter jeder Zeichnung'],
+   ['qrInTitleBlock', 'QR-Code im Schriftfeld']].forEach(function (o) {
+    var cb = el('input', { type:'checkbox', checked: s[o[0]] ? 'checked' : null });
+    cb.addEventListener('change', function () { s[o[0]] = cb.checked; UI.page = 0; changed(); });
+    b.appendChild(el('label', { class:'chk' }, [cb, el('span', { text:o[1] })]));
+  });
+  setP.appendChild(b);
+  left.appendChild(setP);
+
+  var tbP = el('div', { class:'panel', style:'margin-top:14px' });
+  tbP.appendChild(el('h2', {}, ['Schriftfeld']));
+  var tb = s.titleBlock, tbb = el('div', { class:'pad' });
+  [['title', 'Titel'], ['recipesBy', 'Rezepte von'], ['location', 'Ort'],
+   ['drawingNumber', 'Zeichnungsnummer'], ['date', 'Datum']].forEach(function (f2) {
+    tbb.appendChild(field(f2[1], el('input', { type: f2[0] === 'date' ? 'date' : 'text', value: tb[f2[0]] || '',
+      oninput:function (e) { tb[f2[0]] = e.target.value; changed(); } })));
+  });
+  tbP.appendChild(tbb);
+  left.appendChild(tbP);
+
+  var revP = el('div', { class:'panel', style:'margin-top:14px' });
+  revP.appendChild(el('h2', {}, ['Revisionen']));
+  var rb = el('div', { class:'pad' });
+  var tbl = el('table', { class:'revtable' });
+  tbl.appendChild(el('tr', {}, [el('th', { text:'Rev' }), el('th', { text:'Beschreibung' }),
+    el('th', { text:'Datum' }), el('th', { text:'Name' }), el('th', { text:'' })]));
+  (s.revisions || []).forEach(function (r, i) {
+    tbl.appendChild(el('tr', {}, [
+      el('td', { text:r.rev }), el('td', { text:r.text }), el('td', { text:r.date }), el('td', { text:r.by || '' }),
+      el('td', {}, [el('button', { class:'btn small ghost', onclick:function () {
+        s.revisions.splice(i, 1); changed();
+      }, text:'×' })])
+    ]));
+  });
+  rb.appendChild(tbl);
+  var rtxt = el('input', { type:'text', placeholder:'Was wurde geändert?' });
+  var rby = el('input', { type:'text', placeholder:'Kürzel' });
+  rb.appendChild(el('div', { class:'row', style:'margin-top:8px' }, [rtxt, rby,
+    el('button', { class:'btn', onclick:function () {
+      if (!rtxt.value.trim()) { toast('Bitte kurz beschreiben, was sich geändert hat.'); return; }
+      Store.addRevision(rtxt.value.trim(), rby.value.trim()); render();
+    }, text:'Eintragen' })]));
+  revP.appendChild(rb);
+  left.appendChild(revP);
+
+  var noP = el('div', { class:'panel', style:'margin-top:14px' });
+  noP.appendChild(el('h2', {}, ['Allgemeine Hinweise']));
+  var nb = el('div', { class:'pad' });
+  var ul2 = el('ul', { class:'notelist' });
+  (s.generalNotes || []).forEach(function (n, i) {
+    var inp2 = el('input', { type:'text', value:n, oninput:function (e) { s.generalNotes[i] = e.target.value; changed(); } });
+    ul2.appendChild(el('li', {}, [el('span', { class:'n', text:(i + 1) + '.' }), inp2,
+      el('button', { class:'btn small ghost', onclick:function () { s.generalNotes.splice(i, 1); render(); }, text:'×' })]));
+  });
+  nb.appendChild(ul2);
+  nb.appendChild(el('button', { class:'btn small', onclick:function () {
+    s.generalNotes.push('Neuer Hinweis'); render();
+  }, text:'Hinweis hinzufügen' }));
+  noP.appendChild(nb);
+  left.appendChild(noP);
+
+  /* --- Vorschau --- */
+  var right = el('div', { class:'panel' });
+  var layout = computeSheetLayout(p);
+  if (UI.page >= layout.pages.length) UI.page = 0;
+  var vbar = el('div', { class:'vbar' });
+  var pageInfo = el('span', { text:'Blatt ' + (UI.page + 1) + ' von ' + layout.pages.length });
+  vbar.appendChild(el('div', { class:'pagenav' }, [
+    el('button', { class:'btn small ghost', disabled: UI.page === 0 ? 'disabled' : null,
+      onclick:function () { UI.page--; render(); }, text:'‹' }),
+    pageInfo,
+    el('button', { class:'btn small ghost', disabled: UI.page >= layout.pages.length - 1 ? 'disabled' : null,
+      onclick:function () { UI.page++; render(); }, text:'›' })
+  ]));
+  vbar.appendChild(el('span', { class:'hint',
+    text: layout.cols + ' × ' + layout.rows + ' Raster · Maßstab ' + layout.scale.toFixed(2) }));
+  vbar.appendChild(el('span', { class:'sp' }));
+  var vp = el('div', { class:'viewer' });
+  var sheetBox = el('div', { class:'sheet' });
+  vp.appendChild(sheetBox);
+  vbar.appendChild(el('button', { class:'btn small ghost', onclick:function () {
+    UI.zoom = Math.max(0.4, (UI.zoom || 1) - 0.25); applyZoom();
+  }, text:'−' }));
+  vbar.appendChild(el('button', { class:'btn small ghost', onclick:function () {
+    UI.zoom = Math.min(4, (UI.zoom || 1) + 0.25); applyZoom();
+  }, text:'+' }));
+  vbar.appendChild(el('button', { class:'btn small ghost', onclick:function () {
+    UI.zoom = 0; applyZoom();
+  }, text:'Einpassen' }));
+  right.appendChild(el('h2', {}, ['Blattvorschau']));
+  right.appendChild(vbar);
+  right.appendChild(vp);
+
+  var acts = el('div', { class:'pad row' }, [
+    el('button', { class:'btn primary', onclick:exportPdf, text:'PDF erzeugen' }),
+    el('button', { class:'btn', onclick:printSheets, text:'Drucken' }),
+    el('button', { class:'btn', onclick:exportJson, text:'Projekt sichern (JSON)' }),
+    el('button', { class:'btn', onclick:function () { $('#fileimp').click(); }, text:'Projekt laden' }),
+    el('button', { class:'btn', onclick:showShare, text:'Link & QR-Code' })
+  ]);
+  right.appendChild(acts);
+
+  root.appendChild(el('div', { class:'split' }, [left, right]));
+
+  function applyZoom() {
+    var mm2px = 96 / 25.4;
+    if (!UI.zoom) {
+      var avail = vp.clientWidth - 24;
+      sheetBox.style.width = Math.max(200, avail) + 'px';
+    } else {
+      sheetBox.style.width = (layout.W * mm2px * UI.zoom) + 'px';
+    }
+  }
+  function paint() {
+    var qm = null;
+    if (s.qrInTitleBlock) { try { qm = qrBuild(shareUrl(), 'M'); } catch (e) { qm = null; } }
+    var d = drawSheet(p, UI.page, layout, qm);
+    sheetBox.innerHTML = opsToSvg(d.ops, layout.W, layout.H, {});
+    applyZoom();
+  }
+  paint();
+  window.__repaint = function () {
+    clearTimeout(UI.prevTimer);
+    UI.prevTimer = setTimeout(function () {
+      layout = computeSheetLayout(p);
+      if (UI.page >= layout.pages.length) UI.page = 0;
+      pageInfo.textContent = 'Blatt ' + (UI.page + 1) + ' von ' + layout.pages.length;
+      paint();
+    }, 220);
+  };
+  window.addEventListener('resize', applyZoom, { once:true });
+}
+function changed() { Store.save(); if (window.__repaint) window.__repaint(); }
+
+/* ---------- Ausgabe: Aktionen ---------- */
+function buildPages(p) {
+  var layout = computeSheetLayout(p);
+  var qm = null;
+  if (p.settings.qrInTitleBlock) { try { qm = qrBuild(shareUrl(), 'M'); } catch (e) { qm = null; } }
+  var out = [];
+  for (var i = 0; i < layout.pages.length; i++) {
+    var d = drawSheet(p, i, layout, qm);
+    out.push({ ops:d.ops, W:layout.W, H:layout.H });
+  }
+  return out;
+}
+function exportPdf() {
+  var p = Store.project();
+  toast('PDF wird erzeugt …');
+  setTimeout(function () {
+    buildPdf(buildPages(p), { title:p.name, date: (p.settings.titleBlock.date || '').replace(/-/g, '') + '000000' })
+      .then(function (bytes) {
+        download(safeName(p.name) + '.pdf', new Blob([bytes], { type:'application/pdf' }));
+        toast('PDF fertig.');
+      })
+      .catch(function (e) { toast('PDF konnte nicht erzeugt werden: ' + e.message); });
+  }, 30);
+}
+function safeName(n) { return (n || 'cocktailuebersicht').replace(/[^\w\-äöüÄÖÜß ]+/g, '').trim().replace(/\s+/g, '_'); }
+function printSheets() {
+  var p = Store.project(), pages = buildPages(p);
+  var area = clear($('#printarea'));
+  var st = $('#pagestyle');
+  st.textContent = '@page{size:' + pages[0].W + 'mm ' + pages[0].H + 'mm;margin:0}';
+  pages.forEach(function (pg) {
+    area.appendChild(el('div', { class:'sheet', html: opsToSvg(pg.ops, pg.W, pg.H, {}) }));
+  });
+  setTimeout(function () {
+    window.print();
+    setTimeout(function () { clear($('#printarea')); }, 1200);
+  }, 60);
+}
+function exportJson() {
+  var p = Store.project();
+  var data = buildExport(p, Store.state.customLibrary);
+  download(safeName(p.name) + '.json', new Blob([JSON.stringify(data, null, 2)], { type:'application/json' }));
+  toast('Projekt gesichert.');
+}
+function importJsonFile(file) {
+  var fr = new FileReader();
+  fr.onload = function () {
+    var obj;
+    try { obj = JSON.parse(fr.result); }
+    catch (e) { toast('Die Datei ist keine gültige JSON-Datei.'); return; }
+    var err = validateImport(obj);
+    if (err) { toast(err); return; }
+    var proj = normalizeImportedProject(obj.project);
+    Store.state.projects.push(proj);
+    Store.state.activeId = proj.id;
+    (obj.customLibrary || []).forEach(function (c) {
+      if (!Store.state.customLibrary.some(function (x) { return x.id === c.id; })) Store.state.customLibrary.push(c);
+    });
+    Store.save(); UI.tab = 'project'; UI.page = 0; render();
+    toast('Projekt „' + proj.name + '“ geladen.');
+  };
+  fr.readAsText(file);
+}
+function shareUrl() {
+  var p = Store.project();
+  var payload = compressToUrl(JSON.stringify(packProject(p, Store.state.customLibrary)));
+  return location.origin + location.pathname + '#p=' + payload;
+}
+function showShare() {
+  var url = shareUrl();
+  var dlg = $('#dlg'); clear(dlg);
+  var qm = null, tooBig = false;
+  try { qm = qrBuild(url, 'M'); } catch (e) { qm = null; }
+  if (!qm) { try { qm = qrBuild(url, 'L'); } catch (e2) { qm = null; } }
+  if (!qm) tooBig = true;
+  dlg.appendChild(el('div', { class:'dlg-head' }, [
+    el('h2', { text:'Projekt teilen' }),
+    el('button', { class:'btn small ghost', onclick:function () { dlg.close(); }, text:'Schließen' })
+  ]));
+  var body = el('div', { class:'dlg-body' });
+  body.appendChild(el('p', { class:'hint', text:'Der Link enthält das gesamte Projekt. Er funktioniert ohne Server – wer ihn öffnet, sieht dieselbe Übersicht.' }));
+  body.appendChild(el('div', { class:'linkout', text:url }));
+  body.appendChild(el('div', { class:'row', style:'margin:10px 0' }, [
+    el('button', { class:'btn primary', onclick:function () {
+      navigator.clipboard.writeText(url).then(function () { toast('Link kopiert.'); },
+        function () { toast('Kopieren nicht möglich – Link bitte von Hand markieren.'); });
+    }, text:'Link kopieren' }),
+    navigator.share ? el('button', { class:'btn', onclick:function () {
+      navigator.share({ title: Store.project().name, url:url }).catch(function () {});
+    }, text:'Teilen' }) : null
+  ]));
+  if (tooBig) {
+    body.appendChild(el('p', { class:'hint', text:'Für einen QR-Code ist dieses Projekt zu umfangreich. Der Link funktioniert weiterhin; alternativ das Projekt als JSON-Datei weitergeben.' }));
+  } else {
+    body.appendChild(el('div', { class:'qrbox', html: qrToSvg(qm, 260) }));
+    body.appendChild(el('p', { class:'hint', text:'Der QR-Code enthält denselben Link (' + url.length + ' Zeichen).' }));
+  }
+  dlg.appendChild(body);
+  dlg.showModal();
+}
+
+/* ---------- Editor ---------- */
+function blankCocktail() {
+  return { id:uid(), sourceId:null, name:'Neuer Cocktail', description:'', category:'Klassiker',
+    baseSpirit:'Gin', glass:'coupe', ice:'none', method:'f',
+    ingredients:[{ pos:1, ingredientId:'gin', name:'Gin', amount:5, unit:'cl', prep:'f' }],
+    garnish:[], altName:null, note:null, noteRef:null, tags:[] };
+}
+function openEditor(src, opt) {
+  opt = opt || {};
+  var isNew = !src;
+  var work = src ? (opt.inProject ? src : cloneCocktail(src)) : blankCocktail();
+  var backup = JSON.parse(JSON.stringify(work));
+  var undo = [], redo = [];
+  function snap() { undo.push(JSON.stringify(work)); if (undo.length > 40) undo.shift(); redo.length = 0; }
+  function restore(str) { var o = JSON.parse(str); for (var k in o) work[k] = o[k]; build(); }
+
+  var dlg = $('#dlg'); clear(dlg);
+  var head = el('div', { class:'dlg-head' }, [
+    el('h2', { text: isNew ? 'Neuer Cocktail' : work.name }),
+    el('button', { class:'btn small ghost', title:'Rückgängig', onclick:function () {
+      if (!undo.length) return; redo.push(JSON.stringify(work)); restore(undo.pop());
+    }, text:'↶' }),
+    el('button', { class:'btn small ghost', title:'Wiederherstellen', onclick:function () {
+      if (!redo.length) return; undo.push(JSON.stringify(work)); restore(redo.pop());
+    }, text:'↷' })
+  ]);
+  dlg.appendChild(head);
+  var body = el('div', { class:'dlg-body' });
+  dlg.appendChild(body);
+  var foot = el('div', { class:'dlg-foot' });
+  dlg.appendChild(foot);
+
+  function build() {
+    clear(body); clear(foot);
+    var live = el('div', { class:'livebox', html: cocktailPreviewSvg(work, 0, 0, { scale:1.0 }) });
+    var form = el('div', {});
+
+    form.appendChild(el('div', { class:'row' }, [
+      field('Name', el('input', { type:'text', value:work.name, oninput:function (e) { work.name = e.target.value; live.innerHTML = cocktailPreviewSvg(work, 0, 0, { scale:1.0 }); } })),
+      field('Alternativname', el('input', { type:'text', value:work.altName || '', placeholder:'optional',
+        oninput:function (e) { work.altName = e.target.value || null; refresh(live); } }))
+    ]));
+    form.appendChild(field('Kurzbeschreibung', el('input', { type:'text', value:work.description || '',
+      oninput:function (e) { work.description = e.target.value; } })));
+    form.appendChild(el('div', { class:'row' }, [
+      field('Kategorie', selectOf(CATEGORIES.map(function (c) { return [c, c]; }), work.category,
+        function (e) { snap(); work.category = e.target.value; })),
+      field('Basis', el('input', { type:'text', value:work.baseSpirit || '',
+        oninput:function (e) { work.baseSpirit = e.target.value; } }))
+    ]));
+    form.appendChild(el('div', { class:'row' }, [
+      field('Glas', selectOf(GLASSES.map(function (g) { return [g.id, g.name]; }), work.glass,
+        function (e) { snap(); work.glass = e.target.value; refresh(live); })),
+      field('Eis', selectOf(ICE_TYPES.map(function (i) { return [i.id, i.name]; }), work.ice,
+        function (e) { snap(); work.ice = e.target.value; refresh(live); })),
+      field('Methode', selectOf(METHODS.map(function (m) { return [m.id, m.name]; }), work.method,
+        function (e) { snap(); work.method = e.target.value; refresh(live); }))
+    ]));
+
+    /* Zutaten */
+    form.appendChild(el('h3', { style:'margin:16px 0 6px;font-size:13px', text:'Zutaten (von unten nach oben geschichtet)' }));
+    var head2 = el('div', { class:'ing' }, [el('span', {}), el('span', { class:'h', text:'Zutat' }),
+      el('span', { class:'h', text:'Menge' }), el('span', { class:'h', text:'Einheit' }),
+      el('span', { class:'h', text:'Zubereitung' }), el('span', {})]);
+    var ings = el('div', { class:'ings' }, [head2]);
+    work.ingredients.forEach(function (ing, i) {
+      var sel = selectOf(INGREDIENTS.map(function (x) { return [x.id, x.name]; }), ing.ingredientId, function (e) {
+        snap(); ing.ingredientId = e.target.value;
+        var I = ING_BY_ID[ing.ingredientId]; if (I) { ing.name = I.name; ing.cls = I.cls; ing.color = I.color; }
+        refresh(live);
+      });
+      var amt = el('input', { class:'a', type:'number', step:'0.5', min:'0',
+        value: ing.amount === null ? '' : ing.amount,
+        disabled: ing.unit === 'fill' ? 'disabled' : null,
+        oninput:function (e) { ing.amount = e.target.value === '' ? null : parseFloat(e.target.value); refresh(live); } });
+      var un = selectOf(UNITS.map(function (u) { return [u.id, u.name]; }), ing.unit, function (e) {
+        snap(); ing.unit = e.target.value;
+        if (ing.unit === 'fill') ing.amount = null; else if (ing.amount === null) ing.amount = 1;
+        build();
+      }, 'u');
+      var pr = selectOf(PREPS.map(function (x) { return [x.id, '(' + x.id + ') ' + x.name]; }), ing.prep || 'b',
+        function (e) { snap(); ing.prep = e.target.value; refresh(live); }, 'p');
+      ings.appendChild(el('div', { class:'ing' }, [
+        el('span', { class:'pos', text:String(i + 1) }), sel, amt, un, pr,
+        el('button', { class:'btn small ghost', title:'entfernen', onclick:function () {
+          snap(); work.ingredients.splice(i, 1); build();
+        }, text:'×' })
+      ]));
+    });
+    form.appendChild(ings);
+    form.appendChild(el('div', { class:'row', style:'margin-top:8px' }, [
+      el('button', { class:'btn small', onclick:function () {
+        snap();
+        work.ingredients.push({ pos:work.ingredients.length + 1, ingredientId:'zuckersirup',
+          name:'Zuckersirup', amount:1, unit:'cl', prep:'f' });
+        build();
+      }, text:'Zutat hinzufügen' }),
+      el('span', { class:'hint', text:'Die erste Zutat liegt in der Zeichnung unten.' })
+    ]));
+
+    /* Garnituren */
+    form.appendChild(el('h3', { style:'margin:16px 0 6px;font-size:13px', text:'Garnituren und Zusätze' }));
+    var gp = el('div', { class:'garnpick' });
+    GARNISHES.forEach(function (g) {
+      var on = work.garnish.some(function (x) { return x.id === g.id; });
+      var cb = el('input', { type:'checkbox', checked: on ? 'checked' : null });
+      cb.addEventListener('change', function () {
+        snap();
+        if (cb.checked) work.garnish.push({ id:g.id, count:1 });
+        else work.garnish = work.garnish.filter(function (x) { return x.id !== g.id; });
+        refresh(live);
+      });
+      gp.appendChild(el('label', {}, [cb, el('span', { text:g.name + ' (' + g.key + ')' })]));
+    });
+    form.appendChild(gp);
+
+    form.appendChild(el('div', { class:'row', style:'margin-top:12px' }, [
+      field('Notiz unter der Zeichnung', el('input', { type:'text', value:work.note || '', placeholder:'optional',
+        oninput:function (e) { work.note = e.target.value || null; refresh(live); } })),
+      field('Hinweisnummer', el('input', { type:'number', min:'0', value:work.noteRef || '',
+        oninput:function (e) { work.noteRef = e.target.value ? parseInt(e.target.value, 10) : null; refresh(live); } }))
+    ]));
+
+    body.appendChild(el('div', { class:'edsplit' }, [form, live]));
+
+    foot.appendChild(el('button', { class:'btn ghost', onclick:function () {
+      var base = work.sourceId && COCKTAIL_BY_ID[work.sourceId];
+      if (!base) { toast('Für diesen Cocktail gibt es keine Vorlage zum Zurücksetzen.'); return; }
+      snap();
+      var fresh = cloneCocktail(base); fresh.id = work.id;
+      for (var k in fresh) work[k] = fresh[k];
+      build(); toast('Auf die Vorlage zurückgesetzt.');
+    }, text:'Auf Vorlage zurücksetzen' }));
+    foot.appendChild(el('span', { style:'flex:1' }));
+    foot.appendChild(el('button', { class:'btn', onclick:function () {
+      for (var k in backup) work[k] = backup[k];
+      dlg.close(); render();
+    }, text:'Abbrechen' }));
+    if (!opt.inProject) {
+      foot.appendChild(el('button', { class:'btn', onclick:function () {
+        var copy = cloneCocktail(work); copy.sourceId = work.sourceId || null;
+        Store.state.customLibrary.push(copy);
+        Store.save(); dlg.close(); render(); toast('In der eigenen Sammlung gespeichert.');
+      }, text:'In Sammlung speichern' }));
+    }
+    foot.appendChild(el('button', { class:'btn primary', onclick:function () {
+      if (!String(work.name || '').trim()) { toast('Bitte einen Namen vergeben.'); return; }
+      if (!work.ingredients.length) { toast('Mindestens eine Zutat ist nötig.'); return; }
+      if (!opt.inProject) Store.project().cocktails.push(cloneCocktail(work));
+      Store.save(); dlg.close(); UI.tab = 'project'; render();
+      toast(opt.inProject ? 'Änderungen übernommen.' : work.name + ' ins Projekt übernommen.');
+    }, text: opt.inProject ? 'Änderungen übernehmen' : 'Ins Projekt übernehmen' }));
+  }
+  function refresh(live) { live.innerHTML = cocktailPreviewSvg(work, 0, 0, { scale:1.0 }); }
+  build();
+  dlg.showModal();
+}
+
+/* ---------- Deeplink ---------- */
+function checkDeepLink() {
+  var h = location.hash || '';
+  if (h.indexOf('#p=') !== 0) return;
+  var payload = h.slice(3);
+  var obj;
+  try { obj = JSON.parse(decompressFromUrl(payload)); }
+  catch (e) { toast('Der geteilte Link konnte nicht gelesen werden.'); return; }
+  try {
+    var r = unpackProject(obj);
+    if (!confirm('Der Link enthält das Projekt „' + r.project.name + '“ mit ' +
+        r.project.cocktails.length + ' Cocktails. Als neues Projekt hinzufügen?')) {
+      history.replaceState(null, '', location.pathname); return;
+    }
+    Store.state.projects.push(r.project);
+    Store.state.activeId = r.project.id;
+    r.library.forEach(function (c) { Store.state.customLibrary.push(c); });
+    Store.save();
+    history.replaceState(null, '', location.pathname);
+    UI.tab = 'project';
+    toast('Projekt aus dem Link übernommen.');
+  } catch (e) { toast('Der geteilte Link ist beschädigt.'); }
+}
+
+/* ---------- Start ---------- */
+function render() {
+  renderBar();
+  var root = clear($('#view'));
+  if (UI.tab === 'fundus') renderFundus(root);
+  else if (UI.tab === 'project') renderProject(root);
+  else renderOutput(root);
+}
+function boot() {
+  Store.load();
+  checkDeepLink();
+  render();
+  $('#fileimp').addEventListener('change', function (e) {
+    if (e.target.files && e.target.files[0]) importJsonFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  $('#dlg').addEventListener('cancel', function (e) { e.preventDefault(); $('#dlg').close(); render(); });
+  window.addEventListener('afterprint', function () { clear($('#printarea')); });
+}
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+}
+</script>
+</body>
+</html>

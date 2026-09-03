@@ -380,6 +380,20 @@
   .pk-cell.diamond{color:var(--blue)}
   .pk-cell.club{color:var(--mint)}
 
+  .lt-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+    background:var(--surface);border:1px solid var(--line);border-radius:14px 14px 0 0;
+    border-bottom:none;padding:8px}
+  .lt-toolbar button{background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    border-radius:10px;padding:9px 13px;font-size:15px;font-weight:700;min-width:42px}
+  .lt-toolbar button:active{background:var(--line)}
+  .lt-tb-sep{width:1px;height:24px;background:var(--line);margin:0 2px}
+  .lt-editable{background:var(--surface);border:1px solid var(--line);border-radius:0 0 14px 14px;
+    color:var(--text);padding:14px;font-size:16px;line-height:1.55;min-height:190px;
+    outline:none;overflow-wrap:break-word}
+  .lt-editable:focus{border-color:var(--blue)}
+  .lt-editable:empty:before{content:attr(data-placeholder);color:var(--muted);opacity:.7}
+  .lt-editable ul,.lt-editable ol{padding-left:22px;margin:6px 0}
+  .lt-form select.edit-select{margin-top:0}
   /* ---------- Briefe ---------- */
   .lt-form{display:flex;flex-direction:column;margin-bottom:16px}
   .lt-form label{font-size:13px;font-weight:700;color:var(--muted);margin:12px 0 6px}
@@ -416,7 +430,8 @@
   .lt-preview-box .p-to{margin-bottom:24px;white-space:pre-line}
   .lt-preview-box .p-date{text-align:right;margin-bottom:22px;font-size:12px}
   .lt-preview-box .p-subject{font-weight:bold;margin-bottom:18px}
-  .lt-preview-box .p-body{white-space:pre-wrap;margin-bottom:22px}
+  .lt-preview-box .p-body{margin-bottom:22px}
+  .lt-preview-box .p-body ul,.lt-preview-box .p-body ol{padding-left:20px;margin:5px 0}
   .lt-preview-box .p-sign{white-space:pre-line}
   .lt-preview-box .p-sign .nm{margin-top:26px}
 
@@ -517,6 +532,13 @@
         <p>Profile · Briefkopf · KI-Textentwurf</p>
       </div>
     </button>
+    <a class="game-card" href="cocktails.html" style="text-decoration:none">
+      <div class="icon" style="background:var(--coral)">🍸</div>
+      <div>
+        <h2>Cocktails</h2>
+        <p>Rezepte als Zeichnung · PDF-Export</p>
+      </div>
+    </a>
     <div class="game-card soon">
       <div class="icon" style="background:var(--violet)">?</div>
       <div>
@@ -608,6 +630,16 @@
   <div class="lt-sender-card" id="lt-sender-card"></div>
 
   <div class="lt-form">
+    <div class="lt-sep">Schrift</div>
+    <label>Schriftart</label>
+    <select id="lt-font" class="edit-select" onchange="ltSetFont(this.value)"></select>
+    <label>Schriftgröße</label>
+    <div class="stepper">
+      <button onclick="ltAdjustSize(-1)">−</button>
+      <span class="val"><span id="lt-fontsize">11</span><small>pt</small></span>
+      <button onclick="ltAdjustSize(1)">+</button>
+    </div>
+
     <div class="lt-sep">Empfänger</div>
     <label>Name / Firma</label>
     <input id="lt-r-name" type="text" placeholder="Firma Muster GmbH" oninput="ltSaveDraft()">
@@ -624,7 +656,17 @@
     <label>Anrede</label>
     <input id="lt-salutation" type="text" placeholder="Sehr geehrte Damen und Herren," oninput="ltSaveDraft()">
     <label>Brieftext</label>
-    <textarea id="lt-body" rows="10" placeholder="Hier deinen Text schreiben – oder unten den KI-Assistenten nutzen." oninput="ltSaveDraft()"></textarea>
+    <div class="lt-toolbar">
+      <button type="button" onclick="ltFormat('bold')" style="font-weight:900">F</button>
+      <button type="button" onclick="ltFormat('italic')" style="font-style:italic">K</button>
+      <button type="button" onclick="ltFormat('underline')" style="text-decoration:underline">U</button>
+      <span class="lt-tb-sep"></span>
+      <button type="button" onclick="ltFormat('insertUnorderedList')">• Liste</button>
+      <button type="button" onclick="ltFormat('removeFormat')">✕ Format</button>
+    </div>
+    <div id="lt-body" class="lt-editable" contenteditable="true"
+      data-placeholder="Hier deinen Text schreiben – oder unten den KI-Assistenten nutzen."
+      oninput="ltSaveDraft()" onpaste="ltHandlePaste(event)"></div>
     <label>Grußformel</label>
     <input id="lt-closing" type="text" placeholder="Mit freundlichen Grüßen" oninput="ltSaveDraft()">
   </div>
@@ -1913,7 +1955,69 @@ function padUpdateDisplay(){
 /* ==================== BRIEFE ==================== */
 let letterProfiles = [];      // [{id, name, blob:{salt,iv,data}}]
 let ltActive = null;          // {id, name, sender:{...}}
-let ltDraft = { rName:'', rExtra:'', rStreet:'', rCity:'', subject:'', salutation:'', body:'', closing:'' };
+let ltDraft = { rName:'', rExtra:'', rStreet:'', rCity:'', subject:'', salutation:'', body:'', closing:'', font:'georgia', size:11 };
+// Schriftarten: Anzeigename + CSS-Stack (systemweit verfügbar, keine Web-Fonts nötig)
+const LT_FONTS = [
+  {key:'georgia',   label:'Georgia (Serif, klassisch)', css:"Georgia,'Times New Roman',serif"},
+  {key:'times',     label:'Times New Roman (Serif)',     css:"'Times New Roman',Times,serif"},
+  {key:'palatino',  label:'Palatino (Serif, elegant)',   css:"'Palatino Linotype',Palatino,'Book Antiqua',Georgia,serif"},
+  {key:'helvetica', label:'Helvetica (Sans, modern)',    css:"'Helvetica Neue',Helvetica,Arial,sans-serif"},
+  {key:'arial',     label:'Arial (Sans, neutral)',       css:"Arial,'Helvetica Neue',Helvetica,sans-serif"},
+  {key:'verdana',   label:'Verdana (Sans, gut lesbar)',  css:"Verdana,Geneva,sans-serif"},
+  {key:'courier',   label:'Courier (Schreibmaschine)',   css:"'Courier New',Courier,monospace"},
+];
+function ltFontCSS(key){ const f=LT_FONTS.find(x=>x.key===key); return f?f.css:LT_FONTS[0].css; }
+
+/* ---------- Textformatierung ---------- */
+function ltFormat(cmd){
+  const el=document.getElementById('lt-body');
+  if(el) el.focus();
+  try{ document.execCommand(cmd,false,null); }catch(e){}
+  ltSaveDraft();
+}
+// Erlaubt nur einfache Formatierungs-Tags, entfernt alles andere inkl. Attribute
+function ltSanitize(html){
+  const ALLOWED=['B','STRONG','I','EM','U','BR','DIV','P','UL','OL','LI','SPAN'];
+  const tmp=document.createElement('div');
+  tmp.innerHTML=html;
+  (function clean(node){
+    [...node.children].forEach(child=>{
+      clean(child);
+      if(!ALLOWED.includes(child.tagName)){
+        child.replaceWith(...child.childNodes);
+      }else{
+        [...child.attributes].forEach(a=>child.removeAttribute(a.name));
+      }
+    });
+  })(tmp);
+  return tmp.innerHTML;
+}
+// Beim Einfügen nur reinen Text übernehmen (verhindert fremde Formatierung/HTML)
+function ltHandlePaste(e){
+  e.preventDefault();
+  const text=(e.clipboardData||window.clipboardData).getData('text/plain');
+  try{ document.execCommand('insertText',false,text); }
+  catch(err){ const el=document.getElementById('lt-body'); if(el) el.textContent+=text; }
+  ltSaveDraft();
+}
+function ltSetFont(key){
+  ltDraft.font=key;
+  ltSaveDraftStore();
+  ltApplyEditorFont();
+}
+function ltAdjustSize(delta){
+  ltDraft.size=Math.min(16,Math.max(8,(ltDraft.size||11)+delta));
+  document.getElementById('lt-fontsize').textContent=ltDraft.size;
+  ltSaveDraftStore();
+  ltApplyEditorFont();
+}
+function ltApplyEditorFont(){
+  const el=document.getElementById('lt-body');
+  if(el){
+    el.style.fontFamily=ltFontCSS(ltDraft.font);
+    el.style.fontSize=Math.round((ltDraft.size||11)*1.45)+'px';
+  }
+}
 let ltTone = 'formell';
 let ltPendingDeleteId = null;
 
@@ -2059,18 +2163,31 @@ function ltRenderEditor(){
   set('lt-r-street',ltDraft.rStreet); set('lt-r-city',ltDraft.rCity);
   set('lt-subject',ltDraft.subject);
   set('lt-salutation',ltDraft.salutation||'Sehr geehrte Damen und Herren,');
-  set('lt-body',ltDraft.body);
   set('lt-closing',ltDraft.closing||'Mit freundlichen Grüßen');
+  // Schriftauswahl
+  const fontSel=document.getElementById('lt-font');
+  if(fontSel) fontSel.innerHTML=LT_FONTS.map(f=>
+    `<option value="${f.key}" ${f.key===(ltDraft.font||'georgia')?'selected':''}>${f.label}</option>`).join('');
+  const sizeEl=document.getElementById('lt-fontsize');
+  if(sizeEl) sizeEl.textContent=ltDraft.size||11;
+  // Formatierbarer Brieftext
+  const bodyEl=document.getElementById('lt-body');
+  if(bodyEl) bodyEl.innerHTML=ltDraft.body||'';
+  ltApplyEditorFont();
 }
 function ltSaveDraft(){
   const v=id=>{ const el=document.getElementById(id); return el?el.value:''; };
+  const bodyEl=document.getElementById('lt-body');
   ltDraft={ rName:v('lt-r-name'), rExtra:v('lt-r-extra'), rStreet:v('lt-r-street'), rCity:v('lt-r-city'),
-    subject:v('lt-subject'), salutation:v('lt-salutation'), body:v('lt-body'), closing:v('lt-closing') };
+    subject:v('lt-subject'), salutation:v('lt-salutation'),
+    body: bodyEl ? ltSanitize(bodyEl.innerHTML) : (ltDraft.body||''),
+    closing:v('lt-closing'),
+    font: ltDraft.font||'georgia', size: ltDraft.size||11 };
   ltSaveDraftStore();
 }
 function ltClearDraft(){
   ask('Brief leeren?', ()=>{
-    ltDraft={ rName:'', rExtra:'', rStreet:'', rCity:'', subject:'', salutation:'Sehr geehrte Damen und Herren,', body:'', closing:'Mit freundlichen Grüßen' };
+    ltDraft={ rName:'', rExtra:'', rStreet:'', rCity:'', subject:'', salutation:'Sehr geehrte Damen und Herren,', body:'', closing:'Mit freundlichen Grüßen', font:ltDraft.font||'georgia', size:ltDraft.size||11 };
     ltSaveDraftStore(); ltRenderEditor(); notify('Brief geleert.');
   }, 'Ja, leeren', null,
   {detail:'Empfänger, Betreff und Text werden gelöscht. Dein Profil bleibt erhalten.', noLabel:'Nein, behalten'});
@@ -2118,7 +2235,10 @@ function ltPastePrompt(){
 function ltInsertAI(){
   const txt=document.getElementById('lt-ai-output').value.trim();
   if(!txt){ notify('Bitte zuerst die KI-Antwort einfügen.'); return; }
-  ltDraft.body=txt;
+  // Reintext in Absätze umwandeln (bestehende Formatierungsmöglichkeit bleibt erhalten)
+  ltDraft.body = txt.split(/\n\s*\n/).map(par=>
+    '<div>'+esc(par.trim()).replace(/\n/g,'<br>')+'</div>'
+  ).join('<div><br></div>');
   ltSaveDraftStore();
   ltRenderEditor();
   show('scr-lt-editor');
@@ -2139,27 +2259,32 @@ function ltBuildPreviewHTML(){
     <div class="p-to">${esc(to)}</div>
     <div class="p-date">${esc((s.city||'').replace(/^\d+\s*/,''))}${s.city?', ':''}${ltLetterDate()}</div>
     <div class="p-subject">${esc(d.subject)}</div>
-    <div class="p-body">${esc(d.salutation)}\n\n${esc(d.body)}</div>
+    <div class="p-body"><div>${esc(d.salutation)}</div><div><br></div>${ltSanitize(d.body||'')}</div>
     <div class="p-sign">${esc(d.closing)}<div class="nm">${esc(s.name)}</div>${contact?`<div style="font-size:11px;color:#555;margin-top:14px">${esc(contact)}</div>`:''}</div>`;
 }
 function ltPreview(){
   if(!ltActive){ show('scr-lt-profiles'); return; }
   ltSaveDraft();
-  document.getElementById('lt-preview-box').innerHTML=ltBuildPreviewHTML();
+  const box=document.getElementById('lt-preview-box');
+  box.innerHTML=ltBuildPreviewHTML();
+  box.style.fontFamily=ltFontCSS(ltDraft.font);
+  box.style.fontSize=Math.round((ltDraft.size||11)*1.18)+'px';
   show('scr-lt-preview');
 }
 function ltPrint(){
   const w=window.open('','_blank');
   if(!w){ notify('Bitte Pop-ups für diese Seite erlauben.'); return; }
+  const fam=ltFontCSS(ltDraft.font), size=(ltDraft.size||11);
   w.document.write(`<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Brief</title>
     <style>
       @page{size:A4;margin:25mm 20mm 20mm 25mm}
-      body{font-family:Georgia,'Times New Roman',serif;font-size:11pt;line-height:1.5;color:#000}
-      .p-from{font-size:8pt;color:#444;border-bottom:.5pt solid #888;padding-bottom:2mm;margin-bottom:10mm}
+      body{font-family:${fam};font-size:${size}pt;line-height:1.5;color:#000}
+      .p-from{font-size:${Math.max(7,size-3)}pt;color:#444;border-bottom:.5pt solid #888;padding-bottom:2mm;margin-bottom:10mm}
       .p-to{margin-bottom:20mm;white-space:pre-line}
       .p-date{text-align:right;margin-bottom:14mm}
       .p-subject{font-weight:bold;margin-bottom:8mm}
-      .p-body{white-space:pre-wrap;margin-bottom:12mm}
+      .p-body{margin-bottom:12mm}
+      .p-body ul,.p-body ol{padding-left:6mm;margin:2mm 0}
       .p-sign{white-space:pre-line}
       .p-sign .nm{margin-top:18mm}
     </style></head><body>${ltBuildPreviewHTML()}</body></html>`);
@@ -2168,9 +2293,13 @@ function ltPrint(){
 }
 function ltCopyLetter(){
   const s=ltActive.sender, d=ltDraft;
+  // Formatierten Text in lesbaren Reintext umwandeln
+  const tmp=document.createElement('div');
+  tmp.innerHTML=(d.body||'').replace(/<\/(div|p|li)>/gi,'\n').replace(/<br\s*\/?>/gi,'\n');
+  const plainBody=(tmp.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
   const txt=[[s.name,s.street,s.city].filter(Boolean).join('\n'),'',
     [d.rName,d.rExtra,d.rStreet,d.rCity].filter(Boolean).join('\n'),'',
-    ltLetterDate(),'',d.subject,'',d.salutation,'',d.body,'',d.closing,'',s.name].join('\n');
+    ltLetterDate(),'',d.subject,'',d.salutation,'',plainBody,'',d.closing,'',s.name].join('\n');
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(()=>notify('Brief kopiert.')).catch(()=>notify('Kopieren nicht möglich.'));
   }else notify('Kopieren wird nicht unterstützt.');
