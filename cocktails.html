@@ -190,13 +190,6 @@ dialog::backdrop{background:rgba(30,32,28,.55)}
 <style id="pagestyle">@page{size:594mm 420mm;margin:0}</style>
 </head>
 <body>
-<a href="index.html" id="backToHub" title="Zurück zur Anwendungssammlung">‹ Übersicht</a>
-<style>
-#backToHub{position:fixed;left:10px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:60;
-  background:#12152B;color:#F2F3FF;text-decoration:none;font-weight:700;font-size:14px;
-  padding:11px 16px;border-radius:99px;box-shadow:0 3px 14px rgba(0,0,0,.35)}
-@media print{#backToHub{display:none}}
-</style>
 <header class="bar" id="bar"></header>
 <main id="view"></main>
 <div id="printarea"></div>
@@ -302,8 +295,8 @@ var INGREDIENTS = [
   ING('drambuie','Drambuie','liqueur','#C98A2E',40,'DB'),
   ING('campari','Campari','liqueur','#C6162C',25,'CP'),
   ING('aperol','Aperol','liqueur','#E8621B',11,'AP'),
-  ING('wermut_rot','Roter Wermut','wine','#8E3320',16,'WR'),
-  ING('wermut_weiss','Trockener Wermut','wine','#E8DFA8',16,'WW'),
+  ING('wermut_rot','Roter Wermut','wine','#8E3320',16,'VR'),
+  ING('wermut_weiss','Trockener Wermut','wine','#E8DFA8',16,'VW'),
   ING('sherry','Sherry','wine','#B8752E',17,'SH'),
   ING('benedictine','Bénédictine','liqueur','#C89434',40,'BE'),
   ING('cherry_brandy','Cherry Brandy','liqueur','#9E2233',24,'CB'),
@@ -314,7 +307,7 @@ var INGREDIENTS = [
   ING('chartreuse','Grüner Chartreuse','liqueur','#7FA83C',55,'GC'),
   ING('falernum','Falernum','liqueur','#E4D9B4',11,'FA'),
   ING('licor_43','Licor 43','liqueur','#E5B93F',31,'L43'),
-  ING('violette','Crème de Violette','liqueur','#8A6FB8',20,'CV'),
+  ING('violette','Crème de Violette','liqueur','#8A6FB8',20,'VI'),
   /* --- Säfte --- */
   ING('limettensaft','Limettensaft','juice','#CFE07A',0,'LI'),
   ING('zitronensaft','Zitronensaft','juice','#F2E469',0,'ZI'),
@@ -350,7 +343,7 @@ var INGREDIENTS = [
   ING('eistee','Eistee','filler','#C99A4E',0,'ET'),
   /* --- Wein & Sekt --- */
   ING('prosecco','Prosecco','wine','#F0E7B8',11,'PR'),
-  ING('champagner','Champagner','wine','#F2E9BE',12,'CG'),
+  ING('champagner','Champagner','wine','#F2E9BE',12,'CN'),
   ING('weisswein','Weißwein','wine','#EFE6B4',12,'WW'),
   ING('rotwein','Rotwein','wine','#6E1A28',13,'RW'),
   /* --- Kaffee & Milch --- */
@@ -1020,84 +1013,9 @@ function segsFromPts(pts, close) {
   return s;
 }
 
-/* ---------- Schraffuren (Anhang E) ---------- */
-var HATCH_DEF = {
-  diag45:  { kind:'lines', ang:45,  sp:1.15 },
-  diag45w: { kind:'lines', ang:45,  sp:2.10 },
-  diag135: { kind:'lines', ang:135, sp:1.25 },
-  cross:   { kind:'cross', ang:45,  sp:1.90 },
-  horiz:   { kind:'lines', ang:0,   sp:1.30 },
-  dots:    { kind:'dots',  sp:1.70, r:0.20 },
-  dense:   { kind:'dots',  sp:0.95, r:0.22 },
-  wave:    { kind:'wave',  sp:1.60 },
-  tri:     { kind:'tri',   sp:2.20 }
-};
-
-function hatchLines(bb, ang, sp) {
-  var out = [], a = ang * Math.PI / 180;
-  var dx = Math.cos(a), dy = Math.sin(a);
-  var nx = -dy, ny = dx;                  /* Normale */
-  var cx = (bb.x0 + bb.x1) / 2, cy = (bb.y0 + bb.y1) / 2;
-  var diag = Math.hypot(bb.x1 - bb.x0, bb.y1 - bb.y0) / 2 + sp;
-  var n = Math.ceil(diag / sp);
-  for (var i = -n; i <= n; i++) {
-    var ox = cx + nx * i * sp, oy = cy + ny * i * sp;
-    out.push([[ox - dx * diag, oy - dy * diag], [ox + dx * diag, oy + dy * diag]]);
-  }
-  return out;
-}
-
-/* Erzeugt Farbfläche + Schraffur innerhalb eines Polygons */
-function fillHatched(drw, pts, cls, color, opt) {
-  opt = opt || {};
-  var segs = segsFromPts(pts, true), bb = bboxOf(pts);
-  var scale = opt.scale || 1;
-  var lw = opt.lw || 0.12;
-  var hc = opt.hatchColor || INK;
-  if (opt.color !== false && color) drw.path(segs, { fill:color, w:0 });
-  if (opt.mono) drw.path(segs, { fill:'#FFFFFF', w:0 });
-  var def = HATCH_DEF[(CLASS_BY_ID[cls] || {}).hatch] || HATCH_DEF.diag45;
-  if (opt.noHatch) { drw.path(segs, { w:lw, c:hc }); return; }
-  var sp = def.sp * (0.62 + 0.38 * scale);
-  drw.clip(segs);
-  var i, L;
-  if (def.kind === 'lines' || def.kind === 'cross') {
-    L = hatchLines(bb, def.ang, sp);
-    for (i = 0; i < L.length; i++) drw.line(L[i][0][0], L[i][0][1], L[i][1][0], L[i][1][1], { w:lw, c:hc });
-    if (def.kind === 'cross') {
-      L = hatchLines(bb, def.ang + 90, sp);
-      for (i = 0; i < L.length; i++) drw.line(L[i][0][0], L[i][0][1], L[i][1][0], L[i][1][1], { w:lw, c:hc });
-    }
-  } else if (def.kind === 'dots') {
-    var r = def.r * (0.7 + 0.3 * scale);
-    for (var y = bb.y0; y <= bb.y1; y += sp) {
-      var off = (Math.round((y - bb.y0) / sp) % 2) * sp / 2;
-      for (var x = bb.x0 - sp; x <= bb.x1 + sp; x += sp)
-        drw.rect(x + off - r, y - r, r * 2, r * 2, { w:0, fill:hc });
-    }
-  } else if (def.kind === 'wave') {
-    for (var yy = bb.y0; yy <= bb.y1; yy += sp) {
-      var pts2 = [], step = sp / 2;
-      for (var xx = bb.x0; xx <= bb.x1 + step; xx += step)
-        pts2.push([xx, yy + Math.sin((xx - bb.x0) / sp * Math.PI) * sp * 0.22]);
-      if (pts2.length > 1) drw.path(segsFromPts(pts2, false), { w:lw, c:hc });
-    }
-  } else if (def.kind === 'tri') {
-    var h = sp * 0.55;
-    for (var ty = bb.y0; ty <= bb.y1; ty += sp) {
-      var toff = (Math.round((ty - bb.y0) / sp) % 2) * sp / 2;
-      for (var tx = bb.x0 - sp; tx <= bb.x1 + sp; tx += sp)
-        drw.poly([[tx + toff, ty + h/2], [tx + toff + h*0.6, ty - h/2], [tx + toff - h*0.6, ty - h/2]],
-                 { close:true, w:lw, c:hc });
-    }
-  }
-  drw.unclip();
-  drw.path(segs, { w:lw, c:hc });
-}
-
 /* Musterfeld für die Legende */
-function hatchSwatch(drw, x, y, w, h, cls, color, opt) {
-  fillHatched(drw, [[x,y],[x+w,y],[x+w,y+h],[x,y+h]], cls, color,
+function hatchSwatch(drw, x, y, w, h, style, opt) {
+  fillHatched(drw, [[x,y],[x+w,y],[x+w,y+h],[x,y+h]], style,
     Object.assign({ scale:1, lw:0.12 }, opt || {}));
 }
 
@@ -1437,6 +1355,381 @@ function drawMethodSym(drw, sym, x, y, s, lw) {
 }
 
 
+/* ===== 09_patterns.js ===== */
+
+/* ---------- Musterbibliothek ----------
+   Jede Zutat bekommt ein eigenes Muster. sp = Rastermaß in mm.
+   k: lines | zig | wave | herr | motif | hex | scale | brick | chev | check | checkD | gridDot | text
+   ------------------------------------- */
+var PATTERNS = {
+  l45:     { k:'lines',  a:[45],     sp:1.15 },
+  l45w:    { k:'lines',  a:[45],     sp:2.20 },
+  l135:    { k:'lines',  a:[135],    sp:1.15 },
+  l135w:   { k:'lines',  a:[135],    sp:2.20 },
+  lh:      { k:'lines',  a:[0],      sp:1.20 },
+  lhw:     { k:'lines',  a:[0],      sp:2.30 },
+  lv:      { k:'lines',  a:[90],     sp:1.20 },
+  lvw:     { k:'lines',  a:[90],     sp:2.30 },
+  lx:      { k:'lines',  a:[45,135], sp:1.95 },
+  lgrid:   { k:'lines',  a:[0,90],   sp:1.95 },
+  lgridw:  { k:'lines',  a:[0,90],   sp:3.00 },
+  ldash:   { k:'lines',  a:[0],      sp:1.55, dash:[1.3,1.0] },
+  ldash45: { k:'lines',  a:[45],     sp:1.75, dash:[1.5,1.1] },
+  ldashv:  { k:'lines',  a:[90],     sp:1.70, dash:[1.4,1.1] },
+  ldd:     { k:'lines',  a:[135],    sp:2.30, dash:[1.8,0.9,0.5,0.9] },
+  lpair:   { k:'lines',  a:[45],     sp:2.60, pair:0.55 },
+  lpair135:{ k:'lines',  a:[135],    sp:2.60, pair:0.55 },
+  zig:     { k:'zig',                sp:1.90 },
+  zigw:    { k:'zig',                sp:2.80 },
+  wave:    { k:'wave',               sp:1.70 },
+  wave2:   { k:'wave',               sp:2.60, dbl:true },
+  herr:    { k:'herr',               sp:2.10 },
+  rho:     { k:'motif',  s:'dia',    sp:2.50 },
+  rhoF:    { k:'motif',  s:'dia',    sp:2.50, f:1 },
+  rhoS:    { k:'motif',  s:'dia',    sp:1.60 },
+  triU:    { k:'motif',  s:'triU',   sp:2.40 },
+  triUF:   { k:'motif',  s:'triU',   sp:2.40, f:1 },
+  triD:    { k:'motif',  s:'triD',   sp:2.40 },
+  triS:    { k:'motif',  s:'triU',   sp:1.60 },
+  sq:      { k:'motif',  s:'sq',     sp:2.30 },
+  sqF:     { k:'motif',  s:'sq',     sp:2.30, f:1 },
+  sqS:     { k:'motif',  s:'sq',     sp:1.55 },
+  cir:     { k:'motif',  s:'cir',    sp:2.30 },
+  cirF:    { k:'motif',  s:'cir',    sp:2.10, f:1 },
+  dots:    { k:'motif',  s:'cir',    sp:1.70, f:1, r:0.20 },
+  dense:   { k:'motif',  s:'cir',    sp:1.05, f:1, r:0.21 },
+  ring:    { k:'motif',  s:'ring',   sp:2.50 },
+  star:    { k:'motif',  s:'star',   sp:2.50 },
+  plus:    { k:'motif',  s:'plus',   sp:2.10 },
+  xmark:   { k:'motif',  s:'x',      sp:2.10 },
+  hex:     { k:'hex',                sp:2.70 },
+  scale:   { k:'scale',              sp:2.50 },
+  brick:   { k:'brick',              sp:2.50 },
+  chev:    { k:'chev',               sp:2.30 },
+  check:   { k:'check',              sp:2.20 },
+  checkD:  { k:'checkD',             sp:2.60 },
+  gridDot: { k:'gridDot',            sp:2.50 },
+  txt:     { k:'text',               sp:2.80 }
+};
+var PATTERN_IDS = Object.keys(PATTERNS);
+
+/* Rückfallmuster, falls eine freie Zutat kein eigenes Muster hat */
+var CLASS_PATTERN = { spirit:'l45', liqueur:'l45w', juice:'l135', syrup:'lx',
+  filler:'dots', wine:'lh', bitter:'dense', dairy:'wave', other:'triS' };
+
+/* Relative Helligkeit einer Farbe – dunkle Flächen bekommen ein helles Muster */
+function relLum(hex) {
+  if (!hex) return 1;
+  var h = hex.replace('#', '');
+  if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  var r = parseInt(h.slice(0,2),16)/255, g = parseInt(h.slice(2,4),16)/255, b = parseInt(h.slice(4,6),16)/255;
+  return 0.2126*r + 0.7152*g + 0.0722*b;
+}
+
+function hatchLines(bb, ang, sp) {
+  var out = [], a = ang * Math.PI / 180;
+  var dx = Math.cos(a), dy = Math.sin(a);
+  var nx = -dy, ny = dx;
+  var cx = (bb.x0 + bb.x1) / 2, cy = (bb.y0 + bb.y1) / 2;
+  var diag = Math.hypot(bb.x1 - bb.x0, bb.y1 - bb.y0) / 2 + sp;
+  var n = Math.ceil(diag / sp);
+  for (var i = -n; i <= n; i++) {
+    var ox = cx + nx * i * sp, oy = cy + ny * i * sp;
+    out.push([[ox - dx * diag, oy - dy * diag], [ox + dx * diag, oy + dy * diag]]);
+  }
+  return out;
+}
+
+function motifAt(drw, shape, x, y, r, lw, c, filled) {
+  var o = { w: filled ? 0 : lw, c:c, fill: filled ? c : null };
+  switch (shape) {
+    case 'dia':  drw.poly([[x,y-r],[x+r,y],[x,y+r],[x-r,y]], Object.assign({ close:true }, o)); break;
+    case 'triU': drw.poly([[x,y-r],[x+r*0.92,y+r*0.72],[x-r*0.92,y+r*0.72]], Object.assign({ close:true }, o)); break;
+    case 'triD': drw.poly([[x,y+r],[x+r*0.92,y-r*0.72],[x-r*0.92,y-r*0.72]], Object.assign({ close:true }, o)); break;
+    case 'sq':   drw.rect(x-r*0.8, y-r*0.8, r*1.6, r*1.6, Object.assign({ close:true }, o)); break;
+    case 'cir':  drw.circ(x, y, r*0.82, o); break;
+    case 'ring': drw.circ(x, y, r*0.85, { w:lw, c:c }); drw.circ(x, y, r*0.30, { w:0, fill:c }); break;
+    case 'star':
+      for (var i = 0; i < 3; i++) {
+        var a = i * Math.PI / 3;
+        drw.line(x - Math.cos(a)*r, y - Math.sin(a)*r, x + Math.cos(a)*r, y + Math.sin(a)*r, { w:lw, c:c });
+      }
+      break;
+    case 'plus': drw.line(x-r, y, x+r, y, { w:lw, c:c }); drw.line(x, y-r, x, y+r, { w:lw, c:c }); break;
+    case 'x':    drw.line(x-r*0.75, y-r*0.75, x+r*0.75, y+r*0.75, { w:lw, c:c });
+                 drw.line(x-r*0.75, y+r*0.75, x+r*0.75, y-r*0.75, { w:lw, c:c }); break;
+  }
+}
+
+/* Zeichnet ein Muster in den (bereits geclippten) Bereich bb */
+function paintPattern(drw, bb, pat, sp, lw, c, abbr) {
+  var i, j, x, y, L;
+  if (pat.k === 'lines') {
+    pat.a.forEach(function (ang) {
+      L = hatchLines(bb, ang, sp);
+      for (i = 0; i < L.length; i++) {
+        drw.line(L[i][0][0], L[i][0][1], L[i][1][0], L[i][1][1], { w:lw, c:c, d:pat.dash || null });
+        if (pat.pair) {
+          var a2 = ang * Math.PI / 180, ox = -Math.sin(a2) * pat.pair, oy = Math.cos(a2) * pat.pair;
+          drw.line(L[i][0][0]+ox, L[i][0][1]+oy, L[i][1][0]+ox, L[i][1][1]+oy, { w:lw, c:c });
+        }
+      }
+    });
+    return;
+  }
+  if (pat.k === 'zig') {
+    for (y = bb.y0; y <= bb.y1 + sp; y += sp) {
+      var pz = [];
+      for (x = bb.x0 - sp; x <= bb.x1 + sp; x += sp * 0.55)
+        pz.push([x, y + (Math.round((x - bb.x0) / (sp * 0.55)) % 2 ? sp * 0.32 : -sp * 0.32)]);
+      if (pz.length > 1) drw.path(segsFromPts(pz, false), { w:lw, c:c });
+    }
+    return;
+  }
+  if (pat.k === 'wave') {
+    for (y = bb.y0; y <= bb.y1 + sp; y += sp) {
+      var pw = [], st = sp / 3;
+      for (x = bb.x0; x <= bb.x1 + st; x += st)
+        pw.push([x, y + Math.sin((x - bb.x0) / sp * Math.PI) * sp * 0.24]);
+      if (pw.length > 1) drw.path(segsFromPts(pw, false), { w:lw, c:c });
+      if (pat.dbl) {
+        var pw2 = pw.map(function (q) { return [q[0], q[1] + sp * 0.30]; });
+        drw.path(segsFromPts(pw2, false), { w:lw, c:c });
+      }
+    }
+    return;
+  }
+  if (pat.k === 'herr') {
+    for (y = bb.y0; y <= bb.y1 + sp; y += sp) {
+      for (x = bb.x0 - sp; x <= bb.x1 + sp; x += sp) {
+        var up = (Math.round((y - bb.y0) / sp) % 2) === 0;
+        drw.line(x, y + (up ? sp*0.4 : -sp*0.4), x + sp*0.5, y + (up ? -sp*0.4 : sp*0.4), { w:lw, c:c });
+      }
+    }
+    return;
+  }
+  if (pat.k === 'hex') {
+    var hr = sp * 0.42;
+    for (j = 0, y = bb.y0; y <= bb.y1 + sp; y += sp * 0.86, j++) {
+      for (x = bb.x0 - sp + (j % 2 ? sp / 2 : 0); x <= bb.x1 + sp; x += sp) {
+        var hp = [];
+        for (i = 0; i < 6; i++) {
+          var ha = i * Math.PI / 3 + Math.PI / 6;
+          hp.push([x + Math.cos(ha) * hr, y + Math.sin(ha) * hr]);
+        }
+        drw.poly(hp, { close:true, w:lw, c:c });
+      }
+    }
+    return;
+  }
+  if (pat.k === 'scale') {
+    for (j = 0, y = bb.y0; y <= bb.y1 + sp; y += sp * 0.55, j++)
+      for (x = bb.x0 - sp + (j % 2 ? sp / 2 : 0); x <= bb.x1 + sp; x += sp)
+        drw.path(segsFromPts(arcPts(x, y, sp * 0.48, Math.PI, Math.PI * 2, 8), false), { w:lw, c:c });
+    return;
+  }
+  if (pat.k === 'brick') {
+    for (j = 0, y = bb.y0; y <= bb.y1 + sp; y += sp * 0.55, j++) {
+      drw.line(bb.x0, y, bb.x1, y, { w:lw, c:c });
+      for (x = bb.x0 - sp + (j % 2 ? sp / 2 : 0); x <= bb.x1 + sp; x += sp)
+        drw.line(x, y, x, y + sp * 0.55, { w:lw, c:c });
+    }
+    return;
+  }
+  if (pat.k === 'chev') {
+    for (y = bb.y0; y <= bb.y1 + sp; y += sp * 0.7)
+      for (x = bb.x0 - sp; x <= bb.x1 + sp; x += sp)
+        drw.path([['M', x, y + sp*0.3], ['L', x + sp*0.5, y - sp*0.25], ['L', x + sp, y + sp*0.3]], { w:lw, c:c });
+    return;
+  }
+  if (pat.k === 'check' || pat.k === 'checkD') {
+    var cs = pat.k === 'check' ? sp * 0.5 : sp * 0.55;
+    for (j = 0, y = bb.y0; y <= bb.y1 + cs; y += cs, j++)
+      for (i = 0, x = bb.x0; x <= bb.x1 + cs; x += cs, i++)
+        if ((i + j) % 2 === 0) {
+          if (pat.k === 'check') drw.rect(x, y, cs, cs, { w:0, fill:c });
+          else drw.poly([[x + cs/2, y], [x + cs, y + cs/2], [x + cs/2, y + cs], [x, y + cs/2]],
+                        { close:true, w:0, fill:c });
+        }
+    return;
+  }
+  if (pat.k === 'gridDot') {
+    L = hatchLines(bb, 0, sp); for (i = 0; i < L.length; i++) drw.line(L[i][0][0], L[i][0][1], L[i][1][0], L[i][1][1], { w:lw, c:c });
+    L = hatchLines(bb, 90, sp); for (i = 0; i < L.length; i++) drw.line(L[i][0][0], L[i][0][1], L[i][1][0], L[i][1][1], { w:lw, c:c });
+    for (y = bb.y0 + sp/2; y <= bb.y1; y += sp)
+      for (x = bb.x0 + sp/2; x <= bb.x1; x += sp) drw.circ(x, y, sp*0.13, { w:0, fill:c });
+    return;
+  }
+  if (pat.k === 'text') {
+    var t = abbr || '·', fsz = sp * 0.60, rh = sp * 0.95;
+    var hgt = bb.y1 - bb.y0;
+    var rows = Math.max(1, Math.round(hgt / rh));
+    var y0 = bb.y0 + (hgt - (rows - 1) * rh) / 2 + fsz * 0.36;
+    for (j = 0; j < rows; j++) {
+      y = y0 + j * rh;
+      for (x = bb.x0 + (j % 2 ? sp * 0.75 : -sp * 0.2); x <= bb.x1 + sp; x += sp * 1.5)
+        drw.text(x, y, t, { size:fsz, c:c, bold:true });
+    }
+    return;
+  }
+  /* motif */
+  var r = (pat.r || pat.sp * 0.30) * (sp / pat.sp);
+  for (j = 0, y = bb.y0 + sp * 0.4; y <= bb.y1 + sp; y += sp, j++)
+    for (x = bb.x0 - sp + (j % 2 ? sp / 2 : 0); x <= bb.x1 + sp; x += sp)
+      motifAt(drw, pat.s, x, y, r, lw, c, pat.f);
+}
+
+/* Farbfläche + Muster innerhalb eines Polygons.
+   style: { pat, color, abbr } oder eine Zutat aus ING_BY_ID */
+function fillHatched(drw, pts, style, opt) {
+  opt = opt || {};
+  style = style || {};
+  var segs = segsFromPts(pts, true), bb = bboxOf(pts);
+  var scale = opt.scale || 1, lw = opt.lw || 0.12;
+  var hc = opt.hatchColor || INK;
+  var color = style.color || '#DDDDDD';
+  if (opt.mono) drw.path(segs, { fill:'#FFFFFF', w:0 });
+  else if (opt.color !== false) drw.path(segs, { fill:color, w:0 });
+  if (opt.noHatch) { drw.path(segs, { w:lw, c:hc }); return; }
+  var pat = PATTERNS[style.pat] || PATTERNS[CLASS_PATTERN[style.cls] || 'l45'];
+  var sp = pat.sp * (0.68 + 0.32 * Math.min(1.2, scale));
+  var pc = hc;
+  if (!opt.mono && opt.color !== false && relLum(color) < 0.42) pc = '#FFFFFF';
+  drw.clip(segs);
+  paintPattern(drw, bb, pat, sp, lw, pc, style.abbr);
+  drw.unclip();
+  drw.path(segs, { w:lw, c:hc });
+}
+
+
+/* ===== 05_ing_style.js ===== */
+
+/* ------------------------------------------------------------
+   Muster und Farbe je Zutat.
+   Frei vergeben, damit sich benachbarte Zutaten deutlich
+   unterscheiden. 'txt' = Buchstabenmuster für Zutaten, die
+   sich farblich kaum trennen lassen (helle Spirituosen,
+   braune Brände, Milchiges).
+   ------------------------------------------------------------ */
+var ING_STYLE = {
+  rum_weiss:         ['txt','#F6EEDC'],
+  rum_braun:         ['txt','#C08048'],
+  rum_dunkel:        ['txt','#8A4A20'],
+  rum_overproof:     ['txt','#A65A25'],
+  cachaca:           ['txt','#EFEAD2'],
+  gin:               ['txt','#DDEAF2'],
+  sloe_gin:          ['l45','#EF6C6C'],
+  wodka:             ['txt','#EDEDF2'],
+  tequila:           ['txt','#E9EED8'],
+  tequila_rep:       ['txt','#E2C079'],
+  mezcal:            ['txt','#DCE4CE'],
+  bourbon:           ['txt','#C97C2A'],
+  rye:               ['txt','#B96A20'],
+  scotch:            ['txt','#C89240'],
+  irish:             ['txt','#D8A65A'],
+  cognac:            ['txt','#A85F20'],
+  pisco:             ['txt','#F0E6D0'],
+  calvados:          ['txt','#D9A24E'],
+  absinth:           ['rhoF','#A2E0E6'],
+  triple_sec:        ['lh','#B98D6A'],
+  blue_curacao:      ['cirF','#2E8CD6'],
+  grand_marnier:     ['l135w','#F0A8C8'],
+  amaretto:          ['triU','#7CC262'],
+  kahlua:            ['lgrid','#6A3A20'],
+  baileys:           ['txt','#C9A882'],
+  maraschino:        ['wave','#C9CFD2'],
+  cassis:            ['sqF','#9A8BE0'],
+  menthe_weiss:      ['ldash45','#DCE6A0'],
+  menthe_gruen:      ['hex','#8FBF8A'],
+  cacao_weiss:       ['lv','#AFC2EF'],
+  cacao_braun:       ['check','#F0B341'],
+  chambord:          ['l135','#AEC6C6'],
+  midori:            ['star','#87C441'],
+  st_germain:        ['brick','#4FC3D6'],
+  galliano:          ['lhw','#F3C0A0'],
+  drambuie:          ['triUF','#E8618F'],
+  campari:           ['zig','#C6162C'],
+  aperol:            ['ring','#E8621B'],
+  wermut_rot:        ['lx','#A8DCD0'],
+  wermut_weiss:      ['scale','#98A2A8'],
+  sherry:            ['ldashv','#DCB8E8'],
+  benedictine:       ['plus','#B5CE4A'],
+  cherry_brandy:     ['l45w','#E0B090'],
+  apricot_brandy:    ['chev','#7C9BE8'],
+  peachtree:         ['dots','#F2E7A2'],
+  bananenlikoer:     ['lpair','#E5C0C8'],
+  kokoslikoer:       ['sq','#A6D4F0'],
+  chartreuse:        ['xmark','#7FA83C'],
+  falernum:          ['lvw','#E88A45'],
+  licor_43:          ['wave2','#F4A0A0'],
+  violette:          ['rho','#4FB5A0'],
+  limettensaft:      ['gridDot','#D9C4AE'],
+  zitronensaft:      ['triD','#C77BD1'],
+  orangensaft:       ['ldd','#BBDFA8'],
+  ananassaft:        ['herr','#D96A3C'],
+  cranberrysaft:     ['sqS','#BEB6EC'],
+  grapefruitsaft:    ['checkD','#EBD44A'],
+  tomatensaft:       ['ldash','#C0341F'],
+  maracujasaft:      ['dense','#C3A6D8'],
+  pfirsichpueree:    ['lpair135','#5FB3E8'],
+  mangosaft:         ['triS','#F6D69C'],
+  apfelsaft:         ['cir','#EF6C6C'],
+  zuckersirup:       ['zigw','#F6EFDC'],
+  grenadine:         ['rhoS','#C41E3A'],
+  orgeat:            ['lgridw','#A2E0E6'],
+  zuckerrohrsirup:   ['l45','#B98D6A'],
+  honigsirup:        ['rhoF','#F0A8C8'],
+  holunderblueten:   ['lh','#7CC262'],
+  kokoscreme:        ['txt','#EDE3D2'],
+  vanillesirup:      ['cirF','#C9CFD2'],
+  zimtsirup:         ['l135w','#9A8BE0'],
+  himbeersirup:      ['triU','#DCE6A0'],
+  soda:              ['lgrid','#D8ECF4'],
+  tonic:             ['wave','#E8F2F0'],
+  ginger_beer:       ['sqF','#8FBF8A'],
+  ginger_ale:        ['ldash45','#AFC2EF'],
+  cola:              ['hex','#5A2A14'],
+  lemonade:          ['lv','#F0B341'],
+  bitter_lemon:      ['check','#AEC6C6'],
+  wasser:            ['l135','#EAF4F8'],
+  eistee:            ['star','#4FC3D6'],
+  prosecco:          ['brick','#F3C0A0'],
+  champagner:        ['lhw','#E8618F'],
+  weisswein:         ['triUF','#A8DCD0'],
+  rotwein:           ['zig','#98A2A8'],
+  espresso:          ['ring','#3A2114'],
+  kaffee:            ['lx','#4A2A16'],
+  milch:             ['txt','#FBF8F2'],
+  sahne:             ['txt','#F6EFE0'],
+  schlagsahne:       ['txt','#FDFAF4'],
+  angostura:         ['scale','#DCB8E8'],
+  orange_bitters:    ['ldashv','#B5CE4A'],
+  peychauds:         ['plus','#E0B090'],
+  tabasco:           ['l45w','#7C9BE8'],
+  worcester:         ['chev','#F2E7A2'],
+  eiweiss:           ['txt','#F2ECDE'],
+  zucker_weiss:      ['dots','#E5C0C8'],
+  rohrzucker:        ['lpair','#A6D4F0'],
+  zuckerwuerfel:     ['sq','#E88A45'],
+  salz:              ['xmark','#F4A0A0'],
+  pfeffer:           ['lvw','#4FB5A0'],
+  sellerie_salz:     ['wave2','#D9C4AE'],
+  minze:             ['rho','#6FA84A'],
+  basilikum:         ['gridDot','#C77BD1'],
+  gurke:             ['triD','#BBDFA8'],
+  ingwer:            ['ldd','#D96A3C'],
+  limette_stueck:    ['herr','#BEB6EC'],
+  rosmarin:          ['sqS','#EBD44A'],
+  zimt:              ['checkD','#C3A6D8'],
+  muskat:            ['ldash','#5FB3E8'],
+};
+INGREDIENTS.forEach(function (i) {
+  var st = ING_STYLE[i.id];
+  if (st) { i.pat = st[0]; i.color = st[1]; }
+  else { i.pat = CLASS_PATTERN[i.cls] || 'l45'; }
+});
+
+
 /* ===== 12_draw_cocktail.js ===== */
 
 /* ============================================================
@@ -1691,11 +1984,10 @@ function drawCocktail(drw, ck, cellX, cellY, cellW, cellH, opts) {
   var layers = computeLayers(ck, cav);
   for (var i = 0; i < layers.length; i++) {
     var L = layers[i];
-    var ing = ING_BY_ID[L.ing.ingredientId] || { cls:(L.ing.cls || 'other'), color:(L.ing.color || '#DDDDDD'), name:L.ing.name };
+    var ing = ING_BY_ID[L.ing.ingredientId] ||
+      { cls:(L.ing.cls || 'other'), color:(L.ing.color || '#DDDDDD'), name:L.ing.name, pat:null, abbr:'' };
     var poly = layerPolygon(g, L.y0, L.y1, S, cx, baseY);
-    fillHatched(drw, poly, ing.cls, ing.color, { scale:S, lw:lw*0.62, mono:opts.mono, color:!opts.mono, noHatch:opts.noHatch });
-    if (opts.marks) opts.marks.ings[L.ing.ingredientId || L.ing.name] =
-      { name: L.ing.name || ing.name, cls: ing.cls, color: ing.color, abbr: ing.abbr || '' };
+    fillHatched(drw, poly, ing, { scale:S, lw:lw*0.62, mono:opts.mono, color:!opts.mono, noHatch:opts.noHatch });
   }
 
   /* --- Eis --- */
@@ -1887,8 +2179,10 @@ function collectMarks(cocktails) {
     m.methods[ck.method || 'b'] = true;
     m.glasses[ck.glass] = true;
     (ck.ingredients || []).forEach(function (ing) {
-      var I = ING_BY_ID[ing.ingredientId] || { cls:ing.cls || 'other', color:ing.color || '#DDDDDD', abbr:'' };
-      m.ings[ing.ingredientId || ing.name] = { name: ing.name || I.name, cls: I.cls, color: I.color, abbr: I.abbr || '' };
+      var I = ING_BY_ID[ing.ingredientId] ||
+        { cls:ing.cls || 'other', color:ing.color || '#DDDDDD', abbr:'', pat:null };
+      m.ings[ing.ingredientId || ing.name] =
+        { name: ing.name || I.name, cls: I.cls, color: I.color, abbr: I.abbr || '', pat: I.pat };
     });
     (ck.garnish || []).forEach(function (gr) { if (GAR_BY_ID[gr.id]) m.gars[gr.id] = true; });
     var ic = ICE_BY_ID[ck.ice];
@@ -2031,7 +2325,8 @@ function drawPrepLegend(drw, x, y, w, usedPreps) {
 
 function drawIngredientLegend(drw, x, y, w, marks, mono, maxH) {
   var list = Object.keys(marks.ings).map(function (k) {
-    var v = marks.ings[k]; return { id:k, name:v.name, cls:v.cls, color:v.color, abbr:v.abbr };
+    var v = marks.ings[k];
+    return { id:k, name:v.name, cls:v.cls, color:v.color, abbr:v.abbr, pat:v.pat };
   });
   if (!list.length) return y;
   list.sort(function (a, b) { return a.name.localeCompare(b.name, 'de'); });
@@ -2047,16 +2342,15 @@ function drawIngredientLegend(drw, x, y, w, marks, mono, maxH) {
   }
   var colw = w / cols;
   drw.rect(x, y, w, h, { w:0.35 });
-  var yy = boxTitle(drw, x, y, w, 'ZUTATEN – FARBE UND SCHRAFFUR');
+  var yy = boxTitle(drw, x, y, w, 'ZUTATEN – FARBE UND MUSTER');
   list.forEach(function (it, i) {
     var c = i % cols, r = Math.floor(i / cols);
     var sx = x + 2 + c * colw, sy = yy + 2.2 + r * rowh;
-    hatchSwatch(drw, sx, sy, 12, rowh - 1.6, it.cls, it.color, { mono:mono, color:!mono, lw:0.12 });
-    if (it.abbr && mono) drw.text(sx + 6, sy + rowh * 0.55, it.abbr, { size:2.1, anchor:'middle', bold:true });
+    hatchSwatch(drw, sx, sy, 13, rowh - 1.6, it, { mono:mono, color:!mono, lw:0.12 });
     var nm = it.name;
-    while (textWidth(nm, 2.5) > colw - 17 && nm.length > 4) nm = nm.slice(0, -2);
+    while (textWidth(nm, 2.5) > colw - 18 && nm.length > 4) nm = nm.slice(0, -2);
     if (nm !== it.name) nm = nm + '.';
-    drw.text(sx + 13.6, sy + rowh * 0.62, nm, { size:2.5 });
+    drw.text(sx + 14.6, sy + rowh * 0.62, nm, { size:2.5 });
   });
   return y + h + 3;
 }
