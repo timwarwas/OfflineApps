@@ -77,8 +77,10 @@ textarea{min-height:64px;resize:vertical}
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .row>*{flex:1;min-width:0}
 .btn{
+  appearance:none;-webkit-appearance:none;margin:0;
   border:1px solid var(--ink);background:var(--panel);padding:7px 12px;border-radius:2px;
-  font-size:13px;line-height:1.2;
+  font-size:13px;line-height:1.2;text-align:center;
+  display:inline-flex;align-items:center;justify-content:center;
 }
 .btn:hover{background:#F0F0EA}
 .btn.primary{background:var(--ink);color:#fff}
@@ -186,6 +188,11 @@ dialog::backdrop{background:rgba(30,32,28,.55)}
   #printarea svg{width:100%;height:auto;display:block}
 }
 #printarea{display:none}
+
+/* Aktionsleiste unter der Vorschau: gleichmäßige Kacheln, auf dem Telefon zweispaltig */
+.actrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.actrow .btn{white-space:nowrap;min-height:40px}
+@media(max-width:480px){.actrow{grid-template-columns:1fr 1fr}.actrow .btn:first-child{grid-column:1/-1}}
 </style>
 <style id="pagestyle">@page{size:594mm 420mm;margin:0}</style>
 </head>
@@ -209,37 +216,39 @@ dialog::backdrop{background:rgba(30,32,28,.55)}
    ============================================================ */
 var GLASSES = [
   { id:'tumbler', name:'Tumbler / Old-Fashioned-Glas', vol:300, kind:'tumbler',
-    prof:[[0,14.5],[30,16.5]], wall:1.6, base:5.0 },
+    prof:[[0,13.6],[34,15.6]], wall:1.7, base:6.5 },
   { id:'highball', name:'Highball / Longdrinkglas', vol:350, kind:'tumbler',
-    prof:[[0,11.0],[45,12.4]], wall:1.3, base:4.0 },
+    prof:[[0,10.4],[46,12.0]], wall:1.3, base:5.0 },
   { id:'collins', name:'Collins-Glas', vol:380, kind:'tumbler',
-    prof:[[0,9.6],[52,10.8]], wall:1.2, base:3.6 },
+    prof:[[0,9.4],[52,10.6]], wall:1.2, base:4.5 },
   { id:'coupe', name:'Coupette / Cocktailschale', vol:180, kind:'stem', smooth:true,
-    prof:[[0,3.0],[2.5,8.5],[7,13.5],[12,16.0]], wall:1.2, base:0.8, stem:15, foot:12, footH:1.8 },
+    prof:[[0,1.0],[2,6.0],[5,11.0],[9,14.6],[13,15.8]], wall:1.1, base:0.8, stem:14, foot:12, footH:1.8 },
   { id:'martini', name:'Martiniglas', vol:180, kind:'stem',
-    prof:[[0,1.2],[17,17.5]], wall:1.2, base:0.6, stem:16, foot:12, footH:1.8 },
+    prof:[[0,1.0],[18,17.5]], wall:1.1, base:0.6, stem:16, foot:12, footH:1.8 },
   { id:'nick_nora', name:'Nick & Nora', vol:150, kind:'stem', smooth:true,
-    prof:[[0,2.2],[3.5,7.5],[9,10.8],[13,10.2]], wall:1.1, base:0.8, stem:14, foot:10.5, footH:1.6 },
+    prof:[[0,1.0],[3,6.2],[8,10.2],[13,11.0],[16,10.4]], wall:1.0, base:0.8, stem:13, foot:10.5, footH:1.6 },
   { id:'hurricane', name:'Hurricane-Glas', vol:450, kind:'stem', smooth:true,
-    prof:[[0,5.5],[7,12.5],[19,14.5],[32,10.5],[40,12.5]], wall:1.3, base:1.0, stem:8, foot:12.5, footH:2.0 },
+    prof:[[0,2.5],[4,9.0],[10,13.6],[20,14.6],[30,10.6],[36,9.8],[42,12.4]], wall:1.2, base:1.0, stem:7, foot:12.5, footH:2.0 },
   { id:'tiki', name:'Tiki-Becher', vol:400, kind:'mug', relief:true,
     prof:[[0,12.0],[44,13.6]], wall:2.0, base:5.0 },
   { id:'flute', name:'Sektflöte', vol:180, kind:'stem', smooth:true,
-    prof:[[0,2.6],[5,6.2],[26,7.8],[36,7.2]], wall:1.1, base:0.8, stem:16, foot:10.5, footH:1.6 },
+    prof:[[0,1.0],[4,5.0],[12,7.2],[28,7.8],[38,7.0]], wall:1.0, base:0.8, stem:15, foot:10.5, footH:1.6 },
   { id:'wine', name:'Weinglas', vol:400, kind:'stem', smooth:true,
-    prof:[[0,3.6],[5,12.5],[17,14.6],[29,10.8]], wall:1.1, base:0.8, stem:14, foot:12, footH:1.8 },
+    prof:[[0,1.2],[4,10.0],[10,14.0],[18,15.0],[29,11.0]], wall:1.0, base:0.8, stem:14, foot:12, footH:1.8 },
   { id:'copa', name:'Copa- / Ballonglas', vol:600, kind:'stem', smooth:true,
-    prof:[[0,4.5],[6,16.5],[18,19.5],[30,15.0]], wall:1.2, base:0.9, stem:12, foot:13.5, footH:2.0 },
+    prof:[[0,1.5],[5,14.0],[12,19.0],[20,20.0],[30,15.5]], wall:1.1, base:0.9, stem:12, foot:13.5, footH:2.0 },
   { id:'mule', name:'Kupferbecher', vol:400, kind:'mug', handle:true,
     prof:[[0,12.6],[40,14.6]], wall:1.8, base:4.5 },
   { id:'shot', name:'Shotglas', vol:50, kind:'tumbler',
-    prof:[[0,6.6],[15,8.4]], wall:1.4, base:4.0 },
+    prof:[[0,6.6],[15,8.4]], wall:1.4, base:4.5 },
   { id:'margarita', name:'Margaritaglas', vol:300, kind:'stem', smooth:true,
-    prof:[[0,2.2],[3,7.0],[5.5,7.4],[7,12.5],[12,17.0],[14,18.0]], wall:1.2, base:0.8, stem:14, foot:12.5, footH:1.8 },
+    prof:[[0,1.0],[2.5,5.0],[5,5.4],[6.5,4.0],[8,7.5],[11,14.0],[14,17.5],[15.5,18.2]], wall:1.1, base:0.8, stem:13, foot:12.5, footH:1.8 },
   { id:'sling', name:'Sling-Glas', vol:350, kind:'tumbler',
-    prof:[[0,10.0],[44,13.6]], wall:1.2, base:4.0 },
+    prof:[[0,10.0],[44,13.6]], wall:1.2, base:4.5 },
   { id:'irish_coffee', name:'Irish-Coffee-Glas', vol:250, kind:'stem', smooth:true, handle:true,
-    prof:[[0,4.0],[4,9.6],[22,10.8],[30,9.8]], wall:1.2, base:0.9, stem:5, foot:10.5, footH:1.8 }
+    prof:[[0,2.0],[4,9.4],[14,10.8],[24,10.6],[30,9.6]], wall:1.1, base:0.9, stem:6, foot:10, footH:1.8 },
+  { id:'karaffe', name:'Karaffe / Krug', vol:1500, kind:'mug', handle:true, spout:true,
+    prof:[[0,17.0],[50,19.0],[54,20.5]], wall:1.5, base:4.5 }
 ];
 var GLASS_BY_ID = {}; GLASSES.forEach(function(g){ GLASS_BY_ID[g.id] = g; });
 var FILL_RATIO = 0.85; // Fülllinie = 85 % der Innenhöhe
@@ -373,7 +382,9 @@ var INGREDIENTS = [
   ING('limette_stueck','Limettenachtel','other','#A8C84E',0,'LS'),
   ING('rosmarin','Rosmarin','other','#5C7A46',0,'RO'),
   ING('zimt','Zimt','other','#9E5A28',0,'ZT'),
-  ING('muskat','Muskat','other','#A87A48',0,'MU')
+  ING('muskat','Muskat','other','#A87A48',0,'MU'),
+  ING('olivenlake','Olivenlake','other','#D8DCC0',0,'OL'),
+  ING('obst','Obststücke','other','#F2B16A',0,'OB')
 ];
 var ING_BY_ID = {}; INGREDIENTS.forEach(function(i){ ING_BY_ID[i.id] = i; });
 
@@ -420,7 +431,22 @@ var PREPS = [
 ];
 var PREP_BY_ID = {}; PREPS.forEach(function(p){ PREP_BY_ID[p.id] = p; });
 
-/* Hauptmethoden mit Methodensymbol über dem Glas */
+/* Symbole für Zubereitungsschritte (über dem Glas und an einzelnen Schichten) */
+var SYMBOLS = [
+  { id:'shake',   name:'schütteln mit Eis und abseihen' },
+  { id:'stir',    name:'im Rührglas rühren und abseihen' },
+  { id:'build',   name:'im Glas bauen' },
+  { id:'layer',   name:'schichten / floaten (über den Löffelrücken)' },
+  { id:'muddle',  name:'muddlen / zerstoßen' },
+  { id:'swizzle', name:'mit Crushed Ice verrühren (Swizzle)' },
+  { id:'blend',   name:'im Mixer / Blender' },
+  { id:'top',     name:'toppen / auffüllen' },
+  { id:'strain',  name:'abseihen' },
+  { id:'rinse',   name:'Glas ausschwenken / vorkühlen' }
+];
+var SYMBOL_BY_ID = {}; SYMBOLS.forEach(function(s){ SYMBOL_BY_ID[s.id] = s; });
+
+/* Hauptmethoden (Auswahl im Editor) */
 var METHODS = [
   { id:'f', name:'schütteln mit Eis und abseihen', sym:'shake' },
   { id:'r', name:'im Rührglas rühren und abseihen', sym:'stir' },
@@ -431,6 +457,15 @@ var METHODS = [
   { id:'x', name:'im Mixer / Blender', sym:'blend' }
 ];
 var METHOD_BY_ID = {}; METHODS.forEach(function(m){ METHOD_BY_ID[m.id] = m; });
+
+/* Zuordnung Zubereitungskürzel → Symbol an der Schicht (null = kein Symbol) */
+var PREP_SYM = { b:'build', f:'shake', r:'stir', m:'muddle', l:'layer', t:'top',
+                 s:'strain', d:'strain', w:'rinse', z:null, k:null };
+function prepSymbol(prep) {
+  var p = String(prep || '');
+  for (var i = 0; i < p.length; i++) if (PREP_SYM[p[i]]) return PREP_SYM[p[i]];
+  return null;
+}
 
 
 /* ===== 03_garnish.js ===== */
@@ -539,6 +574,11 @@ C('martini_dry','Martini (Dry)','Klassiker','Gin','martini','none','r',
   'Trocken gerührt, eiskalt, mit Olive oder Zeste.',
   [['wermut_weiss',1,'cl','r'],['gin',6,'cl','r']],
   ['olive'],['klassiker','trocken']),
+
+C('dirty_martini','Dirty Martini','Klassiker','Gin','martini','none','r',
+  'Martini mit einem Schuss Olivenlake, salzig und klar.',
+  [['olivenlake',1,'cl','r'],['wermut_weiss',1,'cl','r'],['gin',6,'cl','r']],
+  [['olive',3]],['klassiker','trocken']),
 
 C('negroni','Negroni','Klassiker','Gin','tumbler','ball','r',
   'Zu gleichen Teilen Gin, Campari und roter Wermut.',
@@ -751,6 +791,25 @@ C('aperol_spritz','Aperol Spritz','Highball','Likör','wine','cubes','b',
   '3 Teile Prosecco, 2 Teile Aperol, ein Spritzer Soda.',
   [['aperol',6,'cl','b'],['prosecco',9,'cl','b'],['soda',3,'cl','t']],
   ['orangenscheibe'],['aperitif','erfrischend']),
+
+C('singapore_sling','Singapore Sling','Highball','Gin','sling','cubes','f',
+  'Gin, Cherry Brandy und Ananas – der Klassiker aus dem Raffles Hotel.',
+  [['grenadine',1,'cl','f'],['limettensaft',1.5,'cl','f'],['benedictine',0.75,'cl','f'],
+   ['triple_sec',0.75,'cl','f'],['cherry_brandy',1.5,'cl','f'],['ananassaft',12,'cl','f'],
+   ['angostura',1,'dash','f'],['gin',3,'cl','f'],['soda',null,'fill','t']],
+  ['ananasstueck','kirsche'],['klassiker','fruchtig']),
+
+C('skinny_bitch','Skinny Bitch','Highball','Wodka','highball','cubes','b',
+  'Wodka mit Soda und Limette – leicht und trocken.',
+  [['limettensaft',1.5,'cl','b'],['wodka',5,'cl','b'],['soda',null,'fill','t']],
+  ['limettenspalte'],['einfach','leicht']),
+
+C('sangria','Sangria','Sekt & Wein','Wein/Sekt','karaffe','cubes','b',
+  'Rotwein mit Brandy, Orangenlikör und viel Obst – für die ganze Runde.',
+  [['obst',10,'stk','b'],['zuckersirup',4,'cl','b'],['triple_sec',6,'cl','b'],
+   ['cognac',8,'cl','b'],['orangensaft',20,'cl','b'],['rotwein',75,'cl','b'],['soda',null,'fill','t']],
+  ['orange_ganz','zitrone_ganz'],['party','fruchtig'],
+  { note:'Mindestens zwei Stunden kalt ziehen lassen, erst vor dem Servieren mit Soda auffüllen.' }),
 
 C('hugo','Hugo','Highball','Wein/Sekt','wine','cubes','b',
   'Holunderblüte, Minze, Limette und Prosecco.',
@@ -1345,6 +1404,26 @@ function drawMethodSym(drw, sym, x, y, s, lw) {
       drw.rect(x - s*0.24, y + s*0.06, s*0.48, s*0.20, o);
       drw.line(x - s*0.40, y + s*0.42, x + s*0.40, y + s*0.42, o);
       break;
+    case 'top':
+      drw.line(x, y - s*0.50, x, y + s*0.02, o);
+      drw.poly([[x - s*0.13, y - s*0.08],[x + s*0.13, y - s*0.08],[x, y + s*0.20]], { close:true, w:lw, c:INK, fill:INK });
+      drw.line(x - s*0.42, y + s*0.30, x + s*0.42, y + s*0.30, o);
+      drw.line(x - s*0.42, y + s*0.42, x + s*0.42, y + s*0.42, { w:lw*0.7 });
+      break;
+    case 'strain':
+      drw.path(segsFromPts(arcPts(x, y - s*0.10, s*0.40, 0, Math.PI, 12), false), o);
+      drw.line(x - s*0.40, y - s*0.10, x + s*0.40, y - s*0.10, o);
+      for (i = 0; i < 5; i++) drw.circ(x - s*0.24 + i*s*0.12, y + s*0.04 + (i%2)*s*0.10, s*0.035, { w:0, fill:INK });
+      drw.line(x + s*0.40, y - s*0.10, x + s*0.62, y - s*0.16, o);
+      drw.line(x, y + s*0.30, x, y + s*0.48, o);
+      break;
+    case 'rinse':
+      p = [];
+      for (i = 0; i <= 24; i++) { var ra = Math.PI*0.2 + i/24*Math.PI*1.5; p.push([x + Math.cos(ra)*s*0.36, y + Math.sin(ra)*s*0.36]); }
+      drw.path(segsFromPts(p, false), o);
+      var ea = Math.PI*0.2 + Math.PI*1.5, ex = x + Math.cos(ea)*s*0.36, ey = y + Math.sin(ea)*s*0.36;
+      drw.poly([[ex, ey], [ex + s*0.16, ey + s*0.14], [ex - s*0.06, ey + s*0.20]], { close:true, w:lw, c:INK, fill:INK });
+      break;
     case 'blend':
       drw.poly([[x - s*0.26, y - s*0.44],[x + s*0.26, y - s*0.44],[x + s*0.18, y + s*0.30],[x - s*0.18, y + s*0.30]], Object.assign({close:true}, o));
       drw.line(x - s*0.20, y + s*0.30, x + s*0.20, y + s*0.30, o);
@@ -1612,6 +1691,8 @@ function fillHatched(drw, pts, style, opt) {
    braune Brände, Milchiges).
    ------------------------------------------------------------ */
 var ING_STYLE = {
+  olivenlake:        ['ring','#C9D89A'],
+  obst:              ['cirF','#F2B16A'],
   rum_weiss:         ['txt','#F6EEDC'],
   rum_braun:         ['txt','#C08048'],
   rum_dunkel:        ['txt','#8A4A20'],
@@ -1894,9 +1975,15 @@ function drawGlassOutline(drw, g, S, cx, baseY, lw) {
     drw.line(outL[outL.length-1][0], outL[outL.length-1][1], innL[innL.length-1][0], innL[innL.length-1][1], o);
     drw.line(outR[outR.length-1][0], outR[outR.length-1][1], innR[innR.length-1][0], innR[innR.length-1][1], o);
     if (g.handle) {
-      var hx = outR[Math.floor(outR.length*0.7)][0], hy1 = baseY - glassCavityTop(g)*0.72*S, hy2 = baseY - glassCavityTop(g)*0.22*S;
-      drw.path([['M', hx, hy1], ['C', hx + 7*S, hy1, hx + 7*S, hy2, hx, hy2]], { w:lw, c:INK });
-      drw.path([['M', hx, hy1 + 1.2*S], ['C', hx + 5*S, hy1 + 1.2*S, hx + 5*S, hy2 - 1.2*S, hx, hy2 - 1.2*S]], { w:lw*0.7, c:INK });
+      var cavH = glassCavityTop(g), bulge = Math.min(10, cavH * 0.18) * S;
+      var hx = outR[Math.floor(outR.length*0.75)][0], hy1 = baseY - cavH*0.78*S, hy2 = baseY - cavH*0.26*S;
+      drw.path([['M', hx, hy1], ['C', hx + bulge, hy1, hx + bulge, hy2, hx, hy2]], { w:lw, c:INK });
+      drw.path([['M', hx, hy1 + 1.4*S], ['C', hx + bulge*0.68, hy1 + 1.4*S, hx + bulge*0.68, hy2 - 1.4*S, hx, hy2 - 1.4*S]], { w:lw*0.7, c:INK });
+    }
+    if (g.spout) {
+      var tl = outL[outL.length-1], il = innL[innL.length-1];
+      drw.path([['M', tl[0] + 0.2*S, tl[1]], ['L', tl[0] - 3.2*S, tl[1] - 2.4*S],
+                ['L', il[0] - 0.4*S, il[1] - 2.2*S], ['L', il[0] + 0.6*S, il[1]]], { w:lw, c:INK, fill:'#FFFFFF' });
     }
     if (g.relief) {
       for (i = 1; i <= 3; i++) {
@@ -2001,12 +2088,18 @@ function drawCocktail(drw, ck, cellX, cellY, cellW, cellH, opts) {
   var outerHw = (maxHw + wall) * S;
   var leftX  = cx - outerHw - 3.0 * S, rightX = cx + outerHw + 3.0 * S;
   var lab = { l: [], r: [] };
+  var mainSym = meth.sym, anyIcon = false;
   for (var k = 0; !plain && k < layers.length; k++) {
     var Ly = baseY - (layers[k].y0 + layers[k].y1) / 2 * S;
     var side = (k % 2 === 0) ? 'l' : 'r';
+    var psym = prepSymbol(layers[k].ing.prep);
+    if (psym === mainSym) psym = null;
+    if (psym) { anyIcon = true; if (opts.usedSyms) opts.usedSyms[psym] = true; }
     lab[side].push({ y: Ly, txt: amountLabel(layers[k].ing, opts.unit || 'cl'),
-                     prep: layers[k].ing.prep, yc: (layers[k].y0 + layers[k].y1) / 2 });
+                     sym: psym, yc: (layers[k].y0 + layers[k].y1) / 2 });
   }
+  if (opts.usedSyms) opts.usedSyms[mainSym] = true;
+  var iconW = anyIcon ? 5.4 * S : 0;
   var lineH = fs * 1.06, blockH = lineH * 2 + 0.5;
   ['l','r'].forEach(function (side) {
     var arr = lab[side];
@@ -2022,10 +2115,9 @@ function drawCocktail(drw, ck, cellX, cellY, cellW, cellH, opts) {
     var maxw = 0;
     lab[side].forEach(function (it) {
       var p = it.txt.split(' (');
-      maxw = Math.max(maxw, textWidth(p[0] + (it.prep ? ' (' + it.prep + ')' : ''), fs),
-                            textWidth(p.length > 1 ? '(' + p[1] : '', fs));
+      maxw = Math.max(maxw, textWidth(p[0], fs), textWidth(p.length > 1 ? '(' + p[1] : '', fs));
     });
-    var tx = side === 'l' ? (cellX + 1.2 + maxw) : (dimXpre - 3.2 - maxw);
+    var tx = side === 'l' ? (cellX + 1.2 + iconW + maxw) : (dimXpre - 3.2 - iconW - maxw);
     var edge = side === 'l' ? Math.min(tx + 1.4 * S, leftX) : Math.max(tx - 1.4 * S, rightX);
     lab[side].forEach(function (it) {
       var innerHw = hwAt(g, it.yc) * S;
@@ -2035,9 +2127,13 @@ function drawCocktail(drw, ck, cellX, cellY, cellW, cellH, opts) {
       drw.path([['M', p0x, p0y], ['L', p1x, p1y], ['L', edge, it.y], ['L', tx, it.y]], { w:lw*0.8, c:INK });
       var parts = it.txt.split(' (');
       var l1 = parts[0], l2 = parts.length > 1 ? '(' + parts[1] : '';
-      if (it.prep) l1 += ' (' + it.prep + ')';
       drw.text(tx, it.y - 0.3, l1, { size:fs, anchor: side==='l' ? 'end' : 'start' });
       if (l2) drw.text(tx, it.y - 0.3 + lineH, l2, { size:fs, anchor: side==='l' ? 'end' : 'start' });
+      if (it.sym) {
+        /* Symbol außen neben der Beschriftung, kleiner Pfeil zur Beschriftung */
+        var ix = side === 'l' ? (tx - maxw - iconW * 0.55) : (tx + maxw + iconW * 0.55);
+        drawMethodSym(drw, it.sym, ix, it.y + lineH * 0.3, 4.4 * S, lw * 0.85);
+      }
     });
   });
 
@@ -2062,8 +2158,13 @@ function drawCocktail(drw, ck, cellX, cellY, cellW, cellH, opts) {
     if (gi) {
       var cnt = ck.ice === 'cubes' ? 3 : 1;
       var sgn = iceAnchor[0] >= cx ? 1 : -1;
+      if (lab.l.length !== lab.r.length) sgn = lab.l.length < lab.r.length ? -1 : 1;
       var lx = cx + sgn * (outerHw + 2.2 * S);
       var ly = Math.max(rimY + 1.5 * S, iceAnchor[1] - 2.0 * S);
+      /* Kollision mit der obersten Bezugslinien-Beschriftung dieser Seite vermeiden */
+      var sideLabs = sgn < 0 ? lab.l : lab.r;
+      sideLabs.forEach(function (it) { if (Math.abs(it.y - ly) < blockH) ly = Math.min(ly, it.y - blockH); });
+      ly = Math.max(ly, rimY - 3.0 * S);
       drw.path([['M', iceAnchor[0], iceAnchor[1]], ['L', lx - sgn * 2.0*S, ly], ['L', lx, ly]], { w:lw*0.7, c:INK });
       drw.circ(iceAnchor[0], iceAnchor[1], lw*1.4, { w:0, fill:INK });
       drw.text(lx + sgn * 0.6, ly + fs*0.35, (ck.ice === 'crushed' ? '' : cnt + ' ') + '(' + gi.key + ')',
@@ -2139,7 +2240,8 @@ function drawCocktail(drw, ck, cellX, cellY, cellW, cellH, opts) {
       drw.text(colX, y2, String(ii+1), { size:fs*0.85 });
       drw.text(colX + 4, y2, amountLabel(ing, 'cl').split(' (')[0], { size:fs*0.85 });
       drw.text(colX + 17, y2, ing.name, { size:fs*0.85 });
-      drw.text(cellX + cellW - 3, y2, '(' + (ing.prep||'') + ')', { size:fs*0.85, anchor:'end' });
+      var sy = prepSymbol(ing.prep);
+      drw.text(cellX + cellW - 3, y2, sy ? (SYMBOL_BY_ID[sy] || {}).name || '' : '', { size:fs*0.85, anchor:'end' });
     });
   }
 }
@@ -2191,17 +2293,39 @@ function collectMarks(cocktails) {
   return m;
 }
 
+/* Alle Zubereitungssymbole, die auf dem Blatt vorkommen */
+function collectSymbols(cocktails) {
+  var used = {};
+  cocktails.forEach(function (ck) {
+    var m = METHOD_BY_ID[ck.method] || METHOD_BY_ID.b;
+    used[m.sym] = true;
+    (ck.ingredients || []).forEach(function (i) {
+      var sy = prepSymbol(i.prep);
+      if (sy && sy !== m.sym) used[sy] = true;
+    });
+  });
+  return used;
+}
+
 /* ---------- Layout ---------- */
 function computeSheetLayout(project) {
   var s = project.settings, d = sheetDims(s.sheetFormat, s.orientation);
   var W = d.w, H = d.h;
   var ml = 20, mr = 10, mt = 10, mb = 10;                 /* Innenrahmen */
   var RC = Math.max(112, Math.min(190, W * 0.255));       /* Legendenspalte */
-  var TB_H = Math.max(30, Math.min(42, H * 0.085));       /* Schriftfeld-Höhe */
+  var pre = { W:W, H:H, ml:ml, mr:mr, mt:mt, mb:mb, RC:RC, areaX:ml, areaW:W - ml - mr - RC - 3 };
+  var TBM = titleBlockMetrics(pre, project);
+  var revN = Math.min(6, (s.revisions || []).length);
+  var TB_H = Math.max(TBM.h, revN ? 4.4 + revN * 4.2 : 0);  /* Höhe des unteren Streifens */
   var innerX = ml, innerY = mt, innerW = W - ml - mr, innerH = H - mt - mb;
-  var areaX = innerX, areaY = innerY;
+  var topTitleH = 0;
+  if (s.titlePosition === 'top') {
+    var tl = wrapText((s.titleBlock || {}).title || '', innerW - RC - 13, 6.0, true).slice(0, 2).length;
+    topTitleH = 9 + tl * 7.2 + (project.subtitle ? 5.2 : 0) + 4;
+  }
+  var areaX = innerX, areaY = innerY + topTitleH;
   var areaW = innerW - RC - 3;
-  var areaH = innerH - TB_H - 3;
+  var areaH = innerH - TB_H - 3 - topTitleH;
 
   var n = Math.max(1, project.cocktails.length);
   var best = null;
@@ -2233,7 +2357,7 @@ function computeSheetLayout(project) {
     if (b2) best = b2;
   }
   if (!pages.length) pages = [[]];
-  return { W:W, H:H, ml:ml, mr:mr, mt:mt, mb:mb, RC:RC, TB_H:TB_H,
+  return { W:W, H:H, ml:ml, mr:mr, mt:mt, mb:mb, RC:RC, TB_H:TB_H, TBW:TBM.w, topTitleH:topTitleH,
            areaX:areaX, areaY:areaY, areaW:areaW, areaH:areaH,
            cols:best.cols, rows:best.rows, scale:best.scale, pages:pages };
 }
@@ -2294,31 +2418,20 @@ function drawGarnishLegend(drw, x, y, w, marks) {
   return y + h + 3;
 }
 
-function drawMethodLegend(drw, x, y, w, marks) {
-  var ms = METHODS.filter(function (m) { return marks.methods[m.id]; });
+function drawMethodLegend(drw, x, y, w, usedSyms) {
+  var ms = SYMBOLS.filter(function (m) { return usedSyms[m.id]; });
   if (!ms.length) return y;
-  var rowh = 10.5, h = 5.4 + ms.length * rowh + 2;
+  var cols = w >= 150 ? 2 : 1, colw = w / cols;
+  var rows = Math.ceil(ms.length / cols), rowh = 9.0;
+  var h = 5.4 + rows * rowh + 1.5;
   drw.rect(x, y, w, h, { w:0.35 });
-  var yy = boxTitle(drw, x, y, w, 'ZUBEREITUNGSMETHODEN');
+  var yy = boxTitle(drw, x, y, w, 'ZUBEREITUNG – SYMBOL ÜBER DEM GLAS ODER AN DER SCHICHT');
   ms.forEach(function (m, i) {
-    var gy = yy + 2 + i * rowh + rowh * 0.42;
-    drawMethodSym(drw, m.sym, x + 8, gy, 7.5, 0.2);
-    drw.text(x + 16, gy + 0.9, '(' + m.id + ')  ' + m.name, { size:2.6 });
-  });
-  return y + h + 3;
-}
-
-function drawPrepLegend(drw, x, y, w, usedPreps) {
-  var ps = PREPS.filter(function (p) { return usedPreps[p.id]; });
-  if (!ps.length) return y;
-  var cols = Math.max(1, Math.floor(w / 62)), colw = w / cols;
-  var rows = Math.ceil(ps.length / cols), rowh = 3.6;
-  var h = 5.4 + rows * rowh + 2.5;
-  drw.rect(x, y, w, h, { w:0.35 });
-  var yy = boxTitle(drw, x, y, w, 'ZUBEREITUNGSKÜRZEL JE ZUTAT');
-  ps.forEach(function (p, i) {
     var c = i % cols, r = Math.floor(i / cols);
-    drw.text(x + 2 + c * colw, yy + 4.6 + r * rowh, '(' + p.id + ')  ' + p.name, { size:2.5 });
+    var gx = x + c * colw + 6.5, gy = yy + 1.5 + r * rowh + rowh * 0.45;
+    drawMethodSym(drw, m.id, gx, gy, 6.5, 0.2);
+    var lines = wrapText(m.name, colw - 16, 2.5);
+    lines.slice(0, 2).forEach(function (l, li) { drw.text(gx + 6.5, gy - 0.4 + li * 2.9, l, { size:2.5 }); });
   });
   return y + h + 3;
 }
@@ -2355,6 +2468,11 @@ function drawIngredientLegend(drw, x, y, w, marks, mono, maxH) {
   return y + h + 3;
 }
 
+function notesHeight(w, notes) {
+  var h = 5.4 + 2.2;
+  (notes || []).forEach(function (n) { h += wrapText(n, w - 12, 2.5).length * 3.2 + 0.8; });
+  return Math.max(12, h + 0.6);
+}
 function drawGeneralNotes(drw, x, y, w, h, notes) {
   drw.rect(x, y, w, h, { w:0.35 });
   var yy = boxTitle(drw, x, y, w, 'ALLGEMEINE HINWEISE');
@@ -2375,64 +2493,90 @@ function drawGeneralNotes(drw, x, y, w, h, notes) {
   return y + h;
 }
 
-/* ---------- Schriftfeld ---------- */
+/* ---------- Schriftfeld ----------
+   Nur so groß wie nötig. Titel wahlweise im Schriftfeld (oberste Zeile,
+   rechtsbündig) oder mittig über den Cocktails (settings.titlePosition = 'top'). */
+function titleBlockMetrics(L, project) {
+  var s = project.settings, tb = s.titleBlock || {};
+  var inBlock = s.titlePosition !== 'top';
+  var colR = 54;                                   /* Nummer / Blatt */
+  var qrW = s.qrInTitleBlock ? 20 : 0;
+  var midW = 96;
+  var titleLines = inBlock ? wrapText(tb.title || '', Math.min(L.RC + 70, 220) - 6, 4.6, true).slice(0, 3) : [];
+  var titleW = 0;
+  titleLines.forEach(function (l) { titleW = Math.max(titleW, textWidth(l, 4.6, true, 0.3)); });
+  var w = Math.max(qrW + (qrW ? 3 : 0) + midW + colR, inBlock ? titleW + 8 : 0, L.RC);
+  w = Math.min(w, L.W - L.ml - L.mr - 30);
+  var topH = inBlock ? (2.2 + titleLines.length * 5.4 + (project.subtitle ? 4.0 : 0) + 1.6) : 0;
+  var lowH = Math.max(qrW ? qrW + 3 : 0, 16);
+  return { w:w, h:topH + lowH, topH:topH, lowH:lowH, colR:colR, qrW:qrW, titleLines:titleLines, inBlock:inBlock };
+}
 function drawTitleBlock(drw, L, project, page, pages, qrMatrix) {
-  var tb = project.settings.titleBlock || {};
+  var s = project.settings, tb = s.titleBlock || {};
+  var M = titleBlockMetrics(L, project);
   var x1 = L.W - L.mr, y1 = L.H - L.mb;
-  var w = L.RC + 92, h = L.TB_H;
-  var x = x1 - w, y = y1 - h;
+  var w = M.w, h = M.h, x = x1 - w, y = y1 - h;
   drw.rect(x, y, w, h, { w:0.5 });
 
-  /* Aufteilung: links Titel, rechts Nummer/Blatt, ganz links QR */
-  var qrW = (qrMatrix ? h - 4 : 0);
-  var cx0 = x + (qrW ? qrW + 3 : 0);
-  if (qrMatrix) drawQrMatrix(drw, qrMatrix, x + 2, y + 2, h - 4);
+  /* Titelzeile */
+  if (M.inBlock) {
+    var ty = y + 5.6;
+    M.titleLines.forEach(function (l, i) {
+      drw.text(x1 - 3, ty + i * 5.4, l, { size:4.6, bold:true, ls:0.3, anchor:'end' });
+    });
+    var sy2 = ty + M.titleLines.length * 5.4 - 0.4;
+    if (project.subtitle) drw.text(x1 - 3, sy2, project.subtitle, { size:3.0, anchor:'end' });
+    drw.line(x, y + M.topH, x1, y + M.topH, { w:0.35 });
+  }
 
-  var colR = 62;                        /* rechte Spalte: Nummer, Blatt, Rev */
-  var midX = x1 - colR;
-  drw.line(midX, y, midX, y1, { w:0.35 });
+  /* untere Zeile: QR | Angaben | Nummer/Blatt */
+  var ly = y + M.topH, lh = M.lowH;
+  var cx0 = x;
+  if (qrMatrix && M.qrW) {
+    drawQrMatrix(drw, qrMatrix, x + 1.5, ly + 1.5, M.qrW);
+    cx0 = x + M.qrW + 3;
+    drw.line(cx0, ly, cx0, y1, { w:0.25 });
+  }
+  var midX = x1 - M.colR;
+  drw.line(midX, ly, midX, y1, { w:0.35 });
+  var r1 = cx0 + 2.5, ta = ly + 4.8, tb2 = ly + lh - 3.6;
+  drw.text(r1, ta - 1.6, 'REZEPTE VON', { size:1.9 });
+  drw.text(r1, ta + 1.6, tb.recipesBy || '—', { size:2.7 });
+  var half = (midX - cx0) / 2;
+  drw.text(r1 + half, ta - 1.6, 'ORT', { size:1.9 });
+  drw.text(r1 + half, ta + 1.6, tb.location || '—', { size:2.7 });
+  drw.text(r1, tb2 - 1.6, 'DATUM', { size:1.9 });
+  drw.text(r1, tb2 + 1.6, tb.date || '', { size:2.7 });
+  drw.text(r1 + half, tb2 - 1.6, 'BLATTFORMAT', { size:1.9 });
+  drw.text(r1 + half, tb2 + 1.6, s.sheetFormat + (s.orientation === 'portrait' ? ' hoch' : ' quer'), { size:2.7 });
+  if (!M.inBlock && project.subtitle) { /* Untertitel steht oben beim Titel */ }
 
-  /* Titel */
-  var titleLines = wrapText(tb.title || 'HAPPY HOUR', midX - cx0 - 4, 5.0, true);
-  var ty = y + 6.4;
-  titleLines.slice(0, 3).forEach(function (l, i) {
-    drw.text(cx0 + 2.5, ty + i * 5.6, l, { size:5.0, bold:true, ls:0.3 });
-  });
-  var subY = ty + Math.min(3, titleLines.length) * 5.6;
-  if (project.subtitle) drw.text(cx0 + 2.5, subY, project.subtitle, { size:3.2 });
-
-  /* Fußzeile im Schriftfeld */
-  var fy = y1 - 3.0;
-  drw.line(cx0, fy - 4.2, midX, fy - 4.2, { w:0.25 });
-  var f1 = 'REZEPTE VON: ' + (tb.recipesBy || '—');
-  var f2 = 'ORT: ' + (tb.location || '—');
-  var f3 = 'DATUM: ' + (tb.date || '');
-  drw.text(cx0 + 2.5, fy, f1, { size:2.7 });
-  drw.text(cx0 + 2.5 + Math.max(58, textWidth(f1, 2.7) + 6), fy, f2, { size:2.7 });
-  drw.text(midX - 2.5, fy, f3, { size:2.7, anchor:'end' });
-
-  /* rechte Spalte */
-  var r1 = y + h * 0.34, r2 = y + h * 0.62;
-  drw.line(midX, r1, x1, r1, { w:0.25 });
-  drw.line(midX, r2, x1, r2, { w:0.25 });
-  drw.text(midX + 2, y + 3.6, 'MASSSTAB', { size:2.2 });
-  drw.text(midX + 2, y + 7.4, 'OHNE', { size:3.2, bold:true });
-  drw.text(midX + 30, y + 3.6, 'BLATTFORMAT', { size:2.2 });
-  drw.text(midX + 30, y + 7.4, project.settings.sheetFormat +
-    (project.settings.orientation === 'portrait' ? ' hoch' : ' quer'), { size:3.2, bold:true });
-  drw.text(midX + 2, r1 + 3.6, 'ZEICHNUNGSNUMMER', { size:2.2 });
-  drw.text(midX + 2, r1 + 8.2, tb.drawingNumber || '—', { size:4.0, bold:true });
-  drw.text(midX + 2, r2 + 3.6, 'BLATT', { size:2.2 });
-  drw.text(midX + 2, r2 + 7.6, page + ' von ' + pages, { size:3.0, bold:true });
-  drw.text(midX + 30, r2 + 3.6, 'REV.', { size:2.2 });
-  drw.text(midX + 30, r2 + 7.6, String(tb.revision === undefined ? '0' : tb.revision), { size:3.0, bold:true });
+  drw.text(midX + 2.5, ta - 1.6, 'ZEICHNUNGSNUMMER', { size:1.9 });
+  drw.text(midX + 2.5, ta + 2.0, tb.drawingNumber || '—', { size:3.6, bold:true });
+  drw.text(midX + 2.5, tb2 - 1.6, 'BLATT', { size:1.9 });
+  drw.text(midX + 2.5, tb2 + 1.6, page + ' von ' + pages, { size:2.7, bold:true });
   return { x:x, y:y, w:w, h:h };
+}
+
+/* Titel über dem Zeichenfeld */
+function drawTopTitle(drw, L, project) {
+  var tb = project.settings.titleBlock || {};
+  var cx = L.areaX + L.areaW / 2, y = L.mt + 8.5;
+  var lines = wrapText(tb.title || '', L.areaW - 10, 6.0, true).slice(0, 2);
+  lines.forEach(function (l, i) { drw.text(cx, y + i * 7.2, l, { size:6.0, bold:true, ls:0.4, anchor:'middle' }); });
+  var yy = y + (lines.length - 1) * 7.2;
+  if (project.subtitle) { yy += 5.2; drw.text(cx, yy, project.subtitle, { size:3.4, anchor:'middle' }); }
+  var tw = 0; lines.forEach(function (l) { tw = Math.max(tw, textWidth(l, 6.0, true, 0.4)); });
+  drw.line(cx - tw / 2, yy + 2.2, cx + tw / 2, yy + 2.2, { w:0.4 });
+  return yy + 6;
 }
 
 function drawRevisionTable(drw, L, project, tbBox) {
   var revs = (project.settings.revisions || []).slice(-6);
   if (!revs.length) return;
-  var rowh = 4.4, headH = 4.6;
+  var rowh = 4.2, headH = 4.4;
+  var maxRows = Math.max(1, Math.floor((L.TB_H - headH) / rowh));
+  if (revs.length > maxRows) revs = revs.slice(-maxRows);
   var w = 108, h = headH + revs.length * rowh;
   var x = tbBox.x - w - 3, y = tbBox.y + tbBox.h - h;
   drw.rect(x, y, w, h, { w:0.35 });
@@ -2482,12 +2626,8 @@ function drawSheet(project, pageIdx, layout, qrMatrix) {
 
   var list = L.pages[pageIdx] || [];
   var marks = collectMarks(project.cocktails);
-  var usedPreps = {};
-  project.cocktails.forEach(function (ck) {
-    (ck.ingredients || []).forEach(function (i) {
-      String(i.prep || '').split('').forEach(function (p) { if (PREP_BY_ID[p]) usedPreps[p] = true; });
-    });
-  });
+  var usedSyms = collectSymbols(project.cocktails);
+  if (s.titlePosition === 'top') drawTopTitle(drw, L, project);
 
   /* Cocktail-Raster */
   var cw = L.areaW / L.cols, ch = L.areaH / L.rows;
@@ -2502,12 +2642,11 @@ function drawSheet(project, pageIdx, layout, qrMatrix) {
   /* Legendenspalte */
   var lx = L.W - L.mr - L.RC, ly = L.mt + 1, lw = L.RC;
   ly = drawGarnishLegend(drw, lx, ly, lw, marks);
-  ly = drawMethodLegend(drw, lx, ly, lw, marks);
-  ly = drawPrepLegend(drw, lx, ly, lw, usedPreps);
-  var notesH = Math.min(60, 12 + (s.generalNotes || []).length * 6.6);
+  ly = drawMethodLegend(drw, lx, ly, lw, usedSyms);
+  var notesH = (s.generalNotes || []).length ? notesHeight(lw, s.generalNotes) : 0;
   var notesY = L.H - L.mb - L.TB_H - 3 - notesH;
   ly = drawIngredientLegend(drw, lx, ly, lw, marks, mono, notesY - ly - 3);
-  drawGeneralNotes(drw, lx, notesY, lw, notesH, s.generalNotes);
+  if (notesH) drawGeneralNotes(drw, lx, notesY, lw, notesH, s.generalNotes);
 
   var tbBox = drawTitleBlock(drw, L, project, pageIdx + 1, L.pages.length, qrMatrix);
   drawRevisionTable(drw, L, project, tbBox);
@@ -3263,7 +3402,7 @@ function packProject(project, library) {
     v: 1,
     n: project.name, s: project.subtitle || '',
     st: [s.unit, s.sheetFormat, s.orientation, s.fitToOneSheet ? 1 : 0, s.colorMode,
-         s.showNotesTable ? 1 : 0, s.qrInTitleBlock ? 1 : 0],
+         s.showNotesTable ? 1 : 0, s.qrInTitleBlock ? 1 : 0, s.titlePosition || 'block'],
     tb: [tb.title || '', tb.recipesBy || '', tb.location || '', tb.drawingNumber || '',
          tb.revision || '0', tb.date || ''],
     rv: (s.revisions || []).map(function (r) { return [r.rev, r.text, r.date, r.by]; }),
@@ -3279,7 +3418,7 @@ function unpackProject(p) {
     settings: {
       unit: st[0] || 'cl', sheetFormat: st[1] || 'A2', orientation: st[2] || 'landscape',
       fitToOneSheet: !!st[3], colorMode: st[4] || 'color', showNotesTable: !!st[5],
-      qrInTitleBlock: !!st[6],
+      qrInTitleBlock: !!st[6], titlePosition: st[7] || 'block',
       titleBlock: { title: tb[0] || '', recipesBy: tb[1] || '', location: tb[2] || '',
                     drawingNumber: tb[3] || '', revision: tb[4] || '0', date: tb[5] || '' },
       revisions: (p.rv || []).map(function (r) { return { rev:r[0], text:r[1], date:r[2], by:r[3] }; }),
@@ -3347,6 +3486,7 @@ function newProject(name) {
     settings: {
       unit: 'cl', sheetFormat: 'A2', orientation: 'landscape',
       fitToOneSheet: false, colorMode: 'color', showNotesTable: false, qrInTitleBlock: true,
+      titlePosition: 'block',
       titleBlock: {
         title: 'HAPPY HOUR – ANLAGENSCHEMA & DETAILS DER MIXGETRÄNKE',
         recipesBy: 'Selbsternannter Barmeister',
@@ -3388,6 +3528,7 @@ var Store = {
       p.settings.generalNotes = p.settings.generalNotes || DEFAULT_NOTES.slice();
       p.settings.revisions = p.settings.revisions || [];
       p.settings.titleBlock = p.settings.titleBlock || newProject().settings.titleBlock;
+      p.settings.titlePosition = p.settings.titlePosition || 'block';
       p.cocktails = p.cocktails || [];
     });
     if (!s.projects.some(function (p) { return p.id === s.activeId; })) s.activeId = s.projects[0].id;
@@ -3730,6 +3871,8 @@ function renderOutput(root) {
     field('Darstellung', selectOf([['color', 'Farbe'], ['bw', 'Schwarzweiß']], s.colorMode,
       function (e) { s.colorMode = e.target.value; changed(); }))
   ]));
+  b.appendChild(field('Titel', selectOf([['block', 'im Schriftfeld, rechtsbündig'], ['top', 'mittig über den Cocktails']],
+    s.titlePosition || 'block', function (e) { s.titlePosition = e.target.value; UI.page = 0; changed(); })));
   [['fitToOneSheet', 'Alles auf ein Blatt zwingen (kleinerer Maßstab)'],
    ['showNotesTable', 'Zutatentabelle unter jeder Zeichnung'],
    ['qrInTitleBlock', 'QR-Code im Schriftfeld']].forEach(function (o) {
@@ -3824,7 +3967,7 @@ function renderOutput(root) {
   right.appendChild(vbar);
   right.appendChild(vp);
 
-  var acts = el('div', { class:'pad row' }, [
+  var acts = el('div', { class:'pad actrow' }, [
     el('button', { class:'btn primary', onclick:exportPdf, text:'PDF erzeugen' }),
     el('button', { class:'btn', onclick:printSheets, text:'Drucken' }),
     el('button', { class:'btn', onclick:exportJson, text:'Projekt sichern (JSON)' }),

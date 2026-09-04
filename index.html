@@ -394,6 +394,39 @@
   .lt-editable:empty:before{content:attr(data-placeholder);color:var(--muted);opacity:.7}
   .lt-editable ul,.lt-editable ol{padding-left:22px;margin:6px 0}
   .lt-form select.edit-select{margin-top:0}
+  .lt-row-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .lt-mini{flex:1;min-width:110px;background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    border-radius:12px;padding:11px 10px;font-size:14px;font-weight:700}
+  .lt-mini.danger{color:var(--coral)}
+  .lt-check{display:flex;align-items:center;gap:10px;color:var(--text);font-size:15px;
+    font-weight:600;margin:12px 0 4px}
+  .lt-check input{width:22px;height:22px;accent-color:var(--blue);flex-shrink:0}
+  .lt-ab-list{max-height:52vh;overflow-y:auto;margin-bottom:6px}
+  .lt-ab-row{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:14px;
+    padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;color:var(--text);text-align:left}
+  .lt-ab-row .ab-info{min-width:0;flex:1}
+  .lt-ab-row .ab-n{font-weight:800;font-size:15px}
+  .lt-ab-row .ab-a{color:var(--muted);font-size:12px;margin-top:2px}
+  .lt-ab-row .ab-del{background:none;border:none;color:var(--coral);font-size:18px;padding:4px 8px;flex-shrink:0}
+  .lt-sig-preview{background:#fff;border:1px dashed var(--line);border-radius:12px;min-height:70px;
+    display:flex;align-items:center;justify-content:center;margin-top:8px;padding:8px}
+  .lt-sig-preview img{max-height:70px;max-width:100%}
+  .lt-sig-preview .none{color:#888;font-size:13px}
+  .lt-sign-canvas{width:100%;height:190px;background:#fff;border-radius:12px;touch-action:none;display:block}
+  /* Fenstermarken (DIN-Umschlag mit Sichtfenster) */
+  .lt-preview-box.winmarks{position:relative}
+  .lt-preview-box.winmarks .p-to{position:relative;outline:2px dashed var(--coral);outline-offset:6px;border-radius:2px}
+  .lt-preview-box.winmarks .p-to:after{content:'Sichtfenster';position:absolute;top:-19px;left:0;
+    font-family:system-ui,sans-serif;font-size:9px;font-weight:700;color:#C52B41;letter-spacing:.04em}
+  .lt-preview-box .p-info{float:right;width:42%;font-size:10px;line-height:1.5;
+    border:.5px solid #bbb;padding:6px 8px;margin:0 0 10px 10px}
+  .lt-preview-box .p-info b{display:block;font-size:8px;text-transform:uppercase;letter-spacing:.06em;color:#555}
+  .lt-preview-box .p-note{font-weight:bold;font-size:11px;margin-bottom:5px}
+  .lt-preview-box .p-attach{margin-top:20px;font-size:11px}
+  .lt-preview-box .p-attach b{display:block;margin-bottom:3px}
+  .lt-preview-box .p-sig img{max-height:52px;margin:6px 0 -4px}
+  .lt-preview-box .p-page2{border-top:1px dashed #bbb;margin-top:22px;padding-top:14px}
+  .lt-preview-box .p-pagenum{text-align:right;font-size:9px;color:#666;margin-bottom:10px}
   /* ---------- Briefe ---------- */
   .lt-form{display:flex;flex-direction:column;margin-bottom:16px}
   .lt-form label{font-size:13px;font-weight:700;color:var(--muted);margin:12px 0 6px}
@@ -641,8 +674,14 @@
     </div>
 
     <div class="lt-sep">Empfänger</div>
+    <div class="lt-row-btns">
+      <button type="button" class="lt-mini" onclick="ltOpenAddressBook()">📇 Adressbuch</button>
+      <button type="button" class="lt-mini" onclick="ltSaveRecipient()">＋ Empfänger merken</button>
+    </div>
+    <label>Postvermerk (optional)</label>
+    <input id="lt-r-note" type="text" placeholder="z. B. Einschreiben · Persönlich/Vertraulich" oninput="ltSaveDraft()">
     <label>Name / Firma</label>
-    <input id="lt-r-name" type="text" placeholder="Firma Muster GmbH" oninput="ltSaveDraft()">
+    <input id="lt-r-name" type="text" placeholder="Firma Muster GmbH" oninput="ltRecipientChanged()">
     <label>Zusatz (optional)</label>
     <input id="lt-r-extra" type="text" placeholder="z. B. Abteilung Kundenservice" oninput="ltSaveDraft()">
     <label>Straße und Hausnummer</label>
@@ -650,11 +689,33 @@
     <label>PLZ und Ort</label>
     <input id="lt-r-city" type="text" placeholder="10115 Berlin" oninput="ltSaveDraft()">
 
+    <div class="lt-sep">Datum &amp; Ort</div>
+    <label class="lt-check"><input type="checkbox" id="lt-date-auto" checked onchange="ltToggleDateAuto()"> Heutiges Datum verwenden</label>
+    <div id="lt-date-manual" style="display:none">
+      <label>Datum</label>
+      <input id="lt-date" type="date" oninput="ltSaveDraft()">
+    </div>
+    <label>Ort (leer = Ort aus dem Profil)</label>
+    <input id="lt-place" type="text" placeholder="z. B. Stuttgart" oninput="ltSaveDraft()">
+
+    <div class="lt-sep">Info-Block rechts</div>
+    <label class="lt-check"><input type="checkbox" id="lt-info-on" onchange="ltToggleInfo()"> Info-Block anzeigen</label>
+    <div id="lt-info-fields" style="display:none">
+      <label>Kundennummer</label>
+      <input id="lt-i-kunde" type="text" placeholder="z. B. 4711" oninput="ltSaveDraft()">
+      <label>Vertragsnummer</label>
+      <input id="lt-i-vertrag" type="text" placeholder="z. B. V-12345" oninput="ltSaveDraft()">
+      <label>Aktenzeichen</label>
+      <input id="lt-i-akte" type="text" placeholder="z. B. AZ 2026/07" oninput="ltSaveDraft()">
+      <label>Bearbeiter / Ansprechpartner</label>
+      <input id="lt-i-bearb" type="text" placeholder="z. B. Frau Meier" oninput="ltSaveDraft()">
+    </div>
+
     <div class="lt-sep">Brief</div>
     <label>Betreff</label>
     <input id="lt-subject" type="text" placeholder="Kündigung meines Vertrags Nr. 12345" oninput="ltSaveDraft()">
-    <label>Anrede</label>
-    <input id="lt-salutation" type="text" placeholder="Sehr geehrte Damen und Herren," oninput="ltSaveDraft()">
+    <label>Anrede <span class="tap-hint">– wird aus dem Empfänger vorgeschlagen</span></label>
+    <input id="lt-salutation" type="text" placeholder="Sehr geehrte Damen und Herren," oninput="ltSalutationEdited()">
     <label>Brieftext</label>
     <div class="lt-toolbar">
       <button type="button" onclick="ltFormat('bold')" style="font-weight:900">F</button>
@@ -669,6 +730,19 @@
       oninput="ltSaveDraft()" onpaste="ltHandlePaste(event)"></div>
     <label>Grußformel</label>
     <input id="lt-closing" type="text" placeholder="Mit freundlichen Grüßen" oninput="ltSaveDraft()">
+
+    <div class="lt-sep">Unterschrift</div>
+    <div id="lt-sig-preview" class="lt-sig-preview"></div>
+    <div class="lt-row-btns">
+      <button type="button" class="lt-mini" onclick="ltOpenSignPad()">✍️ Malen</button>
+      <button type="button" class="lt-mini" onclick="document.getElementById('lt-sig-file').click()">🖼 Bild wählen</button>
+      <button type="button" class="lt-mini danger" onclick="ltClearSignature()">✕ Entfernen</button>
+    </div>
+    <input type="file" id="lt-sig-file" accept="image/*" style="display:none" onchange="ltSignatureFile(event)">
+
+    <div class="lt-sep">Anlagen</div>
+    <label>Anlagen (eine pro Zeile, leer = keine)</label>
+    <textarea id="lt-attach" rows="3" placeholder="Kopie des Vertrags&#10;Kündigungsbestätigung" oninput="ltSaveDraft()"></textarea>
   </div>
 
   <button class="primary" style="background:var(--violet);color:#fff" onclick="show('scr-lt-ai')">✨ Text mit KI entwerfen</button>
@@ -722,9 +796,38 @@
       <div class="sub">DIN-5008-Layout</div>
     </div>
   </header>
+  <div class="toggle">
+    <button id="lt-win-off" class="on" onclick="ltSetWindowMarks(false)">Normal</button>
+    <button id="lt-win-on" onclick="ltSetWindowMarks(true)">Fenstermarken</button>
+  </div>
   <div id="lt-preview-box" class="lt-preview-box"></div>
   <button class="primary" onclick="ltPrint()">🖨 Drucken / Als PDF sichern</button>
   <button class="ghost" onclick="ltCopyLetter()">📋 Brieftext kopieren</button>
+</div>
+
+<!-- ========== BRIEFE: ADRESSBUCH ========== -->
+<div class="modal" id="lt-ab-modal" onclick="if(event.target===this)ltCloseAddressBook()">
+  <div class="sheet">
+    <h3 style="margin-bottom:14px">Adressbuch</h3>
+    <div id="lt-ab-list" class="lt-ab-list"></div>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="ltCloseAddressBook()">Schließen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== BRIEFE: UNTERSCHRIFT MALEN ========== -->
+<div class="modal" id="lt-sign-modal" onclick="if(event.target===this)ltCloseSignPad()">
+  <div class="sheet">
+    <h3 style="margin-bottom:6px">Unterschrift malen</h3>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:10px">Mit dem Finger im weißen Feld unterschreiben.</p>
+    <canvas id="lt-sign-canvas" class="lt-sign-canvas"></canvas>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="ltSignPadClear()">Löschen</button>
+      <button class="cancel" onclick="ltCloseSignPad()">Abbrechen</button>
+      <button class="ok" onclick="ltSignPadSave()">Übernehmen</button>
+    </div>
+  </div>
 </div>
 
 <!-- ========== ORDNER: SPIELE ========== -->
@@ -1276,6 +1379,7 @@ function show(id){
   if(id==='scr-lt-profiles') ltRenderProfiles();
   if(id==='scr-lt-editor') ltRenderEditor();
   if(id==='scr-lt-ai') ltSetTone(ltTone);
+  if(id==='scr-lt-preview') ltSetWindowMarks(ltWinMarks);
   if(id==='scr-poker'){ pkRenderSlots(); poker.result?pkRenderResult():document.getElementById('pk-result').innerHTML='<div class="pk-result-empty">Wähle deine 2 Karten, um die Gewinnwahrscheinlichkeit zu sehen.</div>'; }
 }
 function openFlip7(){
@@ -1955,7 +2059,11 @@ function padUpdateDisplay(){
 /* ==================== BRIEFE ==================== */
 let letterProfiles = [];      // [{id, name, blob:{salt,iv,data}}]
 let ltActive = null;          // {id, name, sender:{...}}
-let ltDraft = { rName:'', rExtra:'', rStreet:'', rCity:'', subject:'', salutation:'', body:'', closing:'', font:'georgia', size:11 };
+let ltDraft = { rName:'', rExtra:'', rStreet:'', rCity:'', rNote:'', subject:'', salutation:'', body:'', closing:'',
+  font:'georgia', size:11, dateAuto:true, date:'', place:'', infoOn:false,
+  iKunde:'', iVertrag:'', iAkte:'', iBearb:'', attach:'', sig:'', salManual:false };
+let ltAddressBook = [];   // [{id,name,extra,street,city}]
+let ltWinMarks = false;
 // Schriftarten: Anzeigename + CSS-Stack (systemweit verfügbar, keine Web-Fonts nötig)
 const LT_FONTS = [
   {key:'georgia',   label:'Georgia (Serif, klassisch)', css:"Georgia,'Times New Roman',serif"},
@@ -1967,6 +2075,184 @@ const LT_FONTS = [
   {key:'courier',   label:'Courier (Schreibmaschine)',   css:"'Courier New',Courier,monospace"},
 ];
 function ltFontCSS(key){ const f=LT_FONTS.find(x=>x.key===key); return f?f.css:LT_FONTS[0].css; }
+
+/* ---------- Adressbuch ---------- */
+async function ltSaveAB(){
+  const json=JSON.stringify(ltAddressBook);
+  try{ await window.storage.set('letter-addressbook', json); return; }catch(e){}
+  try{ localStorage.setItem('letter-addressbook', json); }catch(e){}
+}
+async function ltLoadAB(){
+  let json=null;
+  try{ const r=await window.storage.get('letter-addressbook'); if(r&&r.value) json=r.value; }catch(e){}
+  if(!json){ try{ json=localStorage.getItem('letter-addressbook'); }catch(e){} }
+  if(json){ try{ const a=JSON.parse(json); if(Array.isArray(a)) ltAddressBook=a; }catch(e){} }
+}
+function ltSaveRecipient(){
+  ltSaveDraft();
+  const d=ltDraft;
+  if(!d.rName.trim()){ notify('Bitte zuerst einen Empfängernamen eingeben.'); return; }
+  const exists=ltAddressBook.find(a=>a.name===d.rName && a.street===d.rStreet);
+  if(exists){ notify('Dieser Empfänger ist bereits gespeichert.'); return; }
+  ltAddressBook.push({ id:Date.now()+''+Math.random(), name:d.rName, extra:d.rExtra, street:d.rStreet, city:d.rCity });
+  ltSaveAB();
+  notify('Empfänger im Adressbuch gespeichert.');
+}
+function ltOpenAddressBook(){
+  ltRenderAB();
+  document.getElementById('lt-ab-modal').classList.add('open');
+}
+function ltCloseAddressBook(){ document.getElementById('lt-ab-modal').classList.remove('open'); }
+function ltRenderAB(){
+  const list=document.getElementById('lt-ab-list');
+  list.innerHTML = ltAddressBook.length ? ltAddressBook.map(a=>`
+    <div class="lt-ab-row">
+      <div class="ab-info" onclick="ltUseAddress('${a.id}')">
+        <div class="ab-n">${esc(a.name)}</div>
+        <div class="ab-a">${esc([a.extra,a.street,a.city].filter(Boolean).join(' · '))}</div>
+      </div>
+      <button class="ab-del" onclick="event.stopPropagation();ltDeleteAddress('${a.id}')">✕</button>
+    </div>`).join('')
+    : '<div class="empty">Noch keine Empfänger gespeichert.<br>Fülle die Empfängerfelder aus und tippe auf „Empfänger merken".</div>';
+}
+function ltUseAddress(id){
+  const a=ltAddressBook.find(x=>x.id===id);
+  if(!a) return;
+  ltDraft.rName=a.name; ltDraft.rExtra=a.extra; ltDraft.rStreet=a.street; ltDraft.rCity=a.city;
+  ltDraft.salManual=false;
+  ltSaveDraftStore();
+  ltCloseAddressBook();
+  ltRenderEditor();
+  notify('Empfänger übernommen.');
+}
+function ltDeleteAddress(id){
+  ltAddressBook=ltAddressBook.filter(x=>x.id!==id);
+  ltSaveAB(); ltRenderAB();
+}
+
+/* ---------- Automatische Anrede ---------- */
+function ltAutoSalutation(name){
+  const n=(name||'').trim();
+  if(!n) return 'Sehr geehrte Damen und Herren,';
+  if(/\b(GmbH|AG|KG|OHG|mbH|e\.?V\.?|UG|SE|Co\.|Inc|Ltd|Stadt|Gemeinde|Amt|Behörde|Finanzamt|Versicherung|Bank|Kasse)\b/i.test(n))
+    return 'Sehr geehrte Damen und Herren,';
+  const mH=n.match(/\bHerrn?\s+(?:Dr\.\s*|Prof\.\s*)*([A-ZÄÖÜ][\wÄÖÜäöüß-]+)(?:\s+([A-ZÄÖÜ][\wÄÖÜäöüß-]+))?/);
+  if(mH) return 'Sehr geehrter Herr '+(mH[2]||mH[1])+',';
+  const mF=n.match(/\bFrau\s+(?:Dr\.\s*|Prof\.\s*)*([A-ZÄÖÜ][\wÄÖÜäöüß-]+)(?:\s+([A-ZÄÖÜ][\wÄÖÜäöüß-]+))?/);
+  if(mF) return 'Sehr geehrte Frau '+(mF[2]||mF[1])+',';
+  return 'Sehr geehrte Damen und Herren,';
+}
+function ltRecipientChanged(){
+  // Anrede nur vorschlagen, solange sie nicht von Hand geändert wurde
+  if(!ltDraft.salManual){
+    const name=document.getElementById('lt-r-name').value;
+    const sal=ltAutoSalutation(name);
+    const el=document.getElementById('lt-salutation');
+    if(el) el.value=sal;
+  }
+  ltSaveDraft();
+}
+function ltSalutationEdited(){
+  ltDraft.salManual=true;
+  ltSaveDraft();
+}
+
+/* ---------- Datum, Ort, Info-Block ---------- */
+function ltToggleDateAuto(){
+  const on=document.getElementById('lt-date-auto').checked;
+  document.getElementById('lt-date-manual').style.display = on?'none':'';
+  ltSaveDraft();
+}
+function ltToggleInfo(){
+  const on=document.getElementById('lt-info-on').checked;
+  document.getElementById('lt-info-fields').style.display = on?'':'none';
+  ltSaveDraft();
+}
+
+/* ---------- Unterschrift ---------- */
+let ltSignCtx=null, ltSignDrawing=false, ltSignHasInk=false;
+function ltRenderSigPreview(){
+  const box=document.getElementById('lt-sig-preview');
+  if(!box) return;
+  box.innerHTML = ltDraft.sig ? `<img src="${ltDraft.sig}" alt="Unterschrift">`
+    : '<span class="none">Keine Unterschrift hinterlegt</span>';
+}
+function ltClearSignature(){
+  ltDraft.sig=''; ltSaveDraftStore(); ltRenderSigPreview(); notify('Unterschrift entfernt.');
+}
+function ltSignatureFile(e){
+  const f=e.target.files && e.target.files[0];
+  if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    // Bild verkleinern, damit der Speicher nicht überläuft
+    const img=new Image();
+    img.onload=()=>{
+      const maxW=600, sc=Math.min(1,maxW/img.width);
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      ltDraft.sig=cv.toDataURL('image/png');
+      ltSaveDraftStore(); ltRenderSigPreview(); notify('Unterschrift übernommen.');
+    };
+    img.onerror=()=>notify('Bild konnte nicht geladen werden.');
+    img.src=r.result;
+  };
+  r.readAsDataURL(f);
+  e.target.value='';
+}
+function ltOpenSignPad(){
+  const modal=document.getElementById('lt-sign-modal');
+  modal.classList.add('open');
+  setTimeout(()=>{
+    const cv=document.getElementById('lt-sign-canvas');
+    const rect=cv.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+    cv.width=Math.round(rect.width*dpr); cv.height=Math.round(rect.height*dpr);
+    ltSignCtx=cv.getContext('2d');
+    ltSignCtx.scale(dpr,dpr);
+    ltSignCtx.fillStyle='#fff'; ltSignCtx.fillRect(0,0,rect.width,rect.height);
+    ltSignCtx.strokeStyle='#111'; ltSignCtx.lineWidth=2.5;
+    ltSignCtx.lineCap='round'; ltSignCtx.lineJoin='round';
+    ltSignHasInk=false;
+    const pos=ev=>{
+      const r=cv.getBoundingClientRect();
+      const t=ev.touches?ev.touches[0]:ev;
+      return {x:t.clientX-r.left, y:t.clientY-r.top};
+    };
+    const start=ev=>{ ev.preventDefault(); ltSignDrawing=true; ltSignHasInk=true;
+      const p=pos(ev); ltSignCtx.beginPath(); ltSignCtx.moveTo(p.x,p.y); };
+    const move=ev=>{ if(!ltSignDrawing) return; ev.preventDefault();
+      const p=pos(ev); ltSignCtx.lineTo(p.x,p.y); ltSignCtx.stroke(); };
+    const end=ev=>{ ltSignDrawing=false; };
+    cv.onpointerdown=start; cv.onpointermove=move; cv.onpointerup=end; cv.onpointerleave=end;
+    cv.ontouchstart=start; cv.ontouchmove=move; cv.ontouchend=end;
+  },120);
+}
+function ltSignPadClear(){
+  const cv=document.getElementById('lt-sign-canvas');
+  if(!ltSignCtx||!cv) return;
+  const rect=cv.getBoundingClientRect();
+  ltSignCtx.fillStyle='#fff'; ltSignCtx.fillRect(0,0,rect.width,rect.height);
+  ltSignHasInk=false;
+}
+function ltCloseSignPad(){ document.getElementById('lt-sign-modal').classList.remove('open'); }
+function ltSignPadSave(){
+  if(!ltSignHasInk){ notify('Bitte zuerst unterschreiben.'); return; }
+  const cv=document.getElementById('lt-sign-canvas');
+  ltDraft.sig=cv.toDataURL('image/png');
+  ltSaveDraftStore(); ltRenderSigPreview(); ltCloseSignPad();
+  notify('Unterschrift übernommen.');
+}
+
+/* ---------- Fenstermarken ---------- */
+function ltSetWindowMarks(on){
+  ltWinMarks=on;
+  document.getElementById('lt-win-off').classList.toggle('on',!on);
+  document.getElementById('lt-win-on').classList.toggle('on',on);
+  const box=document.getElementById('lt-preview-box');
+  if(box) box.classList.toggle('winmarks',on);
+}
 
 /* ---------- Textformatierung ---------- */
 function ltFormat(cmd){
@@ -2160,10 +2446,22 @@ function ltRenderEditor(){
      (s.mail?`<br>${esc(s.mail)}`:'') + (s.phone?`<br>${esc(s.phone)}`:'');
   const set=(id,val)=>{ const el=document.getElementById(id); if(el) el.value=val||''; };
   set('lt-r-name',ltDraft.rName); set('lt-r-extra',ltDraft.rExtra);
-  set('lt-r-street',ltDraft.rStreet); set('lt-r-city',ltDraft.rCity);
+  set('lt-r-street',ltDraft.rStreet); set('lt-r-city',ltDraft.rCity); set('lt-r-note',ltDraft.rNote);
   set('lt-subject',ltDraft.subject);
   set('lt-salutation',ltDraft.salutation||'Sehr geehrte Damen und Herren,');
   set('lt-closing',ltDraft.closing||'Mit freundlichen Grüßen');
+  set('lt-place',ltDraft.place); set('lt-date',ltDraft.date);
+  set('lt-i-kunde',ltDraft.iKunde); set('lt-i-vertrag',ltDraft.iVertrag);
+  set('lt-i-akte',ltDraft.iAkte); set('lt-i-bearb',ltDraft.iBearb);
+  set('lt-attach',ltDraft.attach);
+  // Datum-Automatik
+  const dAuto=document.getElementById('lt-date-auto');
+  if(dAuto){ dAuto.checked = ltDraft.dateAuto!==false;
+    document.getElementById('lt-date-manual').style.display = dAuto.checked?'none':''; }
+  // Info-Block
+  const iOn=document.getElementById('lt-info-on');
+  if(iOn){ iOn.checked = !!ltDraft.infoOn;
+    document.getElementById('lt-info-fields').style.display = iOn.checked?'':'none'; }
   // Schriftauswahl
   const fontSel=document.getElementById('lt-font');
   if(fontSel) fontSel.innerHTML=LT_FONTS.map(f=>
@@ -2174,20 +2472,31 @@ function ltRenderEditor(){
   const bodyEl=document.getElementById('lt-body');
   if(bodyEl) bodyEl.innerHTML=ltDraft.body||'';
   ltApplyEditorFont();
+  ltRenderSigPreview();
 }
 function ltSaveDraft(){
   const v=id=>{ const el=document.getElementById(id); return el?el.value:''; };
+  const chk=id=>{ const el=document.getElementById(id); return el?el.checked:false; };
   const bodyEl=document.getElementById('lt-body');
   ltDraft={ rName:v('lt-r-name'), rExtra:v('lt-r-extra'), rStreet:v('lt-r-street'), rCity:v('lt-r-city'),
-    subject:v('lt-subject'), salutation:v('lt-salutation'),
+    rNote:v('lt-r-note'), subject:v('lt-subject'), salutation:v('lt-salutation'),
     body: bodyEl ? ltSanitize(bodyEl.innerHTML) : (ltDraft.body||''),
     closing:v('lt-closing'),
-    font: ltDraft.font||'georgia', size: ltDraft.size||11 };
+    font: ltDraft.font||'georgia', size: ltDraft.size||11,
+    dateAuto: chk('lt-date-auto'), date:v('lt-date'), place:v('lt-place'),
+    infoOn: chk('lt-info-on'), iKunde:v('lt-i-kunde'), iVertrag:v('lt-i-vertrag'),
+    iAkte:v('lt-i-akte'), iBearb:v('lt-i-bearb'),
+    attach:v('lt-attach'), sig: ltDraft.sig||'', salManual: !!ltDraft.salManual };
   ltSaveDraftStore();
 }
 function ltClearDraft(){
   ask('Brief leeren?', ()=>{
-    ltDraft={ rName:'', rExtra:'', rStreet:'', rCity:'', subject:'', salutation:'Sehr geehrte Damen und Herren,', body:'', closing:'Mit freundlichen Grüßen', font:ltDraft.font||'georgia', size:ltDraft.size||11 };
+    ltDraft={ rName:'', rExtra:'', rStreet:'', rCity:'', rNote:'', subject:'',
+      salutation:'Sehr geehrte Damen und Herren,', body:'', closing:'Mit freundlichen Grüßen',
+      font:ltDraft.font||'georgia', size:ltDraft.size||11,
+      dateAuto:true, date:'', place:ltDraft.place||'', infoOn:false,
+      iKunde:'', iVertrag:'', iAkte:'', iBearb:'', attach:'',
+      sig:ltDraft.sig||'', salManual:false };
     ltSaveDraftStore(); ltRenderEditor(); notify('Brief geleert.');
   }, 'Ja, leeren', null,
   {detail:'Empfänger, Betreff und Text werden gelöscht. Dein Profil bleibt erhalten.', noLabel:'Nein, behalten'});
@@ -2250,17 +2559,45 @@ function ltLetterDate(){
   const d=new Date();
   return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
 }
+function ltEffectiveDate(){
+  if(ltDraft.dateAuto===false && ltDraft.date){
+    const p=ltDraft.date.split('-');
+    if(p.length===3) return p[2]+'.'+p[1]+'.'+p[0];
+  }
+  return ltLetterDate();
+}
+function ltEffectivePlace(){
+  if(ltDraft.place && ltDraft.place.trim()) return ltDraft.place.trim();
+  const c=(ltActive&&ltActive.sender&&ltActive.sender.city)||'';
+  return c.replace(/^\d{4,5}\s*/,'').trim();
+}
 function ltBuildPreviewHTML(){
   const s=ltActive.sender, d=ltDraft;
   const fromLine=[s.name,s.street,s.city].filter(Boolean).join(' · ');
   const to=[d.rName,d.rExtra,d.rStreet,d.rCity].filter(Boolean).join('\n');
   const contact=[s.mail,s.phone].filter(Boolean).join(' · ');
+  const place=ltEffectivePlace();
+  // Info-Block rechts (optional)
+  let info='';
+  if(d.infoOn){
+    const rows=[['Kundennummer',d.iKunde],['Vertragsnummer',d.iVertrag],['Aktenzeichen',d.iAkte],['Bearbeiter',d.iBearb]]
+      .filter(r=>r[1]&&r[1].trim());
+    if(rows.length) info=`<div class="p-info">${rows.map(r=>`<b>${esc(r[0])}</b>${esc(r[1])}`).join('')}</div>`;
+  }
+  // Anlagen
+  const atts=(d.attach||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  const attachHTML = atts.length
+    ? `<div class="p-attach"><b>${atts.length>1?'Anlagen':'Anlage'}</b>${atts.map(a=>esc(a)).join('<br>')}</div>` : '';
+  const sigHTML = d.sig ? `<img src="${d.sig}" alt="Unterschrift">` : '';
+  const noteHTML = (d.rNote&&d.rNote.trim()) ? `<div class="p-note">${esc(d.rNote.trim())}</div>` : '';
   return `<div class="p-from">${esc(fromLine)}</div>
-    <div class="p-to">${esc(to)}</div>
-    <div class="p-date">${esc((s.city||'').replace(/^\d+\s*/,''))}${s.city?', ':''}${ltLetterDate()}</div>
+    ${info}
+    <div class="p-to">${noteHTML}${esc(to)}</div>
+    <div class="p-date">${esc(place)}${place?', ':''}${ltEffectiveDate()}</div>
     <div class="p-subject">${esc(d.subject)}</div>
     <div class="p-body"><div>${esc(d.salutation)}</div><div><br></div>${ltSanitize(d.body||'')}</div>
-    <div class="p-sign">${esc(d.closing)}<div class="nm">${esc(s.name)}</div>${contact?`<div style="font-size:11px;color:#555;margin-top:14px">${esc(contact)}</div>`:''}</div>`;
+    <div class="p-sign">${esc(d.closing)}<div class="nm">${sigHTML}</div><div>${esc(s.name)}</div>${contact?`<div style="font-size:11px;color:#555;margin-top:14px">${esc(contact)}</div>`:''}</div>
+    ${attachHTML}`;
 }
 function ltPreview(){
   if(!ltActive){ show('scr-lt-profiles'); return; }
@@ -2269,27 +2606,46 @@ function ltPreview(){
   box.innerHTML=ltBuildPreviewHTML();
   box.style.fontFamily=ltFontCSS(ltDraft.font);
   box.style.fontSize=Math.round((ltDraft.size||11)*1.18)+'px';
+  box.classList.toggle('winmarks', ltWinMarks);
   show('scr-lt-preview');
 }
 function ltPrint(){
   const w=window.open('','_blank');
   if(!w){ notify('Bitte Pop-ups für diese Seite erlauben.'); return; }
   const fam=ltFontCSS(ltDraft.font), size=(ltDraft.size||11);
+  const s=ltActive.sender, d=ltDraft;
+  // Kopfzeile für Folgeseiten (DIN 5008: Name, Betreff, Seitenzahl)
+  const contHead=esc([s.name, d.subject].filter(Boolean).join(' · '));
   w.document.write(`<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Brief</title>
     <style>
       @page{size:A4;margin:25mm 20mm 20mm 25mm}
-      body{font-family:${fam};font-size:${size}pt;line-height:1.5;color:#000}
+      @page:first{margin-top:25mm}
+      body{font-family:${fam};font-size:${size}pt;line-height:1.5;color:#000;counter-reset:page 1}
       .p-from{font-size:${Math.max(7,size-3)}pt;color:#444;border-bottom:.5pt solid #888;padding-bottom:2mm;margin-bottom:10mm}
+      .p-info{float:right;width:45mm;font-size:${Math.max(7,size-2)}pt;line-height:1.45;
+        border:.5pt solid #999;padding:2mm 3mm;margin:0 0 4mm 5mm}
+      .p-info b{display:block;font-size:${Math.max(6,size-3.5)}pt;text-transform:uppercase;letter-spacing:.04em;color:#555}
+      .p-note{font-weight:bold;font-size:${Math.max(8,size-1)}pt;margin-bottom:1.5mm}
       .p-to{margin-bottom:20mm;white-space:pre-line}
-      .p-date{text-align:right;margin-bottom:14mm}
+      .p-date{text-align:right;margin-bottom:14mm;clear:both}
       .p-subject{font-weight:bold;margin-bottom:8mm}
       .p-body{margin-bottom:12mm}
       .p-body ul,.p-body ol{padding-left:6mm;margin:2mm 0}
-      .p-sign{white-space:pre-line}
-      .p-sign .nm{margin-top:18mm}
-    </style></head><body>${ltBuildPreviewHTML()}</body></html>`);
+      .p-sign{white-space:pre-line;page-break-inside:avoid}
+      .p-sign .nm{margin-top:6mm;min-height:14mm}
+      .p-sign .nm img{max-height:16mm}
+      .p-attach{margin-top:10mm;font-size:${Math.max(8,size-1)}pt;page-break-inside:avoid}
+      .p-attach b{display:block;margin-bottom:1mm}
+      .pagefoot{position:fixed;bottom:-14mm;left:0;right:0;text-align:right;
+        font-size:${Math.max(7,size-3)}pt;color:#666}
+      .pagefoot:after{counter-increment:page;content:'Seite ' counter(page)}
+      @media print{ .pagefoot{display:block} }
+    </style></head><body>
+      <div class="pagefoot"></div>
+      ${ltBuildPreviewHTML()}
+    </body></html>`);
   w.document.close();
-  setTimeout(()=>{ w.focus(); w.print(); },400);
+  setTimeout(()=>{ w.focus(); w.print(); },500);
 }
 function ltCopyLetter(){
   const s=ltActive.sender, d=ltDraft;
@@ -3357,6 +3713,7 @@ trLoad();
 pkLoad();
 ltLoad();
 ltLoadDraft();
+ltLoadAB();
 </script>
 </body>
 </html>
