@@ -811,6 +811,18 @@ C('sangria','Sangria','Sekt & Wein','Wein/Sekt','karaffe','cubes','b',
   ['orange_ganz','zitrone_ganz'],['party','fruchtig'],
   { note:'Mindestens zwei Stunden kalt ziehen lassen, erst vor dem Servieren mit Soda auffüllen.' }),
 
+C('mexikana','Mexikana','Highball','Tequila','highball','cubes','f',
+  'Tequila mit Ananas und Zitrone, Grenadine zieht nach unten.',
+  [['grenadine',1,'cl','l'],['zitronensaft',2,'cl','f'],['ananassaft',6,'cl','f'],
+   ['tequila',4,'cl','f']],
+  ['ananasstueck','limettenscheibe'],['fruchtig','erfrischend']),
+
+C('tequila_gold','Tequila Gold','Highball','Tequila','highball','cubes','b',
+  'Goldener Longdrink aus Tequila, Galliano und Orange.',
+  [['zitronensaft',1,'cl','b'],['orangensaft',10,'cl','b'],['tequila_rep',4,'cl','b'],
+   ['galliano',2,'cl','l']],
+  ['orangenscheibe','kirsche'],['fruchtig']),
+
 C('hugo','Hugo','Highball','Wein/Sekt','wine','cubes','b',
   'Holunderblüte, Minze, Limette und Prosecco.',
   [['holunderblueten',3,'cl','b'],['limettensaft',1,'cl','b'],['minze',6,'stk','b'],
@@ -870,6 +882,13 @@ C('bahama_mama','Bahama Mama','Tiki','Rum','hurricane','crushed','f',
    ['zitronensaft',1.5,'cl','f'],['ananassaft',8,'cl','f'],['rum_weiss',2,'cl','f'],['rum_dunkel',2,'cl','f']],
   ['ananasstueck','kirsche'],['tiki']),
 
+C('hurricane','Hurricane','Tiki','Rum','hurricane','cubes','f',
+  'New Orleans: zwei Rumsorten mit Maracuja und Zitrusfrüchten.',
+  [['grenadine',1,'cl','f'],['zuckersirup',1,'cl','f'],['limettensaft',1.5,'cl','f'],
+   ['maracujasaft',3,'cl','f'],['orangensaft',3,'cl','f'],
+   ['rum_weiss',4.5,'cl','f'],['rum_dunkel',4.5,'cl','f']],
+  ['orangenscheibe','kirsche','strohhalm'],['tiki','fruchtig']),
+
 /* ---------- Sekt / Wein ---------- */
 C('bellini','Bellini','Sekt & Wein','Wein/Sekt','flute','none','b',
   'Weißer Pfirsich und Prosecco, Venedig 1948.',
@@ -902,6 +921,12 @@ C('b52','B-52','Schichtcocktail','Likör','shot','none','l',
   [['kahlua',2,'cl','b'],['baileys',2,'cl','l'],['grand_marnier',2,'cl','l']],
   [],['shot','schichtung'],
   { note:'Jede Zutat langsam über den Rücken eines Barlöffels gießen.', noteRef:2 }),
+
+C('blowjob','Blow Job','Schichtcocktail','Likör','shot','none','l',
+  'Geschichteter Shot aus Kaffeelikör und Baileys mit Sahnehaube.',
+  [['kahlua',2,'cl','b'],['baileys',2,'cl','l']],
+  ['sahnehaube'],['shot','schichtung','cremig'],
+  { note:'Baileys über den Löffelrücken gießen, Sahnehaube zuletzt aufsetzen.', noteRef:2 }),
 
 C('pousse_cafe','Pousse-Café','Schichtcocktail','Likör','shot','none','l',
   'Sechs Schichten nach Dichte, von schwer nach leicht.',
@@ -1995,45 +2020,73 @@ function drawGlassOutline(drw, g, S, cx, baseY, lw) {
   }
 }
 
-/* ---------- Eisdarstellung ---------- */
+/* ---------- Eisdarstellung ----------
+   Alles wird auf die Flüssigkeitssäule bezogen: Größe und Anzahl der
+   Stücke richten sich nach Glasbreite und Füllhöhe, damit nichts über
+   dem Getränk in der Luft hängt. topY = Oberkante der obersten Schicht. */
 function drawIce(drw, ck, g, S, cx, baseY, topY, lw, st) {
   if (!ck.ice || ck.ice === 'none') return null;
   var cav = glassCavityTop(g), i;
-  var yTop = Math.min(cav * FILL_RATIO, topY);
+  var liqTop = Math.max(2, Math.min(cav * FILL_RATIO, topY));
   var anchor = null;
+  /* mittlere Innenbreite der Flüssigkeitssäule */
+  var hwMid = hwAt(g, liqTop * 0.55), hwTopL = hwAt(g, liqTop);
+
   if (ck.ice === 'crushed') {
-    var n = 26;
-    for (i = 0; i < n; i++) {
-      var fy = cav * 0.12 + (yTop - cav * 0.12) * (i / n) + ((i % 3) * 0.6);
-      var hwc = hwAt(g, Math.min(fy, cav)) * 0.82;
-      var fx = (((i * 37) % 100) / 100 - 0.5) * 2 * hwc;
-      var px = cx + fx * S, py = baseY - fy * S, sz = 1.5 * S;
-      drw.poly([[px, py - sz*0.5], [px + sz*0.55, py - sz*0.1], [px + sz*0.25, py + sz*0.5], [px - sz*0.45, py + sz*0.3]],
-        { close:true, w:lw*0.7, c:INK, fill:'#FFFFFF' });
-      if (i === n - 3) anchor = [px, py];
+    var szc = Math.max(0.9, Math.min(2.0, hwMid * 0.17));
+    var rows = Math.max(2, Math.min(9, Math.floor(liqTop / (szc * 1.5))));
+    var cols = Math.max(2, Math.min(6, Math.floor(hwMid * 2 / (szc * 2.1))));
+    var k = 0;
+    for (var r0 = 0; r0 < rows; r0++) {
+      var fy = liqTop * (0.10 + 0.82 * (rows === 1 ? 0.5 : r0 / (rows - 1)));
+      var hwc = hwAt(g, Math.min(fy, cav)) - szc * 0.9;
+      if (hwc <= 0.4) continue;
+      for (var c0 = 0; c0 < cols; c0++) {
+        var t = cols === 1 ? 0.5 : c0 / (cols - 1);
+        var fx = (t - 0.5) * 2 * hwc * 0.92 + ((r0 % 2) ? hwc * 0.14 : -hwc * 0.14);
+        if (Math.abs(fx) > hwc) continue;
+        var px = cx + fx * S, py = baseY - fy * S, sz = szc * S;
+        drw.poly([[px, py - sz*0.5], [px + sz*0.55, py - sz*0.1],
+                  [px + sz*0.25, py + sz*0.5], [px - sz*0.45, py + sz*0.3]],
+          { close:true, w:lw*0.7, c:INK, fill:'#FFFFFF' });
+        if (k === 1) anchor = [px, py];
+        k++;
+      }
     }
+    if (!anchor) anchor = [cx, baseY - liqTop * 0.6 * S];
+
   } else if (ck.ice === 'ball') {
-    var r = Math.min(hwAt(g, cav*0.3) * 0.58, cav * 0.20, topY * 0.62);
-    var py2 = baseY - Math.max(r * 1.05, topY * 0.55) * S;
+    var r = Math.min(hwMid * 0.68, liqTop * 0.44, 9);
+    r = Math.max(r, 1.6);
+    var cyB = Math.min(Math.max(r * 1.02, liqTop * 0.55), Math.max(r * 1.02, liqTop - r * 0.18));
+    var py2 = baseY - cyB * S;
     drw.circ(cx, py2, r * S, { w:lw, c:INK, fill:'#FFFFFF' });
     drw.path(segsFromPts(arcPts(cx, py2, r*0.62*S, Math.PI*1.05, Math.PI*1.42, 6), false), { w:lw*0.7, c:INK });
-    anchor = [cx + r*0.7*S, py2 - r*0.5*S];
+    anchor = [cx + r*0.72*S, py2 - r*0.52*S];
+
   } else {
-    var cnt = st.iceCount || 3;
+    /* Würfelgröße aus Glasbreite und Füllhöhe, Anzahl daraus abgeleitet */
+    var cs = Math.min(hwMid * 0.82, liqTop * 0.40, 6.2);
+    cs = Math.max(cs, 1.8);
+    var cnt = Math.max(1, Math.min(4, Math.floor(liqTop / (cs * 1.10))));
+    if (cnt === 1) cs = Math.min(cs, liqTop * 0.62);
+    st.iceCount = cnt;
     for (i = 0; i < cnt; i++) {
-      var lvl = 0.20 + i * 0.24;
-      var yy = cav * lvl, hw2 = hwAt(g, yy);
-      var side = (i % 2 ? 0.34 : -0.30);
-      var pxc = cx + hw2 * side * S, pyc = baseY - yy * S;
-      var cs = Math.min(hw2 * 0.86, 5.4) * S;
-      drw.poly([[pxc - cs*0.5, pyc - cs*0.18], [pxc - cs*0.12, pyc - cs*0.5],
-                [pxc + cs*0.5, pyc - cs*0.5], [pxc + cs*0.5, pyc + cs*0.18],
-                [pxc + cs*0.12, pyc + cs*0.5], [pxc - cs*0.5, pyc + cs*0.5]],
+      var yy = cnt === 1 ? liqTop * 0.52
+             : cs * 0.62 + (liqTop - cs * 1.24) * (i / (cnt - 1));
+      var hw2 = hwAt(g, yy);
+      var room = Math.max(0, hw2 - cs * 0.62);
+      var side = (i % 2 ? 0.42 : -0.38) * (cnt > 1 ? 1 : 0);
+      var offx = Math.max(-room, Math.min(room, hw2 * side));
+      var pxc = cx + offx * S, pyc = baseY - yy * S, c2 = cs * S;
+      drw.poly([[pxc - c2*0.5, pyc - c2*0.18], [pxc - c2*0.12, pyc - c2*0.5],
+                [pxc + c2*0.5, pyc - c2*0.5], [pxc + c2*0.5, pyc + c2*0.18],
+                [pxc + c2*0.12, pyc + c2*0.5], [pxc - c2*0.5, pyc + c2*0.5]],
         { close:true, w:lw*0.8, c:INK, fill:'#FFFFFF' });
-      drw.line(pxc - cs*0.5, pyc - cs*0.18, pxc + cs*0.12, pyc - cs*0.18, { w:lw*0.6, c:INK });
-      drw.line(pxc + cs*0.12, pyc - cs*0.18, pxc + cs*0.5, pyc - cs*0.5, { w:lw*0.6, c:INK });
-      drw.line(pxc + cs*0.12, pyc - cs*0.18, pxc + cs*0.12, pyc + cs*0.5, { w:lw*0.6, c:INK });
-      if (i === cnt - 1) anchor = [pxc, pyc - cs*0.3];
+      drw.line(pxc - c2*0.5, pyc - c2*0.18, pxc + c2*0.12, pyc - c2*0.18, { w:lw*0.6, c:INK });
+      drw.line(pxc + c2*0.12, pyc - c2*0.18, pxc + c2*0.5, pyc - c2*0.5, { w:lw*0.6, c:INK });
+      drw.line(pxc + c2*0.12, pyc - c2*0.18, pxc + c2*0.12, pyc + c2*0.5, { w:lw*0.6, c:INK });
+      if (i === cnt - 1) anchor = [pxc, pyc - c2*0.3];
     }
   }
   return anchor;
@@ -2175,7 +2228,7 @@ function drawCocktail(drw, ck, cellX, cellY, cellW, cellH, opts) {
 
   /* --- Garnituren am Glasrand --- */
   var rimHw = (hwAt(g, cav) + wall) * S;
-  var gcount = 0;
+  var gcount = 0, inCount = 0;
   (ck.garnish || []).forEach(function (gr) {
     var G = GAR_BY_ID[gr.id]; if (!G) return;
     if (opts.marks) opts.marks.gars[G.id] = true;
@@ -2184,15 +2237,23 @@ function drawCocktail(drw, ck, cellX, cellY, cellW, cellH, opts) {
     var gx = cx + side * (rimHw * 0.92 + idx * ps * 1.15);
     var gy = rimY - ps * 0.22;
     if (G.at === 'in') {
-      gy = baseY - topLayerY * S + ps * 0.45;
-      gx = cx + side * Math.max(1, hwAt(g, topLayerY) * S - ps * 0.55);
+      /* Größe und Lage aus Glasbreite und Füllhöhe ableiten, damit die
+         Garnitur im Getränk liegt und nicht daneben hängt */
+      var liqT = Math.max(2, Math.min(cav * FILL_RATIO, topLayerY));
+      var hwL = hwAt(g, liqT);
+      ps = Math.max(3.0, Math.min(hwL * 0.92, liqT * 0.80, 8.6)) * S;
+      var roomG = Math.max(0, hwL * S - ps * 0.55);
+      var baseOff = (ck.ice && ck.ice !== 'none' && ck.ice !== 'crushed') ? 0.58 : 0.34;
+      gx = cx + side * Math.min(roomG, hwL * baseOff * S + inCount * ps * 1.05);
+      gy = baseY - liqT * S;   /* Mitte auf der Flüssigkeitsoberfläche: schwimmt */
+      inCount++;
     } else if (G.at === 'side') {
       gx = cx + side * (rimHw + ps * 0.7); gy = rimY + ps * 0.4;
     }
     drawPic(drw, G.pic, gx, gy, ps, lw * 0.8);
     var tx2 = gx + side * ps * 0.62, tyG = gy - ps * 0.52;
     if (G.at === 'in' && !plain) {
-      var ox = cx + side * (rimHw + 2.2 * S), oy = gy - ps * 0.75;
+      var ox = cx + side * (rimHw + 2.2 * S), oy = gy - ps * 0.62;
       drw.path([['M', gx + side * ps * 0.35, gy], ['L', ox - side * 1.5 * S, oy], ['L', ox, oy]],
         { w:lw*0.7, c:INK });
       tx2 = ox + side * 0.6; tyG = oy + fs * 0.35;
