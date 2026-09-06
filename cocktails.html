@@ -193,6 +193,26 @@ dialog::backdrop{background:rgba(30,32,28,.55)}
 .actrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
 .actrow .btn{white-space:nowrap;min-height:40px}
 @media(max-width:480px){.actrow{grid-template-columns:1fr 1fr}.actrow .btn:first-child{grid-column:1/-1}}
+
+/* Auswahl von Farbe, Muster und Piktogramm für eigene Definitionen */
+.lbl{display:block;font-size:11px;color:var(--ink-3);margin:12px 0 4px}
+.swatches{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.swatches .sw{width:26px;height:20px;border:1px solid var(--rule);border-radius:2px;padding:0}
+.swatches .sw.on{outline:2px solid var(--signal);outline-offset:1px}
+.swatches input[type=color]{width:34px;height:22px;padding:0;border:1px solid var(--rule);background:none}
+.patgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:4px;
+  max-height:190px;overflow:auto;border:1px solid var(--rule);padding:6px;background:#FBFBF9}
+.patgrid .pat{padding:2px;border:1px solid var(--rule-2);background:#fff;border-radius:2px;height:30px}
+.patgrid .pat.on{border-color:var(--signal);box-shadow:inset 0 0 0 1px var(--signal)}
+.picgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:4px;
+  max-height:190px;overflow:auto;border:1px solid var(--rule);padding:6px;background:#FBFBF9}
+.picgrid .pic{padding:3px;border:1px solid var(--rule-2);background:#fff;border-radius:2px;height:42px}
+.picgrid .pic.on{border-color:var(--signal);box-shadow:inset 0 0 0 1px var(--signal)}
+.patprev{width:70px;height:22px;border:1px solid var(--rule)}
+.swpr{width:46px;flex:none;border:1px solid var(--rule-2);background:#fff}
+.editorwhere{flex:1;text-align:right;padding-right:6px}
+@media(max-width:640px){.editorwhere{display:none}}
+#dlg2{width:min(680px,96vw)}
 </style>
 <style id="pagestyle">@page{size:594mm 420mm;margin:0}</style>
 </head>
@@ -202,6 +222,7 @@ dialog::backdrop{background:rgba(30,32,28,.55)}
 <div id="printarea"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <dialog id="dlg"></dialog>
+<dialog id="dlg2"></dialog>
 <input type="file" id="fileimp" accept=".json,application/json" style="display:none">
 <noscript><p style="padding:20px">Diese Anwendung braucht JavaScript. Sie läuft vollständig im Browser; es werden keine Daten an einen Server gesendet.</p></noscript>
 <script>'use strict';
@@ -2740,8 +2761,12 @@ function segsToD(segs) {
   return d.trim();
 }
 
+var SVG_SEQ = 0;
 function opsToSvg(ops, W, H, opt) {
   opt = opt || {};
+  /* Eigener Präfix je Aufruf: sonst greifen mehrere SVGs auf derselben
+     Seite auf denselben Clip-Pfad zu und die Muster verschwinden. */
+  var pre = 'c' + (++SVG_SEQ) + '_';
   var out = [], defs = [], clipId = 0, open = 0;
   for (var i = 0; i < ops.length; i++) {
     var o = ops[i];
@@ -2772,8 +2797,8 @@ function opsToSvg(ops, W, H, opt) {
         break;
       case 'k':
         clipId++;
-        defs.push('<clipPath id="cp' + clipId + '"><path d="' + segsToD(o.segs) + '"/></clipPath>');
-        out.push('<g clip-path="url(#cp' + clipId + ')">'); open++;
+        defs.push('<clipPath id="' + pre + clipId + '"><path d="' + segsToD(o.segs) + '"/></clipPath>');
+        out.push('<g clip-path="url(#' + pre + clipId + ')">'); open++;
         break;
       case 'u':
         if (open > 0) { out.push('</g>'); open--; }
@@ -3432,9 +3457,30 @@ function unpackIng(a, idx) {
            amount: a[2] === undefined ? null : a[2], unit: a[3], prep: a[4] || '',
            cls: known ? known.cls : (a[5] || 'other'), color: known ? known.color : (a[6] || '#DDDDDD') };
 }
+/* Nur die Abweichungen zur Vorlage packen – das hält geteilte Links kurz
+   genug für einen QR-Code, auch wenn viele Cocktails angepasst wurden. */
+var PACK_FIELDS = [['name','n'],['description','d'],['category','c'],['baseSpirit','b'],
+  ['glass','g'],['ice','i'],['method','m'],['altName','a'],['note','o'],['noteRef','r']];
+
 function packCocktail(ck) {
   var src = COCKTAIL_BY_ID[ck.sourceId];
   if (src && cocktailEquals(ck, src)) return ['=', ck.sourceId];
+  if (src) {
+    var d = {};
+    PACK_FIELDS.forEach(function (f) {
+      var a = ck[f[0]] === undefined ? null : ck[f[0]];
+      var b = src[f[0]] === undefined ? null : src[f[0]];
+      if ((a || '') !== (b || '')) d[f[1]] = a;
+    });
+    var ia = JSON.stringify((ck.ingredients || []).map(packIng));
+    var ib = JSON.stringify((src.ingredients || []).map(packIng));
+    if (ia !== ib) d.z = JSON.parse(ia);
+    var ga = (ck.garnish || []).map(function (g) { return g.count === 1 ? g.id : [g.id, g.count]; });
+    var gb = (src.garnish || []).map(function (g) { return g.count === 1 ? g.id : [g.id, g.count]; });
+    if (JSON.stringify(ga) !== JSON.stringify(gb)) d.q = ga;
+    if (JSON.stringify(ck.tags || []) !== JSON.stringify(src.tags || [])) d.t = ck.tags || [];
+    return ['~', ck.sourceId, d];
+  }
   return [ck.sourceId || '', ck.name, ck.description || '', ck.category || '', ck.baseSpirit || '',
           ck.glass, ck.ice || 'none', ck.method || 'b', ck.altName || '', ck.note || '',
           ck.noteRef || 0, (ck.ingredients || []).map(packIng),
@@ -3443,8 +3489,20 @@ function packCocktail(ck) {
 }
 function unpackCocktail(a) {
   if (a[0] === '=') {
-    var s = COCKTAIL_BY_ID[a[1]];
-    return s ? cloneCocktail(s) : null;
+    var s0 = COCKTAIL_BY_ID[a[1]];
+    return s0 ? cloneCocktail(s0) : null;
+  }
+  if (a[0] === '~') {
+    var s1 = COCKTAIL_BY_ID[a[1]];
+    if (!s1) return null;
+    var c = cloneCocktail(s1), d = a[2] || {};
+    PACK_FIELDS.forEach(function (f) { if (d[f[1]] !== undefined) c[f[0]] = d[f[1]]; });
+    if (d.z) c.ingredients = d.z.map(unpackIng);
+    if (d.q) c.garnish = d.q.map(function (g) {
+      return typeof g === 'string' ? { id:g, count:1 } : { id:g[0], count:g[1] };
+    });
+    if (d.t) c.tags = d.t;
+    return c;
   }
   return {
     id: uid(), sourceId: a[0] || null, name: a[1], description: a[2], category: a[3],
@@ -3469,11 +3527,16 @@ function packProject(project, library) {
     rv: (s.revisions || []).map(function (r) { return [r.rev, r.text, r.date, r.by]; }),
     gn: s.generalNotes || [],
     ck: (project.cocktails || []).map(packCocktail),
-    lib: (library || []).map(packCocktail)
+    lib: (library || []).map(packCocktail),
+    ci: (typeof Store !== 'undefined' && Store.state ? Store.state.customIngredients : []) || [],
+    cg: (typeof Store !== 'undefined' && Store.state ? Store.state.customGarnishes : []) || []
   };
 }
 function unpackProject(p) {
   var st = p.st || [], tb = p.tb || [];
+  /* eigene Definitionen zuerst einhängen, sonst fehlen Muster und Kennbuchstaben */
+  (p.ci || []).forEach(registerCustomIngredient);
+  (p.cg || []).forEach(registerCustomGarnish);
   var proj = {
     id: uid(), name: p.n || 'Importiertes Projekt', subtitle: p.s || '',
     settings: {
@@ -3489,7 +3552,7 @@ function unpackProject(p) {
   };
   proj.cocktails.forEach(function (c) { c.id = uid(); });
   var lib = (p.lib || []).map(unpackCocktail).filter(Boolean);
-  return { project: proj, library: lib };
+  return { project: proj, library: lib, ingredients: p.ci || [], garnishes: p.cg || [] };
 }
 
 
@@ -3571,18 +3634,25 @@ var Store = {
     if (raw) {
       try {
         var s = JSON.parse(raw);
-        if (s && s.projects && s.projects.length) { this.state = this.migrate(s); return this.state; }
+        if (s && s.projects && s.projects.length) {
+          this.state = this.migrate(s);
+          applyCustomDefs(this.state);
+          return this.state;
+        }
       } catch (e) { /* defekter Stand wird verworfen */ }
     }
     var p = newProject('Mein erstes Projekt');
     this.state = { schemaVersion: SCHEMA_VERSION, appVersion: APP_VERSION,
                    projects: [p], activeId: p.id, customLibrary: [],
+                   customIngredients: [], customGarnishes: [],
                    ui: { unit:'cl', tab:'fundus' } };
     return this.state;
   },
   migrate: function (s) {
     s.schemaVersion = s.schemaVersion || 1;
     s.customLibrary = s.customLibrary || [];
+    s.customIngredients = s.customIngredients || [];
+    s.customGarnishes = s.customGarnishes || [];
     s.ui = s.ui || { unit:'cl', tab:'fundus' };
     s.projects.forEach(function (p) {
       p.settings = p.settings || newProject().settings;
@@ -3660,7 +3730,9 @@ function buildExport(project, library) {
       settings: project.settings,
       cocktails: project.cocktails
     },
-    customLibrary: library || []
+    customLibrary: library || [],
+    customIngredients: Store.state ? (Store.state.customIngredients || []) : [],
+    customGarnishes: Store.state ? (Store.state.customGarnishes || []) : []
   };
 }
 function validateImport(obj) {
@@ -3680,6 +3752,118 @@ function normalizeImportedProject(p) {
   });
   return base;
 }
+
+
+/* ===== 31_custom.js ===== */
+
+/* ============================================================
+   Eigene Zutaten und Garnituren
+   Werden im Browser gespeichert, in die Bibliotheken eingehängt
+   und bei Export, Import und Link mitgeführt.
+   ============================================================ */
+
+function slugId(prefix, name) {
+  var base = String(name || '').toLowerCase()
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 28) || 'eigen';
+  var id = prefix + base, n = 2;
+  while (ING_BY_ID[id] || GAR_BY_ID[id]) { id = prefix + base + '_' + n; n++; }
+  return id;
+}
+
+/* Nächster freier Kennbuchstabe: a…z, dann aa, ab … */
+function nextGarnishKey() {
+  var used = {};
+  GARNISHES.forEach(function (g) { used[g.key] = true; });
+  var al = 'abcdefghijklmnopqrstuvwxyz', i, j;
+  for (i = 0; i < 26; i++) if (!used[al[i]]) return al[i];
+  for (i = 0; i < 26; i++) for (j = 0; j < 26; j++) {
+    var k = al[i] + al[j];
+    if (!used[k]) return k;
+  }
+  return 'zz';
+}
+
+/* Kürzel für das Buchstabenmuster vorschlagen */
+function suggestAbbr(name) {
+  var w = String(name || '').toUpperCase().replace(/[^A-ZÄÖÜ ]/g, '').split(/\s+/).filter(Boolean);
+  if (!w.length) return 'XX';
+  if (w.length === 1) return w[0].slice(0, 2);
+  return (w[0][0] + w[1][0]);
+}
+
+/* Definitionen in die laufenden Bibliotheken einhängen */
+function registerCustomIngredient(def) {
+  var o = { id:def.id, name:def.name, cls:def.cls || 'other', color:def.color || '#CCCCCC',
+            abv:def.abv || 0, abbr:def.abbr || '', pat:def.pat || 'l45', custom:true };
+  var old = ING_BY_ID[o.id];
+  if (old) {
+    for (var k in o) old[k] = o[k];
+    return old;
+  }
+  INGREDIENTS.push(o); ING_BY_ID[o.id] = o;
+  return o;
+}
+function registerCustomGarnish(def) {
+  var o = { id:def.id, key:def.key, name:def.name, pic:def.pic || 'cherry', at:def.at || 'rim', custom:true };
+  var old = GAR_BY_ID[o.id];
+  if (old) { for (var k in o) old[k] = o[k]; return old; }
+  GARNISHES.push(o); GAR_BY_ID[o.id] = o;
+  return o;
+}
+function applyCustomDefs(state) {
+  (state.customIngredients || []).forEach(registerCustomIngredient);
+  (state.customGarnishes || []).forEach(registerCustomGarnish);
+}
+
+/* Aus den Bibliotheken wieder entfernen */
+function unregisterCustomIngredient(id) {
+  INGREDIENTS = INGREDIENTS.filter(function (i) { return i.id !== id; });
+  delete ING_BY_ID[id];
+}
+function unregisterCustomGarnish(id) {
+  GARNISHES = GARNISHES.filter(function (g) { return g.id !== id; });
+  delete GAR_BY_ID[id];
+}
+
+/* Wird eine Definition noch irgendwo verwendet? */
+function ingredientInUse(state, id) {
+  var hit = false;
+  function scan(list) {
+    (list || []).forEach(function (c) {
+      (c.ingredients || []).forEach(function (i) { if (i.ingredientId === id) hit = true; });
+    });
+  }
+  state.projects.forEach(function (p) { scan(p.cocktails); });
+  scan(state.customLibrary);
+  return hit;
+}
+function garnishInUse(state, id) {
+  var hit = false;
+  function scan(list) {
+    (list || []).forEach(function (c) {
+      (c.garnish || []).forEach(function (g) { if (g.id === id) hit = true; });
+    });
+  }
+  state.projects.forEach(function (p) { scan(p.cocktails); });
+  scan(state.customLibrary);
+  return hit;
+}
+
+/* Pictogramme, die für eigene Garnituren zur Wahl stehen */
+var PIC_CHOICES = [
+  ['cherry','Kirsche'], ['olive','Olive'], ['onion','Zwiebel'], ['orange','Orangenachtel'],
+  ['lemon','Zitronenachtel'], ['lime','Limettenachtel'], ['limeslice','Scheibe rund'],
+  ['peel','Zeste'], ['mint','Kräuterzweig'], ['basil','Blätter'], ['rosemary','Nadelzweig'],
+  ['umbrella','Schirmchen'], ['pineapple','Fruchtstück'], ['celery','Stange'],
+  ['cucumber','Scheibe mit Kernen'], ['pick','Spieß'], ['straw','Strohhalm'],
+  ['beans','Bohnen / Körner'], ['grated','Streusel'], ['rimsalt','Salzrand'],
+  ['rimsugar','Zuckerrand'], ['cream','Sahnehaube'], ['cinnamon','Stange gerollt'],
+  ['physalis','Physalis'], ['berry','Beere'], ['ribbon','Band'], ['icecube','Würfel'],
+  ['crushed','Splitter'], ['iceball','Kugel'], ['sugarcube','Würfel gepunktet'],
+  ['dash','Tropfen'], ['star','Stern']
+];
+var GAR_POSITIONS = [['rim','am Glasrand'], ['in','im Getränk'], ['side','neben dem Glas']];
 
 
 /* ===== 40_ui.js ===== */
@@ -3786,6 +3970,7 @@ function renderFundus(root) {
   f.appendChild(selectOf([['', 'Alle Merkmale']].concat(Object.keys(tags).sort().map(function (t) { return [t, t]; })),
     UI.fTag, function (e) { UI.fTag = e.target.value; renderGrid(); }));
   f.appendChild(el('button', { class:'btn primary', onclick:function () { openEditor(null); } , text:'Eigenen Cocktail anlegen' }));
+  f.appendChild(el('button', { class:'btn', onclick:openLibraryManager, text:'Zutaten & Garnituren' }));
   panel.appendChild(f);
 
   var grid = el('div', { class:'grid' });
@@ -3825,7 +4010,18 @@ function renderFundus(root) {
           p.cocktails.push(cloneCocktail(c)); Store.save();
           toast(c.name + ' ins Projekt übernommen.'); render();
         }, text:'Übernehmen' }),
-        el('button', { class:'btn small', onclick:function () { openEditor(c, { fromLibrary:true }); }, text:'Anpassen' })
+        el('button', { class:'btn small', onclick:function () {
+          var p = Store.project();
+          var inP = p.cocktails.filter(function (x) { return x.sourceId === (c.sourceId || c.id); });
+          if (inP.length) {
+            if (inP.length > 1) toast('Dieser Cocktail liegt mehrfach im Projekt – der erste wird bearbeitet.');
+            openEditor(inP[0], { inProject:true });
+          } else if (c.custom) {
+            openEditor(c, { inLibrary:true });
+          } else {
+            openEditor(c, { fromLibrary:true });
+          }
+        }, text:'Anpassen' })
       ]);
       if (c.custom) acts.appendChild(el('button', { class:'btn small danger', title:'Aus eigener Sammlung löschen',
         onclick:function () {
@@ -4050,7 +4246,7 @@ function renderOutput(root) {
   }
   function paint() {
     var qm = null;
-    if (s.qrInTitleBlock) { try { qm = qrBuild(shareUrl(), 'M'); } catch (e) { qm = null; } }
+    if (s.qrInTitleBlock) qm = qrForShare(shareUrl());
     var d = drawSheet(p, UI.page, layout, qm);
     sheetBox.innerHTML = opsToSvg(d.ops, layout.W, layout.H, {});
     applyZoom();
@@ -4073,7 +4269,7 @@ function changed() { Store.save(); if (window.__repaint) window.__repaint(); }
 function buildPages(p) {
   var layout = computeSheetLayout(p);
   var qm = null;
-  if (p.settings.qrInTitleBlock) { try { qm = qrBuild(shareUrl(), 'M'); } catch (e) { qm = null; } }
+  if (p.settings.qrInTitleBlock) qm = qrForShare(shareUrl());
   var out = [];
   for (var i = 0; i < layout.pages.length; i++) {
     var d = drawSheet(p, i, layout, qm);
@@ -4124,6 +4320,16 @@ function importJsonFile(file) {
     var proj = normalizeImportedProject(obj.project);
     Store.state.projects.push(proj);
     Store.state.activeId = proj.id;
+    (obj.customIngredients || []).forEach(function (d) {
+      registerCustomIngredient(d);
+      if (!Store.state.customIngredients.some(function (x) { return x.id === d.id; }))
+        Store.state.customIngredients.push(d);
+    });
+    (obj.customGarnishes || []).forEach(function (d) {
+      registerCustomGarnish(d);
+      if (!Store.state.customGarnishes.some(function (x) { return x.id === d.id; }))
+        Store.state.customGarnishes.push(d);
+    });
     (obj.customLibrary || []).forEach(function (c) {
       if (!Store.state.customLibrary.some(function (x) { return x.id === c.id; })) Store.state.customLibrary.push(c);
     });
@@ -4131,6 +4337,12 @@ function importJsonFile(file) {
     toast('Projekt „' + proj.name + '“ geladen.');
   };
   fr.readAsText(file);
+}
+function qrForShare(url) {
+  var m = null;
+  try { m = qrBuild(url, 'M'); } catch (e) { m = null; }
+  if (!m) { try { m = qrBuild(url, 'L'); } catch (e2) { m = null; } }
+  return m;
 }
 function shareUrl() {
   var p = Store.project();
@@ -4141,8 +4353,7 @@ function showShare() {
   var url = shareUrl();
   var dlg = $('#dlg'); clear(dlg);
   var qm = null, tooBig = false;
-  try { qm = qrBuild(url, 'M'); } catch (e) { qm = null; }
-  if (!qm) { try { qm = qrBuild(url, 'L'); } catch (e2) { qm = null; } }
+  qm = qrForShare(url);
   if (!qm) tooBig = true;
   dlg.appendChild(el('div', { class:'dlg-head' }, [
     el('h2', { text:'Projekt teilen' }),
@@ -4171,6 +4382,13 @@ function showShare() {
 }
 
 /* ---------- Editor ---------- */
+function ingredientOptions() {
+  var own = INGREDIENTS.filter(function (i) { return i.custom; })
+    .map(function (i) { return [i.id, i.name + '  (eigen)']; });
+  var std = INGREDIENTS.filter(function (i) { return !i.custom; })
+    .map(function (i) { return [i.id, i.name]; });
+  return own.concat(std, [['__new__', '＋ Neue Zutat anlegen …']]);
+}
 function blankCocktail() {
   return { id:uid(), sourceId:null, name:'Neuer Cocktail', description:'', category:'Klassiker',
     baseSpirit:'Gin', glass:'coupe', ice:'none', method:'f',
@@ -4180,15 +4398,19 @@ function blankCocktail() {
 function openEditor(src, opt) {
   opt = opt || {};
   var isNew = !src;
-  var work = src ? (opt.inProject ? src : cloneCocktail(src)) : blankCocktail();
+  var work = src ? ((opt.inProject || opt.inLibrary) ? src : cloneCocktail(src)) : blankCocktail();
   var backup = JSON.parse(JSON.stringify(work));
   var undo = [], redo = [];
   function snap() { undo.push(JSON.stringify(work)); if (undo.length > 40) undo.shift(); redo.length = 0; }
   function restore(str) { var o = JSON.parse(str); for (var k in o) work[k] = o[k]; build(); }
 
+  var whereTxt = opt.inProject ? 'Änderungen werden direkt in diesem Projekt gespeichert.'
+    : opt.inLibrary ? 'Änderungen werden in der eigenen Sammlung gespeichert.'
+    : 'Wird als neuer Eintrag ins Projekt übernommen.';
   var dlg = $('#dlg'); clear(dlg);
   var head = el('div', { class:'dlg-head' }, [
     el('h2', { text: isNew ? 'Neuer Cocktail' : work.name }),
+    el('span', { class:'hint editorwhere', text: whereTxt }),
     el('button', { class:'btn small ghost', title:'Rückgängig', onclick:function () {
       if (!undo.length) return; redo.push(JSON.stringify(work)); restore(undo.pop());
     }, text:'↶' }),
@@ -4236,7 +4458,15 @@ function openEditor(src, opt) {
       el('span', { class:'h', text:'Zubereitung' }), el('span', {})]);
     var ings = el('div', { class:'ings' }, [head2]);
     work.ingredients.forEach(function (ing, i) {
-      var sel = selectOf(INGREDIENTS.map(function (x) { return [x.id, x.name]; }), ing.ingredientId, function (e) {
+      var sel = selectOf(ingredientOptions(), ing.ingredientId, function (e) {
+        if (e.target.value === '__new__') {
+          e.target.value = ing.ingredientId;
+          openIngredientDialog(null, function (nd) {
+            snap(); ing.ingredientId = nd.id; ing.name = nd.name; ing.cls = nd.cls; ing.color = nd.color;
+            build();
+          });
+          return;
+        }
         snap(); ing.ingredientId = e.target.value;
         var I = ING_BY_ID[ing.ingredientId]; if (I) { ing.name = I.name; ing.cls = I.cls; ing.color = I.color; }
         refresh(live);
@@ -4285,6 +4515,14 @@ function openEditor(src, opt) {
       gp.appendChild(el('label', {}, [cb, el('span', { text:g.name + ' (' + g.key + ')' })]));
     });
     form.appendChild(gp);
+    form.appendChild(el('div', { class:'row', style:'margin-top:8px' }, [
+      el('button', { class:'btn small', onclick:function () {
+        openGarnishDialog(null, function (nd) {
+          snap(); work.garnish.push({ id:nd.id, count:1 }); build();
+        });
+      }, text:'Eigene Garnitur anlegen' }),
+      el('span', { class:'hint', text:'Fehlt etwas, lässt es sich hier ergänzen.' })
+    ]));
 
     form.appendChild(el('div', { class:'row', style:'margin-top:12px' }, [
       field('Notiz unter der Zeichnung', el('input', { type:'text', value:work.note || '', placeholder:'optional',
@@ -4303,25 +4541,45 @@ function openEditor(src, opt) {
       for (var k in fresh) work[k] = fresh[k];
       build(); toast('Auf die Vorlage zurückgesetzt.');
     }, text:'Auf Vorlage zurücksetzen' }));
+    if (opt.inProject) {
+      foot.appendChild(el('button', { class:'btn ghost', onclick:function () {
+        if (!valid()) return;
+        var p = Store.project(), i = p.cocktails.indexOf(work);
+        var copy = cloneCocktail(work);
+        copy.name = work.name + ' (Kopie)';
+        p.cocktails.splice(i < 0 ? p.cocktails.length : i + 1, 0, copy);
+        Store.save(); dlg.close(); render();
+        toast('Duplikat angelegt – das Original bleibt unverändert.');
+      }, text:'Duplizieren' }));
+    }
     foot.appendChild(el('span', { style:'flex:1' }));
     foot.appendChild(el('button', { class:'btn', onclick:function () {
       for (var k in backup) work[k] = backup[k];
       dlg.close(); render();
     }, text:'Abbrechen' }));
-    if (!opt.inProject) {
+    if (!opt.inProject && !opt.inLibrary) {
       foot.appendChild(el('button', { class:'btn', onclick:function () {
+        if (!valid()) return;
         var copy = cloneCocktail(work); copy.sourceId = work.sourceId || null;
         Store.state.customLibrary.push(copy);
         Store.save(); dlg.close(); render(); toast('In der eigenen Sammlung gespeichert.');
       }, text:'In Sammlung speichern' }));
     }
     foot.appendChild(el('button', { class:'btn primary', onclick:function () {
-      if (!String(work.name || '').trim()) { toast('Bitte einen Namen vergeben.'); return; }
-      if (!work.ingredients.length) { toast('Mindestens eine Zutat ist nötig.'); return; }
-      if (!opt.inProject) Store.project().cocktails.push(cloneCocktail(work));
-      Store.save(); dlg.close(); UI.tab = 'project'; render();
-      toast(opt.inProject ? 'Änderungen übernommen.' : work.name + ' ins Projekt übernommen.');
-    }, text: opt.inProject ? 'Änderungen übernehmen' : 'Ins Projekt übernehmen' }));
+      if (!valid()) return;
+      if (!opt.inProject && !opt.inLibrary) Store.project().cocktails.push(cloneCocktail(work));
+      Store.save(); dlg.close();
+      if (!opt.inLibrary) UI.tab = 'project';
+      render();
+      toast(opt.inProject ? 'Änderungen gespeichert.'
+          : opt.inLibrary ? 'Änderungen in der Sammlung gespeichert.'
+          : work.name + ' ins Projekt übernommen.');
+    }, text: (opt.inProject || opt.inLibrary) ? 'Änderungen speichern' : 'Ins Projekt übernehmen' }));
+  }
+  function valid() {
+    if (!String(work.name || '').trim()) { toast('Bitte einen Namen vergeben.'); return false; }
+    if (!work.ingredients.length) { toast('Mindestens eine Zutat ist nötig.'); return false; }
+    return true;
   }
   function refresh(live) { live.innerHTML = cocktailPreviewSvg(work, 0, 0, { scale:1.0 }); }
   build();
@@ -4344,6 +4602,14 @@ function checkDeepLink() {
     }
     Store.state.projects.push(r.project);
     Store.state.activeId = r.project.id;
+    (r.ingredients || []).forEach(function (d) {
+      if (!Store.state.customIngredients.some(function (x) { return x.id === d.id; }))
+        Store.state.customIngredients.push(d);
+    });
+    (r.garnishes || []).forEach(function (d) {
+      if (!Store.state.customGarnishes.some(function (x) { return x.id === d.id; }))
+        Store.state.customGarnishes.push(d);
+    });
     r.library.forEach(function (c) { Store.state.customLibrary.push(c); });
     Store.save();
     history.replaceState(null, '', location.pathname);
@@ -4374,6 +4640,233 @@ function boot() {
 if (typeof document !== 'undefined') {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
+}
+
+
+/* ===== 41_ui_custom.js ===== */
+
+/* ============================================================
+   Oberfläche: eigene Zutaten und Garnituren anlegen und pflegen
+   ============================================================ */
+
+/* Kleines Vorschaufeld für ein Muster */
+function patternPreviewSvg(style, w, h) {
+  var drw = new Drw();
+  fillHatched(drw, [[0,0],[w,0],[w,h],[0,h]], style, { scale:1, lw:0.14 });
+  return opsToSvg(drw.ops, w, h, { style:'width:100%;height:100%;display:block' });
+}
+function garnishPreviewSvg(pic, size) {
+  var drw = new Drw();
+  drawPic(drw, pic, size / 2, size / 2, size * 0.82, 0.22);
+  return opsToSvg(drw.ops, size, size, { style:'width:100%;height:100%;display:block' });
+}
+
+var CUSTOM_COLORS = ['#EF6C6C','#F4A0A0','#E8618F','#F0A8C8','#C77BD1','#DCB8E8','#9A8BE0',
+  '#7C9BE8','#5FB3E8','#4FC3D6','#4FB5A0','#7CC262','#B5CE4A','#EBD44A','#F0B341','#E88A45',
+  '#B98D6A','#98A2A8','#5A2A14','#3A2114','#C41E3A','#2E8CD6','#FBF8F2','#EAF4F8'];
+
+/* --------- Zutat anlegen oder ändern --------- */
+function openIngredientDialog(existing, onDone) {
+  var dlg = $('#dlg2'); clear(dlg);
+  var d = existing ? JSON.parse(JSON.stringify(existing)) : {
+    id:null, name:'', cls:'other', color:CUSTOM_COLORS[Math.floor(Math.random() * 18)],
+    pat:PATTERN_IDS[Math.floor(Math.random() * PATTERN_IDS.length)], abbr:'', abv:0
+  };
+  dlg.appendChild(el('div', { class:'dlg-head' }, [
+    el('h2', { text: existing ? 'Zutat bearbeiten' : 'Eigene Zutat anlegen' }),
+    el('button', { class:'btn small ghost', onclick:function () { dlg.close(); }, text:'Schließen' })
+  ]));
+  var body = el('div', { class:'dlg-body' });
+  var prev = el('div', { class:'patprev' });
+  function paint() {
+    if (!d.abbr) d.abbr = suggestAbbr(d.name);
+    prev.innerHTML = patternPreviewSvg(d, 46, 14);
+  }
+
+  var nameInp = el('input', { type:'text', value:d.name, placeholder:'z. B. Rhabarberlikör',
+    oninput:function (e) { d.name = e.target.value; if (!existing) d.abbr = suggestAbbr(d.name); paint(); } });
+  body.appendChild(field('Name', nameInp));
+  body.appendChild(el('div', { class:'row' }, [
+    field('Art', selectOf(ING_CLASSES.map(function (c) { return [c.id, c.name]; }), d.cls,
+      function (e) { d.cls = e.target.value; })),
+    field('Alkohol (% vol)', el('input', { type:'number', min:'0', max:'96', step:'0.5', value:d.abv || 0,
+      oninput:function (e) { d.abv = parseFloat(e.target.value) || 0; } }))
+  ]));
+
+  body.appendChild(el('span', { class:'lbl', text:'Farbe' }));
+  var swatches = el('div', { class:'swatches' });
+  CUSTOM_COLORS.forEach(function (c) {
+    var b = el('button', { class:'sw' + (c === d.color ? ' on' : ''), style:'background:' + c,
+      title:c, onclick:function () { d.color = c; renderSw(); paint(); } });
+    swatches.appendChild(b);
+  });
+  var free = el('input', { type:'color', value:d.color, title:'freie Farbe',
+    oninput:function (e) { d.color = e.target.value; renderSw(); paint(); } });
+  swatches.appendChild(free);
+  function renderSw() {
+    Array.prototype.forEach.call(swatches.querySelectorAll('.sw'), function (b) {
+      b.classList.toggle('on', b.style.backgroundColor === hexToCss(d.color));
+    });
+  }
+  body.appendChild(swatches);
+
+  body.appendChild(el('span', { class:'lbl', text:'Muster' }));
+  var pats = el('div', { class:'patgrid' });
+  PATTERN_IDS.forEach(function (pid) {
+    var cell = el('button', { class:'pat' + (pid === d.pat ? ' on' : ''), title:pid,
+      html: patternPreviewSvg({ pat:pid, color:d.color, abbr:d.abbr || 'AB' }, 34, 13),
+      onclick:function () {
+        d.pat = pid;
+        Array.prototype.forEach.call(pats.children, function (c2) { c2.classList.remove('on'); });
+        cell.classList.add('on'); paint();
+      } });
+    pats.appendChild(cell);
+  });
+  body.appendChild(pats);
+  body.appendChild(el('div', { class:'row', style:'margin-top:10px;align-items:flex-end' }, [
+    field('Kürzel für das Buchstabenmuster', el('input', { type:'text', maxlength:'3', value:d.abbr,
+      oninput:function (e) { d.abbr = e.target.value.toUpperCase(); paint(); } })),
+    el('div', {}, [el('span', { class:'lbl', text:'Vorschau' }), prev])
+  ]));
+  dlg.appendChild(body);
+
+  dlg.appendChild(el('div', { class:'dlg-foot' }, [
+    el('button', { class:'btn', onclick:function () { dlg.close(); }, text:'Abbrechen' }),
+    el('button', { class:'btn primary', onclick:function () {
+      if (!d.name.trim()) { toast('Bitte einen Namen vergeben.'); return; }
+      if (!d.id) d.id = slugId('own_', d.name);
+      if (!d.abbr) d.abbr = suggestAbbr(d.name);
+      registerCustomIngredient(d);
+      var list = Store.state.customIngredients;
+      var i = list.findIndex(function (x) { return x.id === d.id; });
+      if (i >= 0) list[i] = d; else list.push(d);
+      Store.save(); dlg.close();
+      toast(existing ? 'Zutat geändert.' : 'Zutat „' + d.name + '“ angelegt.');
+      if (onDone) onDone(d);
+    }, text: existing ? 'Änderungen speichern' : 'Zutat anlegen' })
+  ]));
+  paint(); renderSw();
+  dlg.showModal();
+}
+function hexToCss(h) {
+  var x = h.replace('#', '');
+  if (x.length === 3) x = x[0]+x[0]+x[1]+x[1]+x[2]+x[2];
+  return 'rgb(' + parseInt(x.slice(0,2),16) + ', ' + parseInt(x.slice(2,4),16) + ', ' + parseInt(x.slice(4,6),16) + ')';
+}
+
+/* --------- Garnitur anlegen oder ändern --------- */
+function openGarnishDialog(existing, onDone) {
+  var dlg = $('#dlg2'); clear(dlg);
+  var d = existing ? JSON.parse(JSON.stringify(existing)) : { id:null, key:null, name:'', pic:'cherry', at:'rim' };
+  dlg.appendChild(el('div', { class:'dlg-head' }, [
+    el('h2', { text: existing ? 'Garnitur bearbeiten' : 'Eigene Garnitur anlegen' }),
+    el('button', { class:'btn small ghost', onclick:function () { dlg.close(); }, text:'Schließen' })
+  ]));
+  var body = el('div', { class:'dlg-body' });
+  body.appendChild(field('Name', el('input', { type:'text', value:d.name, placeholder:'z. B. Kandisstange',
+    oninput:function (e) { d.name = e.target.value; } })));
+  body.appendChild(field('Platz in der Zeichnung',
+    selectOf(GAR_POSITIONS, d.at, function (e) { d.at = e.target.value; })));
+  body.appendChild(el('span', { class:'lbl', text:'Piktogramm' }));
+  var grid = el('div', { class:'picgrid' });
+  PIC_CHOICES.forEach(function (pc) {
+    var cell = el('button', { class:'pic' + (pc[0] === d.pic ? ' on' : ''), title:pc[1],
+      html: garnishPreviewSvg(pc[0], 22),
+      onclick:function () {
+        d.pic = pc[0];
+        Array.prototype.forEach.call(grid.children, function (c) { c.classList.remove('on'); });
+        cell.classList.add('on');
+      } });
+    grid.appendChild(cell);
+  });
+  body.appendChild(grid);
+  body.appendChild(el('p', { class:'hint', text: existing
+    ? 'Kennbuchstabe: (' + d.key + ')'
+    : 'Der Kennbuchstabe für Zeichnung und Legende wird automatisch vergeben.' }));
+  dlg.appendChild(body);
+  dlg.appendChild(el('div', { class:'dlg-foot' }, [
+    el('button', { class:'btn', onclick:function () { dlg.close(); }, text:'Abbrechen' }),
+    el('button', { class:'btn primary', onclick:function () {
+      if (!d.name.trim()) { toast('Bitte einen Namen vergeben.'); return; }
+      if (!d.id) { d.id = slugId('owng_', d.name); d.key = nextGarnishKey(); }
+      registerCustomGarnish(d);
+      var list = Store.state.customGarnishes;
+      var i = list.findIndex(function (x) { return x.id === d.id; });
+      if (i >= 0) list[i] = d; else list.push(d);
+      Store.save(); dlg.close();
+      toast(existing ? 'Garnitur geändert.' : 'Garnitur „' + d.name + '“ angelegt (' + d.key + ').');
+      if (onDone) onDone(d);
+    }, text: existing ? 'Änderungen speichern' : 'Garnitur anlegen' })
+  ]));
+  dlg.showModal();
+}
+
+/* --------- Verwaltung beider Listen --------- */
+function openLibraryManager() {
+  var dlg = $('#dlg'); clear(dlg);
+  function build() {
+    clear(dlg);
+    dlg.appendChild(el('div', { class:'dlg-head' }, [
+      el('h2', { text:'Eigene Zutaten und Garnituren' }),
+      el('button', { class:'btn small ghost', onclick:function () { dlg.close(); render(); }, text:'Schließen' })
+    ]));
+    var body = el('div', { class:'dlg-body' });
+
+    body.appendChild(el('h3', { style:'margin:0 0 8px;font-size:13px', text:'Zutaten' }));
+    var ci = Store.state.customIngredients || [];
+    if (!ci.length) body.appendChild(el('p', { class:'hint', text:'Noch keine eigene Zutat angelegt.' }));
+    var ul = el('ul', { class:'plist' });
+    ci.forEach(function (d) {
+      ul.appendChild(el('li', {}, [
+        el('span', { class:'swpr', html: patternPreviewSvg(d, 40, 13) }),
+        el('span', { class:'txt' }, [el('b', { text:d.name }),
+          el('small', { text:(CLASS_BY_ID[d.cls] || {}).name + ' · Kürzel ' + (d.abbr || '—') })]),
+        el('span', { class:'acts' }, [
+          el('button', { class:'btn small', onclick:function () { openIngredientDialog(d, build); }, text:'Bearbeiten' }),
+          el('button', { class:'btn small danger', onclick:function () {
+            if (ingredientInUse(Store.state, d.id)) { toast('Diese Zutat wird noch in einem Cocktail verwendet.'); return; }
+            if (!confirm('Zutat „' + d.name + '“ löschen?')) return;
+            Store.state.customIngredients = ci.filter(function (x) { return x.id !== d.id; });
+            unregisterCustomIngredient(d.id); Store.save(); build();
+          }, text:'×' })
+        ])
+      ]));
+    });
+    if (ci.length) body.appendChild(ul);
+    body.appendChild(el('button', { class:'btn small', style:'margin-top:8px',
+      onclick:function () { openIngredientDialog(null, build); }, text:'Zutat anlegen' }));
+
+    body.appendChild(el('h3', { style:'margin:20px 0 8px;font-size:13px', text:'Garnituren und Zusätze' }));
+    var cg = Store.state.customGarnishes || [];
+    if (!cg.length) body.appendChild(el('p', { class:'hint', text:'Noch keine eigene Garnitur angelegt.' }));
+    var ul2 = el('ul', { class:'plist' });
+    cg.forEach(function (d) {
+      ul2.appendChild(el('li', {}, [
+        el('span', { class:'swpr', style:'width:34px', html: garnishPreviewSvg(d.pic, 22) }),
+        el('span', { class:'txt' }, [el('b', { text:d.name }),
+          el('small', { text:'Kennbuchstabe (' + d.key + ') · ' +
+            (GAR_POSITIONS.filter(function (q) { return q[0] === d.at; })[0] || ['', ''])[1] })]),
+        el('span', { class:'acts' }, [
+          el('button', { class:'btn small', onclick:function () { openGarnishDialog(d, build); }, text:'Bearbeiten' }),
+          el('button', { class:'btn small danger', onclick:function () {
+            if (garnishInUse(Store.state, d.id)) { toast('Diese Garnitur wird noch in einem Cocktail verwendet.'); return; }
+            if (!confirm('Garnitur „' + d.name + '“ löschen?')) return;
+            Store.state.customGarnishes = cg.filter(function (x) { return x.id !== d.id; });
+            unregisterCustomGarnish(d.id); Store.save(); build();
+          }, text:'×' })
+        ])
+      ]));
+    });
+    if (cg.length) body.appendChild(ul2);
+    body.appendChild(el('button', { class:'btn small', style:'margin-top:8px',
+      onclick:function () { openGarnishDialog(null, build); }, text:'Garnitur anlegen' }));
+
+    body.appendChild(el('p', { class:'hint', style:'margin-top:18px',
+      text:'Eigene Definitionen werden mit exportiert und über den Link mitgegeben, damit Empfänger dieselben Muster und Kennbuchstaben sehen.' }));
+    dlg.appendChild(body);
+  }
+  build();
+  dlg.showModal();
 }
 </script>
 </body>
