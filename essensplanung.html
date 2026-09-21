@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Essensplanung">
+<meta name="theme-color" content="#F6F8FB" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E1626" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<title>Essensplanung</title>
+<style>
+:root{
+  --enamel:#F6F8FB; --plate:#FFFFFF; --rim:#1E4FA0; --rim-ink:#FFFFFF; --rim-soft:#E6EDF8;
+  --ink:#172033; --speckle:#586477; --line:#D6DDE8; --tomato:#B93A22; --basil:#2B7249; --mustard:#8A5F00;
+  --shadow:0 1px 0 rgba(23,32,51,.06);
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{
+  --enamel:#0E1626; --plate:#162136; --rim:#86AAEE; --rim-ink:#0E1626; --rim-soft:#1C2B48;
+  --ink:#EDF1F8; --speckle:#A7B3C6; --line:#2B3A57; --tomato:#FF8C74; --basil:#72D39B; --mustard:#F0C45C;
+  --shadow:none;
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--enamel);color:var(--ink);font:16px/1.45 var(--sans);min-height:100dvh;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+:focus-visible{outline:3px solid var(--rim);outline-offset:2px}
+.hidden{display:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------- Kopf ---------- */
+.top{position:sticky;top:0;z-index:20;background:var(--enamel);display:flex;align-items:center;gap:8px;
+  padding:10px 16px 8px;border-bottom:1px solid var(--line)}
+.top .ttl{font-family:var(--serif);font-size:21px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{min-width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--rim);font-size:15px;font-weight:600;padding:0 8px}
+.iconbtn:active{background:var(--rim-soft)}
+.iconbtn svg{width:22px;height:22px}
+.syncpill{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--speckle);padding:6px 9px;border-radius:99px;border:1px solid var(--line);background:var(--plate);min-height:32px}
+.syncpill i{width:8px;height:8px;border-radius:50%;background:var(--speckle);display:block}
+.syncpill.ok i{background:var(--basil)} .syncpill.busy i{background:var(--rim)} .syncpill.err i{background:var(--tomato)}
+
+main{max-width:640px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
+
+/* ---------- Untere Navigation ---------- */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--plate);border-top:1px solid var(--line);
+  display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;min-height:52px;
+  color:var(--speckle);font-size:12px;font-weight:600;border-radius:12px}
+.tabs button svg{width:24px;height:24px}
+.tabs button[aria-current="page"]{color:var(--rim)}
+.tabs button[aria-current="page"] svg{stroke-width:2.4}
+
+/* ---------- Grundbausteine ---------- */
+h2{font-family:var(--serif);font-size:24px;font-weight:600;line-height:1.2;margin-bottom:4px}
+h3{font-size:15px;font-weight:700;margin:22px 0 8px}
+.sub{color:var(--speckle);font-size:14px}
+.serif{font-family:var(--serif)}
+.box{background:var(--plate);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.stack>*+*{margin-top:10px}
+.row{display:flex;align-items:center;gap:10px}
+.grow{flex:1;min-width:0}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 16px;border-radius:14px;
+  font-weight:700;font-size:16px;background:var(--plate);border:1.5px solid var(--line);color:var(--ink);width:100%}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--rim);border-color:var(--rim);color:var(--rim-ink)}
+.btn.quiet{border-color:transparent;background:transparent;color:var(--rim);min-height:44px}
+.btn.danger{color:var(--tomato)}
+.btn.small{min-height:40px;padding:8px 12px;font-size:14px;border-radius:12px;width:auto}
+.btns{display:grid;gap:10px;margin-top:16px}
+.btns.two{grid-template-columns:1fr 1fr}
+.field{display:block;margin-top:14px}
+.field>span{display:block;font-size:14px;font-weight:600;color:var(--speckle);margin-bottom:6px}
+.in{width:100%;min-height:48px;background:var(--plate);border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font-size:16px}
+.in:focus{border-color:var(--rim);outline:none}
+textarea.in{min-height:110px;resize:vertical;line-height:1.5}
+select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--speckle) 50%),linear-gradient(135deg,var(--speckle) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+.hint{font-size:13px;color:var(--speckle);margin-top:6px}
+.warn{color:var(--tomato)}
+.empty{text-align:center;padding:36px 16px;color:var(--speckle)}
+.empty .serif{font-size:21px;color:var(--ink);margin-bottom:6px}
+.seg{display:flex;background:var(--rim-soft);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;min-height:40px;border-radius:9px;font-size:14px;font-weight:600;color:var(--speckle);padding:6px 8px}
+.seg button[aria-pressed="true"]{background:var(--plate);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--plate);font-size:22px;font-weight:600;color:var(--rim)}
+.stepper output{min-width:46px;text-align:center;font-weight:700;font-size:18px;font-variant-numeric:tabular-nums}
+.switch{position:relative;width:52px;height:32px;flex-shrink:0}
+.switch input{opacity:0;position:absolute;inset:0;margin:0;cursor:pointer;z-index:1}
+.switch i{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:background .15s}
+.switch i:after{content:'';position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+.switch input:checked+i{background:var(--basil)}
+.switch input:checked+i:after{transform:translateX(20px)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 8px;border-radius:99px;
+  background:var(--rim-soft);color:var(--rim);white-space:nowrap}
+.badge.cook{background:transparent;border:1.5px solid var(--basil);color:var(--basil)}
+.badge.rest{background:transparent;border:1.5px dashed var(--mustard);color:var(--mustard)}
+.badge.block{background:transparent;border:1.5px solid var(--tomato);color:var(--tomato)}
+.badge.done{background:transparent;border:1.5px solid var(--speckle);color:var(--speckle)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{min-height:34px;padding:5px 12px;border-radius:99px;border:1.5px solid var(--line);font-size:14px;font-weight:600;color:var(--speckle);background:var(--plate)}
+.chip[aria-pressed="true"]{border-color:var(--rim);color:var(--rim);background:var(--rim-soft)}
+
+/* ---------- Vorschlag: der Teller ---------- */
+.plate-wrap{display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 0 4px}
+.plate{width:min(76vw,300px);aspect-ratio:1;border-radius:50%;background:var(--plate);
+  border:12px solid var(--rim);box-shadow:inset 0 0 0 7px var(--plate),inset 0 0 0 8px var(--line);
+  display:flex;align-items:center;justify-content:center;padding:34px;position:relative;overflow:hidden}
+.plate .dish{font-family:var(--serif);font-size:clamp(22px,6.4vw,30px);line-height:1.15;font-weight:600;overflow-wrap:anywhere}
+.plate img{position:absolute;inset:7px;width:calc(100% - 14px);height:calc(100% - 14px);object-fit:cover;border-radius:50%}
+.dish-under{font-family:var(--serif);font-size:26px;font-weight:600;line-height:1.2;margin-top:14px;overflow-wrap:anywhere}
+.plate-meta{color:var(--speckle);font-size:15px;margin-top:8px}
+.progress{margin:18px 0 6px;font-size:14px;color:var(--speckle);text-align:center}
+.progress-bar{height:6px;background:var(--rim-soft);border-radius:99px;overflow:hidden;margin-top:6px}
+.progress-bar i{display:block;height:100%;background:var(--rim);border-radius:99px}
+.queue{margin-top:6px}
+.queue li{list-style:none;display:flex;align-items:baseline;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.queue li:last-child{border-bottom:none}
+.queue .n{color:var(--speckle);font-size:13px;font-variant-numeric:tabular-nums;width:20px}
+.queue .nm{font-family:var(--serif);font-size:17px;flex:1;min-width:0}
+.queue .d{font-size:13px;color:var(--speckle);white-space:nowrap}
+
+/* ---------- Woche ---------- */
+.weekhead{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.weekhead .kw{flex:1;text-align:center}
+.weekhead .kw b{display:block;font-family:var(--serif);font-size:24px;font-weight:600}
+.weekhead .kw span{font-size:14px;color:var(--speckle)}
+.draftbar{background:var(--rim-soft);border:1.5px dashed var(--rim);border-radius:14px;padding:12px 14px;margin-bottom:12px;font-size:14px}
+.draftbar b{color:var(--rim)}
+.days{background:var(--plate);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
+.day{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:12px 14px;min-height:66px;border-top:1px solid var(--line);position:relative}
+.day:first-child{border-top:none}
+.day:active{background:var(--rim-soft)}
+.day.today:before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:4px;border-radius:0 4px 4px 0;background:var(--rim)}
+.day.past{opacity:.62}
+.day .dt{width:44px;flex-shrink:0;text-align:center}
+.day .dt b{display:block;font-size:15px}
+.day .dt span{font-size:12px;color:var(--speckle)}
+.day .what{flex:1;min-width:0}
+.day .nm{font-family:var(--serif);font-size:17px;line-height:1.25;overflow-wrap:anywhere}
+.day .nm.free{font-family:var(--sans);font-size:15px;color:var(--speckle)}
+.day .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.day.drafted{background:linear-gradient(90deg,var(--rim-soft),transparent 60%)}
+.lock{width:16px;height:16px;color:var(--speckle);flex-shrink:0}
+
+/* ---------- Rezepte ---------- */
+.quick{display:flex;gap:8px}
+.quick .in{flex:1}
+.quick .btn{width:auto;min-width:52px;padding:0 14px}
+.rlist{margin-top:12px}
+.rcard{background:var(--plate);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.rcard.paused{opacity:.72}
+.rcard .head{display:flex;align-items:center;gap:12px}
+.rcard .thumb{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;border:3px solid var(--rim)}
+.rcard .nm{font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.2;text-align:left;overflow-wrap:anywhere}
+.rcard .meta{font-size:13px;color:var(--speckle);margin-top:2px;text-align:left}
+.rcard .ctrl{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:10px}
+.rcard .ctrl label{font-size:14px;color:var(--speckle);display:flex;align-items:center;gap:8px}
+.wstep{display:flex;align-items:center;gap:4px}
+.wstep button{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--line);color:var(--rim);font-weight:700;font-size:18px;background:var(--plate)}
+.wstep output{min-width:34px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* ---------- Rezept bearbeiten ---------- */
+.nameinput{font-family:var(--serif);font-size:22px;font-weight:600}
+.live{font-size:14px;color:var(--basil);font-weight:600;margin-top:6px}
+.ingrow{border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:8px;background:var(--plate)}
+.ingrow .l1{display:grid;grid-template-columns:72px 96px 1fr 40px;gap:6px}
+.ingrow .l2{display:grid;grid-template-columns:1fr 40px 40px;gap:6px;margin-top:6px}
+.ingrow .in{min-height:42px;padding:8px 10px;font-size:15px}
+.ingrow select.in{padding-right:24px;background-position:calc(100% - 14px) 50%,calc(100% - 9px) 50%}
+.ingrow .x{width:40px;height:42px;border-radius:10px;border:1.5px solid var(--line);color:var(--speckle);font-size:15px}
+.ingrow .newcat{margin-top:6px;font-size:13px;color:var(--mustard);display:flex;align-items:center;gap:8px}
+.ingrow .newcat select{min-height:38px;font-size:14px;padding:6px 26px 6px 8px}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin-top:8px}
+.gallery button{aspect-ratio:1;border-radius:12px;overflow:hidden;position:relative;border:1.5px solid var(--line);background:var(--rim-soft)}
+.gallery img{width:100%;height:100%;object-fit:cover;display:block}
+.gallery .cover{position:absolute;left:4px;top:4px;background:var(--rim);color:var(--rim-ink);font-size:11px;font-weight:700;padding:2px 6px;border-radius:99px}
+.gallery .add{display:flex;align-items:center;justify-content:center;font-size:30px;color:var(--rim);border-style:dashed}
+
+/* ---------- Einkauf ---------- */
+.shopsec{margin-top:18px}
+.shopsec>h3{margin:0 0 8px;display:flex;align-items:baseline;gap:8px}
+.shopsec>h3 small{font-weight:600;color:var(--speckle);font-size:13px}
+.cat{font-size:13px;font-weight:700;color:var(--speckle);margin:12px 0 4px}
+.item{display:flex;align-items:center;gap:12px;padding:9px 2px;min-height:48px;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.item:last-child{border-bottom:none}
+.item input{width:22px;height:22px;accent-color:var(--basil);flex-shrink:0}
+.item .nm{flex:1;min-width:0}
+.item .amt{color:var(--speckle);font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.item.checked .nm,.item.checked .amt{text-decoration:line-through;color:var(--speckle)}
+details.box summary{cursor:pointer;font-weight:700;min-height:28px;list-style:none;display:flex;align-items:center;justify-content:space-between}
+details.box summary::-webkit-details-marker{display:none}
+details.box summary:after{content:'+';font-size:20px;color:var(--rim)}
+details.box[open] summary:after{content:'−'}
+.warnbox{border-color:var(--tomato)}
+.warnbox li{list-style:none;color:var(--tomato);font-size:14px;padding:3px 0}
+
+/* ---------- Blätter (Dialoge) ---------- */
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(10,16,28,.48);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--enamel);width:100%;max-width:640px;max-height:88dvh;overflow:auto;border-radius:22px 22px 0 0;
+  padding:8px 18px calc(18px + env(safe-area-inset-bottom));animation:up .18s ease-out}
+.sheet:before{content:'';display:block;width:40px;height:5px;border-radius:99px;background:var(--line);margin:0 auto 12px}
+.sheet h2{font-size:22px}
+@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+.opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:52px;padding:12px 14px;border-radius:14px;background:var(--plate);border:1px solid var(--line);margin-top:8px;font-weight:600}
+.opt small{display:block;font-weight:400;color:var(--speckle);font-size:13px}
+.opt.danger{color:var(--tomato)}
+.pick{max-height:52dvh;overflow:auto;margin-top:10px}
+.toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(10px);z-index:60;
+  background:var(--ink);color:var(--enamel);padding:12px 18px;border-radius:14px;font-size:15px;font-weight:600;max-width:88vw;text-align:center;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- Anmeldung ---------- */
+.auth{max-width:440px;margin:0 auto;padding:40px 22px calc(40px + env(safe-area-inset-bottom))}
+.auth .mark{width:92px;height:92px;border-radius:50%;border:10px solid var(--rim);background:var(--plate);box-shadow:inset 0 0 0 5px var(--plate),inset 0 0 0 6px var(--line);margin:0 auto 22px}
+.auth h1{font-family:var(--serif);font-size:32px;font-weight:600;text-align:center;line-height:1.15}
+.auth p.lead{text-align:center;color:var(--speckle);margin-top:8px}
+.steps{padding-left:20px;margin-top:8px}
+.steps li{margin-top:6px;font-size:15px}
+.backlink{display:inline-flex;align-items:center;min-height:44px;color:var(--rim);font-weight:600;text-decoration:none}
+
+/* ---------- Kochansicht ---------- */
+.cookscreen{position:fixed;inset:0;z-index:40;background:var(--plate);overflow:auto;padding:calc(12px + env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom))}
+.cookscreen .inner{max-width:720px;margin:0 auto}
+.cookscreen h1{font-family:var(--serif);font-size:clamp(30px,8vw,44px);line-height:1.1;font-weight:600;margin:10px 0 6px}
+.cookscreen .hero{width:100%;max-height:44dvh;object-fit:cover;border-radius:18px;margin:10px 0}
+.cookscreen .ing{font-size:20px;line-height:1.4}
+.cookscreen .ing li{list-style:none;padding:9px 0;border-bottom:1px solid var(--line);display:flex;gap:12px;cursor:pointer}
+.cookscreen .ing li.done{color:var(--speckle);text-decoration:line-through}
+.cookscreen .ing .q{min-width:96px;font-weight:700;font-variant-numeric:tabular-nums}
+.cookscreen ol.steps-big{padding:0;counter-reset:s}
+.cookscreen ol.steps-big li{list-style:none;counter-increment:s;font-size:22px;line-height:1.5;padding:16px 0 16px 54px;position:relative;border-bottom:1px solid var(--line);cursor:pointer}
+.cookscreen ol.steps-big li:before{content:counter(s);position:absolute;left:0;top:14px;width:38px;height:38px;border-radius:50%;border:3px solid var(--rim);
+  color:var(--rim);font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center}
+.cookscreen ol.steps-big li.done{color:var(--speckle)}
+.cookscreen ol.steps-big li.done:before{background:var(--rim);color:var(--rim-ink)}
+.md p{margin-top:8px} .md ul{padding-left:20px;margin-top:6px}
+
+/* ---------- Druck ---------- */
+@media print{
+  .top,.tabs,.noprint,.scrim,.toast{display:none!important}
+  body{background:#fff;color:#000;padding:0}
+  main{padding:0;max-width:none}
+  .box{border:none;box-shadow:none;padding:0}
+  .item{min-height:0;padding:3px 0;border:none}
+  .item input{width:14px;height:14px}
+  details.box>*{display:block}
+}
+
+</style>
+</head>
+<body>
+<div id="auth" class="hidden"></div>
+<div id="shell" class="hidden">
+  <header class="top">
+    <span id="topleft"></span>
+    <div class="ttl" id="ttl">Essensplanung</div>
+    <button class="syncpill" id="syncpill" aria-label="Geräteabgleich"></button>
+    <button class="iconbtn" id="gear" aria-label="Einstellungen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </header>
+  <main id="main"></main>
+  <nav class="tabs" id="tabs" aria-label="Bereiche"></nav>
+</div>
+<div id="cookview" class="cookscreen hidden" role="dialog" aria-label="Kochansicht"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:24px">Die Essensplanung braucht JavaScript.</p></noscript>
+<script>
+/* ==========================================================================
+   Essensplanung – Kernlogik (rein, ohne DOM/Speicher)
+   Umsetzung der Spezifikation „Rezept-Rotation“ Abschnitt 5
+   ========================================================================== */
+const EP = (function () {
+  'use strict';
+
+  /* ---------- Hilfen ---------- */
+  let clock = () => Date.now();
+  function setClock(fn) { clock = fn; }
+  function uuid() {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return 'id-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 12);
+  }
+  function touch(o) {
+    const t = clock();
+    if (!o.createdAt) o.createdAt = t;
+    o.updatedAt = Math.max(t, (o.updatedAt || 0) + 1);
+    return o;
+  }
+  const live = arr => (arr || []).filter(x => !x.deleted);
+  function tomb(o) { o.deleted = true; touch(o); }
+
+  /* seedbarer Zufallsgenerator (mulberry32) */
+  function seededRng(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* ---------- Datum (lokale Zeit, Woche ab Montag) ---------- */
+  const pad = n => String(n).padStart(2, '0');
+  function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function parseISO(s) { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d, 12); }
+  function addDays(s, n) { const d = parseISO(s); d.setDate(d.getDate() + n); return iso(d); }
+  function todayISO() { return iso(new Date()); }
+  function weekStart(s) { const d = parseISO(s); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return iso(d); }
+  function weekDays(start) { return [0, 1, 2, 3, 4, 5, 6].map(i => addDays(start, i)); }
+  function isoWeek(s) {
+    const d = parseISO(s);
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const day = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - day);
+    const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil(((t - y0) / 86400000 + 1) / 7);
+  }
+  function fmtDate(s) { const [y, m, d] = s.split('-'); return d + '.' + m + '.' + y; }
+  function fmtShort(s) { const [, m, d] = s.split('-'); return d + '.' + m + '.'; }
+  const WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  const WD_LONG = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+  function weekday(s) { return WD[parseISO(s).getDay()]; }
+  function weekdayLong(s) { return WD_LONG[parseISO(s).getDay()]; }
+  function fmtRange(from, to) {
+    if (from.slice(0, 4) === to.slice(0, 4)) return fmtShort(from) + '–' + fmtDate(to);
+    return fmtDate(from) + '–' + fmtDate(to);
+  }
+
+  /* ---------- 5.1 Tage pro Gericht ---------- */
+  function daysFor(recipe, settings) {
+    if (recipe.daysOverride) return recipe.daysOverride;
+    const raw = recipe.servings / settings.portionsPerDay;
+    const days = settings.roundingMode === 'FLOOR' ? Math.floor(raw) : Math.ceil(raw);
+    return Math.max(1, days);
+  }
+  /* Hinweistext für ungerade Portionen */
+  function daysHint(recipe, settings) {
+    if (recipe.daysOverride) return '';
+    const rest = recipe.servings % settings.portionsPerDay;
+    if (!rest || recipe.servings < settings.portionsPerDay) return '';
+    return settings.roundingMode === 'FLOOR'
+      ? `${rest} ${rest === 1 ? 'Portion bleibt' : 'Portionen bleiben'} übrig`
+      : `letzter Tag nur ${rest} ${rest === 1 ? 'Portion' : 'Portionen'}`;
+  }
+
+  /* ---------- 5.2 Rotation ---------- */
+  function activeRecipes(db) {
+    return live(db.recipes).filter(r => r.inRotation && !r.archivedAt);
+  }
+  function repairAdjacency(items, prevLastRecipeId) {
+    let moves = 0;
+    const maxMoves = items.length * items.length + 10;
+    for (let i = 0; i < items.length && moves < maxMoves; i++) {
+      const prev = i === 0 ? prevLastRecipeId : items[i - 1].recipeId;
+      if (items[i].recipeId !== prev) continue;
+      const j = items.findIndex((x, idx) => idx > i && x.recipeId !== prev);
+      if (j !== -1) {
+        const [moved] = items.splice(j, 1);
+        items.splice(i, 0, moved);
+        moves++;
+        continue;
+      }
+      // Abweichung von der Referenz: Kein Tauschpartner mehr weiter hinten (z. B. beide
+      // Vorkommen ganz am Ende). Dann den Eintrag an die nächstgelegene frühere Stelle setzen,
+      // an der keiner seiner Nachbarn dasselbe Rezept ist. Sonst ist es unvermeidbar.
+      const x = items[i].recipeId;
+      let target = -1;
+      for (let k = i - 1; k >= 0; k--) {
+        const left = k === 0 ? prevLastRecipeId : items[k - 1].recipeId;
+        if (left !== x && items[k].recipeId !== x) { target = k; break; }
+      }
+      if (target === -1) break;
+      const [moved] = items.splice(i, 1);
+      items.splice(target, 0, moved);
+      moves++;
+      i = target; // ab hier erneut prüfen
+    }
+  }
+  function countAdjacent(items, prevLastRecipeId) {
+    let a = 0;
+    for (let i = 0; i < items.length; i++) {
+      const prev = i === 0 ? prevLastRecipeId : items[i - 1].recipeId;
+      if (items[i].recipeId === prev) a++;
+    }
+    return a;
+  }
+  /* Rückfallebene: ordnet so um, dass nie dasselbe Rezept folgt (sofern überhaupt möglich).
+     Wählt jeweils das Rezept mit den meisten verbleibenden Vorkommen, das nicht dem vorigen
+     entspricht; bei Gleichstand entscheidet die ursprüngliche (gemischte) Reihenfolge. */
+  function greedyArrange(items, prevLastRecipeId) {
+    const queues = new Map();
+    items.forEach(it => { if (!queues.has(it.recipeId)) queues.set(it.recipeId, []); queues.get(it.recipeId).push(it); });
+    const out = [];
+    let prev = prevLastRecipeId;
+    while (out.length < items.length) {
+      let best = null;
+      queues.forEach((q, id) => {
+        if (!q.length || id === prev) return;
+        if (!best || q.length > best.q.length || (q.length === best.q.length && q[0].key < best.q[0].key)) best = { id, q };
+      });
+      if (!best) queues.forEach((q, id) => { if (q.length && !best) best = { id, q }; }); // unvermeidbar
+      out.push(best.q.shift());
+      prev = best.id;
+    }
+    return out;
+  }
+  function buildCycle(recipes, settings, cycleNumber, prevLastRecipeId, rng) {
+    const active = recipes.filter(r => r.inRotation && !r.archivedAt && !r.deleted)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+    const n = active.length;
+    let items = active.flatMap((r, idx) =>
+      Array.from({ length: r.weight }, (_, k) => {
+        const u = settings.rotationMode === 'SHUFFLE' ? rng() : (idx + 0.5) / n;
+        return { recipeId: r.id, occurrence: k + 1, key: (k + u) / r.weight };
+      }));
+    items.sort((a, b) => a.key - b.key);
+    repairAdjacency(items, prevLastRecipeId);
+    if (countAdjacent(items, prevLastRecipeId)) {
+      const alt = greedyArrange([...items].sort((a, b) => a.key - b.key), prevLastRecipeId);
+      if (countAdjacent(alt, prevLastRecipeId) < countAdjacent(items, prevLastRecipeId)) items = alt;
+    }
+    // Vorkommen in Reihenfolge des Auftretens nummerieren (1/2 vor 2/2)
+    const seen = {};
+    items.forEach(it => { seen[it.recipeId] = (seen[it.recipeId] || 0) + 1; it.occurrence = seen[it.recipeId]; });
+    return items.map((it, i) => touch({
+      id: uuid(), cycleNumber, recipeId: it.recipeId, occurrence: it.occurrence,
+      position: (i + 1) * 1000, status: 'PENDING', deleted: false,
+    }));
+  }
+  const byCyclePos = (a, b) => a.cycleNumber - b.cycleNumber || a.position - b.position;
+  function cycleEntries(db, c) { return live(db.rotation).filter(e => e.cycleNumber === c).sort(byCyclePos); }
+  function maxCycle(db) { return live(db.rotation).reduce((m, e) => Math.max(m, e.cycleNumber), 0); }
+  function openCycles(db) {
+    return [...new Set(live(db.rotation).filter(e => e.status === 'PENDING').map(e => e.cycleNumber))].sort((a, b) => a - b);
+  }
+  function pendingSorted(db) { return live(db.rotation).filter(e => e.status === 'PENDING').sort(byCyclePos); }
+  function lastRecipeOfCycle(db, c) {
+    const es = cycleEntries(db, c);
+    return es.length ? es[es.length - 1].recipeId : null;
+  }
+  function appendCycle(db, rng) {
+    const mc = maxCycle(db);
+    const cyc = buildCycle(live(db.recipes), db.settings, mc + 1, lastRecipeOfCycle(db, mc), rng);
+    db.rotation.push(...cyc);
+    return cyc;
+  }
+  /* next(n, exclude): die nächsten offenen Einträge; erzeugt bei Bedarf Folgedurchläufe (R3, R7) */
+  function nextEntries(db, n, exclude, rng) {
+    exclude = exclude || new Set();
+    for (let guard = 0; guard < 60; guard++) {
+      const pend = pendingSorted(db).filter(e => !exclude.has(e.id));
+      if (pend.length >= n) return pend.slice(0, n);
+      if (!appendCycle(db, rng).length) return pend;
+    }
+    return pendingSorted(db).filter(e => !exclude.has(e.id)).slice(0, n);
+  }
+  function setStatus(entry, status) { entry.status = status; touch(entry); }
+  function planEntry(entry) { setStatus(entry, 'PLANNED'); }
+  function completeEntry(entry) { setStatus(entry, 'DONE'); }
+  function skipEntry(entry) { setStatus(entry, 'SKIPPED'); }
+  function postpone(db, entry) {
+    const es = cycleEntries(db, entry.cycleNumber);
+    entry.position = es.reduce((m, e) => Math.max(m, e.position), 0) + 1000;
+    touch(entry);
+  }
+  function release(db, entry) {
+    const es = cycleEntries(db, entry.cycleNumber);
+    entry.position = es.reduce((m, e) => Math.min(m, e.position), Infinity) - 1000;
+    entry.status = 'PENDING';
+    touch(entry);
+  }
+  /* manualPick: erster offener Eintrag des Rezepts – oder null (dann MANUAL) */
+  function manualPickEntry(db, recipeId, exclude) {
+    exclude = exclude || new Set();
+    return pendingSorted(db).find(e => e.recipeId === recipeId && !exclude.has(e.id)) || null;
+  }
+  function resetRotation(db, rng) {
+    pendingSorted(db).forEach(tomb);
+    return appendCycle(db, rng);
+  }
+  /* Rezept in laufende Durchläufe einarbeiten (neu, reaktiviert, pausiert, Gewicht geändert) */
+  function syncRecipeIntoCycles(db, recipe, rng) {
+    const active = recipe.inRotation && !recipe.archivedAt && !recipe.deleted;
+    openCycles(db).forEach(c => {
+      const mine = cycleEntries(db, c).filter(e => e.recipeId === recipe.id);
+      if (!active) { mine.filter(e => e.status === 'PENDING').forEach(tomb); return; }
+      const diff = recipe.weight - mine.length;
+      if (diff > 0) insertIntoCycle(db, c, recipe, diff, rng);
+      if (diff < 0) {
+        mine.filter(e => e.status === 'PENDING').sort((a, b) => b.position - a.position)
+          .slice(0, -diff).forEach(tomb);
+      }
+    });
+  }
+  function insertIntoCycle(db, c, recipe, count, rng) {
+    const es = cycleEntries(db, c);
+    let occ = es.filter(e => e.recipeId === recipe.id).reduce((m, e) => Math.max(m, e.occurrence), 0);
+    const prevCycleLast = lastRecipeOfCycle(db, c - 1);
+    const nextCycleFirst = (cycleEntries(db, c + 1)[0] || {}).recipeId || null;
+    for (let k = 0; k < count; k++) {
+      const firstOpen = es.findIndex(e => e.status === 'PENDING');
+      const from = firstOpen === -1 ? es.length : firstOpen;
+      const slots = [];
+      for (let i = from; i <= es.length; i++) slots.push(i);
+      const ok = slots.filter(i => {
+        const prev = i === 0 ? prevCycleLast : es[i - 1].recipeId;
+        const next = i === es.length ? nextCycleFirst : es[i].recipeId;
+        return prev !== recipe.id && next !== recipe.id;
+      });
+      const pool = ok.length ? ok : slots;
+      const at = pool[Math.floor(rng() * pool.length)];
+      const entry = touch({ id: uuid(), cycleNumber: c, recipeId: recipe.id, occurrence: ++occ,
+        position: 0, status: 'PENDING', deleted: false });
+      es.splice(at, 0, entry);
+      db.rotation.push(entry);
+    }
+    es.forEach((e, i) => { const p = (i + 1) * 1000; if (e.position !== p) { e.position = p; touch(e); } });
+  }
+  /* Fortschritt des laufenden Durchlaufs für den Vorschlag */
+  function cycleProgress(db) {
+    const oc = openCycles(db);
+    if (!oc.length) return null;
+    const c = oc[0];
+    const es = cycleEntries(db, c);
+    const used = es.filter(e => e.status !== 'PENDING').length;
+    return { cycle: c, current: Math.min(es.length, used + 1), total: es.length };
+  }
+
+  /* ---------- 5.4 Wochenplan ---------- */
+  function nextFreeDates(start, n, occupied) {
+    const res = [];
+    let d = start;
+    for (let guard = 0; res.length < n && guard < 400; guard++) {
+      if (!occupied.has(d)) res.push(d);
+      d = addDays(d, 1);
+    }
+    return res;
+  }
+  /* Legt eine Folge von Gerichten auf freie Tage. Leere Folge = „Woche automatisch füllen“.
+     seq-Einträge: { kind:'ROT', entryId, recipeId } oder { kind:'MAN', recipeId } */
+  function layoutDraft({ days, occupied, sequence, nextFn, recipeOf, settings, today }) {
+    const occ = new Set(occupied);
+    const used = new Set(sequence.filter(s => s.kind === 'ROT').map(s => s.entryId));
+    const drafts = [], placed = [];
+    let si = 0;
+    const firstFree = () => days.find(d => !occ.has(d) && d >= today);
+    for (let start = firstFree(), guard = 0; start && guard < 60; start = firstFree(), guard++) {
+      let item;
+      if (si < sequence.length) item = sequence[si++];
+      else {
+        const e = nextFn(used);
+        if (!e) break;
+        used.add(e.id);
+        item = { kind: 'ROT', entryId: e.id, recipeId: e.recipeId };
+      }
+      const recipe = recipeOf(item.recipeId);
+      if (!recipe) continue;
+      const n = daysFor(recipe, settings);
+      const dates = nextFreeDates(start, n, occ);
+      item.blockId = item.blockId || uuid();
+      dates.forEach((date, i) => {
+        occ.add(date);
+        drafts.push({
+          date, type: i === 0 ? 'COOK' : 'LEFTOVER', recipeId: recipe.id, blockId: item.blockId,
+          dayIndex: i + 1, dayCount: n, rotationEntryId: item.kind === 'ROT' ? item.entryId : null,
+          source: item.kind === 'ROT' ? 'ROTATION' : 'MANUAL', locked: !!item.locked, status: 'PLANNED', note: '',
+        });
+      });
+      placed.push(item);
+    }
+    return { drafts, sequence: placed };
+  }
+  function fillWeek(opts) { return layoutDraft(Object.assign({ sequence: [] }, opts)).drafts; }
+
+  /* ---------- Einheiten ---------- */
+  const UNITS = {
+    G: { s: 'g', dim: 'MASS', f: 1 }, KG: { s: 'kg', dim: 'MASS', f: 1000 },
+    ML: { s: 'ml', dim: 'VOLUME', f: 1 }, L: { s: 'l', dim: 'VOLUME', f: 1000 },
+    STUECK: { s: 'Stück', p: 'Stück' }, EL: { s: 'EL', p: 'EL' }, TL: { s: 'TL', p: 'TL' },
+    PRISE: { s: 'Prise', p: 'Prisen' }, BUND: { s: 'Bund', p: 'Bund' },
+    ZEHE: { s: 'Zehe', p: 'Zehen' }, DOSE: { s: 'Dose', p: 'Dosen' },
+    GLAS: { s: 'Glas', p: 'Gläser' }, PACKUNG: { s: 'Packung', p: 'Packungen' },
+    SCHEIBE: { s: 'Scheibe', p: 'Scheiben' },
+  };
+  const UNIT_ORDER = ['G', 'KG', 'ML', 'L', 'STUECK', 'EL', 'TL', 'PRISE', 'BUND', 'ZEHE', 'DOSE', 'GLAS', 'PACKUNG', 'SCHEIBE'];
+  function dimOf(unit) { if (!unit) return 'NONE'; return UNITS[unit].dim || unit; }
+  function fmtNum(x) {
+    const r = Math.round(x * 100) / 100;
+    return String(r).replace('.', ',');
+  }
+  function fmtDim(dim, total) {
+    if (total == null) return '';
+    if (dim === 'MASS') return total >= 1000 ? fmtNum(total / 1000) + ' kg' : fmtNum(total) + ' g';
+    if (dim === 'VOLUME') return total >= 1000 ? fmtNum(total / 1000) + ' l' : fmtNum(total) + ' ml';
+    const u = UNITS[dim];
+    return fmtNum(total) + ' ' + (Math.abs(total - 1) < 1e-9 ? u.s : u.p);
+  }
+  /* Summiert Mengen (quantity/unit) zu einem Anzeigetext, Dimensionen in Reihenfolge des ersten Auftretens */
+  function sumAmounts(items) {
+    const order = [], tot = {};
+    items.forEach(({ quantity, unit }) => {
+      const dim = quantity == null ? 'NONE' : dimOf(unit);
+      if (!(dim in tot)) { order.push(dim); tot[dim] = dim === 'NONE' ? null : 0; }
+      if (dim !== 'NONE') tot[dim] += quantity * ((UNITS[unit] && UNITS[unit].f) || 1);
+    });
+    const dims = order.filter(d => d !== 'NONE');
+    return { dims: order, text: dims.map(d => fmtDim(d, tot[d])).join(' + ') };
+  }
+
+  /* ---------- 5.5 Einkaufsliste ---------- */
+  const CATEGORIES = [
+    ['GEMUESE', 'Gemüse', 'MARKT'], ['OBST', 'Obst', 'MARKT'], ['KRAEUTER', 'Frische Kräuter', 'MARKT'],
+    ['EIER', 'Eier', 'MARKT'], ['BACKWAREN', 'Brot & Backwaren', 'SUPERMARKT'],
+    ['FLEISCH', 'Fleisch & Wurst', 'SUPERMARKT'], ['FISCH', 'Fisch', 'SUPERMARKT'],
+    ['MILCHPRODUKTE', 'Milchprodukte', 'SUPERMARKT'], ['KAESE', 'Käse', 'SUPERMARKT'],
+    ['TROCKENWAREN', 'Nudeln, Reis & Hülsenfrüchte', 'SUPERMARKT'],
+    ['KONSERVEN', 'Konserven & Gläser', 'SUPERMARKT'], ['TIEFKUEHL', 'Tiefkühl', 'SUPERMARKT'],
+    ['SONSTIGES', 'Sonstiges', 'SUPERMARKT'], ['GEWUERZE', 'Gewürze', 'VORRAT'], ['OELE_ESSIG', 'Öl & Essig', 'VORRAT'],
+  ].map(([key, label, source]) => ({ key, label, source }));
+  const CAT = Object.fromEntries(CATEGORIES.map(c => [c.key, c]));
+  function sourceOf(ing) { return ing.shoppingSource || (CAT[ing.category] || CAT.SONSTIGES).source; }
+  const cmpDe = (a, b) => a.localeCompare(b, 'de');
+
+  function buildShoppingList(db, from, to) {
+    const recipes = new Map(live(db.recipes).map(r => [r.id, r]));
+    const ings = new Map(live(db.ingredients).map(i => [i.id, i]));
+    const cooks = live(db.plan).filter(p => p.type === 'COOK' && p.date >= from && p.date <= to)
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const names = [], warnings = [], per = new Map();
+    cooks.forEach(p => {
+      const r = recipes.get(p.recipeId);
+      if (!r) return;
+      if (!names.includes(r.name)) names.push(r.name);
+      const list = (r.ingredients || []).filter(x => ings.has(x.ingredientId));
+      if (!list.length) {
+        const w = `Für „${r.name}“ sind keine Zutaten hinterlegt.`;
+        if (!warnings.includes(w)) warnings.push(w);
+      }
+      list.forEach(x => {
+        if (!per.has(x.ingredientId)) per.set(x.ingredientId, []);
+        per.get(x.ingredientId).push({ quantity: x.quantity, unit: x.unit });
+      });
+    });
+    const st = db.shopping && db.shopping.from === from && db.shopping.to === to ? db.shopping : { checkedKeys: [], extraItems: [] };
+    const checked = new Set(st.checkedKeys || []);
+    const rows = [...per.entries()].map(([id, items]) => {
+      const ing = ings.get(id);
+      const sum = sumAmounts(items);
+      const key = id + '|' + sum.dims.join('+');
+      return { key, name: ing.name, amount: sum.text, category: ing.category, source: sourceOf(ing), checked: checked.has(key) };
+    });
+    const market = rows.filter(r => r.source === 'MARKT').sort((a, b) => cmpDe(a.name, b.name));
+    const supermarket = CATEGORIES.map(c => ({
+      category: c.key, label: c.label,
+      items: rows.filter(r => r.source === 'SUPERMARKT' && r.category === c.key).sort((a, b) => cmpDe(a.name, b.name)),
+    })).filter(g => g.items.length);
+    // Supermarkt-Zutaten mit Kategorie, die standardmäßig woanders liegt (z. B. Gemüse auf Supermarkt umgestellt)
+    const misc = rows.filter(r => r.source === 'SUPERMARKT' && !CATEGORIES.some(c => c.key === r.category));
+    if (misc.length) supermarket.push({ category: 'SONSTIGES', label: 'Sonstiges', items: misc.sort((a, b) => cmpDe(a.name, b.name)) });
+    const pantry = rows.filter(r => r.source === 'VORRAT').sort((a, b) => cmpDe(a.name, b.name))
+      .map(r => ({ key: r.key, name: r.name, checked: r.checked }));
+    return { from, to, recipes: names, market, supermarket, pantry, extraItems: st.extraItems || [], warnings };
+  }
+  function shoppingText(list, settings) {
+    const kwA = isoWeek(list.from), kwB = isoWeek(list.to);
+    const kw = kwA === kwB ? 'KW ' + kwA : 'KW ' + kwA + '–' + kwB;
+    const L = [];
+    L.push(`Einkaufsliste ${fmtRange(list.from, list.to)} (${kw})`);
+    L.push('Gerichte: ' + (list.recipes.length ? list.recipes.join(', ') : '–'));
+    if (list.market.length) {
+      L.push('', 'MARKT');
+      list.market.forEach(r => L.push('- ' + r.name + (settings.marketListShowQuantities && r.amount ? ` (${r.amount})` : '')));
+    }
+    const groups = list.supermarket.map(g => ({ label: g.label, lines: g.items.map(r => '- ' + r.name + (r.amount ? ': ' + r.amount : '')) }));
+    const extras = (list.extraItems || []).filter(x => x.text && x.text.trim());
+    if (extras.length) {
+      let g = groups.find(x => x.label === 'Sonstiges');
+      if (!g) { g = { label: 'Sonstiges', lines: [] }; groups.push(g); }
+      extras.forEach(x => g.lines.push('- ' + x.text.trim()));
+    }
+    if (groups.length) {
+      L.push('', 'SUPERMARKT');
+      groups.forEach(g => { L.push(g.label); g.lines.forEach(l => L.push(l)); });
+    }
+    if (list.pantry.length) {
+      L.push('', 'VORRAT PRÜFEN');
+      L.push(list.pantry.map(p => p.name).join(', '));
+    }
+    if (list.warnings.length) {
+      L.push('', 'HINWEISE');
+      list.warnings.forEach(w => L.push('- ' + w));
+    }
+    return L.join('\n');
+  }
+
+  /* ---------- Zusammenführen zweier Datenstände (Geräteabgleich) ---------- */
+  function mergeById(a, b) {
+    const m = new Map();
+    (a || []).forEach(x => m.set(x.id, x));
+    (b || []).forEach(y => {
+      const x = m.get(y.id);
+      if (!x || (y.updatedAt || 0) > (x.updatedAt || 0)) m.set(y.id, y);
+    });
+    return [...m.values()];
+  }
+  const newer = (a, b) => (!a ? b : !b ? a : ((b.updatedAt || 0) > (a.updatedAt || 0) ? b : a));
+  function mergeDb(local, remote) {
+    if (!remote) return local;
+    if (!local) return remote;
+    return {
+      version: Math.max(local.version || 1, remote.version || 1),
+      household: newer(local.household, remote.household),
+      settings: newer(local.settings, remote.settings),
+      shopping: newer(local.shopping, remote.shopping),
+      recipes: mergeById(local.recipes, remote.recipes),
+      ingredients: mergeById(local.ingredients, remote.ingredients),
+      rotation: mergeById(local.rotation, remote.rotation),
+      plan: mergeById(local.plan, remote.plan),
+    };
+  }
+  /* Nach dem Zusammenführen: pro Datum höchstens ein Planeintrag (neuerer gewinnt) */
+  function normalizePlan(db) {
+    const byDate = new Map();
+    live(db.plan).forEach(p => {
+      const o = byDate.get(p.date);
+      if (!o) { byDate.set(p.date, p); return; }
+      const [keep, drop] = (p.updatedAt || 0) > (o.updatedAt || 0) ? [p, o] : [o, p];
+      byDate.set(p.date, keep);
+      tomb(drop);
+    });
+  }
+  function pruneTombstones(db, maxAgeMs) {
+    const lim = clock() - maxAgeMs;
+    ['recipes', 'ingredients', 'rotation', 'plan'].forEach(k => {
+      db[k] = (db[k] || []).filter(x => !x.deleted || (x.updatedAt || 0) > lim);
+    });
+  }
+
+  return {
+    setClock, uuid, touch, live, tomb, seededRng,
+    iso, parseISO, addDays, todayISO, weekStart, weekDays, isoWeek, fmtDate, fmtShort, fmtRange, weekday, weekdayLong,
+    daysFor, daysHint,
+    activeRecipes, repairAdjacency, buildCycle, cycleEntries, maxCycle, openCycles, pendingSorted,
+    lastRecipeOfCycle, appendCycle, nextEntries, planEntry, completeEntry, skipEntry, postpone, release,
+    manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
+    nextFreeDates, layoutDraft, fillWeek,
+    UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
+    CATEGORIES, CAT, sourceOf, buildShoppingList, shoppingText,
+    mergeDb, normalizePlan, pruneTombstones,
+  };
+})();
+
+
+/* Wandelt die Seed-Daten aus Anhang A in das interne Datenmodell um.
+   Wird in der App („Beispieldaten laden“) und in den Tests genutzt. */
+function seedToDb(seed, EPref) {
+  const E = EPref || EP;
+  const settings = E.touch(Object.assign({ portionsPerDay: 2, roundingMode: 'FLOOR', rotationMode: 'SHUFFLE', marketListShowQuantities: true }, seed.settings || {}));
+  const ingredients = (seed.ingredients || []).map(i => E.touch({
+    id: E.uuid(), name: i.name, category: i.category, shoppingSource: i.shoppingSource || null,
+    defaultUnit: i.defaultUnit || 'STUECK', deleted: false,
+  }));
+  const byName = new Map(ingredients.map(i => [i.name.toLowerCase(), i]));
+  const recipes = (seed.recipes || []).map((r, idx) => E.touch({
+    id: E.uuid(), name: r.name, inRotation: r.inRotation !== false, weight: r.weight || 1,
+    servings: r.servings || settings.portionsPerDay, daysOverride: r.daysOverride || null,
+    sortOrder: idx + 1, notes: r.notes || '', instructions: r.instructions || '',
+    prepTimeMinutes: r.prepTimeMinutes || null, tags: r.tags || [], archivedAt: null, deleted: false,
+    images: [],
+    ingredients: (r.ingredients || []).map((x, k) => ({
+      ingredientId: (byName.get(x.ingredient.toLowerCase()) || {}).id,
+      quantity: x.quantity == null ? null : x.quantity, unit: x.unit || null, note: x.note || '', sortOrder: k + 1,
+    })).filter(x => x.ingredientId),
+  }));
+  return { version: 1, household: null, settings, shopping: E.touch({ from: '', to: '', checkedKeys: [], extraItems: [] }),
+    recipes, ingredients, rotation: [], plan: [] };
+}
+
+
+const SEED_DATA = {"settings":{"portionsPerDay":2,"roundingMode":"FLOOR","rotationMode":"SHUFFLE","marketListShowQuantities":true},"ingredients":[{"name":"Zwiebel","category":"GEMUESE","defaultUnit":"STUECK"},{"name":"Knoblauch","category":"GEMUESE","defaultUnit":"ZEHE"},{"name":"Karotte","category":"GEMUESE","defaultUnit":"STUECK"},{"name":"Paprika","category":"GEMUESE","defaultUnit":"STUECK"},{"name":"Süßkartoffel","category":"GEMUESE","defaultUnit":"G"},{"name":"Blattspinat","category":"GEMUESE","defaultUnit":"G"},{"name":"Avocado","category":"OBST","defaultUnit":"STUECK"},{"name":"Limette","category":"OBST","defaultUnit":"STUECK"},{"name":"Koriander","category":"KRAEUTER","defaultUnit":"BUND"},{"name":"Weizentortillas","category":"BACKWAREN","defaultUnit":"STUECK"},{"name":"Rinderhackfleisch","category":"FLEISCH","defaultUnit":"G"},{"name":"Schmand","category":"MILCHPRODUKTE","defaultUnit":"G"},{"name":"Spaghetti","category":"TROCKENWAREN","defaultUnit":"G"},{"name":"Basmatireis","category":"TROCKENWAREN","defaultUnit":"G"},{"name":"Rote Linsen","category":"TROCKENWAREN","defaultUnit":"G"},{"name":"Gehackte Tomaten","category":"KONSERVEN","defaultUnit":"DOSE"},{"name":"Kidneybohnen","category":"KONSERVEN","defaultUnit":"DOSE"},{"name":"Mais","category":"KONSERVEN","defaultUnit":"DOSE"},{"name":"Kokosmilch","category":"KONSERVEN","defaultUnit":"ML"},{"name":"Currypaste","category":"KONSERVEN","defaultUnit":"EL"},{"name":"Tomatenmark","category":"KONSERVEN","defaultUnit":"EL","shoppingSource":"VORRAT"},{"name":"Olivenöl","category":"OELE_ESSIG","defaultUnit":"EL"},{"name":"Salz","category":"GEWUERZE","defaultUnit":"PRISE"},{"name":"Pfeffer","category":"GEWUERZE","defaultUnit":"PRISE"},{"name":"Kreuzkümmel","category":"GEWUERZE","defaultUnit":"TL"},{"name":"Paprikapulver","category":"GEWUERZE","defaultUnit":"TL"}],"recipes":[{"name":"Spaghetti Bolognese","inRotation":true,"weight":2,"servings":4,"ingredients":[{"ingredient":"Spaghetti","quantity":500,"unit":"G"},{"ingredient":"Rinderhackfleisch","quantity":400,"unit":"G"},{"ingredient":"Zwiebel","quantity":1,"unit":"STUECK","note":"fein gewürfelt"},{"ingredient":"Knoblauch","quantity":2,"unit":"ZEHE"},{"ingredient":"Karotte","quantity":2,"unit":"STUECK","note":"fein gewürfelt"},{"ingredient":"Gehackte Tomaten","quantity":1,"unit":"DOSE"},{"ingredient":"Tomatenmark","quantity":2,"unit":"EL"},{"ingredient":"Olivenöl","quantity":2,"unit":"EL"},{"ingredient":"Salz","quantity":null,"unit":null},{"ingredient":"Pfeffer","quantity":null,"unit":null}],"instructions":"1. Zwiebel, Knoblauch und Karotten fein würfeln und in Olivenöl anschwitzen.\n2. Hackfleisch zugeben und krümelig braten.\n3. Tomatenmark kurz mitrösten, gehackte Tomaten zugeben und 30 Minuten köcheln lassen.\n4. Spaghetti nach Packungsangabe kochen und mit der Soße servieren."},{"name":"Tortillas mit Chili sin Carne","inRotation":true,"weight":1,"servings":6,"ingredients":[{"ingredient":"Weizentortillas","quantity":12,"unit":"STUECK"},{"ingredient":"Rote Linsen","quantity":150,"unit":"G"},{"ingredient":"Kidneybohnen","quantity":2,"unit":"DOSE"},{"ingredient":"Mais","quantity":1,"unit":"DOSE"},{"ingredient":"Gehackte Tomaten","quantity":2,"unit":"DOSE"},{"ingredient":"Zwiebel","quantity":2,"unit":"STUECK"},{"ingredient":"Knoblauch","quantity":2,"unit":"ZEHE"},{"ingredient":"Paprika","quantity":2,"unit":"STUECK"},{"ingredient":"Schmand","quantity":200,"unit":"G"},{"ingredient":"Avocado","quantity":1,"unit":"STUECK"},{"ingredient":"Koriander","quantity":1,"unit":"BUND"},{"ingredient":"Kreuzkümmel","quantity":1,"unit":"TL"},{"ingredient":"Paprikapulver","quantity":2,"unit":"TL"},{"ingredient":"Salz","quantity":null,"unit":null}]},{"name":"Gemüsecurry","inRotation":true,"weight":1,"servings":4,"ingredients":[{"ingredient":"Basmatireis","quantity":250,"unit":"G"},{"ingredient":"Kokosmilch","quantity":400,"unit":"ML"},{"ingredient":"Süßkartoffel","quantity":500,"unit":"G"},{"ingredient":"Paprika","quantity":1,"unit":"STUECK"},{"ingredient":"Blattspinat","quantity":200,"unit":"G"},{"ingredient":"Zwiebel","quantity":1,"unit":"STUECK"},{"ingredient":"Knoblauch","quantity":1,"unit":"ZEHE"},{"ingredient":"Currypaste","quantity":2,"unit":"EL"},{"ingredient":"Limette","quantity":1,"unit":"STUECK"},{"ingredient":"Salz","quantity":null,"unit":null}]},{"name":"Pfannkuchen","inRotation":true,"weight":1,"servings":2},{"name":"Linsensuppe","inRotation":true,"weight":1,"servings":4},{"name":"Kürbissuppe","inRotation":false,"weight":1,"servings":4,"notes":"Nur im Herbst – bei Bedarf wieder aktivieren."}]};
+/* ==========================================================================
+   Essensplanung – App Teil 1: Infrastruktur
+   ========================================================================== */
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const deep = o => JSON.parse(JSON.stringify(o));
+const rng = Math.random;
+const DAY = 86400000;
+
+/* ---------- Lokaler Speicher (IndexedDB, Rückfall localStorage) ---------- */
+const Store = (() => {
+  let dbp = null;
+  function open() {
+    if (dbp) return dbp;
+    dbp = new Promise((res, rej) => {
+      if (!('indexedDB' in window)) return rej(new Error('kein IndexedDB'));
+      const r = indexedDB.open('essensplanung', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('kv');
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    return dbp;
+  }
+  const tx = (mode, fn) => open().then(d => new Promise((res, rej) => {
+    const t = d.transaction('kv', mode); const req = fn(t.objectStore('kv'));
+    t.oncomplete = () => res(req && req.result); t.onerror = () => rej(t.error);
+  }));
+  const ls = {
+    get: k => { try { const v = localStorage.getItem('ep_kv_' + k); return Promise.resolve(v ? JSON.parse(v) : undefined); } catch (e) { return Promise.resolve(undefined); } },
+    set: (k, v) => { try { localStorage.setItem('ep_kv_' + k, JSON.stringify(v)); } catch (e) {} return Promise.resolve(); },
+    del: k => { try { localStorage.removeItem('ep_kv_' + k); } catch (e) {} return Promise.resolve(); },
+  };
+  return {
+    get: k => tx('readonly', s => s.get(k)).catch(() => ls.get(k)),
+    set: (k, v) => tx('readwrite', s => s.put(v, k)).catch(() => ls.set(k, v)),
+    del: k => tx('readwrite', s => s.delete(k)).catch(() => ls.del(k)),
+  };
+})();
+const LS = {
+  get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+};
+
+/* ---------- Kodierung ---------- */
+function bytesToB64(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+function b64ToBytes(b64) {
+  const bin = atob(String(b64).replace(/\s/g, ''));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+const utf8ToB64 = s => bytesToB64(new TextEncoder().encode(s));
+const b64ToUtf8 = b => new TextDecoder().decode(b64ToBytes(b));
+
+/* ---------- Kryptografie (PBKDF2 + AES-GCM) ---------- */
+const Crypt = {
+  ITER: 150000,
+  async pbkdfKey(password, salt) {
+    const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), { name: 'PBKDF2' }, false, ['deriveKey', 'deriveBits']);
+    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: this.ITER, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+  },
+  async verifier(password, saltB64) {
+    const salt = saltB64 ? b64ToBytes(saltB64) : crypto.getRandomValues(new Uint8Array(16));
+    const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), { name: 'PBKDF2' }, false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: this.ITER, hash: 'SHA-256' }, km, 256);
+    return { salt: bytesToB64(salt), hash: bytesToB64(new Uint8Array(bits)), iter: this.ITER };
+  },
+  async check(password, v) { return v && (await this.verifier(password, v.salt)).hash === v.hash; },
+  async encWithPassword(password, text) {
+    const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+    const key = await this.pbkdfKey(password, salt);
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text));
+    return { salt: bytesToB64(salt), iv: bytesToB64(iv), data: bytesToB64(new Uint8Array(ct)) };
+  },
+  async decWithPassword(password, blob) {
+    const key = await this.pbkdfKey(password, b64ToBytes(blob.salt));
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(blob.iv) }, key, b64ToBytes(blob.data));
+    return new TextDecoder().decode(pt);
+  },
+  async rawKey(raw) { return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']); },
+  async encRaw(raw, text) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await this.rawKey(raw), new TextEncoder().encode(text));
+    return { iv: bytesToB64(iv), data: bytesToB64(new Uint8Array(ct)) };
+  },
+  async decRaw(raw, blob) {
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(blob.iv) }, await this.rawKey(raw), b64ToBytes(blob.data));
+    return new TextDecoder().decode(pt);
+  },
+};
+
+/* ---------- Datenstand ---------- */
+let db = null;
+function emptyDb() {
+  return {
+    version: 1, household: null,
+    settings: EP.touch({ portionsPerDay: 2, roundingMode: 'FLOOR', rotationMode: 'SHUFFLE', marketListShowQuantities: true }),
+    shopping: EP.touch({ from: '', to: '', checkedKeys: [], extraItems: [] }),
+    recipes: [], ingredients: [], rotation: [], plan: [],
+  };
+}
+function repairDb(d) {
+  const e = emptyDb();
+  d = d || e;
+  ['recipes', 'ingredients', 'rotation', 'plan'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
+  d.settings = Object.assign({}, e.settings, d.settings || {});
+  d.shopping = Object.assign({}, e.shopping, d.shopping || {});
+  if (!Array.isArray(d.shopping.checkedKeys)) d.shopping.checkedKeys = [];
+  if (!Array.isArray(d.shopping.extraItems)) d.shopping.extraItems = [];
+  d.recipes.forEach(r => {
+    if (!Array.isArray(r.ingredients)) r.ingredients = [];
+    if (!Array.isArray(r.images)) r.images = [];
+    if (!Array.isArray(r.tags)) r.tags = [];
+    if (!r.weight) r.weight = 1;
+    if (!r.servings) r.servings = d.settings.portionsPerDay;
+  });
+  return d;
+}
+/* Täglicher Abschluss: vergangene Kochtage gelten als gekocht (5.2 complete) */
+function housekeeping() {
+  const today = EP.todayISO();
+  let changed = false;
+  const rot = new Map(db.rotation.map(e => [e.id, e]));
+  EP.live(db.plan).forEach(p => {
+    if (p.type === 'BLOCKED' || p.date >= today) return;
+    if (p.status !== 'DONE') { p.status = 'DONE'; EP.touch(p); changed = true; }
+    if (p.type === 'COOK' && p.rotationEntryId) {
+      const e = rot.get(p.rotationEntryId);
+      if (e && !e.deleted && e.status === 'PLANNED') { EP.completeEntry(e); changed = true; }
+    }
+  });
+  const before = JSON.stringify([db.recipes.length, db.ingredients.length, db.rotation.length, db.plan.length]);
+  EP.pruneTombstones(db, 60 * DAY);
+  if (before !== JSON.stringify([db.recipes.length, db.ingredients.length, db.rotation.length, db.plan.length])) changed = true;
+  return changed;
+}
+let saveTimer = null;
+async function persist(opts) {
+  opts = opts || {};
+  await Store.set('db', db);
+  if (!opts.noSync) Sync.markDirty();
+}
+
+/* ---------- Anmeldung & Sitzung ---------- */
+const Auth = {
+  get cfg() { return LS.get('ep_auth') || {}; },
+  set cfg(v) { LS.set('ep_auth', v); },
+  session: null, token: null,
+  locked() {
+    const l = LS.get('ep_lock');
+    return l && l.until && l.until > Date.now() ? Math.ceil((l.until - Date.now()) / 60000) : 0;
+  },
+  failed() {
+    const l = LS.get('ep_lock') || { fails: 0 };
+    l.fails = (l.fails || 0) + 1;
+    if (l.fails >= 5) { l.until = Date.now() + 15 * 60000; l.fails = 0; }
+    LS.set('ep_lock', l);
+  },
+  async startSession(token) {
+    const raw = crypto.getRandomValues(new Uint8Array(32));
+    const s = { exp: Date.now() + 90 * DAY, key: bytesToB64(raw), tokenEnc: token ? await Crypt.encRaw(raw, token) : null };
+    LS.set('ep_session', s);
+    LS.del('ep_lock');
+    this.token = token || null;
+  },
+  async resume() {
+    const s = LS.get('ep_session');
+    if (!s || !s.exp || s.exp < Date.now()) return false;
+    try { this.token = s.tokenEnc ? await Crypt.decRaw(b64ToBytes(s.key), s.tokenEnc) : null; }
+    catch (e) { this.token = null; }
+    return true;
+  },
+  logout() { LS.del('ep_session'); this.token = null; },
+  /* Token dauerhaft mit dem Haushaltspasswort verschlüsselt ablegen */
+  async storeToken(password, token, repo) {
+    const c = this.cfg;
+    c.tokenEnc = token ? await Crypt.encWithPassword(password, token) : null;
+    c.repo = repo || null;
+    this.cfg = c;
+    const s = LS.get('ep_session');
+    if (s) { s.tokenEnc = token ? await Crypt.encRaw(b64ToBytes(s.key), token) : null; LS.set('ep_session', s); }
+    this.token = token || null;
+  },
+  async tokenFromPassword(password) {
+    const c = this.cfg;
+    if (!c.tokenEnc) return null;
+    try { return await Crypt.decWithPassword(password, c.tokenEnc); } catch (e) { return undefined; }
+  },
+};
+
+/* ---------- Abgleich über ein privates GitHub-Repository ---------- */
+const Sync = {
+  sha: null, dirty: false, busy: false, again: false, timer: null, poll: null,
+  state: 'off', msg: '', lastSync: null,
+  get repo() { return Auth.cfg.repo || null; },
+  enabled() { return !!(Auth.token && this.repo); },
+  async api(path, opts) {
+    opts = opts || {};
+    const res = await fetch('https://api.github.com' + path, Object.assign({}, opts, {
+      cache: 'no-store',
+      headers: Object.assign({ Authorization: 'Bearer ' + Auth.token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, opts.headers || {}),
+    }));
+    return res;
+  },
+  path(p) { const r = this.repo; return `/repos/${encodeURIComponent(r.owner)}/${encodeURIComponent(r.name)}/contents/${p}`; },
+  async getFile(p) {
+    const res = await this.api(this.path(p));
+    if (res.status === 404) return null;
+    if (!res.ok) throw await this.err(res);
+    const j = await res.json();
+    let b64 = j.content;
+    if ((!b64 || j.encoding === 'none') && j.sha) {   // Dateien über 1 MB: über die Blob-Schnittstelle laden
+      const r = this.repo;
+      const br = await this.api(`/repos/${encodeURIComponent(r.owner)}/${encodeURIComponent(r.name)}/git/blobs/${j.sha}`);
+      if (!br.ok) throw await this.err(br);
+      b64 = (await br.json()).content;
+    }
+    return { sha: j.sha, b64 };
+  },
+  async putFile(p, b64, sha, message) {
+    const body = { message, content: b64 };
+    if (sha) body.sha = sha;
+    const res = await this.api(this.path(p), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) throw await this.err(res);
+    return (await res.json()).content.sha;
+  },
+  async deleteFile(p) {
+    const f = await this.getFile(p).catch(() => null);
+    if (!f) return;
+    await this.api(this.path(p), { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Bild entfernt', sha: f.sha }) });
+  },
+  async err(res) {
+    let m = '';
+    try { m = (await res.json()).message || ''; } catch (e) {}
+    const e = new Error(m || ('HTTP ' + res.status));
+    e.status = res.status;
+    return e;
+  },
+  /* Vergleichsform unabhängig von der Reihenfolge */
+  canon(d) {
+    const c = deep(d);
+    ['recipes', 'ingredients', 'rotation', 'plan'].forEach(k => c[k] = (c[k] || []).sort((a, b) => (a.id < b.id ? -1 : 1)));
+    return JSON.stringify(c);
+  },
+  async loadMeta() {
+    const m = (await Store.get('sync')) || {};
+    this.sha = m.sha || null; this.dirty = !!m.dirty; this.lastSync = m.lastSync || null;
+  },
+  saveMeta() { return Store.set('sync', { sha: this.sha, dirty: this.dirty, lastSync: this.lastSync }); },
+  markDirty() {
+    this.dirty = true; this.saveMeta();
+    if (!this.enabled()) { this.setState('off'); return; }
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.run(), 1500);
+  },
+  setState(s, msg) { this.state = s; this.msg = msg || ''; if (typeof renderSyncPill === 'function') renderSyncPill(); },
+  async pull() {
+    const f = await this.getFile('data.json');
+    if (!f) { this.sha = null; if (db && db.household) this.dirty = true; return false; }
+    if (f.sha === this.sha) return false;
+    const remote = repairDb(JSON.parse(b64ToUtf8(f.b64)));
+    db = repairDb(EP.mergeDb(db, remote));
+    EP.normalizePlan(db);
+    this.sha = f.sha;
+    if (this.canon(db) !== this.canon(remote)) this.dirty = true;
+    await Store.set('db', db);
+    await this.saveMeta();
+    return true;
+  },
+  async push() {
+    for (let attempt = 0; attempt < 4 && this.dirty; attempt++) {
+      try {
+        this.sha = await this.putFile('data.json', utf8ToB64(JSON.stringify(db)), this.sha, 'Essensplanung aktualisiert');
+        this.dirty = false;
+        await this.saveMeta();
+      } catch (e) {
+        if (e.status === 409 || e.status === 422) { await this.pull(); continue; } // zwischenzeitlich geändert → zusammenführen
+        throw e;
+      }
+    }
+  },
+  async run(opts) {
+    opts = opts || {};
+    if (!this.enabled()) { this.setState('off'); return; }
+    if (typeof draft !== 'undefined' && draft && !opts.force) return; // während eines Wochenentwurfs nicht dazwischenfunken
+    if (this.busy) { this.again = true; return; }
+    if (!navigator.onLine) { this.setState('offline'); return; }
+    this.busy = true; this.setState('busy');
+    try {
+      const changed = await this.pull();
+      await this.push();
+      await Images.sync();
+      this.lastSync = Date.now(); await this.saveMeta();
+      this.setState('ok');
+      if (changed && typeof rerender === 'function') rerender();
+    } catch (e) {
+      const m = e.status === 401 ? 'Zugang abgelaufen oder ungültig – Token neu eingeben.'
+        : e.status === 403 ? 'Kein Schreibzugriff auf das Repository.'
+        : e.status === 404 ? 'Repository nicht gefunden.' : (e.message || 'Abgleich fehlgeschlagen.');
+      this.setState(navigator.onLine ? 'err' : 'offline', m);
+    } finally {
+      this.busy = false;
+      if (this.again) { this.again = false; setTimeout(() => this.run(), 300); }
+    }
+  },
+  startPolling() {
+    clearInterval(this.poll);
+    this.poll = setInterval(() => { if (document.visibilityState === 'visible') this.run(); }, 60000);
+  },
+  /* Verbindung prüfen: Repository muss existieren und privat sein */
+  async checkRepo(owner, name, token) {
+    const res = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`, {
+      cache: 'no-store', headers: { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } });
+    if (res.status === 401) throw new Error('Der Token ist ungültig oder abgelaufen.');
+    if (res.status === 404) throw new Error('Repository nicht gefunden – oder der Token hat keinen Zugriff darauf.');
+    if (!res.ok) throw new Error('GitHub antwortet mit Fehler ' + res.status + '.');
+    const j = await res.json();
+    if (!j.private) throw new Error('Dieses Repository ist öffentlich. Deine Rezepte und dein Wochenplan wären für alle sichtbar – bitte ein privates Repository verwenden.');
+    return j;
+  },
+};
+
+/* ---------- Bilder (lokal in IndexedDB, im Repository unter images/) ---------- */
+const Images = {
+  mem: new Map(),
+  async put(key, full, thumb) {
+    await Store.set('img:' + key, full); await Store.set('thumb:' + key, thumb);
+    this.mem.set('img:' + key, full); this.mem.set('thumb:' + key, thumb);
+    const q = (await Store.get('imgq')) || []; q.push(key); await Store.set('imgq', q);
+  },
+  async remove(key) {
+    const d = (await Store.get('imgdel')) || []; d.push(key); await Store.set('imgdel', d);
+  },
+  async get(key, thumb) {
+    const k = (thumb ? 'thumb:' : 'img:') + key;
+    if (this.mem.has(k)) return this.mem.get(k);
+    let v = await Store.get(k);
+    if (!v && Sync.enabled() && navigator.onLine) {
+      try {
+        const f = await Sync.getFile(`images/${key}${thumb ? '_t' : ''}.jpg`);
+        if (f) { v = 'data:image/jpeg;base64,' + f.b64.replace(/\s/g, ''); await Store.set(k, v); }
+      } catch (e) {}
+    }
+    if (v) this.mem.set(k, v);
+    return v || null;
+  },
+  async sync() {
+    const q = (await Store.get('imgq')) || [];
+    const rest = [];
+    for (const key of q) {
+      try {
+        for (const [suffix, sk] of [['', 'img:'], ['_t', 'thumb:']]) {
+          const v = await Store.get(sk + key);
+          if (!v) continue;
+          try { await Sync.putFile(`images/${key}${suffix}.jpg`, v.split(',')[1], null, 'Bild hinzugefügt'); }
+          catch (e) { if (e.status !== 422) throw e; } // existiert schon
+        }
+      } catch (e) { rest.push(key); }
+    }
+    await Store.set('imgq', rest);
+    const d = (await Store.get('imgdel')) || [];
+    for (const key of d) {
+      try { await Sync.deleteFile(`images/${key}.jpg`); await Sync.deleteFile(`images/${key}_t.jpg`); } catch (e) {}
+      await Store.del('img:' + key); await Store.del('thumb:' + key);
+    }
+    await Store.set('imgdel', []);
+  },
+  /* Bild verkleinern: längste Kante 1600 px + Vorschau 400 px */
+  async process(file) {
+    if (file.size > 10 * 1024 * 1024) throw new Error('Das Bild ist größer als 10 MB.');
+    const url = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(file); });
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Dieses Bildformat kann der Browser nicht lesen.')); i.src = url; });
+    const scale = (max, q) => {
+      const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      return { url: c.toDataURL('image/jpeg', q), w: c.width, h: c.height };
+    };
+    const full = scale(1600, 0.82), thumb = scale(400, 0.75);
+    return { full: full.url, thumb: thumb.url, width: full.w, height: full.h };
+  },
+  /* Platzhalter im DOM nachträglich befüllen */
+  async hydrate(root) {
+    for (const el of $$('img[data-img]', root)) {
+      const v = await this.get(el.dataset.img, el.dataset.thumb === '1');
+      if (v) el.src = v; else if (el.dataset.hideEmpty) el.remove();
+    }
+  },
+};
+
+/* ==========================================================================
+   Essensplanung – App Teil 2: Operationen
+   ========================================================================== */
+const recipeById = id => db.recipes.find(r => r.id === id) || null;
+const rotById = (d, id) => (d || db).rotation.find(e => e.id === id && !e.deleted) || null;
+const ingById = id => db.ingredients.find(i => i.id === id) || null;
+const liveRecipes = () => EP.live(db.recipes).filter(r => !r.archivedAt);
+function planByDate(d) {
+  const m = new Map();
+  EP.live((d || db).plan).forEach(p => m.set(p.date, p));
+  return m;
+}
+const blockEntries = (bid, d) => EP.live((d || db).plan).filter(p => p.blockId === bid).sort((a, b) => a.date.localeCompare(b.date));
+function daysOf(recipe) { return EP.daysFor(recipe, db.settings); }
+function firstFreeFrom(start) {
+  const occ = new Set(EP.live(db.plan).map(p => p.date));
+  return EP.nextFreeDates(start, 1, occ)[0];
+}
+
+/* ---------- Plan (übernommene Einträge, wirken sofort) ---------- */
+function placeBlock(start, o) {
+  const recipe = recipeById(o.recipeId);
+  const n = daysOf(recipe);
+  const occ = new Set(EP.live(db.plan).map(p => p.date));
+  const dates = EP.nextFreeDates(start, n, occ);
+  const bid = o.blockId || EP.uuid();
+  dates.forEach((date, i) => db.plan.push(EP.touch({
+    id: EP.uuid(), date, type: i ? 'LEFTOVER' : 'COOK', recipeId: recipe.id, blockId: bid,
+    dayIndex: i + 1, dayCount: n, rotationEntryId: o.rotationEntryId || null,
+    source: o.rotationEntryId ? 'ROTATION' : 'MANUAL', locked: !!o.locked, status: 'PLANNED', note: '', deleted: false,
+  })));
+  if (o.rotationEntryId) { const e = rotById(null, o.rotationEntryId); if (e && e.status !== 'DONE') EP.planEntry(e); }
+  return dates;
+}
+function removeBlock(bid, releaseIt) {
+  const es = blockEntries(bid);
+  if (!es.length) return null;
+  const info = { recipeId: es[0].recipeId, rotationEntryId: es[0].rotationEntryId, locked: es[0].locked, start: es[0].date };
+  es.forEach(EP.tomb);
+  if (releaseIt !== false && info.rotationEntryId) {
+    const e = rotById(null, info.rotationEntryId);
+    if (e && e.status === 'PLANNED') EP.release(db, e);
+  }
+  return info;
+}
+function markCooked(bid) {
+  const es = blockEntries(bid);
+  es.forEach(p => { p.status = 'DONE'; EP.touch(p); });
+  const e = es[0] && es[0].rotationEntryId && rotById(null, es[0].rotationEntryId);
+  if (e) EP.completeEntry(e);
+}
+function toggleLock(bid) {
+  const es = blockEntries(bid);
+  const v = !(es[0] && es[0].locked);
+  es.forEach(p => { p.locked = v; EP.touch(p); });
+  return v;
+}
+function swapBlock(bid) {
+  const info = removeBlock(bid, true);
+  if (!info) return null;
+  const ex = new Set(info.rotationEntryId ? [info.rotationEntryId] : []);
+  const next = EP.nextEntries(db, 1, ex, rng)[0];
+  if (!next) { placeBlock(info.start, info); return null; }
+  placeBlock(info.start, { recipeId: next.recipeId, rotationEntryId: next.id, locked: info.locked });
+  return recipeById(next.recipeId);
+}
+function moveBlock(bid, newStart) {
+  const info = removeBlock(bid, false);
+  if (info) placeBlock(newStart, Object.assign({}, info, { blockId: bid }));
+}
+function blockDay(date, note) {
+  const p = planByDate().get(date);
+  let info = null;
+  if (p && p.blockId) info = removeBlock(p.blockId, false);
+  else if (p) EP.tomb(p);
+  db.plan.push(EP.touch({ id: EP.uuid(), date, type: 'BLOCKED', recipeId: null, blockId: null, dayIndex: 0, dayCount: 0,
+    rotationEntryId: null, source: 'MANUAL', locked: false, status: 'PLANNED', note: note || '', deleted: false }));
+  if (info) placeBlock(info.start, info); // Reste rutschen weiter (A6)
+}
+function unblockDay(date) {
+  const p = planByDate().get(date);
+  if (p && p.type === 'BLOCKED') EP.tomb(p);
+}
+
+/* ---------- Wochenentwurf (5.4) ---------- */
+let draft = null;
+function startDraft(ws) {
+  const today = EP.todayISO();
+  const days = EP.weekDays(ws), inWeek = new Set(days);
+  const clone = { settings: db.settings, recipes: db.recipes, rotation: deep(db.rotation), plan: deep(db.plan) };
+  const planLive = EP.live(clone.plan);
+  const remove = new Set();
+  planLive.forEach(p => {
+    if (!inWeek.has(p.date) || p.type === 'BLOCKED' || p.date < today || p.locked) return;
+    const cook = planLive.find(x => x.blockId === p.blockId && x.type === 'COOK');
+    if (cook && (cook.date < ws || cook.date < today)) return; // Übertrag bzw. bereits begonnen
+    remove.add(p.blockId || p.id);
+  });
+  remove.forEach(bid => {
+    const es = planLive.filter(p => p.blockId === bid || p.id === bid);
+    es.forEach(EP.tomb);
+    const rid = es[0] && es[0].rotationEntryId;
+    const e = rid && clone.rotation.find(x => x.id === rid && !x.deleted);
+    if (e && e.status === 'PLANNED') EP.release(clone, e);
+  });
+  draft = { ws, clone, sequence: [], blocked: new Map(), drafts: [] };
+  relayoutDraft();
+}
+function relayoutDraft() {
+  const days = EP.weekDays(draft.ws);
+  const occupied = new Set(EP.live(draft.clone.plan).map(p => p.date));
+  draft.blocked.forEach((_, d) => occupied.add(d));
+  const res = EP.layoutDraft({
+    days, occupied, sequence: draft.sequence,
+    nextFn: ex => EP.nextEntries(draft.clone, 1, ex, rng)[0],
+    recipeOf: recipeById, settings: db.settings, today: EP.todayISO(),
+  });
+  draft.sequence = res.sequence;
+  draft.drafts = res.drafts;
+}
+function draftUsed() { return new Set(draft.sequence.filter(s => s.kind === 'ROT').map(s => s.entryId)); }
+function draftSwap(bid) {
+  const i = draft.sequence.findIndex(s => s.blockId === bid);
+  if (i < 0) return;
+  const next = EP.nextEntries(draft.clone, 1, draftUsed(), rng)[0];
+  if (!next) return notify('Keine weiteren Gerichte in der Rotation.');
+  draft.sequence[i] = { kind: 'ROT', entryId: next.id, recipeId: next.recipeId, blockId: bid, locked: draft.sequence[i].locked };
+  relayoutDraft();
+}
+function draftMove(bid, dir) {
+  const i = draft.sequence.findIndex(s => s.blockId === bid), j = i + dir;
+  if (i < 0 || j < 0 || j >= draft.sequence.length) return;
+  [draft.sequence[i], draft.sequence[j]] = [draft.sequence[j], draft.sequence[i]];
+  relayoutDraft();
+}
+function draftPick(bid, recipeId) {
+  const i = draft.sequence.findIndex(s => s.blockId === bid);
+  if (i < 0) return;
+  const used = draftUsed(); used.delete(draft.sequence[i].entryId);
+  const e = EP.manualPickEntry(draft.clone, recipeId, used);
+  draft.sequence[i] = e ? { kind: 'ROT', entryId: e.id, recipeId, blockId: bid, locked: draft.sequence[i].locked }
+    : { kind: 'MAN', recipeId, blockId: bid, locked: draft.sequence[i].locked };
+  relayoutDraft();
+}
+function draftToggleLock(bid) {
+  const s = draft.sequence.find(x => x.blockId === bid);
+  if (s) { s.locked = !s.locked; relayoutDraft(); }
+}
+function commitDraft() {
+  const c = draft.clone;
+  draft.drafts.forEach(d => {
+    c.plan.push(EP.touch(Object.assign({ id: EP.uuid(), deleted: false }, d)));
+    if (d.type === 'COOK' && d.rotationEntryId) {
+      const e = c.rotation.find(x => x.id === d.rotationEntryId && !x.deleted);
+      if (e) EP.planEntry(e);
+    }
+  });
+  draft.blocked.forEach((note, date) => c.plan.push(EP.touch({ id: EP.uuid(), date, type: 'BLOCKED', recipeId: null, blockId: null,
+    dayIndex: 0, dayCount: 0, rotationEntryId: null, source: 'MANUAL', locked: false, status: 'PLANNED', note, deleted: false })));
+  db.rotation = c.rotation; db.plan = c.plan;
+  draft = null;
+}
+/* Anzeige-Einträge einer Woche (übernommen oder Entwurf) */
+function weekEntries(ws) {
+  const days = EP.weekDays(ws);
+  const src = draft && draft.ws === ws ? draft.clone : db;
+  const m = planByDate(src);
+  const out = new Map();
+  days.forEach(d => { if (m.has(d)) out.set(d, Object.assign({ drafted: false }, m.get(d))); });
+  if (draft && draft.ws === ws) {
+    draft.blocked.forEach((note, d) => out.set(d, { date: d, type: 'BLOCKED', note, drafted: true, extraBlocked: true }));
+    draft.drafts.forEach(x => { if (days.includes(x.date)) out.set(x.date, Object.assign({ drafted: true }, x)); });
+  }
+  return out;
+}
+
+/* ---------- Rezepte ---------- */
+function findRecipeByName(name) {
+  const n = name.trim().toLowerCase();
+  return EP.live(db.recipes).find(r => r.name.trim().toLowerCase() === n) || null;
+}
+function newRecipe(name) {
+  const max = EP.live(db.recipes).reduce((m, r) => Math.max(m, r.sortOrder || 0), 0);
+  return EP.touch({ id: EP.uuid(), name: name.trim().slice(0, 120), inRotation: true, weight: 1,
+    servings: db.settings.portionsPerDay, daysOverride: null, sortOrder: max + 1, notes: '', instructions: '',
+    prepTimeMinutes: null, tags: [], archivedAt: null, deleted: false, images: [], ingredients: [] });
+}
+/* Schnellerfassung – liefert {added, restored, skipped} */
+function quickAdd(lines) {
+  const res = { added: 0, restored: 0, skipped: 0 };
+  lines.map(l => l.replace(/^[-*•\d.)\s]+/, '').trim()).filter(Boolean).forEach(name => {
+    const ex = findRecipeByName(name);
+    if (ex && !ex.archivedAt) { res.skipped++; return; }
+    if (ex) { ex.archivedAt = null; ex.inRotation = true; EP.touch(ex); EP.syncRecipeIntoCycles(db, ex, rng); res.restored++; return; }
+    const r = newRecipe(name);
+    db.recipes.push(r);
+    EP.syncRecipeIntoCycles(db, r, rng);
+    res.added++;
+  });
+  return res;
+}
+function setWeight(r, w) { r.weight = Math.min(5, Math.max(1, w)); EP.touch(r); EP.syncRecipeIntoCycles(db, r, rng); }
+function setInRotation(r, v) { r.inRotation = v; EP.touch(r); EP.syncRecipeIntoCycles(db, r, rng); }
+function archiveRecipe(r) { r.archivedAt = Date.now(); EP.touch(r); EP.syncRecipeIntoCycles(db, r, rng); }
+
+/* ---------- Zutaten ---------- */
+function findIngredient(name) {
+  const n = name.trim().toLowerCase();
+  return EP.live(db.ingredients).find(i => i.name.toLowerCase() === n) || null;
+}
+function createIngredient(name, category, unit) {
+  const i = EP.touch({ id: EP.uuid(), name: name.trim(), category: category || 'SONSTIGES', shoppingSource: null, defaultUnit: unit || 'STUECK', deleted: false });
+  db.ingredients.push(i);
+  return i;
+}
+function ingredientUsage(id) { return liveRecipes().filter(r => r.ingredients.some(x => x.ingredientId === id)).length; }
+function mergeIngredient(fromId, toId) {
+  EP.live(db.recipes).forEach(r => {
+    let ch = false;
+    r.ingredients.forEach(x => { if (x.ingredientId === fromId) { x.ingredientId = toId; ch = true; } });
+    if (ch) EP.touch(r);
+  });
+  const f = ingById(fromId); if (f) EP.tomb(f);
+}
+
+/* ---------- Einkaufsliste: Zustand je Zeitraum (4.8) ---------- */
+function shopState(from, to) {
+  if (db.shopping.from !== from || db.shopping.to !== to) {
+    db.shopping = EP.touch({ from, to, checkedKeys: [], extraItems: [] });
+  }
+  return db.shopping;
+}
+
+/* ---------- Sicherung ---------- */
+async function exportData(withImages) {
+  const data = deep(db);
+  delete data.household;
+  const out = { format: 'essensplanung', version: 1, exportedAt: new Date().toISOString(), data };
+  if (withImages) {
+    out.images = {};
+    for (const r of liveRecipes()) for (const im of r.images) {
+      const full = await Images.get(im.fileKey, false), th = await Images.get(im.fileKey, true);
+      if (full) out.images[im.fileKey] = { full, thumb: th || full };
+    }
+  }
+  return JSON.stringify(out, null, 1);
+}
+async function importData(json, mode) {
+  const src = repairDb(json.data || json);
+  if (json.images) for (const [k, v] of Object.entries(json.images)) await Images.put(k, v.full, v.thumb);
+  if (mode === 'replace') {
+    // alles Bestehende als gelöscht markieren (damit der Abgleich es auch auf anderen Geräten entfernt)
+    ['recipes', 'ingredients', 'rotation', 'plan'].forEach(k => EP.live(db[k]).forEach(EP.tomb));
+    ['recipes', 'ingredients', 'rotation', 'plan'].forEach(k => src[k].forEach(x => { EP.touch(x); db[k].push(x); }));
+    db.settings = EP.touch(Object.assign({}, src.settings));
+    return { recipes: EP.live(src.recipes).length };
+  }
+  // Zusammenführen per Name
+  const idMap = new Map();
+  EP.live(src.ingredients).forEach(i => {
+    const ex = findIngredient(i.name);
+    if (ex) idMap.set(i.id, ex.id);
+    else { const n = createIngredient(i.name, i.category, i.defaultUnit); n.shoppingSource = i.shoppingSource || null; idMap.set(i.id, n.id); }
+  });
+  let added = 0, updated = 0;
+  EP.live(src.recipes).filter(r => !r.archivedAt).forEach(r => {
+    const ings = r.ingredients.map(x => Object.assign({}, x, { ingredientId: idMap.get(x.ingredientId) })).filter(x => x.ingredientId);
+    const ex = findRecipeByName(r.name);
+    if (ex) {
+      Object.assign(ex, { servings: r.servings, weight: r.weight, daysOverride: r.daysOverride, notes: r.notes, instructions: r.instructions,
+        prepTimeMinutes: r.prepTimeMinutes, tags: r.tags, ingredients: ings, images: r.images.length ? r.images : ex.images, archivedAt: null });
+      EP.touch(ex); EP.syncRecipeIntoCycles(db, ex, rng); updated++;
+    } else {
+      const n = newRecipe(r.name);
+      Object.assign(n, { inRotation: r.inRotation, weight: r.weight, servings: r.servings, daysOverride: r.daysOverride, notes: r.notes,
+        instructions: r.instructions, prepTimeMinutes: r.prepTimeMinutes, tags: r.tags, ingredients: ings, images: r.images });
+      db.recipes.push(n); EP.syncRecipeIntoCycles(db, n, rng); added++;
+    }
+  });
+  return { added, updated };
+}
+
+/* ==========================================================================
+   Essensplanung – App Teil 3: Oberfläche
+   ========================================================================== */
+const ICON = {
+  plate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/></svg>',
+  week: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
+  cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 4h2.5l2.2 11h10.6l2-7.5H7"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4.5h11a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg>',
+  lock: '<svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+};
+const TABS = [['suggest', 'Vorschlag', ICON.plate], ['week', 'Woche', ICON.week], ['shop', 'Einkauf', ICON.cart], ['recipes', 'Rezepte', ICON.book]];
+const TITLES = { suggest: 'Als Nächstes', week: 'Wochenplan', shop: 'Einkaufsliste', recipes: 'Rezepte',
+  edit: 'Rezept', ingredients: 'Zutaten', rotation: 'Rotation', settings: 'Einstellungen', sync: 'Geräteabgleich' };
+
+let route = { name: 'suggest' }, stack = [];
+let weekStartISO = EP.weekStart(EP.todayISO());
+let shopRange = null;
+let recipeFilter = { q: '', status: 'all', tag: '' };
+
+/* ---------- Hilfen ---------- */
+function notify(t) {
+  const el = $('#toast'); el.textContent = t; el.classList.add('on');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 2400);
+}
+function daysLabel(n) { return n + ' ' + (n === 1 ? 'Tag' : 'Tage'); }
+function rangeLabel(dates) {
+  if (!dates.length) return '';
+  const a = dates[0], b = dates[dates.length - 1];
+  return a === b ? `${EP.weekday(a)} ${EP.fmtShort(a)}` : `${EP.weekday(a)} ${EP.fmtShort(a)}–${EP.weekday(b)} ${EP.fmtShort(b)}`;
+}
+function coverKey(r) { const c = (r.images || []).find(i => i.isCover) || (r.images || [])[0]; return c ? c.fileKey : null; }
+function parseQty(s) {
+  if (s == null) return null;
+  const t = String(s).trim().replace(',', '.');
+  if (!t) return null;
+  const v = parseFloat(t);
+  return isFinite(v) && v > 0 ? v : null;
+}
+const unitLabel = u => (u ? EP.UNITS[u].s : '');
+
+/* ---------- Dialog-Blätter ---------- */
+function openSheet(html, bind) {
+  closeSheet();
+  const s = document.createElement('div');
+  s.className = 'scrim'; s.id = 'scrim';
+  s.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
+  s.addEventListener('click', e => { if (e.target === s) closeSheet(); });
+  document.body.appendChild(s);
+  if (bind) bind(s.firstElementChild);
+  const f = $('input,select,textarea', s); if (f && !('ontouchstart' in window)) f.focus();
+}
+function closeSheet() { const s = $('#scrim'); if (s) s.remove(); }
+function confirmSheet(title, detail, yes, no, onYes, danger) {
+  openSheet(`<h2>${esc(title)}</h2>${detail ? `<p class="sub" style="margin-top:6px">${esc(detail)}</p>` : ''}
+    <div class="btns two"><button class="btn" data-x="no">${esc(no)}</button>
+    <button class="btn ${danger ? 'danger' : 'primary'}" data-x="yes">${esc(yes)}</button></div>`, el => {
+    $('[data-x=no]', el).onclick = closeSheet;
+    $('[data-x=yes]', el).onclick = () => { closeSheet(); onYes(); };
+  });
+}
+function promptSheet(title, label, value, okLabel, onOk) {
+  openSheet(`<h2>${esc(title)}</h2><label class="field"><span>${esc(label)}</span><input class="in" id="pv" value="${esc(value || '')}"></label>
+    <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">${esc(okLabel)}</button></div>`, el => {
+    const go = () => { const v = $('#pv', el).value.trim(); closeSheet(); onOk(v); };
+    $('[data-x=no]', el).onclick = closeSheet; $('[data-x=yes]', el).onclick = go;
+    $('#pv', el).onkeydown = e => { if (e.key === 'Enter') go(); };
+  });
+}
+/* Startdatum wählen, mit Live-Anzeige der belegten Tage */
+function dateSheet(title, recipe, start, okLabel, onOk) {
+  const occ = new Set(EP.live(db.plan).map(p => p.date));
+  const preview = d => EP.nextFreeDates(d, daysOf(recipe), occ);
+  openSheet(`<h2>${esc(title)}</h2><p class="serif" style="font-size:19px;margin-top:4px">${esc(recipe.name)}</p>
+    <label class="field"><span>Startdatum (Kochtag)</span><input class="in" type="date" id="dv" value="${start}"></label>
+    <p class="hint" id="dp"></p>
+    <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">${esc(okLabel)}</button></div>`, el => {
+    const upd = () => { const v = $('#dv', el).value; $('#dp', el).textContent = v ? `Belegt ${daysLabel(daysOf(recipe))}: ${rangeLabel(preview(v))}` : ''; };
+    $('#dv', el).oninput = upd; upd();
+    $('[data-x=no]', el).onclick = closeSheet;
+    $('[data-x=yes]', el).onclick = () => { const v = $('#dv', el).value; if (!v) return; closeSheet(); onOk(v); };
+  });
+}
+/* Rezept auswählen (aktive zuerst) */
+function recipePickSheet(title, onPick) {
+  const list = liveRecipes().sort((a, b) => (b.inRotation - a.inRotation) || a.name.localeCompare(b.name, 'de'));
+  const html = list.map(r => `<button class="opt" data-id="${r.id}"><span class="grow"><span class="serif" style="font-size:17px">${esc(r.name)}</span>
+    <small>${r.inRotation ? 'In Rotation' : 'Pausiert'} · ${daysLabel(daysOf(r))}</small></span></button>`).join('');
+  openSheet(`<h2>${esc(title)}</h2><input class="in" id="ps" placeholder="Rezept suchen" style="margin-top:10px">
+    <div class="pick" id="pl">${html || '<p class="empty">Noch keine Rezepte angelegt.</p>'}</div>`, el => {
+    $('#ps', el).oninput = e => { const q = e.target.value.toLowerCase(); $$('.opt', el).forEach(b => b.classList.toggle('hidden', !b.textContent.toLowerCase().includes(q))); };
+    $$('.opt', el).forEach(b => b.onclick = () => { closeSheet(); onPick(b.dataset.id); });
+  });
+}
+function optionsSheet(title, sub, opts) {
+  openSheet(`<h2>${esc(title)}</h2>${sub ? `<p class="sub">${sub}</p>` : ''}${opts.map((o, i) =>
+    `<button class="opt ${o.danger ? 'danger' : ''}" data-i="${i}"><span class="grow">${esc(o.label)}${o.hint ? `<small>${esc(o.hint)}</small>` : ''}</span></button>`).join('')}
+    <div class="btns"><button class="btn quiet" data-x="no">Schließen</button></div>`, el => {
+    $$('[data-i]', el).forEach(b => b.onclick = () => { closeSheet(); opts[+b.dataset.i].run(); });
+    $('[data-x=no]', el).onclick = closeSheet;
+  });
+}
+
+/* ---------- Navigation ---------- */
+function go(name, params) {
+  if (TABS.some(t => t[0] === name)) { stack = []; route = { name, params }; }
+  else { stack.push(route); route = { name, params }; }
+  window.scrollTo(0, 0);
+  rerender();
+}
+function back() {
+  if (route.name === 'edit' && editState && editState.dirty) {
+    return confirmSheet('Änderungen verwerfen?', 'Das Rezept wurde noch nicht gespeichert.', 'Verwerfen', 'Weiter bearbeiten', () => { editState = null; back(); }, true);
+  }
+  route = stack.pop() || { name: 'suggest' };
+  rerender();
+}
+async function change(msg) { await persist(); if (msg) notify(msg); rerender(); }
+
+function renderSyncPill() {
+  const p = $('#syncpill'); if (!p) return;
+  const map = { off: ['', 'Nur dieses Gerät'], ok: ['ok', 'Abgeglichen'], busy: ['busy', 'Gleicht ab …'], err: ['err', 'Abgleich gestört'], offline: ['', 'Offline'] };
+  const [cls, txt] = map[Sync.enabled() ? Sync.state : 'off'] || map.off;
+  p.className = 'syncpill ' + cls;
+  p.innerHTML = `<i></i>${txt}`;
+  p.title = Sync.msg || txt;
+}
+function rerender() {
+  if (!db || !$('#shell') || $('#shell').classList.contains('hidden')) return;
+  const isTab = TABS.some(t => t[0] === route.name);
+  $('#ttl').textContent = route.name === 'edit' ? (editState && editState.isNew ? 'Neues Rezept' : 'Rezept bearbeiten') : TITLES[route.name];
+  $('#topleft').innerHTML = isTab
+    ? `<a class="iconbtn" href="index.html" aria-label="Zur Übersicht der Apps">${ICON.back}</a>`
+    : `<button class="iconbtn" data-act="back" aria-label="Zurück">${ICON.back}</button>`;
+  $('#tabs').innerHTML = TABS.map(([k, l, ic]) => `<button data-tab="${k}" ${route.name === k || (!isTab && stack[0] && stack[0].name === k) ? 'aria-current="page"' : ''}>${ic}${l}</button>`).join('');
+  const views = { suggest: vSuggest, week: vWeek, shop: vShop, recipes: vRecipes, edit: vEdit, ingredients: vIngredients, rotation: vRotation, settings: vSettings, sync: vSync };
+  const main = $('#main');
+  main.innerHTML = (views[route.name] || vSuggest)();
+  const binder = BIND[route.name]; if (binder) binder(main);
+  renderSyncPill();
+  Images.hydrate(main);
+}
+
+/* ---------- Vorschlag (5.3) ---------- */
+function vSuggest() {
+  const before = db.rotation.length;
+  const next = EP.nextEntries(db, 6, null, rng);
+  if (db.rotation.length !== before) persist();
+  if (!next.length) {
+    return `<div class="empty"><p class="serif">Noch nichts in der Rotation</p><p>Leg deine Gerichte im Reiter Rezepte an – ein Name reicht für den Anfang.</p>
+      <div class="btns"><button class="btn primary" data-act="tab" data-arg="recipes">Rezepte anlegen</button>
+      ${liveRecipes().length ? '' : '<button class="btn" data-act="seed">Beispielrezepte laden</button>'}</div></div>`;
+  }
+  const e = next[0], r = recipeById(e.recipeId), n = daysOf(r), ck = coverKey(r);
+  const prog = EP.cycleProgress(db);
+  const occ = r.weight > 1 ? ` (${e.occurrence}/${r.weight})` : '';
+  return `<div class="plate-wrap">
+      <div class="plate">${ck ? `<img data-img="${ck}" data-thumb="0" alt="">` : `<span class="dish">${esc(r.name)}</span>`}</div>
+      ${ck ? `<div class="dish-under">${esc(r.name)}</div>` : ''}
+      <p class="plate-meta">${r.servings} Portionen, reicht für ${daysLabel(n)}${occ}${r.prepTimeMinutes ? `, ${r.prepTimeMinutes} min` : ''}</p>
+    </div>
+    <div class="btns">
+      <button class="btn primary" data-act="accept" data-arg="${e.id}">Übernehmen</button>
+      <div class="btns two" style="margin-top:0">
+        <button class="btn" data-act="postpone" data-arg="${e.id}">Später</button>
+        <button class="btn" data-act="skip" data-arg="${e.id}">Diesmal auslassen</button>
+      </div>
+      <button class="btn quiet" data-act="pickself">Selbst wählen</button>
+    </div>
+    ${prog ? `<div class="progress">Durchlauf ${prog.cycle} · ${prog.current} von ${prog.total} Gerichten
+      <div class="progress-bar"><i style="width:${Math.round((prog.current - 1) / prog.total * 100)}%"></i></div></div>` : ''}
+    ${next.length > 1 ? `<h3>Danach</h3><ol class="queue box">${next.slice(1, 6).map((x, i) => {
+      const rr = recipeById(x.recipeId);
+      return `<li><span class="n">${i + 2}.</span><span class="nm">${esc(rr.name)}</span><span class="d">${daysLabel(daysOf(rr))}</span></li>`;
+    }).join('')}</ol>` : ''}`;
+}
+
+/* ---------- Woche (5.4) ---------- */
+function vWeek() {
+  const ws = weekStartISO, days = EP.weekDays(ws), today = EP.todayISO();
+  const isDraft = draft && draft.ws === ws;
+  const ents = weekEntries(ws);
+  const kw = EP.isoWeek(ws);
+  const rows = days.map(d => {
+    const p = ents.get(d);
+    const cls = ['day', d === today ? 'today' : '', d < today ? 'past' : '', p && p.drafted ? 'drafted' : ''].join(' ');
+    let body;
+    if (!p) body = `<div class="nm free">${d < today ? '–' : 'Frei'}</div>`;
+    else if (p.type === 'BLOCKED') body = `<div class="nm free">Gesperrt</div><div class="tags"><span class="badge block">${esc(p.note || 'Kein Kochen')}</span></div>`;
+    else {
+      const r = recipeById(p.recipeId);
+      const carry = p.type === 'LEFTOVER' && blockEntries(p.blockId, isDraft ? draft.clone : db).concat(isDraft ? draft.drafts.filter(x => x.blockId === p.blockId) : [])
+        .some(x => x.type === 'COOK' && x.date < ws);
+      const b = p.type === 'COOK' ? `<span class="badge cook">Kochtag${p.dayCount > 1 ? ` 1/${p.dayCount}` : ''}</span>`
+        : `<span class="badge rest">Reste ${p.dayIndex}/${p.dayCount}</span>`;
+      body = `<div class="nm">${esc(r ? r.name : 'Gelöschtes Rezept')}</div><div class="tags">${b}${carry ? '<span class="badge">Übertrag</span>' : ''}
+        ${p.status === 'DONE' && p.type === 'COOK' ? '<span class="badge done">Gekocht</span>' : ''}${p.source === 'MANUAL' && p.type === 'COOK' ? '<span class="badge">Selbst gewählt</span>' : ''}</div>`;
+    }
+    return `<button class="${cls}" data-act="day" data-arg="${d}"><div class="dt"><b>${EP.weekday(d)}</b><span>${EP.fmtShort(d)}</span></div>
+      <div class="what">${body}</div>${p && p.locked ? ICON.lock : ''}</button>`;
+  }).join('');
+  return `<div class="weekhead">
+      <button class="iconbtn" data-act="wk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
+      <div class="kw"><b>KW ${kw}</b><span>${EP.fmtRange(ws, days[6])}</span></div>
+      <button class="iconbtn" data-act="wk" data-arg="7" aria-label="Nächste Woche" style="transform:scaleX(-1)">${ICON.back}</button>
+    </div>
+    ${ws !== EP.weekStart(today) ? '<div style="text-align:center;margin:-6px 0 10px"><button class="btn quiet small" data-act="wk" data-arg="0" style="display:inline-flex">Zur aktuellen Woche</button></div>' : ''}
+    ${isDraft ? `<div class="draftbar"><b>Entwurf</b> – noch nicht gespeichert. Tippe auf einen Tag, um zu tauschen, zu verschieben oder selbst zu wählen.</div>` : ''}
+    <div class="days">${rows}</div>
+    ${isDraft
+      ? `<div class="btns two"><button class="btn" data-act="discard">Verwerfen</button><button class="btn primary" data-act="commit">Plan übernehmen</button></div>`
+      : `<div class="btns two"><button class="btn primary" data-act="fill">Woche füllen</button><button class="btn" data-act="toshop">Einkaufsliste</button></div>`}`;
+}
+function dayActions(d) {
+  const ws = weekStartISO, today = EP.todayISO();
+  const isDraft = draft && draft.ws === ws;
+  const p = weekEntries(ws).get(d);
+  const title = `${EP.weekdayLong(d)}, ${EP.fmtDate(d)}`;
+  const opts = [];
+  if (isDraft) {
+    if (p && p.drafted && p.blockId) {
+      const idx = draft.sequence.findIndex(s => s.blockId === p.blockId);
+      opts.push({ label: 'Tauschen', hint: 'Nächstes Gericht aus der Rotation', run: () => { draftSwap(p.blockId); rerender(); } });
+      if (idx > 0) opts.push({ label: 'Früher einplanen', run: () => { draftMove(p.blockId, -1); rerender(); } });
+      if (idx < draft.sequence.length - 1) opts.push({ label: 'Später einplanen', run: () => { draftMove(p.blockId, 1); rerender(); } });
+      opts.push({ label: 'Selbst wählen', run: () => recipePickSheet('Gericht wählen', id => { draftPick(p.blockId, id); rerender(); }) });
+      opts.push({ label: p.locked ? 'Fixierung lösen' : 'Fixieren', hint: 'Wird beim erneuten Füllen nicht überschrieben', run: () => { draftToggleLock(p.blockId); rerender(); } });
+    }
+    if (p && p.extraBlocked) opts.push({ label: 'Tag wieder freigeben', run: () => { draft.blocked.delete(d); relayoutDraft(); rerender(); } });
+    else if (!p || p.drafted) opts.push({ label: 'Tag sperren', hint: 'z. B. Auswärts essen – Reste rutschen weiter', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { draft.blocked.set(d, note); relayoutDraft(); rerender(); }) });
+    if (!opts.length) opts.push({ label: 'Dieser Tag bleibt unverändert', hint: 'Fixiert, gesperrt oder Übertrag aus der Vorwoche', run: () => {} });
+    return optionsSheet(title, p && p.recipeId ? esc(recipeById(p.recipeId).name) : '', opts);
+  }
+  if (!p) {
+    opts.push({ label: 'Nächstes aus der Rotation', run: () => {
+      const e = EP.nextEntries(db, 1, null, rng)[0];
+      if (!e) return notify('Keine Gerichte in der Rotation.');
+      placeBlock(d, { recipeId: e.recipeId, rotationEntryId: e.id }); change('Eingeplant.');
+    } });
+    opts.push({ label: 'Selbst wählen', run: () => recipePickSheet('Gericht wählen', id => {
+      const e = EP.manualPickEntry(db, id); placeBlock(d, { recipeId: id, rotationEntryId: e ? e.id : null }); change('Eingeplant.');
+    }) });
+    opts.push({ label: 'Tag sperren', hint: 'z. B. Auswärts essen', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { blockDay(d, note); change('Tag gesperrt.'); }) });
+  } else if (p.type === 'BLOCKED') {
+    opts.push({ label: 'Tag wieder freigeben', run: () => { unblockDay(d); change('Tag freigegeben.'); } });
+    opts.push({ label: 'Notiz ändern', run: () => promptSheet('Notiz ändern', 'Notiz', p.note, 'Speichern', note => { const x = planByDate().get(d); x.note = note; EP.touch(x); change(); }) });
+  } else {
+    const r = recipeById(p.recipeId);
+    if (p.status !== 'DONE') opts.push({ label: 'Als gekocht markieren', run: () => { markCooked(p.blockId); change('Als gekocht markiert.'); } });
+    if (r && (r.instructions || r.ingredients.length)) opts.push({ label: 'Kochansicht öffnen', run: () => openCook(r.id) });
+    if (d >= today) {
+      opts.push({ label: 'Tauschen', hint: 'Nächstes Gericht aus der Rotation', run: () => { const nr = swapBlock(p.blockId); change(nr ? 'Getauscht gegen ' + nr.name + '.' : 'Keine weiteren Gerichte in der Rotation.'); } });
+      opts.push({ label: 'Verschieben', run: () => {
+        const cook = blockEntries(p.blockId).find(x => x.type === 'COOK');
+        dateSheet('Verschieben', r, cook ? cook.date : d, 'Verschieben', nd => { moveBlock(p.blockId, nd); change('Verschoben.'); });
+      } });
+      opts.push({ label: 'Selbst wählen', hint: 'Dieses Gericht ersetzen', run: () => recipePickSheet('Gericht wählen', id => {
+        const cook = blockEntries(p.blockId).find(x => x.type === 'COOK');
+        const info = removeBlock(p.blockId, true);
+        const e = EP.manualPickEntry(db, id);
+        placeBlock(cook ? cook.date : d, { recipeId: id, rotationEntryId: e ? e.id : null, locked: info && info.locked });
+        change('Ersetzt.');
+      }) });
+      opts.push({ label: 'Tag sperren', hint: 'Reste rutschen auf den nächsten freien Tag', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { blockDay(d, note); change('Tag gesperrt.'); }) });
+    }
+    opts.push({ label: p.locked ? 'Fixierung lösen' : 'Fixieren', hint: 'Fixierte Gerichte bleiben beim Füllen der Woche stehen', run: () => { const v = toggleLock(p.blockId); change(v ? 'Fixiert.' : 'Fixierung gelöst.'); } });
+    opts.push({ label: 'Aus dem Plan entfernen', danger: true, hint: 'Das Gericht kommt wieder nach vorne in die Rotation', run: () => { removeBlock(p.blockId, true); change('Entfernt.'); } });
+  }
+  optionsSheet(title, p && p.recipeId ? esc((recipeById(p.recipeId) || {}).name || '') : '', opts);
+}
+
+/* ---------- Einkauf (5.5) ---------- */
+function vShop() {
+  if (!shopRange) shopRange = { from: weekStartISO, to: EP.addDays(weekStartISO, 6) };
+  const { from, to } = shopRange;
+  const list = EP.buildShoppingList(db, from, to);
+  const showQ = db.settings.marketListShowQuantities;
+  const item = (r, withAmt) => `<label class="item ${r.checked ? 'checked' : ''}"><input type="checkbox" data-check="${esc(r.key)}" ${r.checked ? 'checked' : ''}>
+    <span class="nm">${esc(r.name)}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}</label>`;
+  const empty = !list.recipes.length;
+  return `<div class="box noprint"><div class="row">
+      <label class="grow"><span class="hint" style="margin:0 0 4px;display:block">Von</span><input class="in" type="date" id="sf" value="${from}"></label>
+      <label class="grow"><span class="hint" style="margin:0 0 4px;display:block">Bis</span><input class="in" type="date" id="st" value="${to}"></label></div></div>
+    <h2 style="margin-top:18px">Einkauf ${EP.fmtRange(from, to)}</h2>
+    <p class="sub">${empty ? 'In diesem Zeitraum ist nichts gekocht geplant.' : 'Für: ' + esc(list.recipes.join(', '))}</p>
+    ${list.warnings.length ? `<ul class="box warnbox" style="margin-top:12px">${list.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+    ${list.market.length ? `<section class="shopsec box"><h3>Markt <small>${list.market.length}</small></h3>${list.market.map(r => item(r, showQ)).join('')}</section>` : ''}
+    ${list.supermarket.length ? `<section class="shopsec box"><h3>Supermarkt</h3>${list.supermarket.map(g =>
+      `<p class="cat">${esc(g.label)}</p>${g.items.map(r => item(r, true)).join('')}`).join('')}</section>` : ''}
+    <section class="shopsec box"><h3>Zusätzlich</h3>
+      ${list.extraItems.map((x, i) => `<div class="item ${x.checked ? 'checked' : ''}"><input type="checkbox" data-extra="${i}" ${x.checked ? 'checked' : ''} aria-label="Abhaken">
+        <span class="nm">${esc(x.text)}</span><button class="btn quiet small noprint" data-act="delextra" data-arg="${i}" aria-label="Entfernen">✕</button></div>`).join('')}
+      <div class="quick noprint" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. Spülmittel" enterkeyhint="done"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
+    </section>
+    ${list.pantry.length ? `<details class="shopsec box"><summary>Vorrat prüfen (${list.pantry.length})</summary>${list.pantry.map(r => item(r, false)).join('')}</details>` : ''}
+    <div class="btns noprint">
+      <button class="btn primary" data-act="copyshop">Als Text kopieren</button>
+      <div class="btns two" style="margin-top:0">
+        ${navigator.share ? '<button class="btn" data-act="shareshop">Teilen</button>' : ''}
+        <button class="btn" data-act="printshop" ${navigator.share ? '' : 'style="grid-column:1/-1"'}>Drucken</button>
+      </div>
+    </div>`;
+}
+function shopText() {
+  const { from, to } = shopRange;
+  return EP.shoppingText(EP.buildShoppingList(db, from, to), db.settings);
+}
+
+/* ==========================================================================
+   Essensplanung – App Teil 4: Rezepte, Einstellungen, Anmeldung, Start
+   ========================================================================== */
+
+/* ---------- Rezepte (Fundus) ---------- */
+function recipeMatches(r) {
+  const f = recipeFilter;
+  if (f.status === 'active' && !r.inRotation) return false;
+  if (f.status === 'paused' && r.inRotation) return false;
+  if (f.tag && !(r.tags || []).includes(f.tag)) return false;
+  if (f.q) {
+    const q = f.q.toLowerCase();
+    const inIng = r.ingredients.some(x => { const i = ingById(x.ingredientId); return i && i.name.toLowerCase().includes(q); });
+    if (!r.name.toLowerCase().includes(q) && !(r.tags || []).some(t => t.toLowerCase().includes(q)) && !inIng) return false;
+  }
+  return true;
+}
+function vRecipes() {
+  const all = liveRecipes();
+  const tags = [...new Set(all.flatMap(r => r.tags || []))].sort((a, b) => a.localeCompare(b, 'de'));
+  const list = all.filter(recipeMatches).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const pp = db.settings.portionsPerDay;
+  const seg = (k, l) => `<button data-act="rstatus" data-arg="${k}" aria-pressed="${recipeFilter.status === k}">${l}</button>`;
+  return `<div class="quick"><input class="in" id="qa" placeholder="Rezeptname eingeben" enterkeyhint="done" autocomplete="off">
+      <button class="btn primary" data-act="qa" aria-label="Rezept anlegen">+</button></div>
+    <p class="hint">Enter legt das Rezept an. Mehrere Zeilen einfügen legt mehrere Rezepte an.</p>
+    ${all.length ? `<input class="in" id="rq" placeholder="Suchen nach Name, Tag oder Zutat" value="${esc(recipeFilter.q)}" style="margin-top:14px">
+    <div class="seg" style="margin-top:10px">${seg('all', 'Alle')}${seg('active', 'In Rotation')}${seg('paused', 'Pausiert')}</div>
+    ${tags.length ? `<div class="chips">${tags.map(t => `<button class="chip" data-act="rtag" data-arg="${esc(t)}" aria-pressed="${recipeFilter.tag === t}">${esc(t)}</button>`).join('')}</div>` : ''}` : ''}
+    <div class="rlist">${list.map(r => {
+      const n = daysOf(r), ck = coverKey(r);
+      return `<div class="rcard ${r.inRotation ? '' : 'paused'}">
+        <button class="head" data-act="edit" data-arg="${r.id}" style="width:100%">
+          ${ck ? `<img class="thumb" data-img="${ck}" data-thumb="1" alt="">` : ''}
+          <span class="grow"><span class="nm" style="display:block">${esc(r.name)}</span>
+          <span class="meta" style="display:block">${r.servings} Portionen = ${daysLabel(n)}${r.daysOverride ? ' (fest)' : ''}${r.ingredients.length ? `, ${r.ingredients.length} Zutaten` : ''}</span></span>
+        </button>
+        <div class="ctrl">
+          <label><span class="switch"><input type="checkbox" data-rot="${r.id}" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></span>${r.inRotation ? 'In Rotation' : 'Pausiert'}</label>
+          <div class="wstep"><button data-act="w" data-arg="${r.id}|-1" aria-label="Seltener">−</button><output>×${r.weight}</output><button data-act="w" data-arg="${r.id}|1" aria-label="Häufiger">+</button></div>
+        </div></div>`;
+    }).join('') || (all.length ? '<p class="empty">Keine Treffer.</p>' : `<div class="empty"><p class="serif">Dein Fundus ist leer</p>
+      <p>Tipp oben einen Gerichtnamen ein – Portionen, Zutaten und Anleitung kannst du später ergänzen.</p>
+      <div class="btns"><button class="btn" data-act="seed">Beispielrezepte laden</button></div></div>`)}</div>
+    ${all.length ? `<p class="hint" style="text-align:center">${all.filter(r => r.inRotation).length} von ${all.length} in Rotation, ${pp} Portionen pro Tag</p>` : ''}`;
+}
+
+/* ---------- Rezept bearbeiten ---------- */
+let editState = null;
+function openEdit(id) {
+  const r = id ? recipeById(id) : newRecipe('');
+  editState = { isNew: !id, dirty: false, r: deep(r),
+    rows: r.ingredients.slice().sort((a, b) => a.sortOrder - b.sortOrder).map(x => {
+      const i = ingById(x.ingredientId);
+      return { name: i ? i.name : '', qty: x.quantity == null ? '' : EP.fmtNum(x.quantity), unit: x.unit || '', note: x.note || '', cat: 'SONSTIGES' };
+    }) };
+  go('edit');
+}
+function vEdit() {
+  if (!editState) return '<p class="empty">Kein Rezept geöffnet.</p>';
+  const r = editState.r, s = db.settings;
+  const n = EP.daysFor(r, s), hint = EP.daysHint(r, s);
+  const unitOpts = sel => `<option value="" ${!sel ? 'selected' : ''}>—</option>` + EP.UNIT_ORDER.map(u => `<option value="${u}" ${sel === u ? 'selected' : ''}>${EP.UNITS[u].s}</option>`).join('');
+  const catOpts = sel => EP.CATEGORIES.map(c => `<option value="${c.key}" ${sel === c.key ? 'selected' : ''}>${c.label}</option>`).join('');
+  const rows = editState.rows.map((x, i) => {
+    const known = !x.name.trim() || !!findIngredient(x.name);
+    return `<div class="ingrow" data-row="${i}">
+      <div class="l1">
+        <input class="in" data-f="qty" value="${esc(x.qty)}" inputmode="decimal" placeholder="Menge" aria-label="Menge">
+        <select class="in" data-f="unit" aria-label="Einheit">${unitOpts(x.unit)}</select>
+        <input class="in" data-f="name" value="${esc(x.name)}" list="inglist" placeholder="Zutat" aria-label="Zutat" autocomplete="off">
+        <button class="x" data-act="rowdel" data-arg="${i}" aria-label="Zutat entfernen">✕</button>
+      </div>
+      <div class="l2">
+        <input class="in" data-f="note" value="${esc(x.note)}" placeholder="Notiz, z. B. fein gewürfelt" aria-label="Notiz">
+        <button class="x" data-act="rowup" data-arg="${i}" aria-label="Nach oben">▲</button>
+        <button class="x" data-act="rowdown" data-arg="${i}" aria-label="Nach unten">▼</button>
+      </div>
+      <div class="newcat ${known ? 'hidden' : ''}">Neue Zutat – Kategorie: <select class="in" data-f="cat">${catOpts(x.cat)}</select></div>
+    </div>`;
+  }).join('');
+  const imgs = (r.images || []).slice().sort((a, b) => a.sortOrder - b.sortOrder);
+  return `<datalist id="inglist">${EP.live(db.ingredients).sort((a, b) => a.name.localeCompare(b.name, 'de')).map(i => `<option value="${esc(i.name)}">`).join('')}</datalist>
+    <label class="field" style="margin-top:0"><span>Name</span><input class="in nameinput" id="e-name" value="${esc(r.name)}" maxlength="120" placeholder="z. B. Linsensuppe"></label>
+    <div class="field"><span>Portionen pro Zubereitung</span>
+      <div class="stepper"><button data-act="serv" data-arg="-1" aria-label="Weniger">−</button><output id="e-serv">${r.servings}</output><button data-act="serv" data-arg="1" aria-label="Mehr">+</button></div>
+      <p class="live" id="e-live">${liveDaysText(r)}</p>
+      <p class="hint" id="e-hint">${esc(hint)}</p></div>
+    <label class="field"><span>Tage fest vorgeben (optional)</span><input class="in" id="e-days" inputmode="numeric" value="${r.daysOverride || ''}" placeholder="leer = aus den Portionen berechnen"></label>
+    <div class="field"><span>Wie oft pro Durchlauf</span>
+      <div class="stepper"><button data-act="ew" data-arg="-1" aria-label="Seltener">−</button><output>×${r.weight}</output><button data-act="ew" data-arg="1" aria-label="Häufiger">+</button></div></div>
+    <div class="field row"><span class="grow" style="margin:0;color:var(--ink);font-weight:600">In Rotation</span>
+      <label class="switch"><input type="checkbox" id="e-rot" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></label></div>
+
+    <h3>Zutaten</h3>
+    <p class="hint" style="margin-top:0">Mengen gelten für die ganze Zubereitung. Ohne Menge = nach Geschmack.</p>
+    ${rows}
+    <button class="btn" data-act="rowadd" style="margin-top:10px">Zutat hinzufügen</button>
+
+    <h3>Anleitung</h3>
+    <textarea class="in" id="e-ins" placeholder="Eine Zeile pro Schritt, z. B.&#10;1. Zwiebeln fein würfeln&#10;2. In Olivenöl anschwitzen">${esc(r.instructions)}</textarea>
+    <div class="row" style="gap:10px">
+      <label class="field grow"><span>Zubereitungszeit (min)</span><input class="in" id="e-time" inputmode="numeric" value="${r.prepTimeMinutes || ''}"></label>
+      <label class="field grow"><span>Tags</span><input class="in" id="e-tags" value="${esc((r.tags || []).join(', '))}" placeholder="vegetarisch, schnell"></label>
+    </div>
+    <label class="field"><span>Notizen</span><textarea class="in" id="e-notes" style="min-height:70px">${esc(r.notes)}</textarea></label>
+
+    <h3>Bilder</h3>
+    <div class="gallery">${imgs.map(im => `<button data-act="img" data-arg="${im.fileKey}" aria-label="Bild bearbeiten"><img data-img="${im.fileKey}" data-thumb="1" alt="">${im.isCover ? '<span class="cover">Titelbild</span>' : ''}</button>`).join('')}
+      <button class="add" data-act="imgadd" aria-label="Bild hinzufügen">+</button></div>
+    <input type="file" id="e-file" accept="image/*" multiple class="hidden">
+
+    <div class="btns">
+      <button class="btn primary" data-act="save">Rezept speichern</button>
+      ${editState.isNew ? '' : `<button class="btn" data-act="cook" data-arg="${r.id}">Kochansicht</button>
+      <button class="btn danger" data-act="archive">Rezept löschen</button>`}
+    </div>`;
+}
+function liveDaysText(r) {
+  return `= ${daysLabel(EP.daysFor(r, db.settings))} bei ${db.settings.portionsPerDay} Portionen/Tag${r.daysOverride ? ' (fest vorgegeben)' : ''}`;
+}
+function readEditForm() {
+  const r = editState.r;
+  const v = id => ($('#' + id) || {}).value;
+  if ($('#e-name')) r.name = v('e-name');
+  const d = parseInt(v('e-days'), 10); r.daysOverride = d > 0 ? d : null;
+  if ($('#e-rot')) r.inRotation = $('#e-rot').checked;
+  r.instructions = v('e-ins') || '';
+  const t = parseInt(v('e-time'), 10); r.prepTimeMinutes = t > 0 ? t : null;
+  r.tags = (v('e-tags') || '').split(',').map(x => x.trim()).filter(Boolean);
+  r.notes = v('e-notes') || '';
+  $$('[data-row]').forEach(el => {
+    const row = editState.rows[+el.dataset.row]; if (!row) return;
+    $$('[data-f]', el).forEach(f => { row[f.dataset.f] = f.value; });
+  });
+}
+function saveEdit() {
+  readEditForm();
+  const e = editState, r = e.r;
+  r.name = r.name.trim();
+  if (!r.name) return notify('Bitte einen Namen eingeben.');
+  const dup = findRecipeByName(r.name);
+  if (dup && dup.id !== r.id && !dup.archivedAt) return notify('Ein Rezept mit diesem Namen gibt es schon.');
+  // Zutaten auflösen, unbekannte anlegen
+  const ings = [];
+  e.rows.forEach((x, k) => {
+    if (!x.name.trim()) return;
+    const qty = parseQty(x.qty);
+    let ing = findIngredient(x.name);
+    if (!ing) ing = createIngredient(x.name, x.cat || 'SONSTIGES', x.unit || 'STUECK');
+    ings.push({ ingredientId: ing.id, quantity: qty, unit: qty == null ? null : (x.unit || ing.defaultUnit || 'STUECK'), note: x.note.trim(), sortOrder: k + 1 });
+  });
+  r.ingredients = ings;
+  const old = recipeById(r.id);
+  if (old) Object.assign(old, r); else db.recipes.push(r);
+  const target = old || r;
+  EP.touch(target);
+  EP.syncRecipeIntoCycles(db, target, rng);
+  editState = null;
+  route = stack.pop() || { name: 'recipes' };
+  change('Gespeichert.');
+}
+
+/* ---------- Kochansicht (Phase 3) ---------- */
+let wakeLock = null;
+async function lockScreen() { try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {} }
+function renderMd(md) {
+  const lines = String(md || '').split('\n');
+  const steps = [], notes = [];
+  lines.forEach(l => {
+    const t = l.trim(); if (!t) return;
+    const m = t.match(/^(\d+)[.)]\s+(.*)$/);
+    if (m) steps.push(m[2]); else if (steps.length) steps[steps.length - 1] += ' ' + t; else notes.push(t);
+  });
+  const fmt = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  if (!steps.length) return { steps: notes.map(fmt), intro: '' };
+  return { steps: steps.map(fmt), intro: notes.map(n => `<p>${fmt(n)}</p>`).join('') };
+}
+function openCook(id) {
+  const r = recipeById(id); if (!r) return;
+  const ck = coverKey(r), md = renderMd(r.instructions);
+  const ing = r.ingredients.slice().sort((a, b) => a.sortOrder - b.sortOrder).map(x => {
+    const i = ingById(x.ingredientId);
+    const q = x.quantity == null ? 'nach Geschmack' : EP.sumAmounts([{ quantity: x.quantity, unit: x.unit }]).text;
+    return `<li><span class="q">${esc(q)}</span><span>${esc(i ? i.name : '')}${x.note ? `, <span class="sub">${esc(x.note)}</span>` : ''}</span></li>`;
+  }).join('');
+  const el = $('#cookview');
+  el.innerHTML = `<div class="inner">
+    <div class="row"><span class="grow"></span><button class="btn small" data-act="closecook">Schließen</button></div>
+    <h1>${esc(r.name)}</h1>
+    <p class="sub" style="font-size:17px">${r.servings} Portionen${r.prepTimeMinutes ? `, ${r.prepTimeMinutes} min` : ''}</p>
+    ${ck ? `<img class="hero" data-img="${ck}" data-thumb="0" alt="">` : ''}
+    ${ing ? `<h3 style="font-size:20px">Zutaten</h3><ul class="ing">${ing}</ul>` : ''}
+    ${md.steps.length ? `<h3 style="font-size:20px">Zubereitung</h3><div class="md">${md.intro}</div><ol class="steps-big">${md.steps.map(s => `<li>${s}</li>`).join('')}</ol>` : ''}
+    ${r.notes ? `<h3 style="font-size:20px">Notizen</h3><p style="font-size:18px">${esc(r.notes)}</p>` : ''}
+    <p class="hint" style="margin-top:24px">Der Bildschirm bleibt an, solange die Kochansicht offen ist. Tippe auf Zutaten und Schritte, um sie abzuhaken.</p></div>`;
+  el.classList.remove('hidden');
+  $$('.ing li, .steps-big li', el).forEach(li => li.onclick = () => li.classList.toggle('done'));
+  Images.hydrate(el);
+  lockScreen();
+}
+function closeCook() {
+  $('#cookview').classList.add('hidden');
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+
+/* ---------- Zutaten (Stammdaten) ---------- */
+let ingQuery = '';
+function vIngredients() {
+  const all = EP.live(db.ingredients).filter(i => !ingQuery || i.name.toLowerCase().includes(ingQuery.toLowerCase()));
+  const srcLabel = { MARKT: 'Markt', SUPERMARKT: 'Supermarkt', VORRAT: 'Vorrat' };
+  return `<input class="in" id="iq" placeholder="Zutat suchen" value="${esc(ingQuery)}">
+    <button class="btn" data-act="ingnew" style="margin-top:10px">Neue Zutat</button>
+    ${EP.CATEGORIES.map(c => {
+      const items = all.filter(i => i.category === c.key).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+      if (!items.length) return '';
+      return `<h3>${esc(c.label)}</h3><div class="box">${items.map(i => `<button class="item" data-act="ing" data-arg="${i.id}">
+        <span class="nm">${esc(i.name)}</span><span class="amt">${srcLabel[EP.sourceOf(i)]}${i.shoppingSource ? ' (angepasst)' : ''}</span></button>`).join('')}</div>`;
+    }).join('') || '<p class="empty">Noch keine Zutaten. Sie entstehen automatisch, wenn du sie in einem Rezept einträgst.</p>'}`;
+}
+function ingredientSheet(id) {
+  const i = id ? ingById(id) : { name: '', category: 'GEMUESE', shoppingSource: null, defaultUnit: 'STUECK' };
+  const used = id ? ingredientUsage(id) : 0;
+  const others = EP.live(db.ingredients).filter(x => x.id !== id).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  openSheet(`<h2>${id ? 'Zutat bearbeiten' : 'Neue Zutat'}</h2>
+    <label class="field"><span>Name (Einzahl)</span><input class="in" id="in-n" value="${esc(i.name)}"></label>
+    <label class="field"><span>Kategorie</span><select class="in" id="in-c">${EP.CATEGORIES.map(c => `<option value="${c.key}" ${c.key === i.category ? 'selected' : ''}>${c.label}</option>`).join('')}</select></label>
+    <label class="field"><span>Einkaufsort</span><select class="in" id="in-s">
+      <option value="" ${!i.shoppingSource ? 'selected' : ''}>Wie Kategorie</option>
+      <option value="MARKT" ${i.shoppingSource === 'MARKT' ? 'selected' : ''}>Markt</option>
+      <option value="SUPERMARKT" ${i.shoppingSource === 'SUPERMARKT' ? 'selected' : ''}>Supermarkt</option>
+      <option value="VORRAT" ${i.shoppingSource === 'VORRAT' ? 'selected' : ''}>Vorrat</option></select></label>
+    <label class="field"><span>Standardeinheit</span><select class="in" id="in-u">${EP.UNIT_ORDER.map(u => `<option value="${u}" ${u === i.defaultUnit ? 'selected' : ''}>${EP.UNITS[u].s}</option>`).join('')}</select></label>
+    ${id ? `<p class="hint">In ${used} ${used === 1 ? 'Rezept' : 'Rezepten'} verwendet.</p>` : ''}
+    <div class="btns"><button class="btn primary" data-x="save">Speichern</button>
+    ${id && others.length ? `<label class="field"><span>Zusammenführen in</span><select class="in" id="in-m"><option value="">Zutat wählen</option>${others.map(o => `<option value="${o.id}">${esc(o.name)}</option>`).join('')}</select></label>
+      <button class="btn" data-x="merge">Zusammenführen</button>` : ''}
+    ${id ? `<button class="btn danger" data-x="del" ${used ? 'disabled style="opacity:.5"' : ''}>${used ? 'Löschen nicht möglich (in Verwendung)' : 'Zutat löschen'}</button>` : ''}
+    <button class="btn quiet" data-x="no">Abbrechen</button></div>`, el => {
+    $('[data-x=no]', el).onclick = closeSheet;
+    $('[data-x=save]', el).onclick = () => {
+      const name = $('#in-n', el).value.trim();
+      if (!name) return notify('Bitte einen Namen eingeben.');
+      const ex = findIngredient(name);
+      if (ex && ex.id !== id) return notify('Diese Zutat gibt es schon – nutze „Zusammenführen“.');
+      const tgt = id ? ingById(id) : createIngredient(name);
+      Object.assign(tgt, { name, category: $('#in-c', el).value, shoppingSource: $('#in-s', el).value || null, defaultUnit: $('#in-u', el).value });
+      EP.touch(tgt); closeSheet(); change('Gespeichert.');
+    };
+    const m = $('[data-x=merge]', el);
+    if (m) m.onclick = () => {
+      const to = $('#in-m', el).value; if (!to) return notify('Bitte eine Zielzutat wählen.');
+      mergeIngredient(id, to); closeSheet(); change('Zusammengeführt.');
+    };
+    const d = $('[data-x=del]', el);
+    if (d && !used) d.onclick = () => { EP.tomb(ingById(id)); closeSheet(); change('Gelöscht.'); };
+  });
+}
+
+/* ---------- Rotation ---------- */
+function vRotation() {
+  const before = db.rotation.length;
+  EP.nextEntries(db, 1, null, rng);
+  if (db.rotation.length !== before) persist();
+  const cycles = EP.openCycles(db);
+  const stLabel = { PENDING: ['Offen', ''], PLANNED: ['Geplant', 'cook'], DONE: ['Gekocht', 'done'], SKIPPED: ['Ausgelassen', 'block'] };
+  const fixed = db.settings.rotationMode === 'FIXED';
+  const actives = EP.activeRecipes(db).sort((a, b) => a.sortOrder - b.sortOrder);
+  return (cycles.length ? cycles.map(c => {
+    const es = EP.cycleEntries(db, c);
+    return `<h3>Durchlauf ${c}</h3><div class="box">${es.map(e => {
+      const r = recipeById(e.recipeId), [l, cls] = stLabel[e.status];
+      return `<div class="item"><span class="nm serif" style="font-size:17px">${esc(r ? r.name : '–')}${r && r.weight > 1 ? ` <span class="sub">(${e.occurrence}/${r.weight})</span>` : ''}</span>
+        <span class="badge ${cls}">${l}</span>
+        ${e.status === 'PENDING' ? `<button class="btn quiet small" data-act="rpost" data-arg="${e.id}">Später</button><button class="btn quiet small" data-act="rskip" data-arg="${e.id}">Auslassen</button>` : ''}</div>`;
+    }).join('')}</div>`;
+  }).join('') : '<p class="empty">Keine offenen Durchläufe – leg Rezepte an und nimm sie in die Rotation.</p>')
+  + (fixed && actives.length ? `<h3>Feste Reihenfolge</h3><p class="hint" style="margin-top:0">Gilt ab dem nächsten Durchlauf.</p><div class="box">${actives.map((r, i) => `<div class="item">
+      <span class="nm serif">${esc(r.name)}</span>
+      <button class="btn quiet small" data-act="sortup" data-arg="${r.id}" ${i === 0 ? 'disabled' : ''} aria-label="Nach oben">▲</button>
+      <button class="btn quiet small" data-act="sortdown" data-arg="${r.id}" ${i === actives.length - 1 ? 'disabled' : ''} aria-label="Nach unten">▼</button></div>`).join('')}</div>` : '')
+  + `<div class="btns"><button class="btn danger" data-act="rreset">Rotation neu starten</button></div>`;
+}
+
+/* ---------- Einstellungen ---------- */
+function vSettings() {
+  const s = db.settings;
+  const segb = (key, val, label) => `<button data-act="set" data-arg="${key}|${val}" aria-pressed="${s[key] === val}">${label}</button>`;
+  const syncTxt = Sync.enabled() ? `Verbunden mit ${esc(Sync.repo.owner)}/${esc(Sync.repo.name)}` : 'Nicht eingerichtet – Daten nur auf diesem Gerät';
+  return `<div class="box stack">
+      <div class="row"><span class="grow"><b>Portionen pro Tag</b><span class="hint" style="display:block;margin:0">Wie viel euer Haushalt pro Tag isst</span></span>
+        <div class="stepper"><button data-act="ppd" data-arg="-1" aria-label="Weniger">−</button><output>${s.portionsPerDay}</output><button data-act="ppd" data-arg="1" aria-label="Mehr">+</button></div></div>
+      <div><b>Bei krummen Portionen</b><div class="seg" style="margin-top:8px">${segb('roundingMode', 'FLOOR', 'Abrunden')}${segb('roundingMode', 'CEIL', 'Aufrunden')}</div>
+        <p class="hint">${s.roundingMode === 'FLOOR' ? '5 Portionen bei 2 pro Tag = 2 Tage, 1 Portion bleibt übrig.' : '5 Portionen bei 2 pro Tag = 3 Tage, am letzten Tag nur 1 Portion.'}</p></div>
+      <div><b>Reihenfolge der Rotation</b><div class="seg" style="margin-top:8px">${segb('rotationMode', 'SHUFFLE', 'Jedes Mal neu mischen')}${segb('rotationMode', 'FIXED', 'Feste Reihenfolge')}</div></div>
+      <div class="row"><span class="grow"><b>Marktliste mit Mengen</b></span><label class="switch"><input type="checkbox" id="s-mq" ${s.marketListShowQuantities ? 'checked' : ''} aria-label="Marktliste mit Mengen"><i></i></label></div>
+    </div>
+    <h3>Verwalten</h3>
+    <div class="box"><button class="item" data-act="to" data-arg="ingredients"><span class="nm">Zutaten</span><span class="amt">${EP.live(db.ingredients).length}</span></button>
+      <button class="item" data-act="to" data-arg="rotation"><span class="nm">Rotation ansehen</span></button>
+      <button class="item" data-act="to" data-arg="sync"><span class="nm">Geräteabgleich<span class="hint" style="display:block;margin:0">${syncTxt}</span></span></button></div>
+    <h3>Datensicherung</h3>
+    <div class="box stack">
+      <label class="row" style="gap:10px"><input type="checkbox" id="s-img" style="width:22px;height:22px"> Bilder mit sichern (größere Datei)</label>
+      <button class="btn" data-act="export">Als Datei sichern</button>
+      <button class="btn" data-act="import">Sicherung einlesen</button>
+      <input type="file" id="s-file" accept=".json,application/json" class="hidden">
+      ${liveRecipes().length ? '' : '<button class="btn" data-act="seed">Beispielrezepte laden</button>'}
+    </div>
+    <h3>Haushalt ${esc(db.household ? db.household.name : '')}</h3>
+    <div class="box stack"><button class="btn" data-act="chpw">Passwort ändern</button><button class="btn danger" data-act="logout">Abmelden</button></div>`;
+}
+
+/* ---------- Geräteabgleich ---------- */
+function vSync() {
+  const on = Sync.enabled(), r = Sync.repo;
+  const last = Sync.lastSync ? new Date(Sync.lastSync).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'noch nie';
+  return `${on ? `<div class="box"><p><b>Verbunden</b> mit dem privaten Repository ${esc(r.owner)}/${esc(r.name)}.</p>
+      <p class="hint">Letzter Abgleich: ${last}${Sync.msg ? `<br><span class="warn">${esc(Sync.msg)}</span>` : ''}</p>
+      <div class="btns two"><button class="btn primary" data-act="syncnow">Jetzt abgleichen</button><button class="btn danger" data-act="syncoff">Trennen</button></div></div>
+      <h3>Zugang erneuern</h3>` : `<p class="sub">Damit Handy, Tablet und PC denselben Stand haben, speichert die App eure Daten zusätzlich in einem <b>privaten</b> GitHub-Repository. Ohne Einrichtung bleiben die Daten nur auf diesem Gerät.</p>
+      <h3>Einmalig einrichten</h3>
+      <ol class="steps box" style="padding-left:34px">
+        <li>Auf github.com ein neues Repository anlegen, z. B. <b>essensplanung-daten</b>, Sichtbarkeit <b>Private</b>.</li>
+        <li>Unter Settings → Developer settings → Personal access tokens → <b>Fine-grained tokens</b> einen Token erstellen: Zugriff nur auf dieses Repository, Berechtigung <b>Contents: Read and write</b>.</li>
+        <li>Den Token hier eintragen. Auf jedem weiteren Gerät wählst du beim Start „Mit bestehendem Haushalt verbinden“.</li>
+      </ol>`}
+    <label class="field"><span>GitHub-Benutzername</span><input class="in" id="g-o" value="${esc(r ? r.owner : '')}" autocapitalize="off" autocomplete="off"></label>
+    <label class="field"><span>Repository</span><input class="in" id="g-r" value="${esc(r ? r.name : 'essensplanung-daten')}" autocapitalize="off" autocomplete="off"></label>
+    <label class="field"><span>Token</span><input class="in" id="g-t" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+    <label class="field"><span>Dein Haushaltspasswort</span><input class="in" id="g-p" type="password" autocomplete="current-password"></label>
+    <p class="hint">Der Token wird mit deinem Passwort verschlüsselt auf diesem Gerät gespeichert.</p>
+    <div class="btns"><button class="btn primary" data-act="syncsetup">${on ? 'Zugang speichern' : 'Verbinden'}</button></div>`;
+}
+async function setupSync() {
+  const o = $('#g-o').value.trim(), n = $('#g-r').value.trim(), t = $('#g-t').value.trim(), pw = $('#g-p').value;
+  if (!o || !n || !t || !pw) return notify('Bitte alle Felder ausfüllen.');
+  if (!(await Crypt.check(pw, db.household.verifier))) return notify('Das Passwort stimmt nicht.');
+  try {
+    await Sync.checkRepo(o, n, t);
+    await Auth.storeToken(pw, t, { owner: o, name: n });
+    Sync.sha = null; Sync.dirty = true; await Sync.saveMeta();
+    notify('Verbunden – gleiche ab …');
+    await Sync.run({ force: true });
+    Sync.startPolling();
+    rerender();
+  } catch (e) { notify(e.message); }
+}
+
+/* ---------- Ereignisse ---------- */
+const ACT = {
+  back: () => back(),
+  tab: a => go(a),
+  to: a => go(a),
+  seed: async () => {
+    const res = await importData({ data: seedToDb(SEED_DATA, EP) }, 'merge');
+    change(`${res.added} Beispielrezepte geladen.`);
+  },
+  /* Vorschlag */
+  accept: id => {
+    const e = rotById(null, id), r = recipeById(e.recipeId);
+    dateSheet('Übernehmen', r, firstFreeFrom(EP.todayISO()), 'Übernehmen', d => { placeBlock(d, { recipeId: r.id, rotationEntryId: e.id }); change('Eingeplant ab ' + EP.fmtShort(d) + '.'); });
+  },
+  postpone: id => { EP.postpone(db, rotById(null, id)); change('Kommt später wieder dran.'); },
+  skip: id => {
+    const e = rotById(null, id), r = recipeById(e.recipeId);
+    confirmSheet('Diesmal auslassen?', `„${r.name}“ wird in diesem Durchlauf übersprungen und kommt erst im nächsten wieder.`, 'Auslassen', 'Zurück', () => { EP.skipEntry(e); change('Ausgelassen.'); });
+  },
+  pickself: () => recipePickSheet('Selbst wählen', id => {
+    const r = recipeById(id), e = EP.manualPickEntry(db, id);
+    dateSheet('Einplanen', r, firstFreeFrom(EP.todayISO()), 'Einplanen', d => { placeBlock(d, { recipeId: id, rotationEntryId: e ? e.id : null }); change('Eingeplant ab ' + EP.fmtShort(d) + '.'); });
+  }),
+  /* Woche */
+  wk: a => { const n = +a; weekStartISO = n === 0 ? EP.weekStart(EP.todayISO()) : EP.addDays(weekStartISO, n); rerender(); },
+  day: d => dayActions(d),
+  fill: () => {
+    if (!EP.activeRecipes(db).length) return notify('Keine Rezepte in der Rotation.');
+    startDraft(weekStartISO); rerender();
+  },
+  discard: () => { draft = null; rerender(); notify('Entwurf verworfen.'); },
+  commit: () => { commitDraft(); change('Plan übernommen.'); Sync.run(); },
+  toshop: () => { shopRange = { from: weekStartISO, to: EP.addDays(weekStartISO, 6) }; go('shop'); },
+  /* Einkauf */
+  addextra: () => {
+    const inp = $('#extra'); const t = inp.value.trim(); if (!t) return;
+    shopState(shopRange.from, shopRange.to).extraItems.push({ text: t, checked: false }); EP.touch(db.shopping);
+    change().then(() => { const i = $('#extra'); if (i) i.focus(); });
+  },
+  delextra: i => { const st = shopState(shopRange.from, shopRange.to); st.extraItems.splice(+i, 1); EP.touch(st); change(); },
+  copyshop: () => {
+    const t = shopText();
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => notify('Einkaufsliste kopiert.')).catch(() => notify('Kopieren nicht möglich.'));
+  },
+  shareshop: () => navigator.share({ title: 'Einkaufsliste', text: shopText() }).catch(() => {}),
+  printshop: () => window.print(),
+  /* Rezepte */
+  qa: () => {
+    const inp = $('#qa'); const v = inp.value.trim(); if (!v) return;
+    const res = quickAdd([v]);
+    inp.value = '';
+    change(res.added ? 'Angelegt.' : res.restored ? 'Wiederhergestellt.' : 'Dieses Rezept gibt es schon.').then(() => { const i = $('#qa'); if (i) i.focus(); });
+  },
+  rstatus: a => { recipeFilter.status = a; rerender(); },
+  rtag: a => { recipeFilter.tag = recipeFilter.tag === a ? '' : a; rerender(); },
+  w: a => { const [id, d] = a.split('|'); const r = recipeById(id); setWeight(r, r.weight + (+d)); change(); },
+  edit: id => openEdit(id),
+  cook: id => openCook(id),
+  closecook: () => closeCook(),
+  /* Editor */
+  serv: d => { readEditForm(); editState.r.servings = Math.max(1, Math.min(99, editState.r.servings + (+d))); editState.dirty = true; rerender(); },
+  ew: d => { readEditForm(); editState.r.weight = Math.max(1, Math.min(5, editState.r.weight + (+d))); editState.dirty = true; rerender(); },
+  rowadd: () => { readEditForm(); editState.rows.push({ name: '', qty: '', unit: '', note: '', cat: 'SONSTIGES' }); editState.dirty = true; rerender();
+    const rows = $$('[data-row]'); const last = rows[rows.length - 1]; if (last) $('[data-f=qty]', last).focus(); },
+  rowdel: i => { readEditForm(); editState.rows.splice(+i, 1); editState.dirty = true; rerender(); },
+  rowup: i => { readEditForm(); i = +i; if (i > 0) [editState.rows[i - 1], editState.rows[i]] = [editState.rows[i], editState.rows[i - 1]]; editState.dirty = true; rerender(); },
+  rowdown: i => { readEditForm(); i = +i; if (i < editState.rows.length - 1) [editState.rows[i + 1], editState.rows[i]] = [editState.rows[i], editState.rows[i + 1]]; editState.dirty = true; rerender(); },
+  save: () => saveEdit(),
+  archive: () => confirmSheet('Rezept löschen?', 'Es verschwindet aus dem Fundus und der Rotation. Bereits geplante Tage bleiben sichtbar.', 'Löschen', 'Behalten', () => {
+    const r = recipeById(editState.r.id); archiveRecipe(r); editState = null; route = stack.pop() || { name: 'recipes' }; change('Gelöscht.');
+  }, true),
+  imgadd: () => { readEditForm(); $('#e-file').click(); },
+  img: key => {
+    readEditForm();
+    const imgs = editState.r.images;
+    optionsSheet('Bild', '', [
+      { label: 'Als Titelbild verwenden', run: () => { imgs.forEach(i => i.isCover = i.fileKey === key); editState.dirty = true; rerender(); } },
+      { label: 'Bild entfernen', danger: true, run: () => {
+        const i = imgs.findIndex(x => x.fileKey === key); const wasCover = imgs[i].isCover;
+        imgs.splice(i, 1); if (wasCover && imgs[0]) imgs[0].isCover = true;
+        Images.remove(key); editState.dirty = true; rerender();
+      } },
+    ]);
+  },
+  /* Zutaten, Rotation */
+  ingnew: () => ingredientSheet(null),
+  ing: id => ingredientSheet(id),
+  rpost: id => { EP.postpone(db, rotById(null, id)); change('Ans Ende verschoben.'); },
+  rskip: id => { EP.skipEntry(rotById(null, id)); change('Ausgelassen.'); },
+  rreset: () => confirmSheet('Rotation neu starten?', 'Alle offenen Einträge werden verworfen und ein neuer Durchlauf gemischt. Bereits geplante Tage bleiben erhalten.', 'Neu starten', 'Abbrechen', () => { EP.resetRotation(db, rng); change('Neuer Durchlauf gestartet.'); }, true),
+  sortup: id => moveSort(id, -1),
+  sortdown: id => moveSort(id, 1),
+  /* Einstellungen */
+  ppd: d => { db.settings.portionsPerDay = Math.max(1, Math.min(12, db.settings.portionsPerDay + (+d))); EP.touch(db.settings); change(); },
+  set: a => { const [k, v] = a.split('|'); db.settings[k] = v; EP.touch(db.settings); change(); },
+  export: async () => {
+    const txt = await exportData($('#s-img') && $('#s-img').checked);
+    const blob = new Blob([txt], { type: 'application/json' });
+    const name = `essensplanung-${EP.todayISO()}.json`;
+    const file = typeof File !== 'undefined' ? new File([blob], name, { type: 'application/json' }) : null;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'Essensplanung-Sicherung' }).catch(() => {}); return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  },
+  import: () => $('#s-file').click(),
+  chpw: () => changePasswordSheet(),
+  logout: () => confirmSheet('Abmelden?', 'Die Daten bleiben auf diesem Gerät gespeichert. Zum Öffnen brauchst du wieder dein Passwort.', 'Abmelden', 'Abbrechen', () => { Auth.logout(); location.reload(); }),
+  syncsetup: () => setupSync(),
+  syncnow: () => Sync.run({ force: true }).then(rerender),
+  syncoff: () => confirmSheet('Abgleich trennen?', 'Die Daten bleiben auf diesem Gerät. Andere Geräte gleichen sich weiter über das Repository ab.', 'Trennen', 'Abbrechen', async () => {
+    const c = Auth.cfg; c.tokenEnc = null; c.repo = null; Auth.cfg = c; Auth.token = null;
+    const s = LS.get('ep_session'); if (s) { s.tokenEnc = null; LS.set('ep_session', s); }
+    Sync.setState('off'); rerender(); notify('Abgleich getrennt.');
+  }, true),
+};
+function moveSort(id, dir) {
+  const act = EP.activeRecipes(db).sort((a, b) => a.sortOrder - b.sortOrder);
+  const i = act.findIndex(r => r.id === id), j = i + dir;
+  if (j < 0 || j >= act.length) return;
+  [act[i], act[j]] = [act[j], act[i]];
+  act.forEach((r, k) => { if (r.sortOrder !== k + 1) { r.sortOrder = k + 1; EP.touch(r); } });
+  change();
+}
+function changePasswordSheet() {
+  openSheet(`<h2>Passwort ändern</h2>
+    <label class="field"><span>Bisheriges Passwort</span><input class="in" type="password" id="p0" autocomplete="current-password"></label>
+    <label class="field"><span>Neues Passwort</span><input class="in" type="password" id="p1" autocomplete="new-password"></label>
+    <label class="field"><span>Neues Passwort wiederholen</span><input class="in" type="password" id="p2" autocomplete="new-password"></label>
+    <p class="hint">Gilt für alle Geräte des Haushalts.</p>
+    <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">Ändern</button></div>`, el => {
+    $('[data-x=no]', el).onclick = closeSheet;
+    $('[data-x=yes]', el).onclick = async () => {
+      const p0 = $('#p0', el).value, p1 = $('#p1', el).value, p2 = $('#p2', el).value;
+      if (!(await Crypt.check(p0, db.household.verifier))) return notify('Das bisherige Passwort stimmt nicht.');
+      if (p1.length < 6) return notify('Das neue Passwort braucht mindestens 6 Zeichen.');
+      if (p1 !== p2) return notify('Die neuen Passwörter stimmen nicht überein.');
+      db.household.verifier = await Crypt.verifier(p1); EP.touch(db.household);
+      if (Auth.token) await Auth.storeToken(p1, Auth.token, Sync.repo);
+      closeSheet(); change('Passwort geändert.');
+    };
+  });
+}
+
+/* Bindungen je Ansicht (Eingabefelder) */
+const BIND = {
+  shop: m => {
+    const setRange = () => {
+      const f = $('#sf', m).value, t = $('#st', m).value;
+      if (f && t && f <= t) { shopRange = { from: f, to: t }; rerender(); }
+    };
+    $('#sf', m).onchange = setRange; $('#st', m).onchange = setRange;
+    $$('[data-check]', m).forEach(c => c.onchange = () => {
+      const st = shopState(shopRange.from, shopRange.to), k = c.dataset.check;
+      st.checkedKeys = c.checked ? [...new Set(st.checkedKeys.concat(k))] : st.checkedKeys.filter(x => x !== k);
+      EP.touch(st); persist(); c.closest('.item').classList.toggle('checked', c.checked);
+    });
+    $$('[data-extra]', m).forEach(c => c.onchange = () => {
+      const st = shopState(shopRange.from, shopRange.to);
+      st.extraItems[+c.dataset.extra].checked = c.checked; EP.touch(st); persist(); c.closest('.item').classList.toggle('checked', c.checked);
+    });
+    const ex = $('#extra', m); if (ex) ex.onkeydown = e => { if (e.key === 'Enter') ACT.addextra(); };
+  },
+  recipes: m => {
+    const qa = $('#qa', m);
+    qa.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); ACT.qa(); } };
+    qa.addEventListener('paste', e => {
+      const t = (e.clipboardData || window.clipboardData).getData('text');
+      if (!/\n/.test(t)) return;
+      e.preventDefault();
+      const res = quickAdd(t.split(/\r?\n/));
+      change(`${res.added} angelegt${res.restored ? `, ${res.restored} wiederhergestellt` : ''}${res.skipped ? `, ${res.skipped} schon vorhanden` : ''}.`);
+    });
+    const rq = $('#rq', m);
+    if (rq) rq.oninput = () => {
+      recipeFilter.q = rq.value; const pos = rq.selectionStart; rerender();
+      const n = $('#rq'); if (n) { n.focus(); n.setSelectionRange(pos, pos); }
+    };
+    $$('[data-rot]', m).forEach(c => c.onchange = () => { setInRotation(recipeById(c.dataset.rot), c.checked); change(c.checked ? 'In Rotation.' : 'Pausiert.'); });
+  },
+  edit: m => {
+    $$('input,textarea,select', m).forEach(el => el.addEventListener('input', () => { if (editState) editState.dirty = true; }));
+    const refreshRow = el => {
+      const rowEl = el.closest('[data-row]');
+      const name = $('[data-f=name]', rowEl).value.trim();
+      const ing = name ? findIngredient(name) : null;
+      $('.newcat', rowEl).classList.toggle('hidden', !name || !!ing);
+      const unit = $('[data-f=unit]', rowEl);
+      if (ing && !unit.value && $('[data-f=qty]', rowEl).value.trim()) unit.value = ing.defaultUnit;
+    };
+    $$('[data-f=name]', m).forEach(el => { el.addEventListener('change', () => refreshRow(el)); el.addEventListener('input', () => refreshRow(el)); });
+    $$('[data-f=qty]', m).forEach(el => el.addEventListener('change', () => refreshRow(el)));
+    const days = $('#e-days', m);
+    if (days) days.oninput = () => {
+      const d = parseInt(days.value, 10); editState.r.daysOverride = d > 0 ? d : null;
+      $('#e-live').textContent = liveDaysText(editState.r);
+      $('#e-hint').textContent = EP.daysHint(editState.r, db.settings);
+    };
+    $('#e-file', m).onchange = async e => {
+      readEditForm();
+      const files = [...e.target.files];
+      for (const f of files) {
+        try {
+          const p = await Images.process(f);
+          const key = EP.uuid();
+          await Images.put(key, p.full, p.thumb);
+          const imgs = editState.r.images;
+          imgs.push({ fileKey: key, width: p.width, height: p.height, sortOrder: imgs.length + 1, isCover: !imgs.some(i => i.isCover) });
+          editState.dirty = true;
+        } catch (err) { notify(err.message); }
+      }
+      rerender();
+    };
+  },
+  ingredients: m => {
+    const q = $('#iq', m);
+    q.oninput = () => { ingQuery = q.value; const pos = q.selectionStart; rerender(); const n = $('#iq'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } };
+  },
+  settings: m => {
+    $('#s-mq', m).onchange = e => { db.settings.marketListShowQuantities = e.target.checked; EP.touch(db.settings); change(); };
+    $('#s-file', m).onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      let json;
+      try { json = JSON.parse(await f.text()); } catch (err) { return notify('Die Datei ist keine gültige Sicherung.'); }
+      const d = json.data || json;
+      const n = (d.recipes || []).filter(r => !r.deleted && !r.archivedAt).length;
+      optionsSheet('Sicherung einlesen', `Die Datei enthält ${n} Rezepte.`, [
+        { label: 'Zusammenführen', hint: 'Neue Rezepte ergänzen, gleichnamige aktualisieren', run: async () => { const r = await importData(json, 'merge'); change(`${r.added} ergänzt, ${r.updated} aktualisiert.`); } },
+        { label: 'Alles ersetzen', danger: true, hint: 'Rezepte, Zutaten, Rotation und Plan werden durch die Sicherung ersetzt', run: () =>
+          confirmSheet('Wirklich alles ersetzen?', 'Der aktuelle Stand geht dabei verloren – auch auf verbundenen Geräten.', 'Ersetzen', 'Abbrechen', async () => { await importData(json, 'replace'); change('Sicherung eingelesen.'); }, true) },
+      ]);
+      e.target.value = '';
+    };
+  },
+};
+
+/* ---------- Anmeldung, Einrichtung ---------- */
+function showAuth(html, bind) {
+  $('#shell').classList.add('hidden');
+  const a = $('#auth'); a.classList.remove('hidden');
+  a.innerHTML = `<div class="auth"><div class="mark" aria-hidden="true"></div>${html}
+    <p style="text-align:center;margin-top:28px"><a class="backlink" href="index.html">Zurück zur Übersicht</a></p></div>`;
+  if (bind) bind(a);
+}
+function authWelcome() {
+  showAuth(`<h1>Essensplanung</h1><p class="lead">Rezepte sammeln, der Reihe nach kochen, Woche planen und einkaufen.</p>
+    <div class="btns" style="margin-top:28px"><button class="btn primary" data-x="new">Neuen Haushalt einrichten</button>
+    <button class="btn" data-x="join">Mit bestehendem Haushalt verbinden</button></div>
+    <p class="hint" style="text-align:center">Verbinden, wenn die Essensplanung schon auf einem anderen Gerät eingerichtet ist.</p>`, a => {
+    $('[data-x=new]', a).onclick = authSetup;
+    $('[data-x=join]', a).onclick = authJoin;
+  });
+}
+function authSetup() {
+  showAuth(`<h1>Neuer Haushalt</h1>
+    <label class="field"><span>Name des Haushalts</span><input class="in" id="a-n" placeholder="z. B. Familie Muster"></label>
+    <label class="field"><span>Passwort</span><input class="in" type="password" id="a-p1" autocomplete="new-password"></label>
+    <label class="field"><span>Passwort wiederholen</span><input class="in" type="password" id="a-p2" autocomplete="new-password"></label>
+    <p class="hint">Mit diesem Passwort öffnest du die Essensplanung auf allen Geräten. Den Abgleich zwischen Geräten richtest du danach in den Einstellungen ein.</p>
+    <div class="btns"><button class="btn primary" data-x="ok">Einrichten</button><button class="btn quiet" data-x="back">Zurück</button></div>`, a => {
+    $('[data-x=back]', a).onclick = authWelcome;
+    $('[data-x=ok]', a).onclick = async () => {
+      const n = $('#a-n', a).value.trim(), p1 = $('#a-p1', a).value, p2 = $('#a-p2', a).value;
+      if (!n) return notify('Bitte einen Namen eingeben.');
+      if (p1.length < 6) return notify('Das Passwort braucht mindestens 6 Zeichen.');
+      if (p1 !== p2) return notify('Die Passwörter stimmen nicht überein.');
+      db = emptyDb();
+      db.household = EP.touch({ name: n, verifier: await Crypt.verifier(p1) });
+      await Store.set('db', db);
+      await Auth.startSession(null);
+      enterApp();
+    };
+  });
+}
+function authJoin() {
+  showAuth(`<h1>Verbinden</h1><p class="lead">Die Daten liegen im privaten GitHub-Repository, das du beim ersten Gerät eingerichtet hast.</p>
+    <label class="field"><span>GitHub-Benutzername</span><input class="in" id="j-o" autocapitalize="off" autocomplete="off"></label>
+    <label class="field"><span>Repository</span><input class="in" id="j-r" value="essensplanung-daten" autocapitalize="off" autocomplete="off"></label>
+    <label class="field"><span>Token</span><input class="in" type="password" id="j-t" autocomplete="off" placeholder="github_pat_…"></label>
+    <label class="field"><span>Haushaltspasswort</span><input class="in" type="password" id="j-p" autocomplete="current-password"></label>
+    <div class="btns"><button class="btn primary" data-x="ok">Verbinden</button><button class="btn quiet" data-x="back">Zurück</button></div>`, a => {
+    $('[data-x=back]', a).onclick = authWelcome;
+    $('[data-x=ok]', a).onclick = async () => {
+      const o = $('#j-o', a).value.trim(), n = $('#j-r', a).value.trim(), t = $('#j-t', a).value.trim(), pw = $('#j-p', a).value;
+      if (!o || !n || !t || !pw) return notify('Bitte alle Felder ausfüllen.');
+      try {
+        await Sync.checkRepo(o, n, t);
+        Auth.token = t; Auth.cfg = Object.assign(Auth.cfg, { repo: { owner: o, name: n } });
+        const f = await Sync.getFile('data.json');
+        if (!f) { Auth.token = null; Auth.cfg = {}; return notify('Im Repository liegt noch kein Haushalt. Richte ihn zuerst auf einem Gerät ein und verbinde dort den Abgleich.'); }
+        const remote = repairDb(JSON.parse(b64ToUtf8(f.b64)));
+        if (!(await Crypt.check(pw, remote.household && remote.household.verifier))) { Auth.token = null; Auth.cfg = {}; return notify('Das Passwort passt nicht zu diesem Haushalt.'); }
+        db = remote; Sync.sha = f.sha; Sync.dirty = false; Sync.lastSync = Date.now();
+        await Store.set('db', db); await Sync.saveMeta();
+        await Auth.startSession(t);
+        await Auth.storeToken(pw, t, { owner: o, name: n });
+        enterApp();
+      } catch (e) { Auth.token = null; notify(e.message); }
+    };
+  });
+}
+function authLogin() {
+  showAuth(`<h1>${esc(db.household.name)}</h1><p class="lead">Mit dem Haushaltspasswort öffnen.</p>
+    <label class="field"><span>Passwort</span><input class="in" type="password" id="l-p" autocomplete="current-password" enterkeyhint="go"></label>
+    <p class="hint warn" id="l-e"></p>
+    <div class="btns"><button class="btn primary" data-x="ok">Öffnen</button></div>`, a => {
+    const go = async () => {
+      const mins = Auth.locked();
+      if (mins) { $('#l-e', a).textContent = `Zu viele Versuche. Bitte in ${mins} ${mins === 1 ? 'Minute' : 'Minuten'} erneut versuchen.`; return; }
+      const pw = $('#l-p', a).value;
+      if (!(await Crypt.check(pw, db.household.verifier))) { Auth.failed(); $('#l-e', a).textContent = 'Das Passwort stimmt nicht.'; return; }
+      const tok = await Auth.tokenFromPassword(pw);
+      await Auth.startSession(tok || null);
+      if (tok === undefined) notify('Das Passwort wurde auf einem anderen Gerät geändert. Bitte den Abgleich-Zugang in den Einstellungen neu eintragen.');
+      enterApp();
+    };
+    $('[data-x=ok]', a).onclick = go;
+    $('#l-p', a).onkeydown = e => { if (e.key === 'Enter') go(); };
+  });
+}
+
+/* ---------- Start ---------- */
+async function enterApp() {
+  $('#auth').classList.add('hidden');
+  $('#shell').classList.remove('hidden');
+  db = repairDb(db);
+  if (housekeeping()) await persist();
+  route = { name: 'suggest' }; stack = [];
+  rerender();
+  if (Sync.enabled()) { Sync.run(); Sync.startPolling(); }
+}
+async function boot() {
+  document.addEventListener('click', e => {
+    const t = e.target.closest('[data-act],[data-tab]');
+    if (!t) return;
+    if (t.dataset.tab) { go(t.dataset.tab); return; }
+    const fn = ACT[t.dataset.act];
+    if (fn) { e.preventDefault(); fn(t.dataset.arg); }
+  });
+  $('#syncpill').onclick = () => go('sync');
+  $('#gear').onclick = () => go('settings');
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    if (Sync.enabled()) Sync.run();
+    if (!$('#cookview').classList.contains('hidden')) lockScreen();
+    if (db && housekeeping()) { persist(); rerender(); }
+  });
+  window.addEventListener('online', () => Sync.run());
+  window.addEventListener('focus', () => { if (Sync.enabled()) Sync.run(); });
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+
+  db = await Store.get('db');
+  await Sync.loadMeta();
+  if (!db || !db.household) return authWelcome();
+  db = repairDb(db);
+  if (await Auth.resume()) return enterApp();
+  authLogin();
+}
+boot();
+
+</script>
+</body>
+</html>

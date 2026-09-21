@@ -468,6 +468,65 @@
   .lt-preview-box .p-sign{white-space:pre-line}
   .lt-preview-box .p-sign .nm{margin-top:26px}
 
+  /* ---------- Uno ---------- */
+  .uno-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+    padding:14px 16px;margin-bottom:10px}
+  .uno-top{display:flex;align-items:center;gap:10px}
+  .uno-top .rank-badge{flex-shrink:0}
+  .uno-top .un{font-size:17px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .uno-top .uv{margin-left:auto;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0}
+  .uno-meta{display:flex;align-items:center;gap:9px;margin-top:5px;flex-wrap:wrap}
+  .uno-meta .gap{background:var(--surface2);border:1px solid var(--line);color:var(--coral);
+    font-size:12px;font-weight:800;padding:3px 9px;border-radius:99px}
+  .uno-meta .lead{background:var(--surface2);border:1px solid var(--line);color:var(--gold-text);
+    font-size:12px;font-weight:800;padding:3px 9px;border-radius:99px}
+  .uno-meta .miss{color:var(--muted);font-size:13px}
+  .uno-meta .miss b{color:var(--mint);font-weight:800}
+  .uno-card.out{opacity:.5}
+  .uno-card.out .uv{text-decoration:line-through}
+  .uno-add{margin-top:10px;width:100%;background:var(--surface2);border:1px solid var(--line);
+    color:var(--text);border-radius:12px;padding:10px;font-weight:700;font-size:14px}
+  /* Runden-Abrechnung */
+  .uno-win-pick{display:grid;gap:8px;margin-bottom:16px}
+  .uno-win-btn{background:var(--surface);border:2px solid var(--line);border-radius:14px;
+    padding:14px;color:var(--text);font-weight:700;font-size:16px;text-align:left;display:flex;align-items:center;gap:10px}
+  .uno-win-btn.on{border-color:var(--mint);background:var(--surface2)}
+  .uno-win-btn .chk{margin-left:auto;color:var(--mint);font-weight:800;opacity:0}
+  .uno-win-btn.on .chk{opacity:1}
+  .uno-pt-row{background:var(--surface);border:1px solid var(--line);border-radius:14px;
+    padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  .uno-pt-row.winner{border-color:var(--mint)}
+  .uno-pt-row .pn{font-weight:700;font-size:15px;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .uno-pt-row .pv{background:var(--surface2);border:1px dashed var(--line);border-radius:10px;
+    color:var(--text);font-weight:800;font-size:17px;padding:8px 14px;min-width:66px;text-align:center;flex-shrink:0}
+  .uno-pt-row .tag{font-size:11px;font-weight:800;color:var(--mint);flex-shrink:0}
+  .uno-round-total{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:14px 16px;text-align:center;color:var(--muted);font-size:14px;margin:14px 0}
+  .uno-round-total b{color:var(--gold-text);font-size:19px}
+  .uno-sect{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--muted);margin:18px 0 9px}
+  /* Kartenrechner */
+  .uno-calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:6px}
+  .uno-calc-grid button{background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    border-radius:12px;padding:13px 4px;font-size:18px;font-weight:800;display:flex;
+    flex-direction:column;align-items:center;justify-content:center;gap:1px}
+  .uno-calc-grid button small{font-size:10px;color:var(--muted);font-weight:700}
+  .uno-calc-grid button.sp{font-size:12px;color:var(--blue)}
+  .uno-calc-grid button.wd{font-size:12px;color:var(--violet)}
+  .uno-calc-grid button.fn{color:var(--muted)}
+  .uno-calc-grid button:active{background:var(--line)}
+  /* Verlauf */
+  .uno-log-round{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:13px 15px;margin-bottom:10px}
+  .uno-log-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .uno-log-head .rt{font-weight:800;font-size:15px}
+  .uno-log-head .rw{color:var(--mint);font-size:12px;font-weight:700}
+  .uno-log-head .rdel{margin-left:auto;background:none;border:none;color:var(--coral);font-size:17px;padding:2px 6px}
+  .uno-log-line{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+  .uno-log-line .ln{font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .uno-log-line .lv{background:var(--surface2);border:1px dashed var(--line);border-radius:9px;
+    font-weight:800;font-size:14px;padding:5px 11px;color:var(--text);flex-shrink:0;font-variant-numeric:tabular-nums}
+
   /* ---------- Helles Farbschema (automatisch je nach System-Einstellung) ---------- */
   @media (prefers-color-scheme: light){
     :root{
@@ -572,6 +631,13 @@
         <p>Rezepte als Zeichnung · PDF-Export</p>
       </div>
     </a>
+    <a class="game-card" href="essensplanung.html" style="text-decoration:none">
+      <div class="icon" style="background:var(--blue)">🍽️</div>
+      <div>
+        <h2>Essensplanung</h2>
+        <p>Rezept-Rotation · Wochenplan · Einkaufsliste</p>
+      </div>
+    </a>
     <div class="game-card soon">
       <div class="icon" style="background:var(--violet)">?</div>
       <div>
@@ -579,6 +645,117 @@
         <p>Hier ist Platz für mehr</p>
       </div>
       <span class="chip">Bald</span>
+    </div>
+  </div>
+</div>
+
+<!-- ========== UNO: SETUP ========== -->
+<div class="screen" id="scr-uno-setup">
+  <header>
+    <button class="back" onclick="show('scr-spiele')">‹</button>
+    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
+    <div>
+      <h1>Uno</h1>
+      <div class="sub">Spieler &amp; Regeln</div>
+    </div>
+  </header>
+
+  <div class="field">
+    <label>Zählweise</label>
+    <div class="seg" id="uno-mode-seg">
+      <button onclick="unoSetMode('winner')">Sieger sammelt</button>
+      <button onclick="unoSetMode('own')">Jeder eigene Karten</button>
+    </div>
+    <div class="lt-hint" id="uno-mode-hint" style="margin-top:8px"></div>
+  </div>
+
+  <div class="field">
+    <label>Punkteziel <span class="tap-hint">– auf die Zahl tippen zum Eingeben</span></label>
+    <div class="stepper">
+      <button onclick="unoAdjustGoal(-50)">−</button>
+      <button class="val tapval" onclick="unoOpenGoalPad()"><span id="uno-goal">500</span></button>
+      <button onclick="unoAdjustGoal(50)">+</button>
+    </div>
+  </div>
+
+  <div class="player-input">
+    <input id="uno-name-input" type="text" placeholder="Name eingeben" autocomplete="off" enterkeyhint="done">
+    <button class="add-btn" onclick="unoAddPlayer()">+</button>
+  </div>
+  <div class="plist" id="uno-setup-list"></div>
+  <button class="primary" id="uno-start-btn" onclick="unoStart()" disabled>Spiel starten</button>
+</div>
+
+<!-- ========== UNO: ÜBERSICHT ========== -->
+<div class="screen" id="scr-uno-game">
+  <header>
+    <button class="back" onclick="show('scr-spiele')">‹</button>
+    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
+    <div>
+      <h1>Uno</h1>
+      <div class="sub" id="uno-sub"></div>
+    </div>
+  </header>
+
+  <div class="goalbar">
+    <small id="uno-goal-label">Ziel</small>
+    <b id="uno-goal-show">500</b>
+  </div>
+
+  <button class="primary" onclick="unoOpenRound()">🏁 Runde abrechnen</button>
+
+  <div class="toggle" style="margin-top:14px">
+    <button id="uno-tab-list" class="on" onclick="unoSetView('list')">Punkte</button>
+    <button id="uno-tab-log" onclick="unoSetView('log')">Verlauf</button>
+  </div>
+
+  <div id="uno-view-list"></div>
+  <div id="uno-view-log" style="display:none"></div>
+
+  <div class="footer-actions">
+    <button class="ghost" onclick="unoUndo()">↩︎ Letzte Buchung rückgängig</button>
+    <button class="ghost danger" onclick="unoReset()">Neues Spiel (Punkte löschen)</button>
+    <button class="ghost" onclick="show('scr-uno-setup')">Spieler &amp; Einstellungen</button>
+  </div>
+</div>
+
+<!-- ========== UNO: RUNDE ABRECHNEN ========== -->
+<div class="screen" id="scr-uno-round">
+  <header>
+    <button class="back" onclick="show('scr-uno-game')">‹</button>
+    <div>
+      <h1 id="uno-round-title">Runde abrechnen</h1>
+      <div class="sub" id="uno-round-sub"></div>
+    </div>
+  </header>
+  <div id="uno-round-body"></div>
+  <div class="uno-round-total" id="uno-round-total"></div>
+  <button class="primary" onclick="unoCommitRound()">Runde verbuchen</button>
+  <button class="ghost" onclick="show('scr-uno-game')">Abbrechen</button>
+</div>
+
+<!-- ========== UNO: KARTENRECHNER ========== -->
+<div class="modal" id="uno-calc-modal" onclick="if(event.target===this)unoCloseCalc()">
+  <div class="sheet">
+    <h3 id="uno-calc-title">Restkarten</h3>
+    <div class="pad-display" id="uno-calc-display">0</div>
+    <div class="uno-calc-grid">
+      <button onclick="unoCalcAdd(0)">0</button><button onclick="unoCalcAdd(1)">1</button>
+      <button onclick="unoCalcAdd(2)">2</button><button onclick="unoCalcAdd(3)">3</button>
+      <button onclick="unoCalcAdd(4)">4</button><button onclick="unoCalcAdd(5)">5</button>
+      <button onclick="unoCalcAdd(6)">6</button><button onclick="unoCalcAdd(7)">7</button>
+      <button onclick="unoCalcAdd(8)">8</button><button onclick="unoCalcAdd(9)">9</button>
+      <button class="sp" onclick="unoCalcAdd(20)">Zieh 2<small>20</small></button>
+      <button class="sp" onclick="unoCalcAdd(20)">Retour<small>20</small></button>
+      <button class="sp" onclick="unoCalcAdd(20)">Aussetzen<small>20</small></button>
+      <button class="wd" onclick="unoCalcAdd(50)">Farbwahl<small>50</small></button>
+      <button class="wd" onclick="unoCalcAdd(50)">+4<small>50</small></button>
+      <button class="fn" onclick="unoCalcUndo()">⌫</button>
+    </div>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="unoCalcClear()">Null</button>
+      <button class="cancel" onclick="unoCloseCalc()">Abbrechen</button>
+      <button class="ok" onclick="unoCalcApply()">Übernehmen</button>
     </div>
   </div>
 </div>
@@ -732,6 +909,7 @@
     <input id="lt-closing" type="text" placeholder="Mit freundlichen Grüßen" oninput="ltSaveDraft()">
 
     <div class="lt-sep">Unterschrift</div>
+    <div class="lt-hint" style="margin:6px 0 0">🔒 Wird verschlüsselt im Profil „<span id="lt-sig-profile"></span>" gespeichert und steht für jeden Brief bereit.</div>
     <div id="lt-sig-preview" class="lt-sig-preview"></div>
     <div class="lt-row-btns">
       <button type="button" class="lt-mini" onclick="ltOpenSignPad()">✍️ Malen</button>
@@ -859,6 +1037,13 @@
       <div>
         <h2>Punkte-Tracker</h2>
         <p>Für alle Brett- & Kartenspiele</p>
+      </div>
+    </button>
+    <button class="game-card" onclick="openUno()">
+      <div class="icon" style="background:var(--coral)">🎴</div>
+      <div>
+        <h2>Uno-Punktetracker</h2>
+        <p>Rundenweise zählen bis zum Ziel</p>
       </div>
     </button>
     <button class="game-card" onclick="openPoker()">
@@ -1376,6 +1561,8 @@ function show(id){
   if(id==='scr-wk-setup') wkRenderSetup();
   if(id==='scr-tr-setup') trRenderSetup();
   if(id==='scr-tr-game') trRenderGame();
+  if(id==='scr-uno-setup') unoRenderSetup();
+  if(id==='scr-uno-game') unoRenderGame();
   if(id==='scr-lt-profiles') ltRenderProfiles();
   if(id==='scr-lt-editor') ltRenderEditor();
   if(id==='scr-lt-ai') ltSetTone(ltTone);
@@ -1405,6 +1592,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.getElementById('tr-name-input').addEventListener('keydown', e=>{
     if(e.key==='Enter') trAddPlayer();
   });
+  const unoIn=document.getElementById('uno-name-input');
+  if(unoIn) unoIn.addEventListener('keydown', e=>{ if(e.key==='Enter') unoAddPlayer(); });
   const unlockInput=document.getElementById('lt-unlock-pass');
   if(unlockInput) unlockInput.addEventListener('keydown', e=>{ if(e.key==='Enter') ltUnlock(); });
 });
@@ -2056,6 +2245,287 @@ function padUpdateDisplay(){
   document.getElementById('pad-display').textContent=(padNeg&&v!=='0'?'−':'')+v;
 }
 
+/* ==================== UNO-PUNKTETRACKER ==================== */
+// mode 'winner': Rundensieger bekommt die Restpunkte aller anderen (Ziel erreichen = gewinnen)
+// mode 'own':    jeder sammelt seine eigenen Restkarten (Ziel erreichen = ausscheiden, niedrigster gewinnt)
+let uno = { mode:'winner', goal:500, players:[], rounds:[], view:'list' };
+let unoRound = null;   // {winner:id|null, values:{id:punkte}}
+let unoCalcTarget = null, unoCalcVal = 0, unoCalcSteps = [];
+
+async function unoSave(){
+  const json=JSON.stringify(uno);
+  try{ await window.storage.set('uno-state', json); return; }catch(e){}
+  try{ localStorage.setItem('uno-state', json); }catch(e){}
+}
+async function unoLoad(){
+  let json=null;
+  try{ const r=await window.storage.get('uno-state'); if(r&&r.value) json=r.value; }catch(e){}
+  if(!json){ try{ json=localStorage.getItem('uno-state'); }catch(e){} }
+  if(json){ try{ const s=JSON.parse(json); if(s&&s.players) uno=s; if(!uno.rounds) uno.rounds=[]; }catch(e){} }
+}
+function openUno(){ show(uno.players.length ? 'scr-uno-game' : 'scr-uno-setup'); }
+
+/* ---------- Setup ---------- */
+function unoSetMode(m){
+  uno.mode=m; unoSave(); unoRenderSetup();
+}
+function unoAdjustGoal(d){
+  uno.goal=Math.min(2000,Math.max(50,uno.goal+d));
+  unoSave(); unoRenderSetup();
+}
+function unoOpenGoalPad(){
+  openCfgPad('Punkteziel', uno.goal, 50, 2000, v=>{ uno.goal=v; unoSave(); unoRenderSetup(); });
+}
+function unoAddPlayer(){
+  const inp=document.getElementById('uno-name-input');
+  const name=inp.value.trim();
+  if(!name) return;
+  uno.players.push({id:Date.now()+''+Math.random(), name});
+  inp.value=''; inp.focus();
+  unoSave(); unoRenderSetup();
+}
+function unoRemovePlayer(id){
+  uno.players=uno.players.filter(p=>p.id!==id);
+  uno.rounds.forEach(r=>{ delete r.values[id]; if(r.winner===id) r.winner=null; });
+  unoSave(); unoRenderSetup();
+}
+function unoRenderSetup(){
+  document.getElementById('uno-goal').textContent=uno.goal;
+  const segs=document.querySelectorAll('#uno-mode-seg button');
+  segs[0].classList.toggle('on', uno.mode==='winner');
+  segs[1].classList.toggle('on', uno.mode==='own');
+  document.getElementById('uno-mode-hint').innerHTML = uno.mode==='winner'
+    ? 'Klassisch: Wer die Runde gewinnt, bekommt die Kartenpunkte aller anderen gutgeschrieben. <b>Wer das Ziel zuerst erreicht, gewinnt.</b>'
+    : 'Variante: Jeder sammelt die Punkte seiner eigenen Restkarten. <b>Wer das Ziel erreicht, scheidet aus – der Niedrigste gewinnt.</b>';
+  const list=document.getElementById('uno-setup-list');
+  list.innerHTML = uno.players.length ? uno.players.map((p,i)=>`
+    <div class="prow">
+      <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
+      <span>${esc(p.name)}</span>
+      <button class="del" onclick="unoRemovePlayer('${p.id}')">✕</button>
+    </div>`).join('') : '<div class="empty">Noch keine Spieler.<br>Füge oben Namen hinzu.</div>';
+  document.getElementById('uno-start-btn').disabled = uno.players.length<2;
+}
+function unoStart(){ show('scr-uno-game'); }
+
+/* ---------- Punktestände ---------- */
+function unoTotal(id){
+  return uno.rounds.reduce((sum,r)=>sum + (r.points[id]||0), 0);
+}
+function unoIsOut(id){ return uno.mode==='own' && unoTotal(id)>=uno.goal; }
+
+/* ---------- Runde abrechnen ---------- */
+function unoOpenRound(){
+  if(uno.players.length<2){ notify('Bitte mindestens zwei Spieler anlegen.'); return; }
+  unoRound={ winner:null, values:{}, editIndex:null };
+  uno.players.forEach(p=>unoRound.values[p.id]=0);
+  unoRenderRound();
+  show('scr-uno-round');
+}
+function unoEditRound(idx){
+  const r=uno.rounds[idx];
+  if(!r) return;
+  unoRound={ winner:r.winner, values:Object.assign({},r.values), editIndex:idx };
+  unoRenderRound();
+  show('scr-uno-round');
+}
+function unoPickWinner(id){
+  unoRound.winner = (unoRound.winner===id) ? null : id;
+  if(unoRound.winner) unoRound.values[unoRound.winner]=0;
+  unoRenderRound();
+}
+function unoRenderRound(){
+  const isEdit = unoRound.editIndex!==null;
+  document.getElementById('uno-round-title').textContent = isEdit ? 'Runde bearbeiten' : 'Runde abrechnen';
+  document.getElementById('uno-round-sub').textContent = isEdit
+    ? 'Runde '+(unoRound.editIndex+1)
+    : 'Runde '+(uno.rounds.length+1);
+  let html='';
+  if(uno.mode==='winner'){
+    html+='<div class="uno-sect">1 · Wer hat die Runde gewonnen?</div><div class="uno-win-pick">';
+    html+=uno.players.map((p,i)=>`
+      <button class="uno-win-btn ${unoRound.winner===p.id?'on':''}" onclick="unoPickWinner('${p.id}')">
+        <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
+        ${esc(p.name)}<span class="chk">✓</span>
+      </button>`).join('');
+    html+='</div><div class="uno-sect">2 · Restkarten der anderen</div>';
+  }else{
+    html+='<div class="uno-sect">Restkarten jedes Spielers</div>';
+  }
+  html+=uno.players.map((p,i)=>{
+    const isWin = uno.mode==='winner' && unoRound.winner===p.id;
+    const out = unoIsOut(p.id) && !isEdit;
+    return `<div class="uno-pt-row ${isWin?'winner':''}" ${out?'style="opacity:.5"':''}>
+      <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
+      <span class="pn">${esc(p.name)}</span>
+      ${isWin?'<span class="tag">Sieger</span>'
+        :`<button class="pv" onclick="unoOpenCalc('${p.id}')">${unoRound.values[p.id]||0}</button>`}
+    </div>`;
+  }).join('');
+  document.getElementById('uno-round-body').innerHTML=html;
+  // Summenanzeige
+  const sum=uno.players.reduce((s,p)=>
+    s + ((uno.mode==='winner'&&unoRound.winner===p.id)?0:(unoRound.values[p.id]||0)), 0);
+  const tot=document.getElementById('uno-round-total');
+  if(uno.mode==='winner'){
+    const w=uno.players.find(p=>p.id===unoRound.winner);
+    tot.innerHTML = w ? `<b>${esc(w.name)}</b> erhält <b>${sum}</b> Punkte`
+      : `Summe der Restkarten: <b>${sum}</b> · bitte oben den Sieger wählen`;
+  }else{
+    tot.innerHTML = `Vergebene Punkte gesamt: <b>${sum}</b>`;
+  }
+}
+function unoCommitRound(){
+  if(uno.mode==='winner' && !unoRound.winner){ notify('Bitte zuerst den Rundensieger wählen.'); return; }
+  // Punkte je Spieler berechnen
+  const points={};
+  if(uno.mode==='winner'){
+    const sum=uno.players.reduce((s,p)=> s + (p.id===unoRound.winner?0:(unoRound.values[p.id]||0)), 0);
+    uno.players.forEach(p=>{ points[p.id] = (p.id===unoRound.winner) ? sum : 0; });
+  }else{
+    uno.players.forEach(p=>{ points[p.id] = unoRound.values[p.id]||0; });
+  }
+  const entry={ winner:unoRound.winner, values:Object.assign({},unoRound.values), points };
+  if(unoRound.editIndex!==null) uno.rounds[unoRound.editIndex]=entry;
+  else uno.rounds.push(entry);
+  unoSave();
+  show('scr-uno-game');
+  notify(unoRound.editIndex!==null ? 'Runde aktualisiert.' : 'Runde verbucht.');
+}
+function unoDeleteRound(idx){
+  ask('Runde '+(idx+1)+' löschen?', ()=>{
+    uno.rounds.splice(idx,1); unoSave(); unoRenderGame(); notify('Runde gelöscht.');
+  }, 'Ja, löschen', null,
+  {detail:'Die Punkte dieser Runde werden aus allen Punkteständen entfernt.', noLabel:'Nein, behalten'});
+}
+function unoUndo(){
+  if(!uno.rounds.length){ notify('Es gibt keine Buchung zum Rückgängigmachen.'); return; }
+  uno.rounds.pop(); unoSave(); unoRenderGame(); notify('Letzte Runde entfernt.');
+}
+function unoReset(){
+  ask('Alle Punkte löschen?', ()=>{
+    uno.rounds=[]; unoSave(); unoRenderGame(); notify('Punkte gelöscht.');
+  }, 'Ja, löschen', null,
+  {detail:'Alle Runden und Punktestände werden entfernt. Die Spieler bleiben erhalten.', noLabel:'Nein, behalten'});
+}
+
+/* ---------- Kartenrechner ---------- */
+function unoOpenCalc(id){
+  const p=uno.players.find(x=>x.id===id);
+  unoCalcTarget=id; unoCalcVal=unoRound.values[id]||0; unoCalcSteps=[];
+  document.getElementById('uno-calc-title').textContent='Restkarten – '+p.name;
+  document.getElementById('uno-calc-display').textContent=unoCalcVal;
+  document.getElementById('uno-calc-modal').classList.add('open');
+}
+function unoCalcAdd(v){
+  unoCalcVal+=v; unoCalcSteps.push(v);
+  document.getElementById('uno-calc-display').textContent=unoCalcVal;
+}
+function unoCalcUndo(){
+  const last=unoCalcSteps.pop();
+  if(last!==undefined) unoCalcVal=Math.max(0,unoCalcVal-last);
+  document.getElementById('uno-calc-display').textContent=unoCalcVal;
+}
+function unoCalcClear(){
+  unoCalcVal=0; unoCalcSteps=[];
+  document.getElementById('uno-calc-display').textContent='0';
+}
+function unoCloseCalc(){ document.getElementById('uno-calc-modal').classList.remove('open'); }
+function unoCalcApply(){
+  if(unoCalcTarget) unoRound.values[unoCalcTarget]=unoCalcVal;
+  unoCloseCalc(); unoRenderRound();
+}
+
+/* ---------- Übersicht ---------- */
+function unoSetView(v){
+  uno.view=v; unoSave();
+  document.getElementById('uno-tab-list').classList.toggle('on', v==='list');
+  document.getElementById('uno-tab-log').classList.toggle('on', v==='log');
+  document.getElementById('uno-view-list').style.display = v==='list'?'':'none';
+  document.getElementById('uno-view-log').style.display = v==='log'?'':'none';
+}
+function unoRenderGame(){
+  unoSetView(uno.view||'list');
+  document.getElementById('uno-goal-show').textContent=uno.goal+' Punkte';
+  document.getElementById('uno-goal-label').textContent = uno.mode==='winner' ? 'Ziel (wer zuerst)' : 'Ziel (wer erreicht, scheidet aus)';
+  document.getElementById('uno-sub').textContent =
+    uno.rounds.length ? `Runde ${uno.rounds.length} gespielt · ${uno.players.length} Spieler`
+                      : `${uno.players.length} Spieler · noch keine Runde`;
+
+  // Rangfolge: bei 'winner' absteigend, bei 'own' aufsteigend (weniger ist besser)
+  const ranked=[...uno.players].sort((a,b)=>
+    uno.mode==='winner' ? unoTotal(b)-unoTotal(a) : unoTotal(a)-unoTotal(b));
+  const reached=uno.players.filter(p=>unoTotal(p.id)>=uno.goal);
+  let champion=null;
+  if(uno.mode==='winner' && reached.length){
+    champion=reached.reduce((best,p)=>unoTotal(p.id)>unoTotal(best.id)?p:best);
+  }else if(uno.mode==='own'){
+    const alive=uno.players.filter(p=>unoTotal(p.id)<uno.goal);
+    if(reached.length && alive.length===1) champion=alive[0];
+  }
+
+  document.getElementById('uno-view-list').innerHTML = ranked.map((p,idx)=>{
+    const i=uno.players.indexOf(p);
+    const color=COLORS[i%COLORS.length];
+    const t=unoTotal(p.id);
+    const out=unoIsOut(p.id);
+    const won=champion && champion.id===p.id;
+    const rankCls=idx===0?'r1':idx===1?'r2':idx===2?'r3':'';
+    const ahead = idx>0 ? Math.abs(unoTotal(ranked[idx-1].id)-t) : 0;
+    const gapTxt = idx===0
+      ? (uno.players.length>1?'<span class="lead">'+(uno.mode==='winner'?'Führung':'Bester')+'</span>':'')
+      : `<span class="gap">${uno.mode==='winner'?'−':'+'}${ahead} zu Platz ${idx}</span>`;
+    const missTxt = uno.mode==='winner'
+      ? (won?'Ziel erreicht – gewonnen!':`noch <b>${Math.max(0,uno.goal-t)}</b> bis ${uno.goal}`)
+      : (out?'ausgeschieden':`noch <b>${Math.max(0,uno.goal-t)}</b> bis zum Aus`);
+    return `
+    <div class="uno-card ${out?'out':''}">
+      <div class="uno-top">
+        <span class="rank-badge ${rankCls}">${idx+1}.</span>
+        <span class="un">${esc(p.name)}</span>
+        ${won?'<span class="winner-tag">🏆 Gewinner</span>':(out?'<span class="crown">💀</span>':'')}
+        <span class="uv" style="color:${color}">${t}</span>
+      </div>
+      <div class="uno-meta">${gapTxt}<span class="miss">${missTxt}</span></div>
+      <div class="track"><i style="width:${Math.min(100,t/uno.goal*100)}%;background:${color}"></i></div>
+      <button class="uno-add" onclick="unoQuickAdd('${p.id}')">Punkte einzeln hinzufügen</button>
+    </div>`;
+  }).join('') || '<div class="empty">Keine Spieler.</div>';
+
+  // Verlauf – jede Runde einzeln bearbeitbar
+  document.getElementById('uno-view-log').innerHTML = uno.rounds.length
+    ? [...uno.rounds].map((r,idx)=>({r,idx})).reverse().map(({r,idx})=>{
+        const w=uno.players.find(p=>p.id===r.winner);
+        return `<div class="uno-log-round">
+          <div class="uno-log-head">
+            <span class="rt">Runde ${idx+1}</span>
+            ${w?`<span class="rw">🏁 ${esc(w.name)}</span>`:''}
+            <button class="rdel" onclick="unoDeleteRound(${idx})">✕</button>
+          </div>
+          ${uno.players.map(p=>{
+            const pts=r.points[p.id]||0;
+            return `<div class="uno-log-line">
+              <span class="ln">${esc(p.name)}</span>
+              <span class="lv" style="color:${pts>0?'var(--mint)':'var(--muted)'}">+${pts}</span>
+            </div>`;
+          }).join('')}
+          <button class="uno-add" onclick="unoEditRound(${idx})">✎ Runde bearbeiten</button>
+        </div>`;
+      }).join('')
+    : '<div class="empty">Noch keine Runde gespielt.</div>';
+}
+function unoQuickAdd(id){
+  const p=uno.players.find(x=>x.id===id);
+  if(!p) return;
+  openCfgPad('Punkte für '+p.name, 0, 0, 999, v=>{
+    if(v<=0) return;
+    const points={}; uno.players.forEach(x=>points[x.id]=0);
+    points[id]=v;
+    uno.rounds.push({ winner:null, values:Object.assign({},points), points, manual:true });
+    unoSave(); unoRenderGame();
+  });
+}
+
 /* ==================== BRIEFE ==================== */
 let letterProfiles = [];      // [{id, name, blob:{salt,iv,data}}]
 let ltActive = null;          // {id, name, sender:{...}}
@@ -2063,6 +2533,7 @@ let ltDraft = { rName:'', rExtra:'', rStreet:'', rCity:'', rNote:'', subject:'',
   font:'georgia', size:11, dateAuto:true, date:'', place:'', infoOn:false,
   iKunde:'', iVertrag:'', iAkte:'', iBearb:'', attach:'', sig:'', salManual:false };
 let ltAddressBook = [];   // [{id,name,extra,street,city}]
+let ltSessionPass = null;  // nur im Arbeitsspeicher, nie gespeichert – zum Nachverschlüsseln
 let ltWinMarks = false;
 // Schriftarten: Anzeigename + CSS-Stack (systemweit verfügbar, keine Web-Fonts nötig)
 const LT_FONTS = [
@@ -2171,29 +2642,50 @@ function ltToggleInfo(){
 
 /* ---------- Unterschrift ---------- */
 let ltSignCtx=null, ltSignDrawing=false, ltSignHasInk=false;
+// Die Unterschrift gehört zum Profil und wird mit dem Passwort verschlüsselt gespeichert.
+function ltCurrentSig(){ return (ltActive && ltActive.sender && ltActive.sender.sig) || ''; }
+async function ltStoreSignature(dataUrl){
+  if(!ltActive){ notify('Kein Profil geöffnet.'); return; }
+  ltActive.sender.sig = dataUrl;
+  const p=letterProfiles.find(x=>x.id===ltActive.id);
+  if(!p){ notify('Profil nicht gefunden.'); return; }
+  if(!ltSessionPass){
+    notify('Bitte das Profil neu entsperren, um die Unterschrift zu speichern.');
+    return;
+  }
+  try{
+    p.blob = await ltEncrypt(ltSessionPass, ltActive.sender);
+    await ltSave();
+    ltRenderSigPreview();
+    notify(dataUrl ? 'Unterschrift im Profil gespeichert.' : 'Unterschrift entfernt.');
+  }catch(e){ notify('Speichern fehlgeschlagen.'); }
+}
 function ltRenderSigPreview(){
   const box=document.getElementById('lt-sig-preview');
   if(!box) return;
-  box.innerHTML = ltDraft.sig ? `<img src="${ltDraft.sig}" alt="Unterschrift">`
+  const sig=ltCurrentSig();
+  box.innerHTML = sig ? `<img src="${sig}" alt="Unterschrift">`
     : '<span class="none">Keine Unterschrift hinterlegt</span>';
 }
 function ltClearSignature(){
-  ltDraft.sig=''; ltSaveDraftStore(); ltRenderSigPreview(); notify('Unterschrift entfernt.');
+  if(!ltCurrentSig()){ notify('Es ist keine Unterschrift hinterlegt.'); return; }
+  ask('Unterschrift aus dem Profil entfernen?', ()=>{ ltStoreSignature(''); },
+    'Ja, entfernen', null,
+    {detail:'Die gespeicherte Unterschrift wird gelöscht. Du kannst jederzeit eine neue malen oder hochladen.',
+     noLabel:'Nein, behalten'});
 }
 function ltSignatureFile(e){
   const f=e.target.files && e.target.files[0];
   if(!f) return;
   const r=new FileReader();
   r.onload=()=>{
-    // Bild verkleinern, damit der Speicher nicht überläuft
     const img=new Image();
     img.onload=()=>{
       const maxW=600, sc=Math.min(1,maxW/img.width);
       const cv=document.createElement('canvas');
       cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc);
       cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-      ltDraft.sig=cv.toDataURL('image/png');
-      ltSaveDraftStore(); ltRenderSigPreview(); notify('Unterschrift übernommen.');
+      ltStoreSignature(cv.toDataURL('image/png'));
     };
     img.onerror=()=>notify('Bild konnte nicht geladen werden.');
     img.src=r.result;
@@ -2240,9 +2732,8 @@ function ltCloseSignPad(){ document.getElementById('lt-sign-modal').classList.re
 function ltSignPadSave(){
   if(!ltSignHasInk){ notify('Bitte zuerst unterschreiben.'); return; }
   const cv=document.getElementById('lt-sign-canvas');
-  ltDraft.sig=cv.toDataURL('image/png');
-  ltSaveDraftStore(); ltRenderSigPreview(); ltCloseSignPad();
-  notify('Unterschrift übernommen.');
+  ltCloseSignPad();
+  ltStoreSignature(cv.toDataURL('image/png'));
 }
 
 /* ---------- Fenstermarken ---------- */
@@ -2410,6 +2901,12 @@ async function ltUnlock(){
   try{
     const sender=await ltDecrypt(pass, p.blob);
     ltActive={ id:p.id, name:p.name, sender };
+    ltSessionPass = pass;
+    // Einmalige Übernahme: früher im Entwurf gespeicherte Unterschrift ins Profil verschieben
+    if(!sender.sig && ltDraft.sig){
+      await ltStoreSignature(ltDraft.sig);
+      ltDraft.sig=''; ltSaveDraftStore();
+    }
     document.getElementById('lt-unlock-pass').value='';
     show('scr-lt-editor');
   }catch(e){
@@ -2418,6 +2915,7 @@ async function ltUnlock(){
 }
 function ltLock(){
   ltActive=null;
+  ltSessionPass=null;
   show('scr-lt-profiles');
 }
 function ltDeleteProfilePrompt(){
@@ -2426,7 +2924,7 @@ function ltDeleteProfilePrompt(){
   ask('Profil „'+p.name+'" löschen?', async ()=>{
     letterProfiles=letterProfiles.filter(x=>x.id!==p.id);
     await ltSave();
-    ltActive=null;
+    ltActive=null; ltSessionPass=null;
     show('scr-lt-profiles');
     notify('Profil gelöscht.');
   }, 'Ja, löschen', null,
@@ -2473,6 +2971,8 @@ function ltRenderEditor(){
   if(bodyEl) bodyEl.innerHTML=ltDraft.body||'';
   ltApplyEditorFont();
   ltRenderSigPreview();
+  const sigProf=document.getElementById('lt-sig-profile');
+  if(sigProf) sigProf.textContent=ltActive.name;
 }
 function ltSaveDraft(){
   const v=id=>{ const el=document.getElementById(id); return el?el.value:''; };
@@ -2588,7 +3088,8 @@ function ltBuildPreviewHTML(){
   const atts=(d.attach||'').split('\n').map(x=>x.trim()).filter(Boolean);
   const attachHTML = atts.length
     ? `<div class="p-attach"><b>${atts.length>1?'Anlagen':'Anlage'}</b>${atts.map(a=>esc(a)).join('<br>')}</div>` : '';
-  const sigHTML = d.sig ? `<img src="${d.sig}" alt="Unterschrift">` : '';
+  const sigSrc = ltCurrentSig() || d.sig || '';
+  const sigHTML = sigSrc ? `<img src="${sigSrc}" alt="Unterschrift">` : '';
   const noteHTML = (d.rNote&&d.rNote.trim()) ? `<div class="p-note">${esc(d.rNote.trim())}</div>` : '';
   return `<div class="p-from">${esc(fromLine)}</div>
     ${info}
@@ -3714,6 +4215,7 @@ pkLoad();
 ltLoad();
 ltLoadDraft();
 ltLoadAB();
+unoLoad();
 </script>
 </body>
 </html>
