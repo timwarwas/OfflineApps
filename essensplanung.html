@@ -238,9 +238,10 @@ details.box[open] summary:after{content:'−'}
 
 /* ---------- Blätter (Dialoge) ---------- */
 .scrim{position:fixed;inset:0;z-index:50;background:rgba(10,16,28,.48);display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--enamel);width:100%;max-width:640px;max-height:88dvh;overflow:auto;border-radius:22px 22px 0 0;
+.sheet{background:var(--enamel);width:100%;max-width:640px;max-height:88dvh;overflow:auto;overscroll-behavior:contain;border-radius:22px 22px 0 0;
   padding:8px 18px calc(18px + env(safe-area-inset-bottom));animation:up .18s ease-out}
-.sheet:before{content:'';display:block;width:40px;height:5px;border-radius:99px;background:var(--line);margin:0 auto 12px}
+.grab{position:sticky;top:-8px;z-index:2;margin:-8px -18px 6px;padding:10px 0 12px;background:var(--enamel);cursor:grab;touch-action:none}
+.grab i{display:block;width:44px;height:5px;border-radius:99px;background:var(--speckle);opacity:.55;margin:0 auto}
 .sheet h2{font-size:22px}
 @keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
 .opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:52px;padding:12px 14px;border-radius:14px;background:var(--plate);border:1px solid var(--line);margin-top:8px;font-weight:600}
@@ -1719,11 +1720,60 @@ function openSheet(html, bind) {
   closeSheet();
   const s = document.createElement('div');
   s.className = 'scrim'; s.id = 'scrim';
-  s.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
+  s.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab" aria-hidden="true"><i></i></div>${html}</div>`;
   s.addEventListener('click', e => { if (e.target === s) closeSheet(); });
   document.body.appendChild(s);
-  if (bind) bind(s.firstElementChild);
+  const sheet = s.firstElementChild;
+  enableSwipeDown(sheet, s);
+  if (bind) bind(sheet);
   const f = $('input,select,textarea', s); if (f && !('ontouchstart' in window)) f.focus();
+}
+/* Blatt am Griff (oder ganz oben) nach unten ziehen → schließen */
+function enableSwipeDown(sheet, scrim) {
+  let startY = null, dy = 0, t0 = 0, dragging = false;
+  const pointY = e => (e.touches ? e.touches[0].clientY : e.clientY);
+  const start = e => {
+    const onGrab = !!e.target.closest('.grab');
+    if (!onGrab && (sheet.scrollTop > 0 || e.target.closest('input,select,textarea'))) return;
+    startY = pointY(e); dy = 0; t0 = Date.now(); dragging = false;
+  };
+  const move = e => {
+    if (startY == null) return;
+    dy = Math.max(0, pointY(e) - startY);
+    if (!dragging && dy > 6) { dragging = true; sheet.style.transition = 'none'; sheet.style.animation = 'none'; }
+    if (!dragging) return;
+    sheet.style.transform = `translateY(${dy}px)`;
+    scrim.style.background = `rgba(10,16,28,${(0.48 * Math.max(0, 1 - dy / 420)).toFixed(3)})`;
+    if (e.cancelable) e.preventDefault();
+  };
+  const end = () => {
+    if (startY == null) return;
+    const speed = dy / Math.max(1, Date.now() - t0);
+    startY = null;
+    if (!dragging) return;
+    sheet.addEventListener('click', ev => { ev.stopPropagation(); ev.preventDefault(); }, { capture: true, once: true }); // kein Klick nach dem Ziehen
+    if (dy > 90 || speed > 0.6) {
+      sheet.style.transition = 'transform .18s ease-in';
+      sheet.style.transform = 'translateY(105%)';
+      scrim.style.transition = 'background .18s'; scrim.style.background = 'rgba(10,16,28,0)';
+      setTimeout(() => { if (scrim.isConnected) scrim.remove(); }, 180);
+    } else {
+      sheet.style.transition = 'transform .2s ease-out';
+      sheet.style.transform = ''; scrim.style.background = '';
+    }
+  };
+  sheet.addEventListener('touchstart', start, { passive: true });
+  sheet.addEventListener('touchmove', move, { passive: false });
+  sheet.addEventListener('touchend', end);
+  sheet.addEventListener('touchcancel', end);
+  // Maus/Stift: am Griff ziehen
+  const grab = $('.grab', sheet);
+  grab.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') return;
+    start(e); grab.setPointerCapture(e.pointerId);
+    const mv = ev => move(ev), up = () => { end(); grab.removeEventListener('pointermove', mv); grab.removeEventListener('pointerup', up); };
+    grab.addEventListener('pointermove', mv); grab.addEventListener('pointerup', up);
+  });
 }
 function closeSheet() { const s = $('#scrim'); if (s) s.remove(); }
 function confirmSheet(title, detail, yes, no, onYes, danger) {
@@ -1988,6 +2038,7 @@ function dayActions(d) {
     }
     if (p && p.extraBlocked) opts.push({ label: 'Tag wieder freigeben', run: () => { draft.blocked.delete(d); relayoutDraft(); rerender(); } });
     else if (!p || p.drafted) opts.push({ label: 'Tag sperren', hint: 'z. B. Auswärts essen – Reste rutschen weiter', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { draft.blocked.set(d, note); relayoutDraft(); rerender(); }) });
+    addLaneOptions(d, opts);
     if (!opts.length) opts.push({ label: 'Dieser Tag bleibt unverändert', hint: 'Fixiert, gesperrt oder Übertrag aus der Vorwoche', run: () => {} });
     return optionsSheet(title, p && p.recipeId ? esc(recipeById(p.recipeId).name) : '', opts);
   }
@@ -2026,7 +2077,21 @@ function dayActions(d) {
     opts.push({ label: p.locked ? 'Fixierung lösen' : 'Fixieren', hint: 'Fixierte Gerichte bleiben beim Füllen der Woche stehen', run: () => { const v = toggleLock(p.blockId); change(v ? 'Fixiert.' : 'Fixierung gelöst.'); } });
     opts.push({ label: 'Aus dem Plan entfernen', danger: true, hint: 'Das Gericht kommt wieder nach vorne in die Rotation', run: () => { removeBlock(p.blockId, true); change('Entfernt.'); } });
   }
+  addLaneOptions(d, opts);
   optionsSheet(title, p && p.recipeId ? esc((recipeById(p.recipeId) || {}).name || '') : '', opts);
+}
+/* „Mittagessen/Kuchen hinzufügen“ für Tage, an denen keine Zeile dafür angezeigt wird */
+function addLaneOptions(d, opts) {
+  const ents = weekEntries(weekStartISO);
+  ['LUNCH', 'CAKE'].forEach(l => {
+    if (ents.lanes[l].get(d)) return;                                           // schon etwas eingeplant
+    if (laneVisible(l) && laneActiveOn(l, d) && d >= EP.todayISO()) return;     // Zeile ist ohnehin sichtbar
+    if (!liveRecipes().some(r => EP.laneOf(r) === l)) return;                   // keine Rezepte dieser Art
+    const o = { label: l === 'LUNCH' ? 'Mittagessen hinzufügen' : 'Kuchen hinzufügen',
+      hint: 'Zusätzlich zum Hauptgericht an diesem Tag', run: () => laneActions(d, l) };
+    const i = opts.findIndex(x => x.danger);           // rote Aktion bleibt ganz unten
+    i === -1 ? opts.push(o) : opts.splice(i, 0, o);
+  });
 }
 
 /* ---------- Einkauf (5.5) ---------- */
