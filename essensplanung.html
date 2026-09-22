@@ -41,6 +41,10 @@ button{cursor:pointer;border:none;background:none}
 .iconbtn{min-width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--rim);font-size:15px;font-weight:600;padding:0 8px}
 .iconbtn:active{background:var(--rim-soft)}
 .iconbtn svg{width:22px;height:22px}
+#gear{position:relative}
+.gearbadge{position:absolute;top:3px;right:1px;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:var(--tomato);color:#fff;
+  font-size:12px;font-weight:700;line-height:19px;text-align:center;box-shadow:0 0 0 2px var(--enamel)}
+.countbadge{min-width:24px;height:24px;padding:0 7px;border-radius:99px;background:var(--tomato);color:#fff;font-size:13px;font-weight:700;line-height:24px;text-align:center}
 .syncpill{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--speckle);padding:6px 9px;border-radius:99px;border:1px solid var(--line);background:var(--plate);min-height:32px}
 .syncpill i{width:8px;height:8px;border-radius:50%;background:var(--speckle);display:block}
 .syncpill.ok i{background:var(--basil)} .syncpill.busy i{background:var(--rim)} .syncpill.err i{background:var(--tomato)}
@@ -104,6 +108,27 @@ select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradie
 .badge.block{background:transparent;border:1.5px solid var(--tomato);color:var(--tomato)}
 .badge.done{background:transparent;border:1.5px solid var(--speckle);color:var(--speckle)}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.months{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.months .chip{padding:5px 0;text-align:center}
+.lane-seg{margin-bottom:14px}
+.srcrow{padding:10px 0;border-bottom:1px solid var(--line)}
+.srcrow:last-child{border-bottom:none}
+.srcrow .nm{font-weight:600}
+.srcrow .amt{font-size:13px;color:var(--speckle)}
+.srcseg{margin-top:8px}
+.srcseg button{min-height:36px;font-size:13px}
+.newbox{border-color:var(--tomato)}
+details.srcgroup{margin-top:8px}
+details.srcgroup summary .amt{margin-left:auto;margin-right:10px;font-weight:600;color:var(--speckle);font-size:13px}
+/* Datumsfelder: iOS gibt ihnen sonst eine feste Mindestbreite, dann überlappen sie */
+.dategrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:10px}
+.dategrid label{min-width:0;display:block}
+.dategrid .hint{display:block;margin:0 0 4px}
+input[type=date].in{-webkit-appearance:none;appearance:none;min-width:0;max-width:100%;width:100%;display:block;text-align:left}
+input[type=date]::-webkit-date-and-time-value{text-align:left}
+@media (max-width:340px){.dategrid{grid-template-columns:1fr}}
+.rangebox{margin-bottom:4px}
+.rangebox summary{font-weight:600;font-size:15px;color:var(--rim)}
 .chip{min-height:34px;padding:5px 12px;border-radius:99px;border:1.5px solid var(--line);font-size:14px;font-weight:600;color:var(--speckle);background:var(--plate)}
 .chip[aria-pressed="true"]{border-color:var(--rim);color:var(--rim);background:var(--rim-soft)}
 
@@ -112,6 +137,8 @@ select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradie
 .plate{width:min(76vw,300px);aspect-ratio:1;border-radius:50%;background:var(--plate);
   border:12px solid var(--rim);box-shadow:inset 0 0 0 7px var(--plate),inset 0 0 0 8px var(--line);
   display:flex;align-items:center;justify-content:center;padding:34px;position:relative;overflow:hidden}
+.plate.plate-lunch{border-color:var(--basil);width:min(64vw,250px)}
+.plate.plate-cake{border-color:var(--tomato);width:min(64vw,250px);border-style:double;border-width:14px}
 .plate .dish{font-family:var(--serif);font-size:clamp(22px,6.4vw,30px);line-height:1.15;font-weight:600;overflow-wrap:anywhere}
 .plate img{position:absolute;inset:7px;width:calc(100% - 14px);height:calc(100% - 14px);object-fit:cover;border-radius:50%}
 .dish-under{font-family:var(--serif);font-size:26px;font-weight:600;line-height:1.2;margin-top:14px;overflow-wrap:anywhere}
@@ -134,19 +161,27 @@ select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradie
 .draftbar{background:var(--rim-soft);border:1.5px dashed var(--rim);border-radius:14px;padding:12px 14px;margin-bottom:12px;font-size:14px}
 .draftbar b{color:var(--rim)}
 .days{background:var(--plate);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:var(--shadow)}
-.day{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:12px 14px;min-height:66px;border-top:1px solid var(--line);position:relative}
+.day{border-top:1px solid var(--line);position:relative}
 .day:first-child{border-top:none}
-.day:active{background:var(--rim-soft)}
+.daymain{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:12px 14px;min-height:66px}
+.daymain:active,.laneline:active{background:var(--rim-soft)}
+.laneline{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:7px 14px 9px 70px;min-height:40px;border-top:1px dashed var(--line)}
+.laneline .lanelbl{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;flex-shrink:0}
+.lane-lunch .lanelbl{background:transparent;border:1.5px solid var(--basil);color:var(--basil)}
+.lane-cake .lanelbl{background:transparent;border:1.5px solid var(--tomato);color:var(--tomato)}
+.laneline .nm{font-family:var(--serif);font-size:16px;flex:1;min-width:0;overflow-wrap:anywhere}
+.laneline .nm.free{font-family:var(--sans);font-size:14px;color:var(--speckle)}
+.laneline.drafted{background:linear-gradient(90deg,var(--rim-soft),transparent 60%)}
 .day.today:before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:4px;border-radius:0 4px 4px 0;background:var(--rim)}
 .day.past{opacity:.62}
-.day .dt{width:44px;flex-shrink:0;text-align:center}
-.day .dt b{display:block;font-size:15px}
-.day .dt span{font-size:12px;color:var(--speckle)}
-.day .what{flex:1;min-width:0}
-.day .nm{font-family:var(--serif);font-size:17px;line-height:1.25;overflow-wrap:anywhere}
-.day .nm.free{font-family:var(--sans);font-size:15px;color:var(--speckle)}
-.day .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
-.day.drafted{background:linear-gradient(90deg,var(--rim-soft),transparent 60%)}
+.daymain .dt{width:44px;flex-shrink:0;text-align:center}
+.daymain .dt b{display:block;font-size:15px}
+.daymain .dt span{font-size:12px;color:var(--speckle)}
+.daymain .what{flex:1;min-width:0}
+.daymain .nm{font-family:var(--serif);font-size:17px;line-height:1.25;overflow-wrap:anywhere}
+.daymain .nm.free{font-family:var(--sans);font-size:15px;color:var(--speckle)}
+.daymain .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.day.drafted .daymain{background:linear-gradient(90deg,var(--rim-soft),transparent 60%)}
 .lock{width:16px;height:16px;color:var(--speckle);flex-shrink:0}
 
 /* ---------- Rezepte ---------- */
@@ -263,7 +298,7 @@ details.box[open] summary:after{content:'−'}
     <span id="topleft"></span>
     <div class="ttl" id="ttl">Essensplanung</div>
     <button class="syncpill" id="syncpill" aria-label="Geräteabgleich"></button>
-    <button class="iconbtn" id="gear" aria-label="Einstellungen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    <button class="iconbtn" id="gear" aria-label="Einstellungen"><span class="gearbadge hidden" id="gearbadge"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </header>
   <main id="main"></main>
   <nav class="tabs" id="tabs" aria-label="Bereiche"></nav>
@@ -351,8 +386,35 @@ const EP = (function () {
   }
 
   /* ---------- 5.2 Rotation ---------- */
-  function activeRecipes(db) {
-    return live(db.recipes).filter(r => r.inRotation && !r.archivedAt);
+  /* Spuren: jede hat ihre eigene Rotation */
+  const LANES = [
+    { key: 'MAIN', label: 'Hauptgerichte', short: 'Hauptgericht' },
+    { key: 'LUNCH', label: 'Mittagessen', short: 'Mittag' },
+    { key: 'CAKE', label: 'Kuchen', short: 'Kuchen' },
+  ];
+  const laneOf = x => (x && (x.lane || x.kind)) || 'MAIN';
+  const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+  function inSeason(recipe, month) {
+    const m = recipe && recipe.seasonMonths;
+    return !month || !m || !m.length || m.length >= 12 || m.includes(month);
+  }
+  function seasonLabel(recipe) {
+    const m = (recipe.seasonMonths || []).slice().sort((a, b) => a - b);
+    if (!m.length || m.length >= 12) return '';
+    // zusammenhängende Bereiche, auch über den Jahreswechsel (z. B. Nov–Feb)
+    const set = new Set(m), parts = [];
+    let start = m.find(x => !set.has(x === 1 ? 12 : x - 1));
+    if (start === undefined) return 'ganzjährig';
+    const seen = new Set();
+    for (const s0 of m.filter(x => !set.has(x === 1 ? 12 : x - 1))) {
+      let e = s0; while (set.has(e === 12 ? 1 : e + 1) && !seen.has(e)) { seen.add(e); e = e === 12 ? 1 : e + 1; }
+      parts.push(s0 === e ? MONTHS[s0 - 1] : MONTHS[s0 - 1] + '–' + MONTHS[e - 1]);
+    }
+    return parts.join(', ');
+  }
+  function monthOf(isoDate) { return +isoDate.slice(5, 7); }
+  function activeRecipes(db, lane) {
+    return live(db.recipes).filter(r => r.inRotation && !r.archivedAt && (!lane || laneOf(r) === lane));
   }
   function repairAdjacency(items, prevLastRecipeId) {
     let moves = 0;
@@ -411,8 +473,9 @@ const EP = (function () {
     }
     return out;
   }
-  function buildCycle(recipes, settings, cycleNumber, prevLastRecipeId, rng) {
-    const active = recipes.filter(r => r.inRotation && !r.archivedAt && !r.deleted)
+  function buildCycle(recipes, settings, cycleNumber, prevLastRecipeId, rng, lane, month) {
+    lane = lane || 'MAIN';
+    const active = recipes.filter(r => r.inRotation && !r.archivedAt && !r.deleted && laneOf(r) === lane && inSeason(r, month))
       .sort((a, b) => a.sortOrder - b.sortOrder);
     const n = active.length;
     let items = active.flatMap((r, idx) =>
@@ -430,48 +493,60 @@ const EP = (function () {
     const seen = {};
     items.forEach(it => { seen[it.recipeId] = (seen[it.recipeId] || 0) + 1; it.occurrence = seen[it.recipeId]; });
     return items.map((it, i) => touch({
-      id: uuid(), cycleNumber, recipeId: it.recipeId, occurrence: it.occurrence,
+      id: uuid(), lane, cycleNumber, recipeId: it.recipeId, occurrence: it.occurrence,
       position: (i + 1) * 1000, status: 'PENDING', deleted: false,
     }));
   }
   const byCyclePos = (a, b) => a.cycleNumber - b.cycleNumber || a.position - b.position;
-  function cycleEntries(db, c) { return live(db.rotation).filter(e => e.cycleNumber === c).sort(byCyclePos); }
-  function maxCycle(db) { return live(db.rotation).reduce((m, e) => Math.max(m, e.cycleNumber), 0); }
-  function openCycles(db) {
-    return [...new Set(live(db.rotation).filter(e => e.status === 'PENDING').map(e => e.cycleNumber))].sort((a, b) => a - b);
+  const inLane = (lane) => e => laneOf(e) === (lane || 'MAIN');
+  function cycleEntries(db, c, lane) { return live(db.rotation).filter(inLane(lane)).filter(e => e.cycleNumber === c).sort(byCyclePos); }
+  function maxCycle(db, lane) { return live(db.rotation).filter(inLane(lane)).reduce((m, e) => Math.max(m, e.cycleNumber), 0); }
+  function openCycles(db, lane) {
+    return [...new Set(live(db.rotation).filter(inLane(lane)).filter(e => e.status === 'PENDING').map(e => e.cycleNumber))].sort((a, b) => a - b);
   }
-  function pendingSorted(db) { return live(db.rotation).filter(e => e.status === 'PENDING').sort(byCyclePos); }
-  function lastRecipeOfCycle(db, c) {
-    const es = cycleEntries(db, c);
+  function pendingSorted(db, lane) { return live(db.rotation).filter(inLane(lane)).filter(e => e.status === 'PENDING').sort(byCyclePos); }
+  function lastRecipeOfCycle(db, c, lane) {
+    const es = cycleEntries(db, c, lane);
     return es.length ? es[es.length - 1].recipeId : null;
   }
-  function appendCycle(db, rng) {
-    const mc = maxCycle(db);
-    const cyc = buildCycle(live(db.recipes), db.settings, mc + 1, lastRecipeOfCycle(db, mc), rng);
+  function appendCycle(db, rng, lane, month) {
+    lane = lane || 'MAIN';
+    const mc = maxCycle(db, lane);
+    const cyc = buildCycle(live(db.recipes), db.settings, mc + 1, lastRecipeOfCycle(db, mc, lane), rng, lane, month);
     db.rotation.push(...cyc);
     return cyc;
   }
-  /* next(n, exclude): die nächsten offenen Einträge; erzeugt bei Bedarf Folgedurchläufe (R3, R7) */
-  function nextEntries(db, n, exclude, rng) {
+  /* next(n, exclude): die nächsten offenen Einträge einer Spur; erzeugt bei Bedarf Folgedurchläufe (R3, R7).
+     Mit Monatsangabe werden Gerichte außerhalb ihrer Saison für diesen Durchlauf ausgelassen. */
+  function nextEntries(db, n, exclude, rng, lane, month) {
     exclude = exclude || new Set();
+    lane = lane || 'MAIN';
+    const rec = month ? new Map(live(db.recipes).map(r => [r.id, r])) : null;
     for (let guard = 0; guard < 60; guard++) {
-      const pend = pendingSorted(db).filter(e => !exclude.has(e.id));
+      let pend = pendingSorted(db, lane).filter(e => !exclude.has(e.id));
+      if (month) {
+        pend = pend.filter(e => {
+          if (inSeason(rec.get(e.recipeId), month)) return true;
+          e.status = 'SKIPPED'; e.skipReason = 'SEASON'; touch(e);
+          return false;
+        });
+      }
       if (pend.length >= n) return pend.slice(0, n);
-      if (!appendCycle(db, rng).length) return pend;
+      if (!appendCycle(db, rng, lane, month).length) return pend;
     }
-    return pendingSorted(db).filter(e => !exclude.has(e.id)).slice(0, n);
+    return pendingSorted(db, lane).filter(e => !exclude.has(e.id)).slice(0, n);
   }
   function setStatus(entry, status) { entry.status = status; touch(entry); }
   function planEntry(entry) { setStatus(entry, 'PLANNED'); }
   function completeEntry(entry) { setStatus(entry, 'DONE'); }
   function skipEntry(entry) { setStatus(entry, 'SKIPPED'); }
   function postpone(db, entry) {
-    const es = cycleEntries(db, entry.cycleNumber);
+    const es = cycleEntries(db, entry.cycleNumber, laneOf(entry));
     entry.position = es.reduce((m, e) => Math.max(m, e.position), 0) + 1000;
     touch(entry);
   }
   function release(db, entry) {
-    const es = cycleEntries(db, entry.cycleNumber);
+    const es = cycleEntries(db, entry.cycleNumber, laneOf(entry));
     entry.position = es.reduce((m, e) => Math.min(m, e.position), Infinity) - 1000;
     entry.status = 'PENDING';
     touch(entry);
@@ -479,31 +554,34 @@ const EP = (function () {
   /* manualPick: erster offener Eintrag des Rezepts – oder null (dann MANUAL) */
   function manualPickEntry(db, recipeId, exclude) {
     exclude = exclude || new Set();
-    return pendingSorted(db).find(e => e.recipeId === recipeId && !exclude.has(e.id)) || null;
+    return live(db.rotation).filter(e => e.status === 'PENDING' && e.recipeId === recipeId && !exclude.has(e.id)).sort(byCyclePos)[0] || null;
   }
-  function resetRotation(db, rng) {
-    pendingSorted(db).forEach(tomb);
-    return appendCycle(db, rng);
+  function resetRotation(db, rng, lane, month) {
+    pendingSorted(db, lane).forEach(tomb);
+    return appendCycle(db, rng, lane, month);
   }
-  /* Rezept in laufende Durchläufe einarbeiten (neu, reaktiviert, pausiert, Gewicht geändert) */
+  /* Rezept in laufende Durchläufe einarbeiten (neu, reaktiviert, pausiert, Gewicht oder Spur geändert) */
   function syncRecipeIntoCycles(db, recipe, rng) {
+    const lane = laneOf(recipe);
+    // offene Einträge in einer anderen Spur (Art des Gerichts geändert) entfernen
+    live(db.rotation).filter(e => e.recipeId === recipe.id && e.status === 'PENDING' && laneOf(e) !== lane).forEach(tomb);
     const active = recipe.inRotation && !recipe.archivedAt && !recipe.deleted;
-    openCycles(db).forEach(c => {
-      const mine = cycleEntries(db, c).filter(e => e.recipeId === recipe.id);
+    openCycles(db, lane).forEach(c => {
+      const mine = cycleEntries(db, c, lane).filter(e => e.recipeId === recipe.id);
       if (!active) { mine.filter(e => e.status === 'PENDING').forEach(tomb); return; }
       const diff = recipe.weight - mine.length;
-      if (diff > 0) insertIntoCycle(db, c, recipe, diff, rng);
+      if (diff > 0) insertIntoCycle(db, c, recipe, diff, rng, lane);
       if (diff < 0) {
         mine.filter(e => e.status === 'PENDING').sort((a, b) => b.position - a.position)
           .slice(0, -diff).forEach(tomb);
       }
     });
   }
-  function insertIntoCycle(db, c, recipe, count, rng) {
-    const es = cycleEntries(db, c);
+  function insertIntoCycle(db, c, recipe, count, rng, lane) {
+    const es = cycleEntries(db, c, lane);
     let occ = es.filter(e => e.recipeId === recipe.id).reduce((m, e) => Math.max(m, e.occurrence), 0);
-    const prevCycleLast = lastRecipeOfCycle(db, c - 1);
-    const nextCycleFirst = (cycleEntries(db, c + 1)[0] || {}).recipeId || null;
+    const prevCycleLast = lastRecipeOfCycle(db, c - 1, lane);
+    const nextCycleFirst = (cycleEntries(db, c + 1, lane)[0] || {}).recipeId || null;
     for (let k = 0; k < count; k++) {
       const firstOpen = es.findIndex(e => e.status === 'PENDING');
       const from = firstOpen === -1 ? es.length : firstOpen;
@@ -516,7 +594,7 @@ const EP = (function () {
       });
       const pool = ok.length ? ok : slots;
       const at = pool[Math.floor(rng() * pool.length)];
-      const entry = touch({ id: uuid(), cycleNumber: c, recipeId: recipe.id, occurrence: ++occ,
+      const entry = touch({ id: uuid(), lane, cycleNumber: c, recipeId: recipe.id, occurrence: ++occ,
         position: 0, status: 'PENDING', deleted: false });
       es.splice(at, 0, entry);
       db.rotation.push(entry);
@@ -524,11 +602,11 @@ const EP = (function () {
     es.forEach((e, i) => { const p = (i + 1) * 1000; if (e.position !== p) { e.position = p; touch(e); } });
   }
   /* Fortschritt des laufenden Durchlaufs für den Vorschlag */
-  function cycleProgress(db) {
-    const oc = openCycles(db);
+  function cycleProgress(db, lane) {
+    const oc = openCycles(db, lane);
     if (!oc.length) return null;
     const c = oc[0];
-    const es = cycleEntries(db, c);
+    const es = cycleEntries(db, c, lane);
     const used = es.filter(e => e.status !== 'PENDING').length;
     return { cycle: c, current: Math.min(es.length, used + 1), total: es.length };
   }
@@ -555,7 +633,7 @@ const EP = (function () {
       let item;
       if (si < sequence.length) item = sequence[si++];
       else {
-        const e = nextFn(used);
+        const e = nextFn(used, start);
         if (!e) break;
         used.add(e.id);
         item = { kind: 'ROT', entryId: e.id, recipeId: e.recipeId };
@@ -568,7 +646,7 @@ const EP = (function () {
       dates.forEach((date, i) => {
         occ.add(date);
         drafts.push({
-          date, type: i === 0 ? 'COOK' : 'LEFTOVER', recipeId: recipe.id, blockId: item.blockId,
+          date, lane: 'MAIN', type: i === 0 ? 'COOK' : 'LEFTOVER', recipeId: recipe.id, blockId: item.blockId,
           dayIndex: i + 1, dayCount: n, rotationEntryId: item.kind === 'ROT' ? item.entryId : null,
           source: item.kind === 'ROT' ? 'ROTATION' : 'MANUAL', locked: !!item.locked, status: 'PLANNED', note: '',
         });
@@ -625,14 +703,56 @@ const EP = (function () {
     ['SONSTIGES', 'Sonstiges', 'SUPERMARKT'], ['GEWUERZE', 'Gewürze', 'VORRAT'], ['OELE_ESSIG', 'Öl & Essig', 'VORRAT'],
   ].map(([key, label, source]) => ({ key, label, source }));
   const CAT = Object.fromEntries(CATEGORIES.map(c => [c.key, c]));
-  function sourceOf(ing) { return ing.shoppingSource || (CAT[ing.category] || CAT.SONSTIGES).source; }
+  function categorySource(cat, settings) {
+    const o = settings && settings.categorySources;
+    return (o && o[cat]) || (CAT[cat] || CAT.SONSTIGES).source;
+  }
+  function sourceOf(ing, settings) { return ing.shoppingSource || categorySource(ing.category, settings); }
+  /* Kategorie aus dem Zutatennamen erraten (längster Treffer gewinnt) */
+  const GUESS = {
+    GEMUESE: 'tomate tomaten gurke zwiebel knoblauch karotte möhre paprika zucchini aubergine kartoffel spinat blattspinat salat kopfsalat rucola feldsalat kohl weißkohl rotkohl wirsing grünkohl brokkoli blumenkohl lauch porree sellerie staudensellerie kürbis pilz pilze champignon spargel radieschen rettich rote bete fenchel mangold frühlingszwiebel schalotte ingwer chili peperoni mais kolben erbsenschoten zuckerschoten grüne bohnen avocado okra pastinake kohlrabi rosenkohl süßkartoffel',
+    OBST: 'apfel äpfel birne banane zitrone limette orange mandarine clementine beere beeren erdbeere erdbeeren himbeere himbeeren heidelbeere heidelbeeren blaubeere johannisbeere kirsche kirschen pflaume pflaumen zwetschge zwetschgen rhabarber traube trauben mango ananas aprikose pfirsich nektarine melone kiwi granatapfel feige',
+    KRAEUTER: 'basilikum petersilie koriander schnittlauch dill minze rosmarin thymian salbei estragon kerbel liebstöckel frische kräuter',
+    EIER: 'ei eier eigelb eiweiß',
+    BACKWAREN: 'brot brötchen toast toastbrot vollkornbrot tortilla tortillas weizentortillas wrap baguette fladenbrot pita ciabatta knäckebrot semmel',
+    FLEISCH: 'hackfleisch hack rinderhack rind rindfleisch schwein schweinefleisch hähnchen hähnchenbrust huhn pute putenbrust speck schinken wurst würstchen salami lamm bacon chorizo fleisch geschnetzeltes gulasch leberkäse',
+    FISCH: 'lachs thunfisch fisch garnele garnelen kabeljau forelle seelachs scampi krabben',
+    MILCHPRODUKTE: 'milch sahne schlagsahne joghurt quark magerquark butter schmand crème fraîche creme fraiche saure sahne buttermilch kefir',
+    KAESE: 'käse parmesan mozzarella feta gouda emmentaler ricotta halloumi frischkäse bergkäse reibekäse mascarpone pecorino',
+    TROCKENWAREN: 'nudel nudeln suppennudeln spaghetti pasta penne fusilli lasagneplatten reis basmatireis risottoreis linsen rote linsen mehl weizenmehl zucker puderzucker vanillezucker haferflocken couscous bulgur quinoa grieß backpulver speisestärke stärke polenta nüsse mandeln haselnüsse walnüsse kakao schokolade trockenhefe hefe paniermehl semmelbrösel',
+    KONSERVEN: 'gehackte tomaten passierte tomaten tomatenmark kokosmilch kidneybohnen bohnen kichererbsen dosenmais oliven pesto senf ketchup marmelade honig kapern essiggurken thunfisch dose',
+    TIEFKUEHL: 'tk tiefkühl erbsen tiefkühlerbsen blätterteig',
+    GEWUERZE: 'salz pfeffer paprikapulver currypulver curry kurkuma zimt muskat muskatnuss kreuzkümmel kümmel oregano getrocknet lorbeer lorbeerblatt nelke nelken vanille chiliflocken chilipulver knoblauchpulver gemüsebrühe brühe gewürz gewürze sojasauce sojasoße',
+    OELE_ESSIG: 'öl olivenöl rapsöl sonnenblumenöl sesamöl essig balsamico weißweinessig apfelessig',
+  };
+  const GUESS_LIST = Object.entries(GUESS).flatMap(([cat, words]) => {
+    // Mehrwort-Begriffe stehen hintereinander: bekannte Paare zusammenfassen
+    const w = words.split(' '), out = [];
+    for (let i = 0; i < w.length; i++) {
+      const pair = w[i] + ' ' + w[i + 1];
+      if (['rote bete', 'grüne bohnen', 'gehackte tomaten', 'passierte tomaten', 'crème fraîche', 'creme fraiche', 'saure sahne', 'rote linsen', 'frische kräuter', 'oregano getrocknet'].includes(pair)) { out.push([cat, pair]); i++; }
+      else out.push([cat, w[i]]);
+    }
+    return out;
+  });
+  function guessCategory(name) {
+    const n = ' ' + String(name || '').toLowerCase().trim().replace(/\s+/g, ' ') + ' ';
+    let best = null;
+    GUESS_LIST.forEach(([cat, word]) => {
+      const short = word.length <= 3; // kurze Wörter (ei, tk, öl) nur als ganzes Wort oder Wortende
+      const hit = short ? new RegExp('[\\s-]' + word + '(\\s|$)').test(n) || (word === 'öl' && /öl\s$/.test(n)) : n.includes(word);
+      if (hit && (!best || word.length > best[1].length)) best = [cat, word];
+    });
+    return best ? best[0] : 'SONSTIGES';
+  }
   const cmpDe = (a, b) => a.localeCompare(b, 'de');
 
   function buildShoppingList(db, from, to) {
     const recipes = new Map(live(db.recipes).map(r => [r.id, r]));
     const ings = new Map(live(db.ingredients).map(i => [i.id, i]));
+    const laneRank = { MAIN: 0, LUNCH: 1, CAKE: 2 };
     const cooks = live(db.plan).filter(p => p.type === 'COOK' && p.date >= from && p.date <= to)
-      .sort((a, b) => a.date.localeCompare(b.date));
+      .sort((a, b) => a.date.localeCompare(b.date) || laneRank[laneOf(a)] - laneRank[laneOf(b)]);
     const names = [], warnings = [], per = new Map();
     cooks.forEach(p => {
       const r = recipes.get(p.recipeId);
@@ -654,7 +774,7 @@ const EP = (function () {
       const ing = ings.get(id);
       const sum = sumAmounts(items);
       const key = id + '|' + sum.dims.join('+');
-      return { key, name: ing.name, amount: sum.text, category: ing.category, source: sourceOf(ing), checked: checked.has(key) };
+      return { key, name: ing.name, amount: sum.text, category: ing.category, source: sourceOf(ing, db.settings), checked: checked.has(key) };
     });
     const market = rows.filter(r => r.source === 'MARKT').sort((a, b) => cmpDe(a.name, b.name));
     const supermarket = CATEGORIES.map(c => ({
@@ -729,10 +849,11 @@ const EP = (function () {
   function normalizePlan(db) {
     const byDate = new Map();
     live(db.plan).forEach(p => {
-      const o = byDate.get(p.date);
-      if (!o) { byDate.set(p.date, p); return; }
+      const k = p.date + '|' + laneOf(p);
+      const o = byDate.get(k);
+      if (!o) { byDate.set(k, p); return; }
       const [keep, drop] = (p.updatedAt || 0) > (o.updatedAt || 0) ? [p, o] : [o, p];
-      byDate.set(p.date, keep);
+      byDate.set(k, keep);
       tomb(drop);
     });
   }
@@ -746,13 +867,13 @@ const EP = (function () {
   return {
     setClock, uuid, touch, live, tomb, seededRng,
     iso, parseISO, addDays, todayISO, weekStart, weekDays, isoWeek, fmtDate, fmtShort, fmtRange, weekday, weekdayLong,
-    daysFor, daysHint,
+    daysFor, daysHint, LANES, laneOf, MONTHS, inSeason, seasonLabel, monthOf,
     activeRecipes, repairAdjacency, buildCycle, cycleEntries, maxCycle, openCycles, pendingSorted,
     lastRecipeOfCycle, appendCycle, nextEntries, planEntry, completeEntry, skipEntry, postpone, release,
     manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
     nextFreeDates, layoutDraft, fillWeek,
     UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
-    CATEGORIES, CAT, sourceOf, buildShoppingList, shoppingText,
+    CATEGORIES, CAT, categorySource, sourceOf, guessCategory, buildShoppingList, shoppingText,
     mergeDb, normalizePlan, pruneTombstones,
   };
 })();
@@ -765,11 +886,11 @@ function seedToDb(seed, EPref) {
   const settings = E.touch(Object.assign({ portionsPerDay: 2, roundingMode: 'FLOOR', rotationMode: 'SHUFFLE', marketListShowQuantities: true }, seed.settings || {}));
   const ingredients = (seed.ingredients || []).map(i => E.touch({
     id: E.uuid(), name: i.name, category: i.category, shoppingSource: i.shoppingSource || null,
-    defaultUnit: i.defaultUnit || 'STUECK', deleted: false,
+    defaultUnit: i.defaultUnit || 'STUECK', reviewed: true, deleted: false,
   }));
   const byName = new Map(ingredients.map(i => [i.name.toLowerCase(), i]));
   const recipes = (seed.recipes || []).map((r, idx) => E.touch({
-    id: E.uuid(), name: r.name, inRotation: r.inRotation !== false, weight: r.weight || 1,
+    id: E.uuid(), name: r.name, kind: r.kind || 'MAIN', seasonMonths: r.seasonMonths || null, inRotation: r.inRotation !== false, weight: r.weight || 1,
     servings: r.servings || settings.portionsPerDay, daysOverride: r.daysOverride || null,
     sortOrder: idx + 1, notes: r.notes || '', instructions: r.instructions || '',
     prepTimeMinutes: r.prepTimeMinutes || null, tags: r.tags || [], archivedAt: null, deleted: false,
@@ -785,6 +906,7 @@ function seedToDb(seed, EPref) {
 
 
 const SEED_DATA = {"settings":{"portionsPerDay":2,"roundingMode":"FLOOR","rotationMode":"SHUFFLE","marketListShowQuantities":true},"ingredients":[{"name":"Zwiebel","category":"GEMUESE","defaultUnit":"STUECK"},{"name":"Knoblauch","category":"GEMUESE","defaultUnit":"ZEHE"},{"name":"Karotte","category":"GEMUESE","defaultUnit":"STUECK"},{"name":"Paprika","category":"GEMUESE","defaultUnit":"STUECK"},{"name":"Süßkartoffel","category":"GEMUESE","defaultUnit":"G"},{"name":"Blattspinat","category":"GEMUESE","defaultUnit":"G"},{"name":"Avocado","category":"OBST","defaultUnit":"STUECK"},{"name":"Limette","category":"OBST","defaultUnit":"STUECK"},{"name":"Koriander","category":"KRAEUTER","defaultUnit":"BUND"},{"name":"Weizentortillas","category":"BACKWAREN","defaultUnit":"STUECK"},{"name":"Rinderhackfleisch","category":"FLEISCH","defaultUnit":"G"},{"name":"Schmand","category":"MILCHPRODUKTE","defaultUnit":"G"},{"name":"Spaghetti","category":"TROCKENWAREN","defaultUnit":"G"},{"name":"Basmatireis","category":"TROCKENWAREN","defaultUnit":"G"},{"name":"Rote Linsen","category":"TROCKENWAREN","defaultUnit":"G"},{"name":"Gehackte Tomaten","category":"KONSERVEN","defaultUnit":"DOSE"},{"name":"Kidneybohnen","category":"KONSERVEN","defaultUnit":"DOSE"},{"name":"Mais","category":"KONSERVEN","defaultUnit":"DOSE"},{"name":"Kokosmilch","category":"KONSERVEN","defaultUnit":"ML"},{"name":"Currypaste","category":"KONSERVEN","defaultUnit":"EL"},{"name":"Tomatenmark","category":"KONSERVEN","defaultUnit":"EL","shoppingSource":"VORRAT"},{"name":"Olivenöl","category":"OELE_ESSIG","defaultUnit":"EL"},{"name":"Salz","category":"GEWUERZE","defaultUnit":"PRISE"},{"name":"Pfeffer","category":"GEWUERZE","defaultUnit":"PRISE"},{"name":"Kreuzkümmel","category":"GEWUERZE","defaultUnit":"TL"},{"name":"Paprikapulver","category":"GEWUERZE","defaultUnit":"TL"}],"recipes":[{"name":"Spaghetti Bolognese","inRotation":true,"weight":2,"servings":4,"ingredients":[{"ingredient":"Spaghetti","quantity":500,"unit":"G"},{"ingredient":"Rinderhackfleisch","quantity":400,"unit":"G"},{"ingredient":"Zwiebel","quantity":1,"unit":"STUECK","note":"fein gewürfelt"},{"ingredient":"Knoblauch","quantity":2,"unit":"ZEHE"},{"ingredient":"Karotte","quantity":2,"unit":"STUECK","note":"fein gewürfelt"},{"ingredient":"Gehackte Tomaten","quantity":1,"unit":"DOSE"},{"ingredient":"Tomatenmark","quantity":2,"unit":"EL"},{"ingredient":"Olivenöl","quantity":2,"unit":"EL"},{"ingredient":"Salz","quantity":null,"unit":null},{"ingredient":"Pfeffer","quantity":null,"unit":null}],"instructions":"1. Zwiebel, Knoblauch und Karotten fein würfeln und in Olivenöl anschwitzen.\n2. Hackfleisch zugeben und krümelig braten.\n3. Tomatenmark kurz mitrösten, gehackte Tomaten zugeben und 30 Minuten köcheln lassen.\n4. Spaghetti nach Packungsangabe kochen und mit der Soße servieren."},{"name":"Tortillas mit Chili sin Carne","inRotation":true,"weight":1,"servings":6,"ingredients":[{"ingredient":"Weizentortillas","quantity":12,"unit":"STUECK"},{"ingredient":"Rote Linsen","quantity":150,"unit":"G"},{"ingredient":"Kidneybohnen","quantity":2,"unit":"DOSE"},{"ingredient":"Mais","quantity":1,"unit":"DOSE"},{"ingredient":"Gehackte Tomaten","quantity":2,"unit":"DOSE"},{"ingredient":"Zwiebel","quantity":2,"unit":"STUECK"},{"ingredient":"Knoblauch","quantity":2,"unit":"ZEHE"},{"ingredient":"Paprika","quantity":2,"unit":"STUECK"},{"ingredient":"Schmand","quantity":200,"unit":"G"},{"ingredient":"Avocado","quantity":1,"unit":"STUECK"},{"ingredient":"Koriander","quantity":1,"unit":"BUND"},{"ingredient":"Kreuzkümmel","quantity":1,"unit":"TL"},{"ingredient":"Paprikapulver","quantity":2,"unit":"TL"},{"ingredient":"Salz","quantity":null,"unit":null}]},{"name":"Gemüsecurry","inRotation":true,"weight":1,"servings":4,"ingredients":[{"ingredient":"Basmatireis","quantity":250,"unit":"G"},{"ingredient":"Kokosmilch","quantity":400,"unit":"ML"},{"ingredient":"Süßkartoffel","quantity":500,"unit":"G"},{"ingredient":"Paprika","quantity":1,"unit":"STUECK"},{"ingredient":"Blattspinat","quantity":200,"unit":"G"},{"ingredient":"Zwiebel","quantity":1,"unit":"STUECK"},{"ingredient":"Knoblauch","quantity":1,"unit":"ZEHE"},{"ingredient":"Currypaste","quantity":2,"unit":"EL"},{"ingredient":"Limette","quantity":1,"unit":"STUECK"},{"ingredient":"Salz","quantity":null,"unit":null}]},{"name":"Pfannkuchen","inRotation":true,"weight":1,"servings":2},{"name":"Linsensuppe","inRotation":true,"weight":1,"servings":4},{"name":"Kürbissuppe","inRotation":false,"weight":1,"servings":4,"notes":"Nur im Herbst – bei Bedarf wieder aktivieren."}]};
+const LANE_SAMPLES = {"LUNCH":{"ingredients":[{"name":"Vollkornbrot","category":"BACKWAREN","defaultUnit":"SCHEIBE"},{"name":"Toastbrot","category":"BACKWAREN","defaultUnit":"SCHEIBE"},{"name":"Baguette","category":"BACKWAREN","defaultUnit":"STUECK"},{"name":"Blattspinat","category":"GEMUESE","defaultUnit":"G"},{"name":"Eier","category":"EIER","defaultUnit":"STUECK"},{"name":"Butter","category":"MILCHPRODUKTE","defaultUnit":"G"},{"name":"Sahne","category":"MILCHPRODUKTE","defaultUnit":"ML"},{"name":"Quark","category":"MILCHPRODUKTE","defaultUnit":"G"},{"name":"Gouda","category":"KAESE","defaultUnit":"SCHEIBE"},{"name":"Salz","category":"GEWUERZE","defaultUnit":"PRISE"},{"name":"Pfeffer","category":"GEWUERZE","defaultUnit":"PRISE"},{"name":"Gemüsebrühe","category":"GEWUERZE","defaultUnit":"TL"},{"name":"Suppennudeln","category":"TROCKENWAREN","defaultUnit":"G"},{"name":"Karotte","category":"GEMUESE","defaultUnit":"STUECK"},{"name":"Lauch","category":"GEMUESE","defaultUnit":"STUECK"},{"name":"Zwiebel","category":"GEMUESE","defaultUnit":"STUECK"},{"name":"Knoblauch","category":"GEMUESE","defaultUnit":"ZEHE"},{"name":"Kartoffel","category":"GEMUESE","defaultUnit":"STUECK"},{"name":"Gurke","category":"GEMUESE","defaultUnit":"STUECK"},{"name":"Radieschen","category":"GEMUESE","defaultUnit":"BUND"},{"name":"Petersilie","category":"KRAEUTER","defaultUnit":"BUND"},{"name":"Schnittlauch","category":"KRAEUTER","defaultUnit":"BUND"},{"name":"Basilikum","category":"KRAEUTER","defaultUnit":"BUND"},{"name":"Gehackte Tomaten","category":"KONSERVEN","defaultUnit":"DOSE"}],"recipes":[{"name":"Brot mit Spinat und Spiegelei","kind":"LUNCH","servings":2,"prepTimeMinutes":15,"tags":["schnell","vegetarisch"],"ingredients":[{"ingredient":"Vollkornbrot","quantity":4,"unit":"SCHEIBE"},{"ingredient":"Blattspinat","quantity":200,"unit":"G"},{"ingredient":"Eier","quantity":2,"unit":"STUECK"},{"ingredient":"Butter","quantity":1,"unit":"EL"},{"ingredient":"Salz","quantity":null,"unit":null},{"ingredient":"Pfeffer","quantity":null,"unit":null}],"instructions":"1. Spinat waschen und in etwas Butter zusammenfallen lassen, salzen und pfeffern\n2. Eier als Spiegeleier braten\n3. Brot rösten, mit Spinat und Spiegelei belegen"},{"name":"Nudelsuppe","kind":"LUNCH","servings":2,"prepTimeMinutes":25,"tags":["vegetarisch"],"ingredients":[{"ingredient":"Suppennudeln","quantity":100,"unit":"G"},{"ingredient":"Karotte","quantity":2,"unit":"STUECK"},{"ingredient":"Lauch","quantity":1,"unit":"STUECK"},{"ingredient":"Gemüsebrühe","quantity":2,"unit":"TL"},{"ingredient":"Petersilie","quantity":1,"unit":"BUND"}],"instructions":"1. Karotten und Lauch klein schneiden\n2. In 1 l Brühe 10 Minuten köcheln\n3. Nudeln dazugeben und garen\n4. Mit gehackter Petersilie servieren"},{"name":"Tomatensuppe mit Baguette","kind":"LUNCH","servings":2,"prepTimeMinutes":20,"tags":["vegetarisch"],"ingredients":[{"ingredient":"Gehackte Tomaten","quantity":1,"unit":"DOSE"},{"ingredient":"Zwiebel","quantity":1,"unit":"STUECK"},{"ingredient":"Knoblauch","quantity":1,"unit":"ZEHE"},{"ingredient":"Sahne","quantity":100,"unit":"ML"},{"ingredient":"Baguette","quantity":1,"unit":"STUECK"},{"ingredient":"Basilikum","quantity":1,"unit":"BUND"}],"instructions":"1. Zwiebel und Knoblauch andünsten\n2. Tomaten und etwas Wasser dazu, 10 Minuten köcheln\n3. Pürieren, Sahne einrühren\n4. Mit Basilikum und Baguette servieren"},{"name":"Rührei auf Toast","kind":"LUNCH","servings":2,"prepTimeMinutes":10,"tags":["schnell","vegetarisch"],"ingredients":[{"ingredient":"Eier","quantity":4,"unit":"STUECK"},{"ingredient":"Toastbrot","quantity":4,"unit":"SCHEIBE"},{"ingredient":"Schnittlauch","quantity":1,"unit":"BUND"},{"ingredient":"Butter","quantity":1,"unit":"EL"}],"instructions":"1. Eier verquirlen, salzen\n2. In Butter bei mittlerer Hitze stocken lassen\n3. Auf getoastetem Brot mit Schnittlauch servieren"},{"name":"Ofenkartoffel mit Kräuterquark","kind":"LUNCH","servings":2,"prepTimeMinutes":50,"tags":["vegetarisch"],"ingredients":[{"ingredient":"Kartoffel","quantity":4,"unit":"STUECK"},{"ingredient":"Quark","quantity":250,"unit":"G"},{"ingredient":"Schnittlauch","quantity":1,"unit":"BUND"},{"ingredient":"Salz","quantity":null,"unit":null}],"instructions":"1. Kartoffeln waschen, bei 200 °C etwa 45 Minuten backen\n2. Quark mit Schnittlauch und Salz verrühren\n3. Kartoffeln aufschneiden und füllen"},{"name":"Käsebrot mit Gurke und Radieschen","kind":"LUNCH","servings":2,"prepTimeMinutes":10,"tags":["schnell","vegetarisch"],"ingredients":[{"ingredient":"Vollkornbrot","quantity":4,"unit":"SCHEIBE"},{"ingredient":"Gouda","quantity":4,"unit":"SCHEIBE"},{"ingredient":"Gurke","quantity":1,"unit":"STUECK"},{"ingredient":"Radieschen","quantity":1,"unit":"BUND"},{"ingredient":"Butter","quantity":1,"unit":"EL"}],"instructions":"1. Brot mit Butter und Käse belegen\n2. Gurke und Radieschen in Scheiben dazu"}]},"CAKE":{"ingredients":[{"name":"Weizenmehl","category":"TROCKENWAREN","defaultUnit":"G"},{"name":"Zucker","category":"TROCKENWAREN","defaultUnit":"G"},{"name":"Puderzucker","category":"TROCKENWAREN","defaultUnit":"G"},{"name":"Backpulver","category":"TROCKENWAREN","defaultUnit":"PACKUNG"},{"name":"Trockenhefe","category":"TROCKENWAREN","defaultUnit":"PACKUNG"},{"name":"Kakao","category":"TROCKENWAREN","defaultUnit":"EL"},{"name":"Butter","category":"MILCHPRODUKTE","defaultUnit":"G"},{"name":"Milch","category":"MILCHPRODUKTE","defaultUnit":"ML"},{"name":"Magerquark","category":"MILCHPRODUKTE","defaultUnit":"G"},{"name":"Schlagsahne","category":"MILCHPRODUKTE","defaultUnit":"ML"},{"name":"Eier","category":"EIER","defaultUnit":"STUECK"},{"name":"Apfel","category":"OBST","defaultUnit":"STUECK"},{"name":"Zitrone","category":"OBST","defaultUnit":"STUECK"},{"name":"Rhabarber","category":"OBST","defaultUnit":"G"},{"name":"Erdbeere","category":"OBST","defaultUnit":"G"},{"name":"Pflaume","category":"OBST","defaultUnit":"G"}],"recipes":[{"name":"Apfelkuchen","kind":"CAKE","servings":12,"prepTimeMinutes":75,"ingredients":[{"ingredient":"Apfel","quantity":4,"unit":"STUECK"},{"ingredient":"Weizenmehl","quantity":250,"unit":"G"},{"ingredient":"Zucker","quantity":150,"unit":"G"},{"ingredient":"Butter","quantity":125,"unit":"G"},{"ingredient":"Eier","quantity":3,"unit":"STUECK"},{"ingredient":"Backpulver","quantity":1,"unit":"PACKUNG"}],"instructions":"1. Butter, Zucker und Eier schaumig rühren\n2. Mehl und Backpulver unterheben, Teig in die Form geben\n3. Äpfel schälen, in Spalten schneiden und auf den Teig legen\n4. Bei 180 °C etwa 45 Minuten backen"},{"name":"Marmorkuchen","kind":"CAKE","servings":12,"prepTimeMinutes":80,"ingredients":[{"ingredient":"Weizenmehl","quantity":300,"unit":"G"},{"ingredient":"Zucker","quantity":200,"unit":"G"},{"ingredient":"Butter","quantity":250,"unit":"G"},{"ingredient":"Eier","quantity":4,"unit":"STUECK"},{"ingredient":"Kakao","quantity":2,"unit":"EL"},{"ingredient":"Milch","quantity":100,"unit":"ML"},{"ingredient":"Backpulver","quantity":1,"unit":"PACKUNG"}],"instructions":"1. Butter, Zucker und Eier schaumig rühren\n2. Mehl, Backpulver und Milch unterrühren\n3. Ein Drittel des Teigs mit Kakao dunkel färben\n4. Abwechselnd in die Gugelhupfform geben, mit einer Gabel marmorieren\n5. Bei 175 °C etwa 55 Minuten backen"},{"name":"Käsekuchen","kind":"CAKE","servings":12,"prepTimeMinutes":90,"ingredients":[{"ingredient":"Magerquark","quantity":750,"unit":"G"},{"ingredient":"Zucker","quantity":180,"unit":"G"},{"ingredient":"Eier","quantity":3,"unit":"STUECK"},{"ingredient":"Butter","quantity":125,"unit":"G"},{"ingredient":"Weizenmehl","quantity":200,"unit":"G"},{"ingredient":"Zitrone","quantity":1,"unit":"STUECK"}],"instructions":"1. Aus Mehl, Butter und 50 g Zucker einen Mürbeteig kneten, in die Form drücken\n2. Quark, restlichen Zucker, Eier und Zitronenabrieb verrühren\n3. Auf den Boden geben und bei 170 °C etwa 60 Minuten backen"},{"name":"Zitronenkuchen","kind":"CAKE","servings":12,"prepTimeMinutes":70,"ingredients":[{"ingredient":"Zitrone","quantity":2,"unit":"STUECK"},{"ingredient":"Weizenmehl","quantity":250,"unit":"G"},{"ingredient":"Zucker","quantity":200,"unit":"G"},{"ingredient":"Butter","quantity":200,"unit":"G"},{"ingredient":"Eier","quantity":4,"unit":"STUECK"},{"ingredient":"Puderzucker","quantity":100,"unit":"G"},{"ingredient":"Backpulver","quantity":1,"unit":"PACKUNG"}],"instructions":"1. Butter, Zucker, Eier und Zitronenabrieb schaumig rühren\n2. Mehl und Backpulver unterheben\n3. In der Kastenform bei 175 °C etwa 50 Minuten backen\n4. Puderzucker mit Zitronensaft verrühren und über den warmen Kuchen geben"},{"name":"Rhabarberkuchen","kind":"CAKE","servings":12,"prepTimeMinutes":75,"seasonMonths":[4,5,6],"ingredients":[{"ingredient":"Rhabarber","quantity":500,"unit":"G"},{"ingredient":"Weizenmehl","quantity":250,"unit":"G"},{"ingredient":"Zucker","quantity":180,"unit":"G"},{"ingredient":"Butter","quantity":150,"unit":"G"},{"ingredient":"Eier","quantity":3,"unit":"STUECK"},{"ingredient":"Backpulver","quantity":1,"unit":"PACKUNG"}],"instructions":"1. Rhabarber putzen und in Stücke schneiden\n2. Rührteig aus Butter, Zucker, Eiern, Mehl und Backpulver herstellen\n3. Rhabarber darauf verteilen und bei 180 °C etwa 45 Minuten backen"},{"name":"Erdbeerkuchen","kind":"CAKE","servings":12,"prepTimeMinutes":60,"seasonMonths":[5,6,7],"ingredients":[{"ingredient":"Erdbeere","quantity":500,"unit":"G"},{"ingredient":"Weizenmehl","quantity":150,"unit":"G"},{"ingredient":"Zucker","quantity":120,"unit":"G"},{"ingredient":"Eier","quantity":3,"unit":"STUECK"},{"ingredient":"Schlagsahne","quantity":200,"unit":"ML"}],"instructions":"1. Aus Eiern, Zucker und Mehl einen Biskuitboden backen (180 °C, 20 Minuten)\n2. Abkühlen lassen, Sahne steif schlagen und aufstreichen\n3. Mit halbierten Erdbeeren belegen"},{"name":"Pflaumenkuchen","kind":"CAKE","servings":12,"prepTimeMinutes":100,"seasonMonths":[8,9],"ingredients":[{"ingredient":"Pflaume","quantity":1,"unit":"KG"},{"ingredient":"Weizenmehl","quantity":300,"unit":"G"},{"ingredient":"Zucker","quantity":150,"unit":"G"},{"ingredient":"Butter","quantity":125,"unit":"G"},{"ingredient":"Eier","quantity":1,"unit":"STUECK"},{"ingredient":"Trockenhefe","quantity":1,"unit":"PACKUNG"},{"ingredient":"Milch","quantity":150,"unit":"ML"}],"instructions":"1. Hefeteig aus Mehl, Hefe, lauwarmer Milch, Ei, 50 g Zucker und 50 g Butter kneten, 45 Minuten gehen lassen\n2. Auf dem Blech ausrollen, entsteinte Pflaumen dicht darauflegen\n3. Aus restlicher Butter, Zucker und etwas Mehl Streusel machen und verteilen\n4. Bei 190 °C etwa 35 Minuten backen"}]}};
 /* ==========================================================================
    Essensplanung – App Teil 1: Infrastruktur
    ========================================================================== */
@@ -888,7 +1010,9 @@ let db = null;
 function emptyDb() {
   return {
     version: 1, household: null,
-    settings: EP.touch({ portionsPerDay: 2, roundingMode: 'FLOOR', rotationMode: 'SHUFFLE', marketListShowQuantities: true }),
+    settings: EP.touch({ portionsPerDay: 2, roundingMode: 'FLOOR', rotationMode: 'SHUFFLE', marketListShowQuantities: true,
+      categorySources: { GEWUERZE: 'SUPERMARKT', OELE_ESSIG: 'SUPERMARKT' },
+      lanes: { LUNCH: { days: [6, 0] }, CAKE: { days: [6] } } }),
     shopping: EP.touch({ from: '', to: '', checkedKeys: [], extraItems: [] }),
     recipes: [], ingredients: [], rotation: [], plan: [],
   };
@@ -898,6 +1022,10 @@ function repairDb(d) {
   d = d || e;
   ['recipes', 'ingredients', 'rotation', 'plan'].forEach(k => { if (!Array.isArray(d[k])) d[k] = []; });
   d.settings = Object.assign({}, e.settings, d.settings || {});
+  d.settings.categorySources = Object.assign({}, e.settings.categorySources, d.settings.categorySources || {});
+  d.settings.lanes = Object.assign({}, e.settings.lanes, d.settings.lanes || {});
+  ['LUNCH', 'CAKE'].forEach(l => { if (!d.settings.lanes[l] || !Array.isArray(d.settings.lanes[l].days)) d.settings.lanes[l] = deep(e.settings.lanes[l]); });
+  d.ingredients.forEach(i => { if (i.reviewed === undefined) i.reviewed = true; });
   d.shopping = Object.assign({}, e.shopping, d.shopping || {});
   if (!Array.isArray(d.shopping.checkedKeys)) d.shopping.checkedKeys = [];
   if (!Array.isArray(d.shopping.extraItems)) d.shopping.extraItems = [];
@@ -907,6 +1035,8 @@ function repairDb(d) {
     if (!Array.isArray(r.tags)) r.tags = [];
     if (!r.weight) r.weight = 1;
     if (!r.servings) r.servings = d.settings.portionsPerDay;
+    if (!r.kind) r.kind = 'MAIN';
+    if (r.seasonMonths === undefined) r.seasonMonths = null;
   });
   return d;
 }
@@ -1190,32 +1320,59 @@ const recipeById = id => db.recipes.find(r => r.id === id) || null;
 const rotById = (d, id) => (d || db).rotation.find(e => e.id === id && !e.deleted) || null;
 const ingById = id => db.ingredients.find(i => i.id === id) || null;
 const liveRecipes = () => EP.live(db.recipes).filter(r => !r.archivedAt);
+const isMain = p => EP.laneOf(p) === 'MAIN';
+const mainPlan = d => EP.live((d || db).plan).filter(isMain);
+const mainDates = d => new Set(mainPlan(d).map(p => p.date));
+/* Hauptgericht-Einträge je Datum */
 function planByDate(d) {
   const m = new Map();
-  EP.live((d || db).plan).forEach(p => m.set(p.date, p));
+  mainPlan(d).forEach(p => m.set(p.date, p));
   return m;
 }
+/* Eintrag einer Zusatzspur (Mittag, Kuchen) an einem Tag */
+function laneAt(src, date, lane) { return EP.live((src || db).plan).find(p => p.date === date && EP.laneOf(p) === lane) || null; }
+function laneDays(lane) { return ((db.settings.lanes || {})[lane] || { days: [] }).days; }
+function laneActiveOn(lane, date) { return laneDays(lane).includes(EP.parseISO(date).getDay()); }
+const unreviewedCount = () => EP.live(db.ingredients).filter(i => i.reviewed === false).length;
 const blockEntries = (bid, d) => EP.live((d || db).plan).filter(p => p.blockId === bid).sort((a, b) => a.date.localeCompare(b.date));
 function daysOf(recipe) { return EP.daysFor(recipe, db.settings); }
-function firstFreeFrom(start) {
-  const occ = new Set(EP.live(db.plan).map(p => p.date));
-  return EP.nextFreeDates(start, 1, occ)[0];
+function firstFreeFrom(start) { return EP.nextFreeDates(start, 1, mainDates())[0]; }
+/* nächster Tag ab start, an dem die Spur aktiv und noch frei ist */
+function firstLaneDay(lane, start) {
+  for (let i = 0, d = start; i < 60; i++, d = EP.addDays(d, 1)) if (laneActiveOn(lane, d) && !laneAt(db, d, lane)) return d;
+  return start;
 }
 
 /* ---------- Plan (übernommene Einträge, wirken sofort) ---------- */
 function placeBlock(start, o) {
   const recipe = recipeById(o.recipeId);
   const n = daysOf(recipe);
-  const occ = new Set(EP.live(db.plan).map(p => p.date));
-  const dates = EP.nextFreeDates(start, n, occ);
+  const dates = EP.nextFreeDates(start, n, mainDates());
   const bid = o.blockId || EP.uuid();
   dates.forEach((date, i) => db.plan.push(EP.touch({
-    id: EP.uuid(), date, type: i ? 'LEFTOVER' : 'COOK', recipeId: recipe.id, blockId: bid,
+    id: EP.uuid(), date, lane: 'MAIN', type: i ? 'LEFTOVER' : 'COOK', recipeId: recipe.id, blockId: bid,
     dayIndex: i + 1, dayCount: n, rotationEntryId: o.rotationEntryId || null,
     source: o.rotationEntryId ? 'ROTATION' : 'MANUAL', locked: !!o.locked, status: 'PLANNED', note: '', deleted: false,
   })));
   if (o.rotationEntryId) { const e = rotById(null, o.rotationEntryId); if (e && e.status !== 'DONE') EP.planEntry(e); }
   return dates;
+}
+/* Zusatzspur: ein Gericht an genau einem Tag (kein Resteblock) */
+function placeLane(date, lane, recipeId, rotationEntryId) {
+  const old = laneAt(db, date, lane);
+  if (old) removeBlock(old.blockId, true);
+  db.plan.push(EP.touch({ id: EP.uuid(), date, lane, type: 'COOK', recipeId, blockId: EP.uuid(), dayIndex: 1, dayCount: 1,
+    rotationEntryId: rotationEntryId || null, source: rotationEntryId ? 'ROTATION' : 'MANUAL', locked: false, status: 'PLANNED', note: '', deleted: false }));
+  if (rotationEntryId) { const e = rotById(null, rotationEntryId); if (e && e.status !== 'DONE') EP.planEntry(e); }
+}
+function swapLane(date, lane) {
+  const p = laneAt(db, date, lane); if (!p) return null;
+  const info = removeBlock(p.blockId, true);
+  const ex = new Set(info && info.rotationEntryId ? [info.rotationEntryId] : []);
+  const next = EP.nextEntries(db, 1, ex, rng, lane, EP.monthOf(date))[0];
+  if (!next) { placeLane(date, lane, info.recipeId, info.rotationEntryId); return null; }
+  placeLane(date, lane, next.recipeId, next.id);
+  return recipeById(next.recipeId);
 }
 function removeBlock(bid, releaseIt) {
   const es = blockEntries(bid);
@@ -1244,7 +1401,7 @@ function swapBlock(bid) {
   const info = removeBlock(bid, true);
   if (!info) return null;
   const ex = new Set(info.rotationEntryId ? [info.rotationEntryId] : []);
-  const next = EP.nextEntries(db, 1, ex, rng)[0];
+  const next = EP.nextEntries(db, 1, ex, rng, 'MAIN', EP.monthOf(info.start))[0];
   if (!next) { placeBlock(info.start, info); return null; }
   placeBlock(info.start, { recipeId: next.recipeId, rotationEntryId: next.id, locked: info.locked });
   return recipeById(next.recipeId);
@@ -1288,16 +1445,49 @@ function startDraft(ws) {
     const e = rid && clone.rotation.find(x => x.id === rid && !x.deleted);
     if (e && e.status === 'PLANNED') EP.release(clone, e);
   });
-  draft = { ws, clone, sequence: [], blocked: new Map(), drafts: [] };
+  draft = { ws, clone, sequence: [], blocked: new Map(), drafts: [], lanes: [] };
   relayoutDraft();
+  buildLaneDrafts();
 }
+/* Zusatzspuren im Entwurf: je aktivem Tag das nächste Gericht der eigenen Rotation */
+function buildLaneDrafts() {
+  const today = EP.todayISO();
+  draft.lanes = [];
+  ['LUNCH', 'CAKE'].forEach(lane => {
+    const used = new Set();
+    EP.weekDays(draft.ws).forEach(d => {
+      if (d < today || !laneActiveOn(lane, d) || laneAt(draft.clone, d, lane)) return;
+      const e = EP.nextEntries(draft.clone, 1, used, rng, lane, EP.monthOf(d))[0];
+      if (!e) return;
+      used.add(e.id);
+      draft.lanes.push({ id: EP.uuid(), date: d, lane, recipeId: e.recipeId, rotationEntryId: e.id });
+    });
+  });
+}
+const laneUsed = lane => new Set(draft.lanes.filter(x => x.lane === lane && x.rotationEntryId).map(x => x.rotationEntryId));
+function draftLane(date, lane) { return draft.lanes.find(x => x.date === date && x.lane === lane) || null; }
+function draftLaneNext(date, lane) {
+  let x = draftLane(date, lane);
+  const e = EP.nextEntries(draft.clone, 1, laneUsed(lane), rng, lane, EP.monthOf(date))[0];
+  if (!e) return notify('Keine weiteren Gerichte in dieser Rotation.');
+  if (!x) { x = { id: EP.uuid(), date, lane }; draft.lanes.push(x); }
+  x.recipeId = e.recipeId; x.rotationEntryId = e.id;
+}
+function draftLanePick(date, lane, recipeId) {
+  let x = draftLane(date, lane);
+  const used = laneUsed(lane); if (x) used.delete(x.rotationEntryId);
+  const e = EP.manualPickEntry(draft.clone, recipeId, used);
+  if (!x) { x = { id: EP.uuid(), date, lane }; draft.lanes.push(x); }
+  x.recipeId = recipeId; x.rotationEntryId = e ? e.id : null;
+}
+function draftLaneRemove(date, lane) { draft.lanes = draft.lanes.filter(x => !(x.date === date && x.lane === lane)); }
 function relayoutDraft() {
   const days = EP.weekDays(draft.ws);
-  const occupied = new Set(EP.live(draft.clone.plan).map(p => p.date));
+  const occupied = mainDates(draft.clone);
   draft.blocked.forEach((_, d) => occupied.add(d));
   const res = EP.layoutDraft({
     days, occupied, sequence: draft.sequence,
-    nextFn: ex => EP.nextEntries(draft.clone, 1, ex, rng)[0],
+    nextFn: (ex, start) => EP.nextEntries(draft.clone, 1, ex, rng, 'MAIN', EP.monthOf(start))[0],
     recipeOf: recipeById, settings: db.settings, today: EP.todayISO(),
   });
   draft.sequence = res.sequence;
@@ -1307,7 +1497,8 @@ function draftUsed() { return new Set(draft.sequence.filter(s => s.kind === 'ROT
 function draftSwap(bid) {
   const i = draft.sequence.findIndex(s => s.blockId === bid);
   if (i < 0) return;
-  const next = EP.nextEntries(draft.clone, 1, draftUsed(), rng)[0];
+  const at = (draft.drafts.find(x => x.blockId === bid) || {}).date || draft.ws;
+  const next = EP.nextEntries(draft.clone, 1, draftUsed(), rng, 'MAIN', EP.monthOf(at))[0];
   if (!next) return notify('Keine weiteren Gerichte in der Rotation.');
   draft.sequence[i] = { kind: 'ROT', entryId: next.id, recipeId: next.recipeId, blockId: bid, locked: draft.sequence[i].locked };
   relayoutDraft();
@@ -1340,22 +1531,34 @@ function commitDraft() {
       if (e) EP.planEntry(e);
     }
   });
-  draft.blocked.forEach((note, date) => c.plan.push(EP.touch({ id: EP.uuid(), date, type: 'BLOCKED', recipeId: null, blockId: null,
+  draft.lanes.forEach(x => {
+    c.plan.push(EP.touch({ id: EP.uuid(), date: x.date, lane: x.lane, type: 'COOK', recipeId: x.recipeId, blockId: EP.uuid(), dayIndex: 1, dayCount: 1,
+      rotationEntryId: x.rotationEntryId || null, source: x.rotationEntryId ? 'ROTATION' : 'MANUAL', locked: false, status: 'PLANNED', note: '', deleted: false }));
+    const e = x.rotationEntryId && c.rotation.find(r => r.id === x.rotationEntryId && !r.deleted);
+    if (e) EP.planEntry(e);
+  });
+  draft.blocked.forEach((note, date) => c.plan.push(EP.touch({ id: EP.uuid(), date, lane: 'MAIN', type: 'BLOCKED', recipeId: null, blockId: null,
     dayIndex: 0, dayCount: 0, rotationEntryId: null, source: 'MANUAL', locked: false, status: 'PLANNED', note, deleted: false })));
   db.rotation = c.rotation; db.plan = c.plan;
   draft = null;
 }
-/* Anzeige-Einträge einer Woche (übernommen oder Entwurf) */
+/* Anzeige-Einträge einer Woche (übernommen oder Entwurf): Hauptgerichte + Zusatzspuren */
 function weekEntries(ws) {
   const days = EP.weekDays(ws);
-  const src = draft && draft.ws === ws ? draft.clone : db;
+  const isDraft = draft && draft.ws === ws;
+  const src = isDraft ? draft.clone : db;
   const m = planByDate(src);
-  const out = new Map();
-  days.forEach(d => { if (m.has(d)) out.set(d, Object.assign({ drafted: false }, m.get(d))); });
-  if (draft && draft.ws === ws) {
+  const out = new Map(), lanes = { LUNCH: new Map(), CAKE: new Map() };
+  days.forEach(d => {
+    if (m.has(d)) out.set(d, Object.assign({ drafted: false }, m.get(d)));
+    ['LUNCH', 'CAKE'].forEach(l => { const p = laneAt(src, d, l); if (p) lanes[l].set(d, Object.assign({ drafted: false }, p)); });
+  });
+  if (isDraft) {
     draft.blocked.forEach((note, d) => out.set(d, { date: d, type: 'BLOCKED', note, drafted: true, extraBlocked: true }));
     draft.drafts.forEach(x => { if (days.includes(x.date)) out.set(x.date, Object.assign({ drafted: true }, x)); });
+    draft.lanes.forEach(x => lanes[x.lane].set(x.date, Object.assign({ drafted: true, type: 'COOK' }, x)));
   }
+  out.lanes = lanes;
   return out;
 }
 
@@ -1364,20 +1567,21 @@ function findRecipeByName(name) {
   const n = name.trim().toLowerCase();
   return EP.live(db.recipes).find(r => r.name.trim().toLowerCase() === n) || null;
 }
-function newRecipe(name) {
+function newRecipe(name, kind) {
+  kind = kind || 'MAIN';
   const max = EP.live(db.recipes).reduce((m, r) => Math.max(m, r.sortOrder || 0), 0);
-  return EP.touch({ id: EP.uuid(), name: name.trim().slice(0, 120), inRotation: true, weight: 1,
-    servings: db.settings.portionsPerDay, daysOverride: null, sortOrder: max + 1, notes: '', instructions: '',
+  return EP.touch({ id: EP.uuid(), name: name.trim().slice(0, 120), kind, seasonMonths: null, inRotation: true, weight: 1,
+    servings: kind === 'CAKE' ? 12 : db.settings.portionsPerDay, daysOverride: null, sortOrder: max + 1, notes: '', instructions: '',
     prepTimeMinutes: null, tags: [], archivedAt: null, deleted: false, images: [], ingredients: [] });
 }
 /* Schnellerfassung – liefert {added, restored, skipped} */
-function quickAdd(lines) {
+function quickAdd(lines, kind) {
   const res = { added: 0, restored: 0, skipped: 0 };
   lines.map(l => l.replace(/^[-*•\d.)\s]+/, '').trim()).filter(Boolean).forEach(name => {
     const ex = findRecipeByName(name);
     if (ex && !ex.archivedAt) { res.skipped++; return; }
     if (ex) { ex.archivedAt = null; ex.inRotation = true; EP.touch(ex); EP.syncRecipeIntoCycles(db, ex, rng); res.restored++; return; }
-    const r = newRecipe(name);
+    const r = newRecipe(name, kind);
     db.recipes.push(r);
     EP.syncRecipeIntoCycles(db, r, rng);
     res.added++;
@@ -1393,8 +1597,9 @@ function findIngredient(name) {
   const n = name.trim().toLowerCase();
   return EP.live(db.ingredients).find(i => i.name.toLowerCase() === n) || null;
 }
-function createIngredient(name, category, unit) {
-  const i = EP.touch({ id: EP.uuid(), name: name.trim(), category: category || 'SONSTIGES', shoppingSource: null, defaultUnit: unit || 'STUECK', deleted: false });
+function createIngredient(name, category, unit, reviewed) {
+  const i = EP.touch({ id: EP.uuid(), name: name.trim(), category: category || EP.guessCategory(name), shoppingSource: null,
+    defaultUnit: unit || 'STUECK', reviewed: !!reviewed, deleted: false });
   db.ingredients.push(i);
   return i;
 }
@@ -1445,19 +1650,19 @@ async function importData(json, mode) {
   EP.live(src.ingredients).forEach(i => {
     const ex = findIngredient(i.name);
     if (ex) idMap.set(i.id, ex.id);
-    else { const n = createIngredient(i.name, i.category, i.defaultUnit); n.shoppingSource = i.shoppingSource || null; idMap.set(i.id, n.id); }
+    else { const n = createIngredient(i.name, i.category, i.defaultUnit, i.reviewed !== false); n.shoppingSource = i.shoppingSource || null; idMap.set(i.id, n.id); }
   });
   let added = 0, updated = 0;
   EP.live(src.recipes).filter(r => !r.archivedAt).forEach(r => {
     const ings = r.ingredients.map(x => Object.assign({}, x, { ingredientId: idMap.get(x.ingredientId) })).filter(x => x.ingredientId);
     const ex = findRecipeByName(r.name);
     if (ex) {
-      Object.assign(ex, { servings: r.servings, weight: r.weight, daysOverride: r.daysOverride, notes: r.notes, instructions: r.instructions,
+      Object.assign(ex, { kind: r.kind || 'MAIN', seasonMonths: r.seasonMonths || null, servings: r.servings, weight: r.weight, daysOverride: r.daysOverride, notes: r.notes, instructions: r.instructions,
         prepTimeMinutes: r.prepTimeMinutes, tags: r.tags, ingredients: ings, images: r.images.length ? r.images : ex.images, archivedAt: null });
       EP.touch(ex); EP.syncRecipeIntoCycles(db, ex, rng); updated++;
     } else {
-      const n = newRecipe(r.name);
-      Object.assign(n, { inRotation: r.inRotation, weight: r.weight, servings: r.servings, daysOverride: r.daysOverride, notes: r.notes,
+      const n = newRecipe(r.name, r.kind);
+      Object.assign(n, { seasonMonths: r.seasonMonths || null, inRotation: r.inRotation, weight: r.weight, servings: r.servings, daysOverride: r.daysOverride, notes: r.notes,
         instructions: r.instructions, prepTimeMinutes: r.prepTimeMinutes, tags: r.tags, ingredients: ings, images: r.images });
       db.recipes.push(n); EP.syncRecipeIntoCycles(db, n, rng); added++;
     }
@@ -1479,12 +1684,14 @@ const ICON = {
 };
 const TABS = [['suggest', 'Vorschlag', ICON.plate], ['week', 'Woche', ICON.week], ['shop', 'Einkauf', ICON.cart], ['recipes', 'Rezepte', ICON.book]];
 const TITLES = { suggest: 'Als Nächstes', week: 'Wochenplan', shop: 'Einkaufsliste', recipes: 'Rezepte',
-  edit: 'Rezept', ingredients: 'Zutaten', rotation: 'Rotation', settings: 'Einstellungen', sync: 'Geräteabgleich' };
+  edit: 'Rezept', ingredients: 'Zutaten', rotation: 'Rotation', settings: 'Einstellungen', sync: 'Geräteabgleich', sources: 'Einkaufsorte' };
+const LANE_LABEL = { MAIN: 'Hauptgerichte', LUNCH: 'Mittag', CAKE: 'Kuchen' };
+let suggestLane = 'MAIN';
 
 let route = { name: 'suggest' }, stack = [];
 let weekStartISO = EP.weekStart(EP.todayISO());
 let shopRange = null;
-let recipeFilter = { q: '', status: 'all', tag: '' };
+let recipeFilter = { q: '', status: 'all', tag: '', kind: 'MAIN' };
 
 /* ---------- Hilfen ---------- */
 function notify(t) {
@@ -1537,7 +1744,7 @@ function promptSheet(title, label, value, okLabel, onOk) {
 }
 /* Startdatum wählen, mit Live-Anzeige der belegten Tage */
 function dateSheet(title, recipe, start, okLabel, onOk) {
-  const occ = new Set(EP.live(db.plan).map(p => p.date));
+  const occ = mainDates();
   const preview = d => EP.nextFreeDates(d, daysOf(recipe), occ);
   openSheet(`<h2>${esc(title)}</h2><p class="serif" style="font-size:19px;margin-top:4px">${esc(recipe.name)}</p>
     <label class="field"><span>Startdatum (Kochtag)</span><input class="in" type="date" id="dv" value="${start}"></label>
@@ -1549,13 +1756,30 @@ function dateSheet(title, recipe, start, okLabel, onOk) {
     $('[data-x=yes]', el).onclick = () => { const v = $('#dv', el).value; if (!v) return; closeSheet(); onOk(v); };
   });
 }
-/* Rezept auswählen (aktive zuerst) */
-function recipePickSheet(title, onPick) {
-  const list = liveRecipes().sort((a, b) => (b.inRotation - a.inRotation) || a.name.localeCompare(b.name, 'de'));
+/* Tag für eine Zusatzspur wählen */
+function laneDateSheet(title, recipe, lane, start, okLabel, onOk) {
+  openSheet(`<h2>${esc(title)}</h2><p class="serif" style="font-size:19px;margin-top:4px">${esc(recipe.name)}</p>
+    <label class="field"><span>Tag</span><input class="in" type="date" id="dv" value="${start}"></label>
+    <p class="hint" id="dp"></p>
+    <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">${esc(okLabel)}</button></div>`, el => {
+    const upd = () => {
+      const v = $('#dv', el).value, o = v && laneAt(db, v, lane);
+      $('#dp', el).textContent = !v ? '' : o ? `Ersetzt „${(recipeById(o.recipeId) || {}).name || ''}“ am ${EP.weekday(v)} ${EP.fmtShort(v)}.` : `${LANE_LABEL[lane]} am ${EP.weekdayLong(v)}, ${EP.fmtShort(v)}`;
+    };
+    $('#dv', el).oninput = upd; upd();
+    $('[data-x=no]', el).onclick = closeSheet;
+    $('[data-x=yes]', el).onclick = () => { const v = $('#dv', el).value; if (!v) return; closeSheet(); onOk(v); };
+  });
+}
+/* Rezept auswählen (aktive zuerst), beschränkt auf eine Art */
+function recipePickSheet(title, onPick, kind) {
+  kind = kind || 'MAIN';
+  const m = EP.monthOf(EP.todayISO());
+  const list = liveRecipes().filter(r => EP.laneOf(r) === kind).sort((a, b) => (b.inRotation - a.inRotation) || a.name.localeCompare(b.name, 'de'));
   const html = list.map(r => `<button class="opt" data-id="${r.id}"><span class="grow"><span class="serif" style="font-size:17px">${esc(r.name)}</span>
-    <small>${r.inRotation ? 'In Rotation' : 'Pausiert'} · ${daysLabel(daysOf(r))}</small></span></button>`).join('');
+    <small>${r.inRotation ? 'In Rotation' : 'Pausiert'}${kind === 'MAIN' ? ' · ' + daysLabel(daysOf(r)) : ''}${EP.inSeason(r, m) ? '' : ' · außerhalb der Saison (' + EP.seasonLabel(r) + ')'}</small></span></button>`).join('');
   openSheet(`<h2>${esc(title)}</h2><input class="in" id="ps" placeholder="Rezept suchen" style="margin-top:10px">
-    <div class="pick" id="pl">${html || '<p class="empty">Noch keine Rezepte angelegt.</p>'}</div>`, el => {
+    <div class="pick" id="pl">${html || `<p class="empty">Noch keine ${esc(LANE_LABEL[kind])}-Rezepte angelegt.</p>`}</div>`, el => {
     $('#ps', el).oninput = e => { const q = e.target.value.toLowerCase(); $$('.opt', el).forEach(b => b.classList.toggle('hidden', !b.textContent.toLowerCase().includes(q))); };
     $$('.opt', el).forEach(b => b.onclick = () => { closeSheet(); onPick(b.dataset.id); });
   });
@@ -1601,31 +1825,51 @@ function rerender() {
     ? `<a class="iconbtn" href="index.html" aria-label="Zur Übersicht der Apps">${ICON.back}</a>`
     : `<button class="iconbtn" data-act="back" aria-label="Zurück">${ICON.back}</button>`;
   $('#tabs').innerHTML = TABS.map(([k, l, ic]) => `<button data-tab="${k}" ${route.name === k || (!isTab && stack[0] && stack[0].name === k) ? 'aria-current="page"' : ''}>${ic}${l}</button>`).join('');
-  const views = { suggest: vSuggest, week: vWeek, shop: vShop, recipes: vRecipes, edit: vEdit, ingredients: vIngredients, rotation: vRotation, settings: vSettings, sync: vSync };
+  const views = { suggest: vSuggest, week: vWeek, shop: vShop, recipes: vRecipes, edit: vEdit, ingredients: vIngredients, rotation: vRotation, settings: vSettings, sync: vSync, sources: vSources };
   const main = $('#main');
   main.innerHTML = (views[route.name] || vSuggest)();
   const binder = BIND[route.name]; if (binder) binder(main);
   renderSyncPill();
+  const n = unreviewedCount(), gb = $('#gearbadge');
+  if (gb) { gb.textContent = n; gb.classList.toggle('hidden', !n); $('#gear').setAttribute('aria-label', n ? `Einstellungen – ${n} neue Zutat${n === 1 ? '' : 'en'} zuordnen` : 'Einstellungen'); }
   Images.hydrate(main);
 }
 
 /* ---------- Vorschlag (5.3) ---------- */
+function laneSeg(cur, act) {
+  return `<div class="seg lane-seg">${EP.LANES.map(l => `<button data-act="${act}" data-arg="${l.key}" aria-pressed="${cur === l.key}">${LANE_LABEL[l.key]}</button>`).join('')}</div>`;
+}
 function vSuggest() {
-  const before = db.rotation.length;
-  const next = EP.nextEntries(db, 6, null, rng);
-  if (db.rotation.length !== before) persist();
+  const lane = suggestLane;
+  const month = EP.monthOf(EP.todayISO());
+  const sig = () => db.rotation.length + ':' + db.rotation.filter(e => e.status === 'SKIPPED').length;
+  const before = sig();
+  const next = EP.nextEntries(db, 6, null, rng, lane, month);
+  if (sig() !== before) persist();
+  const seg = laneSeg(lane, 'slane');
+  const laneHint = lane === 'MAIN' ? '' : laneDays(lane).length
+    ? `<p class="hint" style="text-align:center">${lane === 'LUNCH' ? 'Mittagessen' : 'Kuchen'} ist eingeplant für: ${laneDays(lane).slice().sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7)).map(d => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][d]).join(', ')} – änderbar in den Einstellungen.</p>`
+    : `<p class="hint" style="text-align:center">Für ${lane === 'LUNCH' ? 'Mittagessen' : 'Kuchen'} sind keine Tage gewählt – das stellst du in den Einstellungen ein.</p>`;
   if (!next.length) {
-    return `<div class="empty"><p class="serif">Noch nichts in der Rotation</p><p>Leg deine Gerichte im Reiter Rezepte an – ein Name reicht für den Anfang.</p>
-      <div class="btns"><button class="btn primary" data-act="tab" data-arg="recipes">Rezepte anlegen</button>
-      ${liveRecipes().length ? '' : '<button class="btn" data-act="seed">Beispielrezepte laden</button>'}</div></div>`;
+    const hasAny = liveRecipes().some(r => EP.laneOf(r) === lane);
+    const txt = { MAIN: ['Noch nichts in der Rotation', 'Leg deine Gerichte im Reiter Rezepte an – ein Name reicht für den Anfang.'],
+      LUNCH: ['Noch keine Mittagsgerichte', 'Kleine Gerichte fürs Wochenende, z. B. Brot mit Spinat und Ei oder Nudelsuppe. Sie haben ihre eigene Rotation.'],
+      CAKE: ['Noch keine Kuchen', 'Kuchen kommen zusätzlich zum Essen dazu und haben ihre eigene Rotation.'] }[lane];
+    const allOut = hasAny && liveRecipes().filter(r => EP.laneOf(r) === lane && r.inRotation).every(r => !EP.inSeason(r, month));
+    return `${seg}<div class="empty"><p class="serif">${allOut ? 'Gerade hat nichts Saison' : txt[0]}</p><p>${allOut ? 'Alle Gerichte dieser Rotation sind auf andere Monate beschränkt.' : txt[1]}</p>
+      <div class="btns"><button class="btn primary" data-act="tabkind" data-arg="${lane}">Rezepte anlegen</button>
+      ${lane === 'MAIN' ? (liveRecipes().length ? '' : '<button class="btn" data-act="seed">Beispielrezepte laden</button>')
+        : `<button class="btn" data-act="seedlane" data-arg="${lane}">${lane === 'LUNCH' ? '6 Mittagsgerichte als Vorschlag laden' : '7 Kuchen als Vorschlag laden'}</button>`}</div></div>${laneHint}`;
   }
   const e = next[0], r = recipeById(e.recipeId), n = daysOf(r), ck = coverKey(r);
-  const prog = EP.cycleProgress(db);
+  const prog = EP.cycleProgress(db, lane);
   const occ = r.weight > 1 ? ` (${e.occurrence}/${r.weight})` : '';
-  return `<div class="plate-wrap">
-      <div class="plate">${ck ? `<img data-img="${ck}" data-thumb="0" alt="">` : `<span class="dish">${esc(r.name)}</span>`}</div>
+  const meta = lane === 'MAIN' ? `${r.servings} Portionen, reicht für ${daysLabel(n)}${occ}` : `${r.servings} ${lane === 'CAKE' ? 'Stücke' : 'Portionen'}${occ}`;
+  const season = EP.seasonLabel(r);
+  return `${seg}<div class="plate-wrap">
+      <div class="plate ${lane !== 'MAIN' ? 'plate-' + lane.toLowerCase() : ''}">${ck ? `<img data-img="${ck}" data-thumb="0" alt="">` : `<span class="dish">${esc(r.name)}</span>`}</div>
       ${ck ? `<div class="dish-under">${esc(r.name)}</div>` : ''}
-      <p class="plate-meta">${r.servings} Portionen, reicht für ${daysLabel(n)}${occ}${r.prepTimeMinutes ? `, ${r.prepTimeMinutes} min` : ''}</p>
+      <p class="plate-meta">${meta}${r.prepTimeMinutes ? `, ${r.prepTimeMinutes} min` : ''}${season ? `<br>Saison: ${season}` : ''}</p>
     </div>
     <div class="btns">
       <button class="btn primary" data-act="accept" data-arg="${e.id}">Übernehmen</button>
@@ -1635,20 +1879,23 @@ function vSuggest() {
       </div>
       <button class="btn quiet" data-act="pickself">Selbst wählen</button>
     </div>
-    ${prog ? `<div class="progress">Durchlauf ${prog.cycle} · ${prog.current} von ${prog.total} Gerichten
+    ${prog ? `<div class="progress">Durchlauf ${prog.cycle} · ${prog.current} von ${prog.total} ${lane === 'CAKE' ? 'Kuchen' : 'Gerichten'}
       <div class="progress-bar"><i style="width:${Math.round((prog.current - 1) / prog.total * 100)}%"></i></div></div>` : ''}
+    ${laneHint}
     ${next.length > 1 ? `<h3>Danach</h3><ol class="queue box">${next.slice(1, 6).map((x, i) => {
       const rr = recipeById(x.recipeId);
-      return `<li><span class="n">${i + 2}.</span><span class="nm">${esc(rr.name)}</span><span class="d">${daysLabel(daysOf(rr))}</span></li>`;
+      return `<li><span class="n">${i + 2}.</span><span class="nm">${esc(rr.name)}</span><span class="d">${lane === 'MAIN' ? daysLabel(daysOf(rr)) : ''}</span></li>`;
     }).join('')}</ol>` : ''}`;
 }
 
 /* ---------- Woche (5.4) ---------- */
+function laneVisible(lane) { return laneDays(lane).length > 0 && liveRecipes().some(r => EP.laneOf(r) === lane); }
 function vWeek() {
   const ws = weekStartISO, days = EP.weekDays(ws), today = EP.todayISO();
   const isDraft = draft && draft.ws === ws;
   const ents = weekEntries(ws);
   const kw = EP.isoWeek(ws);
+  const showLane = { LUNCH: laneVisible('LUNCH'), CAKE: laneVisible('CAKE') };
   const rows = days.map(d => {
     const p = ents.get(d);
     const cls = ['day', d === today ? 'today' : '', d < today ? 'past' : '', p && p.drafted ? 'drafted' : ''].join(' ');
@@ -1664,8 +1911,16 @@ function vWeek() {
       body = `<div class="nm">${esc(r ? r.name : 'Gelöschtes Rezept')}</div><div class="tags">${b}${carry ? '<span class="badge">Übertrag</span>' : ''}
         ${p.status === 'DONE' && p.type === 'COOK' ? '<span class="badge done">Gekocht</span>' : ''}${p.source === 'MANUAL' && p.type === 'COOK' ? '<span class="badge">Selbst gewählt</span>' : ''}</div>`;
     }
-    return `<button class="${cls}" data-act="day" data-arg="${d}"><div class="dt"><b>${EP.weekday(d)}</b><span>${EP.fmtShort(d)}</span></div>
-      <div class="what">${body}</div>${p && p.locked ? ICON.lock : ''}</button>`;
+    const laneLines = ['LUNCH', 'CAKE'].map(l => {
+      const x = ents.lanes[l].get(d);
+      if (!x && !(showLane[l] && laneActiveOn(l, d) && d >= today)) return '';
+      const r = x && recipeById(x.recipeId);
+      return `<button class="laneline ${x && x.drafted ? 'drafted' : ''} lane-${l.toLowerCase()}" data-act="lane" data-arg="${d}|${l}">
+        <span class="lanelbl">${LANE_LABEL[l]}</span><span class="nm ${x ? '' : 'free'}">${x ? esc(r ? r.name : 'Gelöschtes Rezept') : 'Frei'}</span>
+        ${x && x.status === 'DONE' ? `<span class="badge done">${l === 'CAKE' ? 'Gebacken' : 'Gekocht'}</span>` : ''}</button>`;
+    }).join('');
+    return `<div class="${cls}"><button class="daymain" data-act="day" data-arg="${d}"><div class="dt"><b>${EP.weekday(d)}</b><span>${EP.fmtShort(d)}</span></div>
+      <div class="what">${body}</div>${p && p.locked ? ICON.lock : ''}</button>${laneLines}</div>`;
   }).join('');
   return `<div class="weekhead">
       <button class="iconbtn" data-act="wk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
@@ -1678,6 +1933,43 @@ function vWeek() {
     ${isDraft
       ? `<div class="btns two"><button class="btn" data-act="discard">Verwerfen</button><button class="btn primary" data-act="commit">Plan übernehmen</button></div>`
       : `<div class="btns two"><button class="btn primary" data-act="fill">Woche füllen</button><button class="btn" data-act="toshop">Einkaufsliste</button></div>`}`;
+}
+/* Aktionen für Mittag / Kuchen an einem Tag */
+function laneActions(d, lane) {
+  const ws = weekStartISO, isDraft = draft && draft.ws === ws;
+  const x = weekEntries(ws).lanes[lane].get(d);
+  const r = x && recipeById(x.recipeId);
+  const what = lane === 'CAKE' ? 'Kuchen' : 'Mittagessen';
+  const title = `${what} am ${EP.weekdayLong(d)}, ${EP.fmtShort(d)}`;
+  const opts = [];
+  if (isDraft) {
+    if (x && x.drafted) {
+      opts.push({ label: 'Tauschen', hint: 'Nächstes aus der ' + what + '-Rotation', run: () => { draftLaneNext(d, lane); rerender(); } });
+      opts.push({ label: 'Selbst wählen', run: () => recipePickSheet(what + ' wählen', id => { draftLanePick(d, lane, id); rerender(); }, lane) });
+      opts.push({ label: 'Diesmal kein ' + what, danger: true, run: () => { draftLaneRemove(d, lane); rerender(); } });
+    } else if (!x) {
+      opts.push({ label: 'Nächstes aus der Rotation', run: () => { draftLaneNext(d, lane); rerender(); } });
+      opts.push({ label: 'Selbst wählen', run: () => recipePickSheet(what + ' wählen', id => { draftLanePick(d, lane, id); rerender(); }, lane) });
+    } else opts.push({ label: 'Bleibt unverändert', hint: 'Bereits gekocht oder fixiert', run: () => {} });
+    return optionsSheet(title, r ? esc(r.name) : '', opts);
+  }
+  if (!x) {
+    opts.push({ label: 'Nächstes aus der Rotation', run: () => {
+      const e = EP.nextEntries(db, 1, null, rng, lane, EP.monthOf(d))[0];
+      if (!e) return notify('Keine Gerichte in dieser Rotation.');
+      placeLane(d, lane, e.recipeId, e.id); change('Eingeplant.');
+    } });
+    opts.push({ label: 'Selbst wählen', run: () => recipePickSheet(what + ' wählen', id => { const e = EP.manualPickEntry(db, id); placeLane(d, lane, id, e ? e.id : null); change('Eingeplant.'); }, lane) });
+  } else {
+    if (x.status !== 'DONE') opts.push({ label: lane === 'CAKE' ? 'Als gebacken markieren' : 'Als gekocht markieren', run: () => { markCooked(x.blockId); change('Erledigt.'); } });
+    if (r && (r.instructions || r.ingredients.length)) opts.push({ label: 'Kochansicht öffnen', run: () => openCook(r.id) });
+    if (d >= EP.todayISO()) {
+      opts.push({ label: 'Tauschen', hint: 'Nächstes aus der ' + what + '-Rotation', run: () => { const nr = swapLane(d, lane); change(nr ? 'Getauscht gegen ' + nr.name + '.' : 'Keine weiteren Gerichte in dieser Rotation.'); } });
+      opts.push({ label: 'Selbst wählen', run: () => recipePickSheet(what + ' wählen', id => { const e = EP.manualPickEntry(db, id); placeLane(d, lane, id, e ? e.id : null); change('Ersetzt.'); }, lane) });
+    }
+    opts.push({ label: 'Aus dem Plan entfernen', danger: true, hint: 'Kommt wieder nach vorne in die Rotation', run: () => { removeBlock(x.blockId, true); change('Entfernt.'); } });
+  }
+  optionsSheet(title, r ? esc(r.name) : '', opts);
 }
 function dayActions(d) {
   const ws = weekStartISO, today = EP.todayISO();
@@ -1701,7 +1993,7 @@ function dayActions(d) {
   }
   if (!p) {
     opts.push({ label: 'Nächstes aus der Rotation', run: () => {
-      const e = EP.nextEntries(db, 1, null, rng)[0];
+      const e = EP.nextEntries(db, 1, null, rng, 'MAIN', EP.monthOf(d))[0];
       if (!e) return notify('Keine Gerichte in der Rotation.');
       placeBlock(d, { recipeId: e.recipeId, rotationEntryId: e.id }); change('Eingeplant.');
     } });
@@ -1741,15 +2033,23 @@ function dayActions(d) {
 function vShop() {
   if (!shopRange) shopRange = { from: weekStartISO, to: EP.addDays(weekStartISO, 6) };
   const { from, to } = shopRange;
+  const isWeek = EP.weekStart(from) === from && EP.addDays(from, 6) === to;
   const list = EP.buildShoppingList(db, from, to);
   const showQ = db.settings.marketListShowQuantities;
   const item = (r, withAmt) => `<label class="item ${r.checked ? 'checked' : ''}"><input type="checkbox" data-check="${esc(r.key)}" ${r.checked ? 'checked' : ''}>
     <span class="nm">${esc(r.name)}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}</label>`;
   const empty = !list.recipes.length;
-  return `<div class="box noprint"><div class="row">
-      <label class="grow"><span class="hint" style="margin:0 0 4px;display:block">Von</span><input class="in" type="date" id="sf" value="${from}"></label>
-      <label class="grow"><span class="hint" style="margin:0 0 4px;display:block">Bis</span><input class="in" type="date" id="st" value="${to}"></label></div></div>
-    <h2 style="margin-top:18px">Einkauf ${EP.fmtRange(from, to)}</h2>
+  return `<div class="weekhead noprint">
+      <button class="iconbtn" data-act="shopwk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
+      <div class="kw"><b>${isWeek ? 'KW ' + EP.isoWeek(from) : 'Eigener Zeitraum'}</b><span>${EP.fmtRange(from, to)}</span></div>
+      <button class="iconbtn" data-act="shopwk" data-arg="7" aria-label="Nächste Woche" style="transform:scaleX(-1)">${ICON.back}</button>
+    </div>
+    <details class="box noprint rangebox" ${isWeek ? '' : 'open'}><summary>Zeitraum anpassen</summary>
+      <div class="dategrid">
+        <label><span class="hint">Von</span><input class="in" type="date" id="sf" value="${from}"></label>
+        <label><span class="hint">Bis</span><input class="in" type="date" id="st" value="${to}"></label>
+      </div></details>
+    <h2 style="margin-top:18px" class="printonly-h">Einkauf ${EP.fmtRange(from, to)}</h2>
     <p class="sub">${empty ? 'In diesem Zeitraum ist nichts gekocht geplant.' : 'Für: ' + esc(list.recipes.join(', '))}</p>
     ${list.warnings.length ? `<ul class="box warnbox" style="margin-top:12px">${list.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
     ${list.market.length ? `<section class="shopsec box"><h3>Markt <small>${list.market.length}</small></h3>${list.market.map(r => item(r, showQ)).join('')}</section>` : ''}
@@ -1781,6 +2081,7 @@ function shopText() {
 /* ---------- Rezepte (Fundus) ---------- */
 function recipeMatches(r) {
   const f = recipeFilter;
+  if (EP.laneOf(r) !== f.kind) return false;
   if (f.status === 'active' && !r.inRotation) return false;
   if (f.status === 'paused' && r.inRotation) return false;
   if (f.tag && !(r.tags || []).includes(f.tag)) return false;
@@ -1792,12 +2093,15 @@ function recipeMatches(r) {
   return true;
 }
 function vRecipes() {
-  const all = liveRecipes();
+  const kind = recipeFilter.kind;
+  const all = liveRecipes().filter(r => EP.laneOf(r) === kind);
   const tags = [...new Set(all.flatMap(r => r.tags || []))].sort((a, b) => a.localeCompare(b, 'de'));
   const list = all.filter(recipeMatches).sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const pp = db.settings.portionsPerDay;
   const seg = (k, l) => `<button data-act="rstatus" data-arg="${k}" aria-pressed="${recipeFilter.status === k}">${l}</button>`;
-  return `<div class="quick"><input class="in" id="qa" placeholder="Rezeptname eingeben" enterkeyhint="done" autocomplete="off">
+  const ph = { MAIN: 'Rezeptname eingeben', LUNCH: 'z. B. Nudelsuppe', CAKE: 'z. B. Apfelkuchen' }[kind];
+  return `${laneSeg(kind, 'rkind')}
+    <div class="quick" style="margin-top:12px"><input class="in" id="qa" placeholder="${ph}" enterkeyhint="done" autocomplete="off">
       <button class="btn primary" data-act="qa" aria-label="Rezept anlegen">+</button></div>
     <p class="hint">Enter legt das Rezept an. Mehrere Zeilen einfügen legt mehrere Rezepte an.</p>
     ${all.length ? `<input class="in" id="rq" placeholder="Suchen nach Name, Tag oder Zutat" value="${esc(recipeFilter.q)}" style="margin-top:14px">
@@ -1809,33 +2113,35 @@ function vRecipes() {
         <button class="head" data-act="edit" data-arg="${r.id}" style="width:100%">
           ${ck ? `<img class="thumb" data-img="${ck}" data-thumb="1" alt="">` : ''}
           <span class="grow"><span class="nm" style="display:block">${esc(r.name)}</span>
-          <span class="meta" style="display:block">${r.servings} Portionen = ${daysLabel(n)}${r.daysOverride ? ' (fest)' : ''}${r.ingredients.length ? `, ${r.ingredients.length} Zutaten` : ''}</span></span>
+          <span class="meta" style="display:block">${kind === 'MAIN' ? `${r.servings} Portionen = ${daysLabel(n)}${r.daysOverride ? ' (fest)' : ''}` : `${r.servings} ${kind === 'CAKE' ? 'Stücke' : 'Portionen'}`}${r.ingredients.length ? `, ${r.ingredients.length} Zutaten` : ''}${EP.seasonLabel(r) ? `<br>Saison: ${EP.seasonLabel(r)}` : ''}</span></span>
         </button>
         <div class="ctrl">
           <label><span class="switch"><input type="checkbox" data-rot="${r.id}" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></span>${r.inRotation ? 'In Rotation' : 'Pausiert'}</label>
           <div class="wstep"><button data-act="w" data-arg="${r.id}|-1" aria-label="Seltener">−</button><output>×${r.weight}</output><button data-act="w" data-arg="${r.id}|1" aria-label="Häufiger">+</button></div>
         </div></div>`;
-    }).join('') || (all.length ? '<p class="empty">Keine Treffer.</p>' : `<div class="empty"><p class="serif">Dein Fundus ist leer</p>
-      <p>Tipp oben einen Gerichtnamen ein – Portionen, Zutaten und Anleitung kannst du später ergänzen.</p>
-      <div class="btns"><button class="btn" data-act="seed">Beispielrezepte laden</button></div></div>`)}</div>
-    ${all.length ? `<p class="hint" style="text-align:center">${all.filter(r => r.inRotation).length} von ${all.length} in Rotation, ${pp} Portionen pro Tag</p>` : ''}`;
+    }).join('') || (all.length ? '<p class="empty">Keine Treffer.</p>' : `<div class="empty"><p class="serif">${{ MAIN: 'Dein Fundus ist leer', LUNCH: 'Noch keine Mittagsgerichte', CAKE: 'Noch keine Kuchen' }[kind]}</p>
+      <p>${{ MAIN: 'Tipp oben einen Gerichtnamen ein – Portionen, Zutaten und Anleitung kannst du später ergänzen.', LUNCH: 'Kleine Gerichte fürs Wochenende mit eigener Rotation.', CAKE: 'Kuchen kommen zusätzlich zum Essen dazu und haben ihre eigene Rotation.' }[kind]}</p>
+      <div class="btns">${kind === 'MAIN' ? (liveRecipes().some(r => EP.laneOf(r) === 'MAIN') ? '' : '<button class="btn" data-act="seed">Beispielrezepte laden</button>')
+        : `<button class="btn" data-act="seedlane" data-arg="${kind}">${kind === 'LUNCH' ? '6 Mittagsgerichte als Vorschlag laden' : '7 Kuchen als Vorschlag laden'}</button>`}</div></div>`)}</div>
+    ${all.length ? `<p class="hint" style="text-align:center">${all.filter(r => r.inRotation).length} von ${all.length} in Rotation${kind === 'MAIN' ? `, ${pp} Portionen pro Tag` : ''}</p>` : ''}`;
 }
 
 /* ---------- Rezept bearbeiten ---------- */
 let editState = null;
-function openEdit(id) {
-  const r = id ? recipeById(id) : newRecipe('');
+function openEdit(id, kind) {
+  const r = id ? recipeById(id) : newRecipe('', kind);
   editState = { isNew: !id, dirty: false, r: deep(r),
     rows: r.ingredients.slice().sort((a, b) => a.sortOrder - b.sortOrder).map(x => {
       const i = ingById(x.ingredientId);
-      return { name: i ? i.name : '', qty: x.quantity == null ? '' : EP.fmtNum(x.quantity), unit: x.unit || '', note: x.note || '', cat: 'SONSTIGES' };
+      return { name: i ? i.name : '', qty: x.quantity == null ? '' : EP.fmtNum(x.quantity), unit: x.unit || '', note: x.note || '', cat: i ? i.category : 'SONSTIGES' };
     }) };
   go('edit');
 }
 function vEdit() {
   if (!editState) return '<p class="empty">Kein Rezept geöffnet.</p>';
   const r = editState.r, s = db.settings;
-  const n = EP.daysFor(r, s), hint = EP.daysHint(r, s);
+  const hint = EP.daysHint(r, s), kind = EP.laneOf(r), isMain = kind === 'MAIN';
+  const allYear = !r.seasonMonths || !r.seasonMonths.length || r.seasonMonths.length >= 12;
   const unitOpts = sel => `<option value="" ${!sel ? 'selected' : ''}>—</option>` + EP.UNIT_ORDER.map(u => `<option value="${u}" ${sel === u ? 'selected' : ''}>${EP.UNITS[u].s}</option>`).join('');
   const catOpts = sel => EP.CATEGORIES.map(c => `<option value="${c.key}" ${sel === c.key ? 'selected' : ''}>${c.label}</option>`).join('');
   const rows = editState.rows.map((x, i) => {
@@ -1858,15 +2164,22 @@ function vEdit() {
   const imgs = (r.images || []).slice().sort((a, b) => a.sortOrder - b.sortOrder);
   return `<datalist id="inglist">${EP.live(db.ingredients).sort((a, b) => a.name.localeCompare(b.name, 'de')).map(i => `<option value="${esc(i.name)}">`).join('')}</datalist>
     <label class="field" style="margin-top:0"><span>Name</span><input class="in nameinput" id="e-name" value="${esc(r.name)}" maxlength="120" placeholder="z. B. Linsensuppe"></label>
-    <div class="field"><span>Portionen pro Zubereitung</span>
+    <div class="field"><span>Art</span>
+      <div class="seg">${EP.LANES.map(l => `<button data-act="ekind" data-arg="${l.key}" aria-pressed="${kind === l.key}">${l.short}</button>`).join('')}</div>
+      <p class="hint">${isMain ? 'Normale Mahlzeit, belegt je nach Portionen mehrere Tage.' : kind === 'LUNCH' ? 'Zusätzliches Mittagessen an den eingestellten Tagen, eigene Rotation.' : 'Kommt zusätzlich zum Essen dazu, eigene Rotation.'}</p></div>
+    <div class="field"><span>${kind === 'CAKE' ? 'Stücke' : 'Portionen pro Zubereitung'}</span>
       <div class="stepper"><button data-act="serv" data-arg="-1" aria-label="Weniger">−</button><output id="e-serv">${r.servings}</output><button data-act="serv" data-arg="1" aria-label="Mehr">+</button></div>
-      <p class="live" id="e-live">${liveDaysText(r)}</p>
-      <p class="hint" id="e-hint">${esc(hint)}</p></div>
-    <label class="field"><span>Tage fest vorgeben (optional)</span><input class="in" id="e-days" inputmode="numeric" value="${r.daysOverride || ''}" placeholder="leer = aus den Portionen berechnen"></label>
+      ${isMain ? `<p class="live" id="e-live">${liveDaysText(r)}</p><p class="hint" id="e-hint">${esc(hint)}</p>` : ''}</div>
+    ${isMain ? `<label class="field"><span>Tage fest vorgeben (optional)</span><input class="in" id="e-days" inputmode="numeric" value="${r.daysOverride || ''}" placeholder="leer = aus den Portionen berechnen"></label>` : ''}
+    <div class="field"><div class="row"><span class="grow" style="margin:0;color:var(--ink);font-weight:600">Ganzjährig vorschlagen</span>
+      <label class="switch"><input type="checkbox" id="e-allyear" ${allYear ? 'checked' : ''} aria-label="Ganzjährig vorschlagen"><i></i></label></div>
+      ${allYear ? '' : `<p class="hint" style="margin:8px 0 6px">Nur in diesen Monaten vorschlagen:</p>
+      <div class="months">${EP.MONTHS.map((m, i) => `<button class="chip" data-act="emonth" data-arg="${i + 1}" aria-pressed="${r.seasonMonths.includes(i + 1)}">${m}</button>`).join('')}</div>`}
+    </div>
     <div class="field"><span>Wie oft pro Durchlauf</span>
       <div class="stepper"><button data-act="ew" data-arg="-1" aria-label="Seltener">−</button><output>×${r.weight}</output><button data-act="ew" data-arg="1" aria-label="Häufiger">+</button></div></div>
-    <div class="field row"><span class="grow" style="margin:0;color:var(--ink);font-weight:600">In Rotation</span>
-      <label class="switch"><input type="checkbox" id="e-rot" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></label></div>
+    <div class="field"><div class="row"><span class="grow" style="margin:0;color:var(--ink);font-weight:600">In Rotation</span>
+      <label class="switch"><input type="checkbox" id="e-rot" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></label></div></div>
 
     <h3>Zutaten</h3>
     <p class="hint" style="margin-top:0">Mengen gelten für die ganze Zubereitung. Ohne Menge = nach Geschmack.</p>
@@ -1899,7 +2212,7 @@ function readEditForm() {
   const r = editState.r;
   const v = id => ($('#' + id) || {}).value;
   if ($('#e-name')) r.name = v('e-name');
-  const d = parseInt(v('e-days'), 10); r.daysOverride = d > 0 ? d : null;
+  if ($('#e-days')) { const d = parseInt(v('e-days'), 10); r.daysOverride = d > 0 ? d : null; }
   if ($('#e-rot')) r.inRotation = $('#e-rot').checked;
   r.instructions = v('e-ins') || '';
   const t = parseInt(v('e-time'), 10); r.prepTimeMinutes = t > 0 ? t : null;
@@ -1915,6 +2228,8 @@ function saveEdit() {
   const e = editState, r = e.r;
   r.name = r.name.trim();
   if (!r.name) return notify('Bitte einen Namen eingeben.');
+  if (r.seasonMonths && (!r.seasonMonths.length || r.seasonMonths.length >= 12)) r.seasonMonths = null;
+  if (EP.laneOf(r) !== 'MAIN') r.daysOverride = null;
   const dup = findRecipeByName(r.name);
   if (dup && dup.id !== r.id && !dup.archivedAt) return notify('Ein Rezept mit diesem Namen gibt es schon.');
   // Zutaten auflösen, unbekannte anlegen
@@ -1991,7 +2306,7 @@ function vIngredients() {
       const items = all.filter(i => i.category === c.key).sort((a, b) => a.name.localeCompare(b.name, 'de'));
       if (!items.length) return '';
       return `<h3>${esc(c.label)}</h3><div class="box">${items.map(i => `<button class="item" data-act="ing" data-arg="${i.id}">
-        <span class="nm">${esc(i.name)}</span><span class="amt">${srcLabel[EP.sourceOf(i)]}${i.shoppingSource ? ' (angepasst)' : ''}</span></button>`).join('')}</div>`;
+        <span class="nm">${esc(i.name)}</span><span class="amt">${srcLabel[EP.sourceOf(i, db.settings)]}${i.shoppingSource ? ' (angepasst)' : ''}</span></button>`).join('')}</div>`;
     }).join('') || '<p class="empty">Noch keine Zutaten. Sie entstehen automatisch, wenn du sie in einem Rezept einträgst.</p>'}`;
 }
 function ingredientSheet(id) {
@@ -2036,16 +2351,17 @@ function ingredientSheet(id) {
 /* ---------- Rotation ---------- */
 function vRotation() {
   const before = db.rotation.length;
-  EP.nextEntries(db, 1, null, rng);
+  EP.LANES.forEach(l => EP.nextEntries(db, 1, null, rng, l.key, EP.monthOf(EP.todayISO())));
   if (db.rotation.length !== before) persist();
-  const cycles = EP.openCycles(db);
   const stLabel = { PENDING: ['Offen', ''], PLANNED: ['Geplant', 'cook'], DONE: ['Gekocht', 'done'], SKIPPED: ['Ausgelassen', 'block'] };
   const fixed = db.settings.rotationMode === 'FIXED';
   const actives = EP.activeRecipes(db).sort((a, b) => a.sortOrder - b.sortOrder);
-  return (cycles.length ? cycles.map(c => {
-    const es = EP.cycleEntries(db, c);
-    return `<h3>Durchlauf ${c}</h3><div class="box">${es.map(e => {
-      const r = recipeById(e.recipeId), [l, cls] = stLabel[e.status];
+  const allCycles = EP.LANES.flatMap(l => EP.openCycles(db, l.key).map(c => [l.key, c]));
+  return (allCycles.length ? allCycles.map(([lane, c]) => {
+    const es = EP.cycleEntries(db, c, lane);
+    return `<h3>${LANE_LABEL[lane]} · Durchlauf ${c}</h3><div class="box">${es.map(e => {
+      const r = recipeById(e.recipeId), [l0, cls] = stLabel[e.status];
+      const l = e.status === 'SKIPPED' && e.skipReason === 'SEASON' ? 'Keine Saison' : l0;
       return `<div class="item"><span class="nm serif" style="font-size:17px">${esc(r ? r.name : '–')}${r && r.weight > 1 ? ` <span class="sub">(${e.occurrence}/${r.weight})</span>` : ''}</span>
         <span class="badge ${cls}">${l}</span>
         ${e.status === 'PENDING' ? `<button class="btn quiet small" data-act="rpost" data-arg="${e.id}">Später</button><button class="btn quiet small" data-act="rskip" data-arg="${e.id}">Auslassen</button>` : ''}</div>`;
@@ -2071,8 +2387,13 @@ function vSettings() {
       <div><b>Reihenfolge der Rotation</b><div class="seg" style="margin-top:8px">${segb('rotationMode', 'SHUFFLE', 'Jedes Mal neu mischen')}${segb('rotationMode', 'FIXED', 'Feste Reihenfolge')}</div></div>
       <div class="row"><span class="grow"><b>Marktliste mit Mengen</b></span><label class="switch"><input type="checkbox" id="s-mq" ${s.marketListShowQuantities ? 'checked' : ''} aria-label="Marktliste mit Mengen"><i></i></label></div>
     </div>
+    <h3>Zusätzliche Mahlzeiten</h3>
+    <div class="box stack">${['LUNCH', 'CAKE'].map(l => `<div><b>${l === 'LUNCH' ? 'Mittagessen an' : 'Kuchen an'}</b>
+      <div class="chips">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="chip" data-act="laneday" data-arg="${l}|${d}" aria-pressed="${laneDays(l).includes(d)}">${['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][d]}</button>`).join('')}</div></div>`).join('')}
+      <p class="hint" style="margin:0">Mittagessen und Kuchen kommen zusätzlich zum Hauptgericht dazu und haben jeweils eine eigene Rotation.</p></div>
     <h3>Verwalten</h3>
-    <div class="box"><button class="item" data-act="to" data-arg="ingredients"><span class="nm">Zutaten</span><span class="amt">${EP.live(db.ingredients).length}</span></button>
+    <div class="box"><button class="item" data-act="to" data-arg="sources"><span class="nm">Einkaufsorte<span class="hint" style="display:block;margin:0">Was du auf dem Markt und was im Supermarkt kaufst</span></span>${unreviewedCount() ? `<span class="countbadge">${unreviewedCount()}</span>` : ''}</button>
+      <button class="item" data-act="to" data-arg="ingredients"><span class="nm">Zutaten</span><span class="amt">${EP.live(db.ingredients).length}</span></button>
       <button class="item" data-act="to" data-arg="rotation"><span class="nm">Rotation ansehen</span></button>
       <button class="item" data-act="to" data-arg="sync"><span class="nm">Geräteabgleich<span class="hint" style="display:block;margin:0">${syncTxt}</span></span></button></div>
     <h3>Datensicherung</h3>
@@ -2085,6 +2406,32 @@ function vSettings() {
     </div>
     <h3>Haushalt ${esc(db.household ? db.household.name : '')}</h3>
     <div class="box stack"><button class="btn" data-act="chpw">Passwort ändern</button><button class="btn danger" data-act="logout">Abmelden</button></div>`;
+}
+
+/* ---------- Einkaufsorte ---------- */
+const SRC = [['MARKT', 'Markt'], ['SUPERMARKT', 'Supermarkt'], ['VORRAT', 'Vorrat']];
+function srcSeg(act, id, cur, extraCls) {
+  return `<div class="seg srcseg ${extraCls || ''}">${SRC.map(([k, l]) => `<button data-act="${act}" data-arg="${id}|${k}" aria-pressed="${cur === k}">${l}</button>`).join('')}</div>`;
+}
+function vSources() {
+  const s = db.settings;
+  const ings = EP.live(db.ingredients).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  const fresh = ings.filter(i => i.reviewed === false);
+  const row = i => `<div class="srcrow"><div class="row"><span class="grow nm">${esc(i.name)}</span>
+      <span class="amt">${esc((EP.CAT[i.category] || EP.CAT.SONSTIGES).label)}${i.shoppingSource ? ' · angepasst' : ''}</span></div>
+      ${srcSeg('src', i.id, EP.sourceOf(i, s))}</div>`;
+  return `<p class="sub">Lege fest, was du auf dem Markt kaufst und was im Supermarkt. „Vorrat“ heißt: meist zu Hause, nur prüfen.</p>
+    ${fresh.length ? `<h3>Neu hinzugekommen (${fresh.length})</h3><div class="box newbox">${fresh.map(row).join('')}
+      <button class="btn primary" data-act="srcok" style="margin-top:12px">${fresh.length === 1 ? 'Passt so' : 'Alle passen so'}</button></div>` : ''}
+    <h3>Nach Kategorie</h3>
+    <p class="hint" style="margin-top:0">Gilt für alle Zutaten der Kategorie, die du nicht einzeln geändert hast.</p>
+    <div class="box">${EP.CATEGORIES.map(c => `<div class="srcrow"><div class="row"><span class="grow nm">${esc(c.label)}</span></div>
+      ${srcSeg('catsrc', c.key, EP.categorySource(c.key, s))}</div>`).join('')}</div>
+    <h3>Einzelne Zutaten</h3>
+    ${ings.length ? EP.CATEGORIES.map(c => {
+      const list = ings.filter(i => i.category === c.key && i.reviewed !== false);
+      return list.length ? `<details class="box srcgroup"><summary>${esc(c.label)} <span class="amt">${list.length}</span></summary>${list.map(row).join('')}</details>` : '';
+    }).join('') : '<p class="empty">Noch keine Zutaten.</p>'}`;
 }
 
 /* ---------- Geräteabgleich ---------- */
@@ -2127,6 +2474,33 @@ async function setupSync() {
 const ACT = {
   back: () => back(),
   tab: a => go(a),
+  tabkind: a => { recipeFilter.kind = a; go('recipes'); },
+  slane: a => { suggestLane = a; rerender(); },
+  rkind: a => { recipeFilter.kind = a; recipeFilter.tag = ''; rerender(); },
+  seedlane: async lane => {
+    const res = await importData({ data: seedToDb(LANE_SAMPLES[lane], EP) }, 'merge');
+    change(`${res.added} ${lane === 'CAKE' ? 'Kuchen' : 'Mittagsgerichte'} geladen.`);
+  },
+  lane: a => { const [d, l] = a.split('|'); laneActions(d, l); },
+  shopwk: n => { const f = EP.addDays(EP.weekStart(shopRange.from), +n); shopRange = { from: f, to: EP.addDays(f, 6) }; rerender(); },
+  ekind: k => { readEditForm(); const r = editState.r; if (EP.laneOf(r) === k) return; r.kind = k; if (k === 'CAKE' && r.servings <= 4) r.servings = 12; if (k !== 'CAKE' && r.servings > 8 && editState.isNew) r.servings = db.settings.portionsPerDay; editState.dirty = true; rerender(); },
+  emonth: m => { readEditForm(); m = +m; const r = editState.r; const set = new Set(r.seasonMonths || []); set.has(m) ? set.delete(m) : set.add(m); r.seasonMonths = [...set].sort((a, b) => a - b); editState.dirty = true; rerender(); },
+  laneday: a => {
+    const [l, d] = a.split('|'); const days = new Set(laneDays(l)); days.has(+d) ? days.delete(+d) : days.add(+d);
+    db.settings.lanes = Object.assign({}, db.settings.lanes, { [l]: { days: [...days] } }); EP.touch(db.settings); change();
+  },
+  src: a => {
+    const [id, v] = a.split('|'); const i = ingById(id);
+    i.shoppingSource = v === EP.categorySource(i.category, db.settings) ? null : v; i.reviewed = true; EP.touch(i); change();
+  },
+  catsrc: a => {
+    const [cat, v] = a.split('|');
+    db.settings.categorySources = Object.assign({}, db.settings.categorySources, { [cat]: v }); EP.touch(db.settings);
+    // einzelne Abweichungen, die jetzt der Kategorie entsprechen, aufheben
+    EP.live(db.ingredients).filter(i => i.category === cat && i.shoppingSource === v).forEach(i => { i.shoppingSource = null; EP.touch(i); });
+    change();
+  },
+  srcok: () => { EP.live(db.ingredients).filter(i => i.reviewed === false).forEach(i => { i.reviewed = true; EP.touch(i); }); change('Einkaufsorte übernommen.'); },
   to: a => go(a),
   seed: async () => {
     const res = await importData({ data: seedToDb(SEED_DATA, EP) }, 'merge');
@@ -2134,7 +2508,8 @@ const ACT = {
   },
   /* Vorschlag */
   accept: id => {
-    const e = rotById(null, id), r = recipeById(e.recipeId);
+    const e = rotById(null, id), r = recipeById(e.recipeId), lane = EP.laneOf(e);
+    if (lane !== 'MAIN') return laneDateSheet('Übernehmen', r, lane, firstLaneDay(lane, EP.todayISO()), 'Übernehmen', d => { placeLane(d, lane, r.id, e.id); change('Eingeplant am ' + EP.fmtShort(d) + '.'); });
     dateSheet('Übernehmen', r, firstFreeFrom(EP.todayISO()), 'Übernehmen', d => { placeBlock(d, { recipeId: r.id, rotationEntryId: e.id }); change('Eingeplant ab ' + EP.fmtShort(d) + '.'); });
   },
   postpone: id => { EP.postpone(db, rotById(null, id)); change('Kommt später wieder dran.'); },
@@ -2143,9 +2518,10 @@ const ACT = {
     confirmSheet('Diesmal auslassen?', `„${r.name}“ wird in diesem Durchlauf übersprungen und kommt erst im nächsten wieder.`, 'Auslassen', 'Zurück', () => { EP.skipEntry(e); change('Ausgelassen.'); });
   },
   pickself: () => recipePickSheet('Selbst wählen', id => {
-    const r = recipeById(id), e = EP.manualPickEntry(db, id);
+    const r = recipeById(id), e = EP.manualPickEntry(db, id), lane = suggestLane;
+    if (lane !== 'MAIN') return laneDateSheet('Einplanen', r, lane, firstLaneDay(lane, EP.todayISO()), 'Einplanen', d => { placeLane(d, lane, id, e ? e.id : null); change('Eingeplant am ' + EP.fmtShort(d) + '.'); });
     dateSheet('Einplanen', r, firstFreeFrom(EP.todayISO()), 'Einplanen', d => { placeBlock(d, { recipeId: id, rotationEntryId: e ? e.id : null }); change('Eingeplant ab ' + EP.fmtShort(d) + '.'); });
-  }),
+  }, suggestLane),
   /* Woche */
   wk: a => { const n = +a; weekStartISO = n === 0 ? EP.weekStart(EP.todayISO()) : EP.addDays(weekStartISO, n); rerender(); },
   day: d => dayActions(d),
@@ -2172,7 +2548,7 @@ const ACT = {
   /* Rezepte */
   qa: () => {
     const inp = $('#qa'); const v = inp.value.trim(); if (!v) return;
-    const res = quickAdd([v]);
+    const res = quickAdd([v], recipeFilter.kind);
     inp.value = '';
     change(res.added ? 'Angelegt.' : res.restored ? 'Wiederhergestellt.' : 'Dieses Rezept gibt es schon.').then(() => { const i = $('#qa'); if (i) i.focus(); });
   },
@@ -2212,7 +2588,7 @@ const ACT = {
   ing: id => ingredientSheet(id),
   rpost: id => { EP.postpone(db, rotById(null, id)); change('Ans Ende verschoben.'); },
   rskip: id => { EP.skipEntry(rotById(null, id)); change('Ausgelassen.'); },
-  rreset: () => confirmSheet('Rotation neu starten?', 'Alle offenen Einträge werden verworfen und ein neuer Durchlauf gemischt. Bereits geplante Tage bleiben erhalten.', 'Neu starten', 'Abbrechen', () => { EP.resetRotation(db, rng); change('Neuer Durchlauf gestartet.'); }, true),
+  rreset: () => confirmSheet('Rotation neu starten?', 'Alle offenen Einträge werden verworfen und für Hauptgerichte, Mittag und Kuchen neu gemischt. Bereits geplante Tage bleiben erhalten.', 'Neu starten', 'Abbrechen', () => { EP.LANES.forEach(l => EP.resetRotation(db, rng, l.key, EP.monthOf(EP.todayISO()))); change('Neuer Durchlauf gestartet.'); }, true),
   sortup: id => moveSort(id, -1),
   sortdown: id => moveSort(id, 1),
   /* Einstellungen */
@@ -2292,7 +2668,7 @@ const BIND = {
       const t = (e.clipboardData || window.clipboardData).getData('text');
       if (!/\n/.test(t)) return;
       e.preventDefault();
-      const res = quickAdd(t.split(/\r?\n/));
+      const res = quickAdd(t.split(/\r?\n/), recipeFilter.kind);
       change(`${res.added} angelegt${res.restored ? `, ${res.restored} wiederhergestellt` : ''}${res.skipped ? `, ${res.skipped} schon vorhanden` : ''}.`);
     });
     const rq = $('#rq', m);
@@ -2309,11 +2685,20 @@ const BIND = {
       const name = $('[data-f=name]', rowEl).value.trim();
       const ing = name ? findIngredient(name) : null;
       $('.newcat', rowEl).classList.toggle('hidden', !name || !!ing);
+      const cat = $('[data-f=cat]', rowEl);
+      if (!ing && name && !cat.dataset.touched) cat.value = EP.guessCategory(name); // Kategorie vorschlagen
       const unit = $('[data-f=unit]', rowEl);
       if (ing && !unit.value && $('[data-f=qty]', rowEl).value.trim()) unit.value = ing.defaultUnit;
     };
     $$('[data-f=name]', m).forEach(el => { el.addEventListener('change', () => refreshRow(el)); el.addEventListener('input', () => refreshRow(el)); });
     $$('[data-f=qty]', m).forEach(el => el.addEventListener('change', () => refreshRow(el)));
+    $$('[data-f=cat]', m).forEach(el => el.addEventListener('change', () => { el.dataset.touched = '1'; }));
+    const ay = $('#e-allyear', m);
+    if (ay) ay.onchange = () => {
+      readEditForm();
+      editState.r.seasonMonths = ay.checked ? null : [EP.monthOf(EP.todayISO())];
+      editState.dirty = true; rerender();
+    };
     const days = $('#e-days', m);
     if (days) days.oninput = () => {
       const d = parseInt(days.value, 10); editState.r.daysOverride = d > 0 ? d : null;
