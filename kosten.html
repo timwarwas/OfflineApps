@@ -171,12 +171,28 @@ details.arch summary{min-height:44px;display:flex;align-items:center;font-weight
 .ctl .lab{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px}
 
 /* Blätter und Dialoge */
-#sheet-root,#ask-root{position:fixed;inset:0;z-index:50;display:none}
+#sheet-root,#ask-root,#pick-root{position:fixed;inset:0;z-index:50;display:none}
 #ask-root{z-index:60}
-#sheet-root.open,#ask-root.open{display:block}
+#pick-root{z-index:65}
+#sheet-root.open,#ask-root.open,#pick-root.open{display:block}
 .scrim{position:absolute;inset:0;background:rgba(20,16,12,.45)}
 .sheet{position:absolute;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;max-height:88vh;max-height:88dvh;overflow-y:auto;background:var(--bg);border-radius:22px 22px 0 0;padding:8px 16px calc(16px + env(safe-area-inset-bottom,0px));animation:up .2s ease-out}
-.grip{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 10px}
+.grip{height:24px;margin:-8px -16px 6px;display:flex;align-items:center;justify-content:center;cursor:grab;touch-action:none}
+.grip::before{content:"";width:40px;height:5px;border-radius:3px;background:var(--line)}
+.datebtn{display:flex;align-items:center;text-align:left;cursor:pointer;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.datebtn .muted{font-weight:400}
+.cal{padding:14px 12px}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:4px}
+.calhead b{font:700 18px var(--head)}
+.calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;margin-top:6px}
+.calgrid .wd{font-size:12px;font-weight:700;color:var(--muted);text-align:center;padding:4px 0}
+.cday{height:44px;min-width:0;border:0;border-radius:12px;background:none;color:var(--text);font:600 16px var(--body);font-variant-numeric:tabular-nums}
+.cday.today{box-shadow:inset 0 0 0 1.5px var(--petrol)}
+.cday.range{background:var(--petrol-soft);color:var(--petrol-ink)}
+.cday.sel{background:var(--petrol);color:#fff}
+.cday:disabled{opacity:.28}
+.calfoot{display:flex;gap:8px;margin-top:10px}
+.calfoot .btn{flex:1;min-height:44px;padding:0 8px;font-size:15px;margin:0}
 .sheet h2,.dialog h2{font:700 20px/1.2 var(--head);margin:4px 0 10px}
 .dialog{position:absolute;left:16px;right:16px;top:50%;transform:translateY(-50%);max-width:420px;margin:0 auto;background:var(--card);border-radius:20px;padding:18px;border:1px solid var(--line)}
 .dialog p{margin:0 0 8px;color:var(--muted)}
@@ -220,6 +236,7 @@ textarea.in.note{min-height:96px;padding:10px 12px;font:16px/1.4 var(--body);res
 <div id="app"></div>
 <div id="sheet-root"></div>
 <div id="ask-root"></div>
+<div id="pick-root"></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
 
@@ -824,9 +841,9 @@ function vGroups(){
 function vGroup(){
   const g=grp(), tab=V.tab||'overview';
   const body=tab==='settle'?vSettle(g):tab==='members'?vMembers(g):tab==='stats'?vStats(g):vOverview(g);
-  const tabs=[['overview','Ausgaben','🧾'],['stats','Auswertung','📊'],['settle','Abrechnung','⚖️'],['members','Personen','👥']];
+  const tabs=[['overview','Ausgaben','🧾'],['stats','Auswertung','📊'],['settle','Abrechnung','⚖️']];
   return `<div class="wrap">
-  <div class="top"><button class="iconbtn" data-act="goGroups">‹ Reisen</button><div class="ttl"><h1>${esc(g.name)}</h1>${fmtRange(g)?`<span class="sub">${fmtRange(g)}</span>`:''}</div><button class="iconbtn" data-act="groupMenu" aria-label="Reise bearbeiten, exportieren oder löschen">•••</button></div>
+  <div class="top">${tab==='members'?'<button class="iconbtn" data-act="tab" data-tab="overview">‹ Zurück</button>':'<button class="iconbtn" data-act="goGroups">‹ Reisen</button>'}<div class="ttl"><h1>${tab==='members'?'Personen':esc(g.name)}</h1>${tab==='members'?`<span class="sub">${esc(g.name)}</span>`:fmtRange(g)?`<span class="sub">${fmtRange(g)}</span>`:''}</div><button class="iconbtn" data-act="groupMenu" aria-label="Reise bearbeiten, exportieren oder löschen">•••</button></div>
   ${g.archived?'<div class="note">Diese Reise ist archiviert. Wiederkehrende Ausgaben werden nicht mehr ergänzt.</div>':''}
   ${body}
   </div>
@@ -957,7 +974,7 @@ function paySheet(g,o){
   const opts=sel=>g.members.map(m=>`<option value="${m.id}" ${m.id===sel?'selected':''}>${esc(m.name)}</option>`).join('');
   openSheet(`<h2>${o.id?'Zahlung bearbeiten':o.suggested?'Als bezahlt markieren':'Zahlung erfassen'}</h2>
   <div class="two"><div><label class="fl" for="pFrom">Von</label><select id="pFrom" class="in">${opts(o.from)}</select></div><div><label class="fl" for="pTo">An</label><select id="pTo" class="in">${opts(o.to)}</select></div></div>
-  <div class="two"><div><label class="fl" for="pAmt">Betrag in €</label><input id="pAmt" class="in big" inputmode="decimal" value="${o.cents?fmtPlain(o.cents):''}" placeholder="0,00" autocomplete="off"></div><div><label class="fl" for="pDate">Datum</label><input id="pDate" type="date" class="in" value="${esc(o.date)}"></div></div>
+  <div class="two"><div><label class="fl" for="pAmt">Betrag in €</label><input id="pAmt" class="in big" inputmode="decimal" value="${o.cents?fmtPlain(o.cents):''}" placeholder="0,00" autocomplete="off"></div><div><label class="fl" for="pDate-btn">Datum</label>${dateField('pDate',o.date,{label:'Datum der Zahlung'})}</div></div>
   <p class="small muted">${o.suggested?'Nur einen Teil überwiesen? Betrag anpassen, der Rest bleibt offen.':'Eine Zahlung zwischen zwei Personen verändert nur die Salden, nicht die Gesamtausgaben.'}</p>
   <div class="btnrow"><button class="btn" data-act="closeSheet">Abbrechen</button><button class="btn primary" data-act="savePayment" data-id="${o.id||''}">${o.suggested?'Als bezahlt speichern':'Zahlung speichern'}</button></div>
   ${o.id?`<button class="btn danger block" data-act="delPayment" data-id="${o.id}" style="margin-top:8px">Zahlung löschen</button>`:''}`);
@@ -1093,13 +1110,13 @@ function vExpense(){
   const repCard=d.seriesId
     ?`<div class="card"><h2>Wiederholung</h2><p class="small muted" style="margin:0 0 8px">Dieser Eintrag gehört zu einer Serie${src&&src.repeat?` (${FREQ_SHORT[src.repeat.freq]})`:''}. Änderungen hier gelten nur für diesen einen Eintrag.</p>${src?'<button class="btn block" data-act="openSeries">Original der Serie öffnen</button>':''}</div>`
     :`<div class="card"><h2>Wiederholen</h2><div class="chips">${FREQS.map(([k,l])=>`<button class="chip ${d.freq===k?'on':''}" data-act="setFreq" data-id="${k}" aria-pressed="${d.freq===k}">${l}</button>`).join('')}</div>
-      ${d.freq?`<label class="fl" for="fUntil">Endet am (optional)</label><input id="fUntil" type="date" class="in" data-f="until" value="${esc(d.until)}"><p class="small muted" style="margin:8px 0 0">Neue Einträge werden automatisch angelegt, sobald ihr Datum erreicht ist, z. B. die Miete jeden Monat.</p>`:''}</div>`;
+      ${d.freq?`<label class="fl" for="fUntil-btn">Endet am (optional)</label>${dateField('fUntil',d.until,{f:'until',label:'Wiederholung endet am',optional:true,min:'fDate',pair:'fDate',placeholder:'kein Ende'})}<p class="small muted" style="margin:8px 0 0">Neue Einträge werden automatisch angelegt, sobald ihr Datum erreicht ist, z. B. die Miete jeden Monat.</p>`:''}</div>`;
   return `<div class="wrap exp">
   <div class="top"><button class="iconbtn" data-act="cancelExpense">Abbrechen</button><div class="ttl"><h1>${d.id?'Ausgabe bearbeiten':'Neue Ausgabe'}</h1></div></div>
   <div class="card">
     <label class="fl" for="fTitle">Titel</label><input id="fTitle" class="in" data-f="title" value="${esc(d.title)}" placeholder="z. B. Supermarkt" maxlength="80" autocomplete="off">
     <div class="two"><div><label class="fl" for="fAmount">${d.curOn?'Betrag in € (berechnet)':'Betrag in €'}</label><input id="fAmount" class="in big" data-f="amount" inputmode="decimal" value="${esc(d.amount)}" placeholder="0,00" autocomplete="off" ${d.curOn?'readonly tabindex="-1"':''}></div>
-    <div><label class="fl" for="fDate">Datum</label><input id="fDate" type="date" class="in" data-f="date" value="${esc(d.date)}"></div></div>
+    <div><label class="fl" for="fDate-btn">Datum</label>${dateField('fDate',d.date,{f:'date',label:'Datum der Ausgabe'})}</div></div>
     <button class="chip ${d.curOn?'on':''}" data-act="togCur" aria-pressed="${d.curOn}" style="margin-top:10px">Andere Währung</button>
     ${d.curOn?`<div class="fxbox"><div class="two"><div><label class="fl" for="fxCur">Währung</label><select id="fxCur" class="in" data-f="curCode">${curList.map(c=>`<option ${c===d.curCode?'selected':''}>${c}</option>`).join('')}</select></div>
       <div><label class="fl" for="fxAmt">Betrag in <span class="curLbl">${esc(d.curCode)}</span></label><input id="fxAmt" class="in" data-f="curAmt" inputmode="decimal" value="${esc(d.curAmt)}" placeholder="0,00" autocomplete="off"></div></div>
@@ -1200,11 +1217,90 @@ async function importData(data){
   notify(n?`${n===1?'Reise':n+' Reisen'} importiert${dropped?` (${dropped} fehlerhafte Einträge übersprungen)`:''}`:'Nichts importiert');
 }
 
+/* ===== Datumsauswahl (eigener Kalender: schließt nach dem Antippen eines Tages) ===== */
+const WD=['So','Mo','Di','Mi','Do','Fr','Sa'];
+function fmtDateLong(iso){const[y,m,d]=iso.split('-').map(Number);return WD[new Date(y,m-1,d).getDay()]+', '+fmtDate(iso);}
+/* opt: {f, label, optional, min, pair, placeholder} – min/pair sind IDs anderer Datumsfelder */
+function dateField(id,value,o){
+  o=o||{};
+  return `<input type="hidden" id="${id}" value="${esc(value||'')}"${o.f?` data-f="${o.f}"`:''}>`
+   +`<button type="button" class="in datebtn" id="${id}-btn" data-act="pickDate" data-target="${id}" data-label="${esc(o.label||'Datum')}"${o.optional?' data-opt="1"':''}${o.min?` data-min="${o.min}"`:''}${o.pair?` data-pair="${o.pair}"`:''} data-ph="${esc(o.placeholder||'Datum wählen')}">`
+   +(value?esc(fmtDateLong(value)):`<span class="muted">${esc(o.placeholder||'Datum wählen')}</span>`)+`</button>`;
+}
+function setDate(id,v){
+  const inp=byId(id), btn=byId(id+'-btn'); if(!inp) return;
+  inp.value=v||'';
+  if(btn) btn.innerHTML=v?esc(fmtDateLong(v)):`<span class="muted">${esc(btn.dataset.ph||'Datum wählen')}</span>`;
+  inp.dispatchEvent(new Event('input',{bubbles:true}));
+}
+let P=null;
+function openPicker(btn){
+  const id=btn.dataset.target, val=byId(id).value;
+  const minEl=btn.dataset.min&&byId(btn.dataset.min), pairEl=btn.dataset.pair&&byId(btn.dataset.pair);
+  const min=minEl&&minEl.value||'';
+  const start=val||min||todayISO();
+  P={id,label:btn.dataset.label,opt:!!btn.dataset.opt,min,pair:pairEl&&pairEl.value||'',month:start.slice(0,7)};
+  renderPicker();
+  byId('pick-root').classList.add('open'); document.body.classList.add('lock');
+}
+function renderPicker(){
+  const [y,m]=P.month.split('-').map(Number), val=byId(P.id).value;
+  const first=new Date(y,m-1,1), lead=(first.getDay()+6)%7, days=new Date(y,m,0).getDate();
+  let name=''; try{name=first.toLocaleDateString('de-DE',{month:'long',year:'numeric'});}catch(e){name=m+'/'+y;}
+  const lo=[val,P.pair].filter(Boolean).sort()[0], hi=[val,P.pair].filter(Boolean).sort().pop();
+  let cells=['Mo','Di','Mi','Do','Fr','Sa','So'].map(w=>`<span class="wd">${w}</span>`).join('')+'<span></span>'.repeat(lead);
+  for(let d=1;d<=days;d++){
+    const iso=`${y}-${pad2(m)}-${pad2(d)}`;
+    const cls=['cday',iso===todayISO()?'today':'',iso===val?'sel':'',(val&&P.pair&&iso>=lo&&iso<=hi&&iso!==val)?'range':''].filter(Boolean).join(' ');
+    cells+=`<button class="${cls}" data-act="calPick" data-v="${iso}" ${P.min&&iso<P.min?'disabled':''} aria-label="${esc(fmtDateLong(iso))}"${iso===val?' aria-pressed="true"':''}>${d}</button>`;
+  }
+  const canPrev=!P.min||P.month>P.min.slice(0,7);
+  byId('pick-root').innerHTML=`<div class="scrim" data-act="calClose"></div><div class="dialog cal" role="dialog" aria-modal="true" aria-label="${esc(P.label)} wählen">
+   <div class="small muted" style="text-align:center;font-weight:600">${esc(P.label)}</div>
+   <div class="calhead"><button class="iconbtn" data-act="calNav" data-d="-1" aria-label="Vorheriger Monat" ${canPrev?'':'disabled style="opacity:.3"'}>‹</button><b>${esc(name)}</b><button class="iconbtn" data-act="calNav" data-d="1" aria-label="Nächster Monat">›</button></div>
+   <div class="calgrid">${cells}</div>
+   <div class="calfoot">${P.min&&todayISO()<P.min?'':'<button class="btn" data-act="calToday">Heute</button>'}${P.opt&&val?'<button class="btn" data-act="calClear">Kein Datum</button>':''}<button class="btn" data-act="calClose">Abbrechen</button></div></div>`;
+}
+function closePicker(){const r=byId('pick-root');r.classList.remove('open');r.innerHTML='';P=null;
+  if(!byId('sheet-root').classList.contains('open')&&!byId('ask-root').classList.contains('open')) document.body.classList.remove('lock');}
+function pickValue(v){
+  const id=P.id; closePicker(); setDate(id,v);
+  // Abreise folgt der Anreise: leer oder davor -> auf die Anreise setzen
+  if(id==='gStart'&&v){const e=byId('gEnd');if(e&&(!e.value||e.value<v)) setDate('gEnd',v);}
+  if(id==='fDate'&&v){const u=byId('fUntil');if(u&&u.value&&u.value<v) setDate('fUntil',v);}
+}
+
+/* ===== Blätter nach unten wegziehen ===== */
+let drag=null;
+document.addEventListener('touchstart',e=>{
+  const sh=e.target.closest('#sheet-root .sheet'); if(!sh||e.touches.length>1) return;
+  const onGrip=!!e.target.closest('.grip');
+  if(!onGrip&&(sh.scrollTop>0||e.target.closest('input,textarea,select'))) return;
+  drag={sh,y0:e.touches[0].clientY,t0:Date.now(),dy:0,grip:onGrip}; sh.style.transition='none';
+},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(!drag) return;
+  const dy=e.touches[0].clientY-drag.y0;
+  if(dy<=0&&!drag.grip){drag.sh.style.transform='';drag=null;return;}   // nach oben = normal scrollen
+  drag.dy=Math.max(0,dy); drag.sh.style.transform=`translateY(${drag.dy}px)`;
+  if(e.cancelable) e.preventDefault();
+},{passive:false});
+function endDrag(){
+  if(!drag) return;
+  const {sh,dy,t0}=drag; drag=null;
+  const fast=dy/Math.max(1,Date.now()-t0)>0.5;
+  sh.style.transition='transform .2s ease';
+  if(dy>100||(dy>40&&fast)){ sh.style.transform='translateY(110%)'; setTimeout(closeSheet,190); }
+  else sh.style.transform='';
+}
+document.addEventListener('touchend',endDrag);
+document.addEventListener('touchcancel',endDrag);
+
 /* ===== Aktionen ===== */
 function groupSheet(g){
   openSheet(`<h2>${g?'Reise bearbeiten':'Neue Reise'}</h2>
   <label class="fl" for="gName">Name</label><input id="gName" class="in" value="${esc(g?g.name:'')}" placeholder="z. B. Hütte Tirol" maxlength="60" autocomplete="off">
-  <div class="two"><div><label class="fl" for="gStart">Anreise</label><input id="gStart" type="date" class="in" value="${g&&g.startDate||''}"></div><div><label class="fl" for="gEnd">Abreise</label><input id="gEnd" type="date" class="in" value="${g&&g.endDate||''}"></div></div>
+  <div class="two"><div><label class="fl" for="gStart-btn">Anreise</label>${dateField('gStart',g&&g.startDate,{label:'Anreise',optional:true,pair:'gEnd',placeholder:'optional'})}</div><div><label class="fl" for="gEnd-btn">Abreise</label>${dateField('gEnd',g&&g.endDate,{label:'Abreise',optional:true,min:'gStart',pair:'gStart',placeholder:'optional'})}</div></div>
   <p class="small muted">Der Zeitraum ist optional. Aus ihm werden die Nächte vorausgefüllt.</p>
   <div class="btnrow"><button class="btn" data-act="closeSheet">Abbrechen</button><button class="btn primary" data-act="saveGroup" data-id="${g?g.id:''}">${g?'Änderungen speichern':'Reise anlegen'}</button></div>`);
   if(!g) byId('gName').focus();
@@ -1220,6 +1316,12 @@ function openDraft(g,e){D=newDraft(g,e);D0=JSON.stringify(D);V={name:'expense'};
 
 const ACT={
   closeSheet:()=>closeSheet(),
+  pickDate:el=>openPicker(el),
+  calPick:el=>pickValue(el.dataset.v),
+  calNav:el=>{const[y,m]=P.month.split('-').map(Number);const d=new Date(y,m-1+(+el.dataset.d),1);P.month=d.getFullYear()+'-'+pad2(d.getMonth()+1);renderPicker();},
+  calToday:()=>pickValue(todayISO()),
+  calClear:()=>pickValue(''),
+  calClose:()=>closePicker(),
   askBtn:el=>{
     const b=askBtns[+el.dataset.i], r=byId('ask-root');
     r.classList.remove('open'); r.innerHTML='';
@@ -1253,12 +1355,14 @@ const ACT={
   groupMenu:()=>{
     const g=grp();
     openSheet(`<h2>${esc(g.name)}</h2>
+    <button class="btn block" data-act="menuMembers">👥 Personen verwalten (${g.members.length})</button>
     <button class="btn block" data-act="editGroup">Name und Zeitraum ändern</button>
     <button class="btn block" data-act="exportGroup">Reise exportieren (JSON)</button>
     <button class="btn block" data-act="archiveGroup">${g.archived?'Aus dem Archiv holen':'Archivieren'}</button>
     <button class="btn danger block" data-act="deleteGroup">Reise löschen</button>
     <button class="btn block" data-act="closeSheet">Schließen</button>`);
   },
+  menuMembers:()=>{closeSheet();V={name:'group',tab:'members'};render();},
   exportGroup:()=>{closeSheet();exportGroup(grp());},
   archiveGroup:()=>{
     const g=grp(); g.archived=!g.archived; save(); closeSheet();
