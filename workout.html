@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-title" content="Workout">
+<title>Workout</title>
+<style>
+  :root{
+    --bg:#12152B; --surface:#1C2142; --surface2:#252B55; --line:#333A6B;
+    --text:#F2F3FF; --muted:#A6ADD8;
+    --yellow:#FFD447; --gold-text:#FFD447;
+    --coral:#FF6B7A; --mint:#43DFA0; --blue:#5B8DEF; --violet:#A78BFA;
+    --radius:20px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:ui-rounded,-apple-system,"SF Pro Rounded","Segoe UI",Roboto,sans-serif;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    overscroll-behavior:none;
+  }
+  .screen{display:none;max-width:520px;margin:0 auto;padding:20px 18px 40px;min-height:100dvh}
+  .screen.active{display:block}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+  .back{background:var(--surface);border:1px solid var(--line);color:var(--text);
+    width:42px;height:42px;border-radius:14px;font-size:20px;display:flex;align-items:center;justify-content:center}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.3px}
+  .sub{color:var(--muted);font-size:14px;margin-top:2px}
+  button{font-family:inherit;border:none;cursor:pointer;font-size:16px}
+
+  .primary{
+    width:100%;background:var(--yellow);color:#12152B;font-weight:800;font-size:18px;
+    padding:17px;border-radius:18px;transition:opacity .15s;
+  }
+  .primary:disabled{opacity:.35}
+  .ghost{width:100%;background:var(--surface);border:1px solid var(--line);color:var(--muted);
+    font-weight:600;padding:14px;border-radius:16px;margin-top:10px}
+  .empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:15px}
+
+  .field{margin-bottom:18px}
+  .field > label{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-bottom:8px}
+  .stepper{display:flex;align-items:center;justify-content:space-between;
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
+  .stepper .val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stepper button.tapval{width:auto;min-width:88px;height:42px;background:none;border:1px dashed var(--line);
+    border-radius:12px;padding:0 14px;color:var(--text);font-weight:800;font-size:22px}
+  .stepper button.tapval:active{background:var(--surface2)}
+  .tap-hint{font-weight:600;font-size:12px;opacity:.75}
+  .stepper .val small{font-size:14px;color:var(--muted);font-weight:600;margin-left:3px}
+  .stepper button{width:42px;height:42px;border-radius:12px;background:var(--surface2);
+    border:1px solid var(--line);color:var(--text);font-size:24px;font-weight:700}
+  .stepper button:active{background:var(--line)}
+  .area-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .area-chip{background:var(--surface);border:2px solid var(--line);border-radius:16px;
+    padding:14px;color:var(--text);text-align:left;display:flex;align-items:center;gap:10px}
+  .area-chip .em{font-size:22px}
+  .area-chip b{font-size:15px;font-weight:700}
+  .area-chip.on{border-color:var(--mint);background:var(--surface2)}
+  .area-chip .check{margin-left:auto;color:var(--mint);font-weight:800;opacity:0}
+  .area-chip.on .check{opacity:1}
+  .est{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:14px 16px;text-align:center;color:var(--muted);font-size:14px;margin-bottom:18px}
+  .est b{color:var(--gold-text);font-size:18px}
+
+  /* ---------- Workout: Run ---------- */
+  #scr-wk-run{display:none}
+  #scr-wk-run.active{display:flex;flex-direction:column;min-height:100dvh}
+  .wk-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .wk-top .wk-quit{background:var(--surface);border:1px solid var(--line);color:var(--coral);
+    min-width:64px;height:40px;border-radius:12px;font-size:14px;font-weight:800;padding:0 12px}
+  .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
+    background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    padding:13px 18px;border-radius:14px;font-size:15px;font-weight:600;max-width:86%;text-align:center;
+    opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .wk-progress{color:var(--muted);font-size:14px;font-weight:700}
+  .wk-phase{text-align:center;letter-spacing:.16em;text-transform:uppercase;
+    font-size:14px;font-weight:800;margin:4px 0 2px}
+  .wk-phase.exercise{color:var(--mint)}
+  .wk-phase.pause{color:var(--gold-text)}
+  .wk-phase.ready{color:var(--blue)}
+  .ring-wrap{position:relative;width:min(72vw,260px);aspect-ratio:1;margin:10px auto 4px}
+  .ring-wrap svg.ring{width:100%;height:100%;transform:rotate(-90deg)}
+  .ring-bg{fill:none;stroke:var(--surface2);stroke-width:10}
+  .ring-fg{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1s linear, stroke .3s}
+  .ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:68px;font-weight:800;font-variant-numeric:tabular-nums}
+  .wk-name{text-align:center;font-size:24px;font-weight:800;margin-top:6px;padding:0 10px}
+  .wk-name-en{text-align:center;font-size:14px;font-weight:600;color:var(--muted);margin-top:2px;padding:0 10px}
+  .wk-next-label{text-align:center;color:var(--muted);font-size:14px;margin-top:10px}
+  .wk-spacer{flex:1}
+  .wk-controls{display:flex;gap:10px;margin-top:14px}
+  .wk-controls button{flex:1;padding:15px;border-radius:16px;font-weight:800;font-size:16px;
+    background:var(--surface);border:1px solid var(--line);color:var(--text)}
+  .wk-controls .main{flex:1.4;background:var(--mint);border-color:var(--mint);color:#08251A}
+
+  /* ---------- Workout: Vorschau/Plan ---------- */
+  .plan-total{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:12px 16px;text-align:center;color:var(--muted);font-size:14px;margin-bottom:16px}
+  .plan-total b{color:var(--gold-text);font-size:18px}
+  .plan-row{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+    padding:12px 12px 12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+  .plan-num{width:26px;height:26px;border-radius:8px;background:var(--surface2);border:1px solid var(--line);
+    color:var(--muted);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .plan-info{min-width:0;flex:1}
+  .plan-info .pn{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .plan-info .pd{color:var(--muted);font-size:13px;margin-top:2px}
+  .plan-info .pd .pause{color:var(--gold-text)}
+  .plan-move{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+  .plan-move button{width:32px;height:24px;border-radius:7px;background:var(--surface2);
+    border:1px solid var(--line);color:var(--text);font-size:13px;display:flex;align-items:center;justify-content:center}
+  .plan-move button:disabled{opacity:.3}
+  .plan-edit{width:40px;height:40px;border-radius:11px;background:var(--surface2);border:1px solid var(--line);
+    color:var(--text);font-size:17px;flex-shrink:0}
+  .plan-add{width:100%;background:var(--surface);border:1px dashed var(--line);color:var(--muted);
+    font-weight:700;padding:14px;border-radius:16px;margin-bottom:16px}
+  .set-divider{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--mint);margin:14px 2px 8px}
+
+  .edit-field{margin-bottom:14px}
+  .edit-field > label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .edit-select{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:14px;
+    color:var(--text);padding:14px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
+  .sheet .stepper{background:var(--surface2)}
+
+  .center-stage{min-height:60dvh;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;gap:14px;padding:20px 0}
+  .center-stage .big-name{font-size:38px;font-weight:800;letter-spacing:-.5px}
+  .center-stage .hint{color:var(--muted);font-size:16px;max-width:280px}
+
+  /* ---------- Nummernpad ---------- */
+  .modal{position:fixed;inset:0;background:rgba(10,12,26,.75);display:none;
+    align-items:flex-end;justify-content:center;z-index:50}
+  .modal.open{display:flex}
+  .sheet{background:var(--surface);border-radius:26px 26px 0 0;width:100%;max-width:520px;
+    padding:22px 20px calc(24px + env(safe-area-inset-bottom))}
+  .sheet h3{font-size:17px;color:var(--muted);font-weight:600;text-align:center}
+  .pad-display{font-size:52px;font-weight:800;text-align:center;margin:10px 0 16px;
+    font-variant-numeric:tabular-nums;min-height:64px}
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .pad button{background:var(--surface2);border:1px solid var(--line);color:var(--text);
+    padding:16px;border-radius:16px;font-size:24px;font-weight:700}
+  .pad button:active{background:var(--line)}
+  .pad .fn{font-size:17px;color:var(--muted)}
+  .sheet-actions{display:flex;gap:10px;margin-top:14px}
+  .sheet-actions .cancel{flex:1;background:var(--surface2);border:1px solid var(--line);
+    color:var(--muted);padding:15px;border-radius:16px;font-weight:700}
+  .sheet-actions .ok{flex:2;background:var(--mint);color:#12152B;padding:15px;border-radius:16px;font-weight:800;font-size:17px}
+
+  .footer-actions{margin-top:20px}
+  .danger{color:var(--coral)}
+  /* ---------- Helles Farbschema (automatisch je nach System-Einstellung) ---------- */
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#F1F2FA; --surface:#FFFFFF; --surface2:#E7E9F5; --line:#C6CBE4;
+      --text:#13152B; --muted:#3E4468;
+      --yellow:#FFC933; --gold-text:#7E5C00;
+      --coral:#C52B41; --mint:#067A52; --blue:#2451B8; --violet:#5E32C4;
+    }
+    .modal{background:rgba(19,21,43,.45)}
+    .primary, .sheet-actions .ok{color:#13152B}
+  }
+  .back{text-decoration:none}
+</style>
+</head>
+<body>
+
+<!-- ========== WORKOUT: SETUP ========== -->
+<div class="screen active" id="scr-wk-setup">
+  <header>
+    <a class="back" href="index.html" aria-label="Zur Anwendungssammlung">‹</a>
+    <div>
+      <h1>Workout</h1>
+      <div class="sub">Stell dir dein Training ein</div>
+    </div>
+  </header>
+
+  <div class="field">
+    <label>Übungsdauer</label>
+    <div class="stepper">
+      <button onclick="wkAdjust('exDur',-5)">−</button>
+      <button class="val tapval" onclick="wkOpenCfgPad('exDur')"><span id="wk-exDur">30</span><small>Sek.</small></button>
+      <button onclick="wkAdjust('exDur',5)">+</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Pausendauer</label>
+    <div class="stepper">
+      <button onclick="wkAdjust('pauseDur',-5)">−</button>
+      <button class="val tapval" onclick="wkOpenCfgPad('pauseDur')"><span id="wk-pauseDur">15</span><small>Sek.</small></button>
+      <button onclick="wkAdjust('pauseDur',5)">+</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Zielzeit gesamt</label>
+    <div class="stepper">
+      <button onclick="wkAdjust('target',-5)">−</button>
+      <button class="val tapval" onclick="wkOpenCfgPad('target')"><span id="wk-target">15</span><small>Min.</small></button>
+      <button onclick="wkAdjust('target',5)">+</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Sätze (Übungen werden wiederholt)</label>
+    <div class="stepper">
+      <button onclick="wkAdjust('sets',-1)">−</button>
+      <button class="val tapval" onclick="wkOpenCfgPad('sets')"><span id="wk-sets">1</span><small>×</small></button>
+      <button onclick="wkAdjust('sets',1)">+</button>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Welche Bereiche? <span class="tap-hint">– Bauch &amp; unterer Rücken werden automatisch gemeinsam ausgeglichen trainiert</span></label>
+    <div class="area-grid" id="wk-areas"></div>
+  </div>
+
+  <div class="est" id="wk-est"></div>
+  <button class="primary" id="wk-start-btn" onclick="wkStart()">Weiter zur Vorschau</button>
+</div>
+
+<!-- ========== WORKOUT: VORSCHAU/PLAN ========== -->
+<div class="screen" id="scr-wk-plan">
+  <header>
+    <button class="back" onclick="show('scr-wk-setup')">‹</button>
+    <a class="back" href="index.html" aria-label="Zur Anwendungssammlung">⌂</a>
+    <div>
+      <h1>Dein Plan</h1>
+      <div class="sub">Verschieben, bearbeiten, löschen</div>
+    </div>
+  </header>
+  <div class="plan-total" id="wk-plan-total"></div>
+  <div id="wk-plan-list"></div>
+  <button class="plan-add" onclick="wkPlanAdd()">＋ Übung hinzufügen</button>
+  <button class="primary" id="wk-begin-btn" onclick="wkBegin()">Los geht's</button>
+</div>
+
+<!-- ========== WORKOUT: RUN ========== -->
+<div class="screen" id="scr-wk-run">
+  <div class="wk-top">
+    <button class="wk-quit" onclick="wkQuit()">✕ Ende</button>
+    <span class="wk-progress" id="wk-count"></span>
+  </div>
+  <div class="wk-phase" id="wk-phase-label"></div>
+  <div class="ring-wrap">
+    <svg class="ring" viewBox="0 0 120 120">
+      <circle class="ring-bg" cx="60" cy="60" r="52"></circle>
+      <circle class="ring-fg" id="wk-ring" cx="60" cy="60" r="52"></circle>
+    </svg>
+    <div class="ring-num" id="wk-time">0</div>
+  </div>
+  <div class="wk-name" id="wk-name"></div>
+  <div class="wk-name-en" id="wk-name-en"></div>
+  <div class="wk-spacer"></div>
+  <div class="wk-controls">
+    <button onclick="wkSkip()">Überspringen ›</button>
+    <button class="main" id="wk-pause-btn" onclick="wkTogglePause()">Pause</button>
+  </div>
+</div>
+
+<!-- ========== WORKOUT: FERTIG ========== -->
+<div class="screen" id="scr-wk-done">
+  <header>
+    <button class="back" onclick="show('scr-wk-setup')" aria-label="Zu den Einstellungen">‹</button>
+    <div>
+      <h1>Geschafft! 🎉</h1>
+      <div class="sub">Starke Leistung</div>
+    </div>
+  </header>
+  <div class="center-stage">
+    <div class="big-name" style="color:var(--mint)" id="wk-done-summary"></div>
+    <div class="hint" id="wk-done-detail"></div>
+  </div>
+  <button class="primary" onclick="wkStart()">Nochmal (gleiche Einstellung)</button>
+  <button class="ghost" onclick="show('scr-wk-setup')">Einstellungen ändern</button>
+  <a class="ghost" href="index.html" style="display:block;text-align:center;text-decoration:none">Zurück zur Sammlung</a>
+</div>
+
+<!-- ========== WORKOUT: ÜBUNG BEARBEITEN ========== -->
+<div class="modal" id="wk-edit-modal" onclick="if(event.target===this)wkEditClose()">
+  <div class="sheet">
+    <h3 style="margin-bottom:16px">Übung bearbeiten</h3>
+    <div class="edit-field">
+      <label>Übung</label>
+      <select class="edit-select" id="wk-edit-select" onchange="wkEditChangeExercise(this.value)"></select>
+    </div>
+    <div class="edit-field">
+      <label>Übungsdauer</label>
+      <div class="stepper">
+        <button onclick="wkEditAdjust('dur',-5)">−</button>
+        <button class="val tapval" onclick="wkOpenEditPad('dur')"><span id="wk-edit-dur">30</span><small>Sek.</small></button>
+        <button onclick="wkEditAdjust('dur',5)">+</button>
+      </div>
+    </div>
+    <div class="edit-field" id="wk-edit-pause-wrap">
+      <label>Pause danach</label>
+      <div class="stepper">
+        <button onclick="wkEditAdjust('pause',-5)">−</button>
+        <button class="val tapval" onclick="wkOpenEditPad('pause')"><span id="wk-edit-pause">15</span><small>Sek.</small></button>
+        <button onclick="wkEditAdjust('pause',5)">+</button>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="cancel danger" onclick="wkEditDelete()">Löschen</button>
+      <button class="ok" onclick="wkEditClose()">Fertig</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== BESTÄTIGUNG ========== -->
+<div class="modal" id="ask-modal" onclick="if(event.target===this)askClose()">
+  <div class="sheet">
+    <h3 id="ask-text" style="color:var(--text);font-size:18px;font-weight:800;margin-bottom:6px">Sicher?</h3>
+    <p id="ask-detail" style="color:var(--muted);font-size:14px;line-height:1.45;margin-top:8px;display:none"></p>
+    <div class="sheet-actions" style="margin-top:18px">
+      <button class="cancel" id="ask-no" onclick="askClose()">Zurück</button>
+      <button class="ok" id="ask-ok" onclick="askConfirmYes()">Ja</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== NUMMERNPAD ========== -->
+<div class="modal" id="pad-modal" onclick="if(event.target===this)closePad()">
+  <div class="sheet">
+    <h3 id="pad-title">Punkte für …</h3>
+    <div class="pad-display" id="pad-display">0</div>
+    <div class="pad">
+      <button onclick="padKey(1)">1</button><button onclick="padKey(2)">2</button><button onclick="padKey(3)">3</button>
+      <button onclick="padKey(4)">4</button><button onclick="padKey(5)">5</button><button onclick="padKey(6)">6</button>
+      <button onclick="padKey(7)">7</button><button onclick="padKey(8)">8</button><button onclick="padKey(9)">9</button>
+      <button class="fn" onclick="padClear()">C</button><button onclick="padKey(0)">0</button><button class="fn" onclick="padBack()">⌫</button>
+          </div>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="closePad()">Abbrechen</button>
+      <button class="ok" id="pad-ok" onclick="padConfirm()">Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let padValue = '', padCfg = null, padPrefilled = false;
+
+/* ---------- Navigation ---------- */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='scr-wk-setup') wkRenderSetup();
+  window.scrollTo(0,0);
+}
+
+/* ---------- Zahlenpad für Einstellungswerte ---------- */
+function closePad(){ padCfg=null; document.getElementById('pad-modal').classList.remove('open'); }
+function padKey(n){
+  if(padPrefilled){ padValue=''; padPrefilled=false; }
+  if(padValue.length >= 4) return;
+  padValue = (padValue + n).replace(/^0+(?=\d)/,'');
+  padUpdateDisplay();
+}
+function padBack(){
+  padPrefilled=false;
+  padValue = padValue.slice(0,-1);
+  padUpdateDisplay();
+}
+function padClear(){
+  padValue = ''; padPrefilled=false;
+  padUpdateDisplay();
+}
+function padUpdateDisplay(){
+  const v=padValue||'0';
+  document.getElementById('pad-display').textContent=v;
+}
+function padConfirm(){
+  const raw = parseInt(padValue || '0', 10), cfg = padCfg;
+  closePad();
+  if(cfg){ const v=isNaN(raw)?0:raw; cfg.apply(Math.min(cfg.max, Math.max(cfg.min, v))); }
+}
+function openCfgPad(title, current, min, max, applyFn){
+  padValue = String(current); padPrefilled = true;
+  padCfg = {min, max, apply: applyFn};
+  document.getElementById('pad-title').textContent = title + ` (${min}–${max})`;
+  document.getElementById('pad-display').textContent = padValue;
+  document.getElementById('pad-ok').textContent = 'Übernehmen';
+  document.getElementById('pad-modal').classList.add('open');
+}
+function wkOpenCfgPad(key){
+  const limits={exDur:[5,600],pauseDur:[0,300],target:[1,180],sets:[1,20]};
+  const titles={exDur:'Übungsdauer (Sek.)',pauseDur:'Pausendauer (Sek.)',target:'Zielzeit (Min.)',sets:'Sätze'};
+  const [min,max]=limits[key];
+  openCfgPad(titles[key], wkSettings[key], min, max, v=>{ wkSettings[key]=v; wkSave(); wkRenderSetup(); });
+}
+function wkOpenEditPad(key){
+  if(wkEditIdx===null) return;
+  const limits={dur:[5,600],pause:[0,300]};
+  const titles={dur:'Übungsdauer (Sek.)',pause:'Pause danach (Sek.)'};
+  const [min,max]=limits[key];
+  const idx=wkEditIdx;
+  openCfgPad(titles[key], wk.plan[idx][key], min, max, v=>{
+    wk.plan[idx][key]=v;
+    document.getElementById('wk-edit-'+key).textContent=v;
+    wkRenderPlan();
+    wkEditIdx=idx;
+    document.getElementById('wk-edit-modal').classList.add('open');
+  });
+}
+
+/* ==================== WORKOUT ==================== */
+const WK_EXERCISES = [
+  // ===== Beine & Po (20) =====
+  {name:'Kniebeugen', tags:['beine']},
+  {name:'Sumo-Kniebeugen', tags:['beine']},
+  {name:'Ausfallschritte', tags:['beine']},
+  {name:'Rückwärts-Ausfallschritte', tags:['beine']},
+  {name:'Wadenheben', tags:['beine']},
+  {name:'Wall Sit (Wandsitzen)', tags:['beine']},
+  {name:'Glute Bridge', tags:['beine','core']},
+  {name:'Gesprungene Kniebeugen', tags:['beine','cardio']},
+  {name:'Ausfallschritt-Sprünge', tags:['beine','cardio']},
+  {name:'Einbeiniges Wadenheben', tags:['beine']},
+  {name:'Seitliche Ausfallschritte', tags:['beine']},
+  {name:'Curtsy Lunges', tags:['beine']},
+  {name:'Step-ups', tags:['beine']},
+  {name:'Bulgarian Split Squats', tags:['beine']},
+  {name:'Einbeiniges Hüftheben', tags:['beine','core']},
+  {name:'Sumo-Puls-Kniebeugen', tags:['beine']},
+  {name:'Kniebeugen-Pulse', tags:['beine']},
+  {name:'Seitliches Beinheben', tags:['beine']},
+  {name:'Donkey Kicks (Eselstritte)', tags:['beine']},
+  {name:'Feuerhydranten', tags:['beine']},
+
+  // ===== Bauch & Core (22) =====
+  {name:'Crunches', tags:['core']},
+  {name:'Sit-ups', tags:['core']},
+  {name:'Beinheben', tags:['core']},
+  {name:'Russian Twists', tags:['core']},
+  {name:'Fahrrad-Crunches', tags:['core']},
+  {name:'Plank (Unterarmstütz)', tags:['core']},
+  {name:'Seitlicher Unterarmstütz', tags:['core']},
+  {name:'Käfer (Dead Bug)', tags:['core']},
+  {name:'Bergsteiger', tags:['core','cardio']},
+  {name:'Scheibenwischer', tags:['core']},
+  {name:'V-Ups', tags:['core']},
+  {name:'Hohlkörper-Halten', tags:['core']},
+  {name:'Beckenheben (Reverse Crunch)', tags:['core']},
+  {name:'Plank-Jacks', tags:['core','cardio']},
+  {name:'Zehenspitzen-Touches', tags:['core']},
+  {name:'Seitliche Crunches', tags:['core']},
+  {name:'Langsame Bergsteiger', tags:['core']},
+  {name:'Plank-Schulterklopfen', tags:['core']},
+  {name:'Sit-up mit Twist', tags:['core']},
+  {name:'Beinkreisen (liegend)', tags:['core']},
+  {name:'Ellenbogen-zu-Knie-Crunches', tags:['core']},
+  {name:'Plank-Hüftabsenken', tags:['core']},
+
+  // ===== Arme & Brust (16) =====
+  {name:'Liegestütze', tags:['arme']},
+  {name:'Enge Liegestütze', tags:['arme']},
+  {name:'Pike Push-ups', tags:['arme']},
+  {name:'Trizeps-Dips', tags:['arme']},
+  {name:'Breite Liegestütze', tags:['arme']},
+  {name:'Arm-Kreisen', tags:['arme']},
+  {name:'Schulterdrücken (Schattenboxen)', tags:['arme']},
+  {name:'Boxschläge', tags:['arme','cardio']},
+  {name:'Diamant-Liegestütze', tags:['arme']},
+  {name:'Schräge Liegestütze (Hände erhöht)', tags:['arme']},
+  {name:'Schräge Liegestütze (Füße erhöht)', tags:['arme']},
+  {name:'Liegestütz-Schulterklopfen', tags:['arme']},
+  {name:'Arm-Scheren', tags:['arme']},
+  {name:'Plank-zu-Liegestütz', tags:['arme','core']},
+  {name:'Trizeps-Kickbacks (ohne Gewicht)', tags:['arme']},
+  {name:'Schulterkreisen rückwärts', tags:['arme']},
+
+  // ===== Rücken / unterer Rücken (22) =====
+  {name:'Superman', tags:['ruecken']},
+  {name:'Vierfüßler-Diagonale (Bird Dog)', tags:['ruecken','core']},
+  {name:'Schwimmer', tags:['ruecken']},
+  {name:'Rückenstrecker', tags:['ruecken']},
+  {name:'Good Mornings (Körpergewicht)', tags:['ruecken']},
+  {name:'Superman-Pulse', tags:['ruecken']},
+  {name:'Superman mit Armstreckung', tags:['ruecken']},
+  {name:'Reverse Snow Angels', tags:['ruecken']},
+  {name:'Bird-Dog-Pulse', tags:['ruecken','core']},
+  {name:'Kobra-Haltung (Cobra Pose)', tags:['ruecken']},
+  {name:'Heuschrecken-Haltung (Locust Pose)', tags:['ruecken']},
+  {name:'Brücke mit Armstreckung', tags:['ruecken']},
+  {name:'Reverse Hyperextension', tags:['ruecken']},
+  {name:'Schattenrudern (Bent-over Row)', tags:['ruecken']},
+  {name:'Y-Heben (Bauchlage)', tags:['ruecken']},
+  {name:'T-Heben (Bauchlage)', tags:['ruecken']},
+  {name:'W-Heben (Bauchlage)', tags:['ruecken']},
+  {name:'Seitliches Rückenheben', tags:['ruecken']},
+  {name:'Superman mit Beinpause', tags:['ruecken']},
+  {name:'Rumpfheben im Liegen', tags:['ruecken']},
+  {name:'Diagonales Rückenheben', tags:['ruecken']},
+  {name:'Rücken-Extension langsam', tags:['ruecken']},
+
+  // ===== Cardio (20) =====
+  {name:'Hampelmänner', tags:['cardio']},
+  {name:'High Knees', tags:['cardio']},
+  {name:'Burpees', tags:['cardio']},
+  {name:'Skater-Sprünge', tags:['cardio','beine']},
+  {name:'Butt Kicks (Fersen-Sprint)', tags:['cardio']},
+  {name:'Seilspringen (ohne Seil)', tags:['cardio']},
+  {name:'Standlauf schnell', tags:['cardio']},
+  {name:'Squat-Jumps mit Twist', tags:['cardio','beine']},
+  {name:'Sternsprünge (Star Jumps)', tags:['cardio']},
+  {name:'Strecksprünge (Tuck Jumps)', tags:['cardio']},
+  {name:'Seitliche Sprünge', tags:['cardio']},
+  {name:'Boxer-Shuffle', tags:['cardio']},
+  {name:'Sprint auf der Stelle', tags:['cardio']},
+  {name:'Überkreuz-Hampelmänner (Cross Jacks)', tags:['cardio']},
+  {name:'Seitliche Squat-Sprünge', tags:['cardio','beine']},
+  {name:'Halber Burpee (ohne Liegestütz)', tags:['cardio']},
+  {name:'Hampelmänner mit Kniehub', tags:['cardio']},
+  {name:'Doppel-Sprünge simuliert', tags:['cardio']},
+  {name:'Schnelle Wechselsprünge', tags:['cardio','beine']},
+  {name:'Explosive Kniebeugen-Sprünge', tags:['cardio','beine']},
+];
+const WK_AREAS = [
+  {key:'beine',   em:'🦵', label:'Beine & Po'},
+  {key:'core',    em:'🎯', label:'Bauch & Core'},
+  {key:'arme',    em:'💪', label:'Arme & Brust'},
+  {key:'ruecken', em:'🧍', label:'Rücken'},
+  {key:'cardio',  em:'❤️‍🔥', label:'Cardio'},
+];
+
+let wkSettings = { exDur:30, pauseDur:15, target:15, sets:1, areas:['beine','core','arme','ruecken','cardio'] };
+let wk = { queue:[], idx:0, phase:'idle', remaining:0, phaseTotal:0, timer:null, paused:false, audio:null, wakelock:null };
+const RING_CIRC = 2 * Math.PI * 52;
+
+async function wkSave(){
+  const json = JSON.stringify(wkSettings);
+  try{ await window.storage.set('wk-settings', json); return; }catch(e){}
+  try{ localStorage.setItem('wk-settings', json); }catch(e){}
+}
+async function wkLoad(){
+  let json=null;
+  try{ const r=await window.storage.get('wk-settings'); if(r&&r.value) json=r.value; }catch(e){}
+  if(!json){ try{ json=localStorage.getItem('wk-settings'); }catch(e){} }
+  if(json){ try{ const s=JSON.parse(json); if(s&&s.areas) wkSettings=s; }catch(e){} }
+  delete wkSettings.gifs; // alte GIF-Einstellungen werden nicht mehr verwendet
+}
+
+
+function wkAdjust(key,delta){
+  const limits={exDur:[10,120],pauseDur:[0,60],target:[5,60],sets:[1,6]};
+  const [min,max]=limits[key];
+  wkSettings[key]=Math.min(max,Math.max(min,wkSettings[key]+delta));
+  wkSave(); wkRenderSetup();
+}
+function wkToggleArea(key){
+  const i=wkSettings.areas.indexOf(key);
+  if(i>=0) wkSettings.areas.splice(i,1); else wkSettings.areas.push(key);
+  wkSave(); wkRenderSetup();
+}
+// Gegenspieler-Muskelgruppen: wird eine davon gewählt, fließt die andere automatisch mit ein
+const WK_ANTAGONISTS = { core:'ruecken', ruecken:'core' };
+function wkEffectiveAreas(areas){
+  const s = new Set(areas);
+  areas.forEach(a=>{ if(WK_ANTAGONISTS[a]) s.add(WK_ANTAGONISTS[a]); });
+  return s;
+}
+function wkPool(){
+  const eff = wkEffectiveAreas(wkSettings.areas);
+  return WK_EXERCISES.filter(e=>e.tags.some(t=>eff.has(t)));
+}
+function wkRenderSetup(){
+  document.getElementById('wk-exDur').textContent=wkSettings.exDur;
+  document.getElementById('wk-pauseDur').textContent=wkSettings.pauseDur;
+  document.getElementById('wk-target').textContent=wkSettings.target;
+  document.getElementById('wk-sets').textContent=wkSettings.sets;
+  document.getElementById('wk-areas').innerHTML=WK_AREAS.map(a=>`
+    <button class="area-chip ${wkSettings.areas.includes(a.key)?'on':''}" onclick="wkToggleArea('${a.key}')">
+      <span class="em">${a.em}</span><b>${a.label}</b><span class="check">✓</span>
+    </button>`).join('');
+  const perBlock=wkSettings.exDur+wkSettings.pauseDur;
+  const totalCount=Math.max(1,Math.round(wkSettings.target*60/perBlock));
+  const unique=Math.max(1,Math.round(totalCount/wkSettings.sets));
+  const pool=wkPool().length;
+  const btn=document.getElementById('wk-start-btn');
+  if(!wkSettings.areas.length || pool===0){
+    document.getElementById('wk-est').innerHTML='Bitte mindestens einen Bereich auswählen.';
+    btn.disabled=true;
+  }else{
+    const setsTxt = wkSettings.sets>1
+      ? `<b>${unique}</b> Übungen × <b>${wkSettings.sets}</b> Sätze = ${unique*wkSettings.sets} gesamt`
+      : `Ca. <b>${unique}</b> Übungen`;
+    document.getElementById('wk-est').innerHTML=`${setsTxt} · ${pool} im Pool`;
+    btn.disabled=false;
+  }
+}
+
+
+// Englische Übungsnamen (Anzeige unter dem deutschen Namen)
+const EX_EN = {
+  'Kniebeugen':'Squats',
+  'Sumo-Kniebeugen':'Sumo Squats',
+  'Ausfallschritte':'Forward Lunges',
+  'Rückwärts-Ausfallschritte':'Reverse Lunges',
+  'Wadenheben':'Calf Raises',
+  'Wall Sit (Wandsitzen)':'Wall Sit',
+  'Glute Bridge':'Glute Bridge',
+  'Gesprungene Kniebeugen':'Jump Squats',
+  'Ausfallschritt-Sprünge':'Jumping Lunges',
+  'Einbeiniges Wadenheben':'Single-Leg Calf Raises',
+  'Seitliche Ausfallschritte':'Side Lunges',
+  'Curtsy Lunges':'Curtsy Lunges',
+  'Step-ups':'Step-Ups',
+  'Bulgarian Split Squats':'Bulgarian Split Squats',
+  'Einbeiniges Hüftheben':'Single-Leg Glute Bridge',
+  'Sumo-Puls-Kniebeugen':'Sumo Squat Pulses',
+  'Kniebeugen-Pulse':'Squat Pulses',
+  'Seitliches Beinheben':'Standing Side Leg Raises',
+  'Donkey Kicks (Eselstritte)':'Donkey Kicks',
+  'Feuerhydranten':'Fire Hydrants',
+  'Crunches':'Crunches',
+  'Sit-ups':'Sit-Ups',
+  'Beinheben':'Lying Leg Raises',
+  'Russian Twists':'Russian Twists',
+  'Fahrrad-Crunches':'Bicycle Crunches',
+  'Plank (Unterarmstütz)':'Forearm Plank',
+  'Seitlicher Unterarmstütz':'Side Plank',
+  'Käfer (Dead Bug)':'Dead Bug',
+  'Bergsteiger':'Mountain Climbers',
+  'Scheibenwischer':'Windshield Wipers',
+  'V-Ups':'V-Ups',
+  'Hohlkörper-Halten':'Hollow Body Hold',
+  'Beckenheben (Reverse Crunch)':'Reverse Crunch',
+  'Plank-Jacks':'Plank Jacks',
+  'Zehenspitzen-Touches':'Toe Touches',
+  'Seitliche Crunches':'Oblique Crunches',
+  'Langsame Bergsteiger':'Slow Mountain Climbers',
+  'Plank-Schulterklopfen':'Plank Shoulder Taps',
+  'Sit-up mit Twist':'Twisting Sit-Ups',
+  'Beinkreisen (liegend)':'Lying Leg Circles',
+  'Ellenbogen-zu-Knie-Crunches':'Standing Elbow-to-Knee Crunches',
+  'Plank-Hüftabsenken':'Plank Hip Dips',
+  'Liegestütze':'Push-Ups',
+  'Enge Liegestütze':'Close-Grip Push-Ups',
+  'Pike Push-ups':'Pike Push-Ups',
+  'Trizeps-Dips':'Triceps Dips',
+  'Breite Liegestütze':'Wide Push-Ups',
+  'Arm-Kreisen':'Arm Circles',
+  'Schulterdrücken (Schattenboxen)':'Shadow Shoulder Press',
+  'Boxschläge':'Shadow Boxing Punches',
+  'Diamant-Liegestütze':'Diamond Push-Ups',
+  'Schräge Liegestütze (Hände erhöht)':'Incline Push-Ups',
+  'Schräge Liegestütze (Füße erhöht)':'Decline Push-Ups',
+  'Liegestütz-Schulterklopfen':'Push-Up Shoulder Taps',
+  'Arm-Scheren':'Arm Scissors',
+  'Plank-zu-Liegestütz':'Plank-Up (Up-Down Plank)',
+  'Trizeps-Kickbacks (ohne Gewicht)':'Bodyweight Triceps Kickbacks',
+  'Schulterkreisen rückwärts':'Backward Shoulder Rolls',
+  'Superman':'Superman',
+  'Vierfüßler-Diagonale (Bird Dog)':'Bird Dog',
+  'Schwimmer':'Swimmers',
+  'Rückenstrecker':'Back Extensions',
+  'Good Mornings (Körpergewicht)':'Bodyweight Good Mornings',
+  'Superman-Pulse':'Superman Pulses',
+  'Superman mit Armstreckung':'Superman Hold with Arm Extension',
+  'Reverse Snow Angels':'Reverse Snow Angels',
+  'Bird-Dog-Pulse':'Bird Dog Pulses',
+  'Kobra-Haltung (Cobra Pose)':'Cobra Pose',
+  'Heuschrecken-Haltung (Locust Pose)':'Locust Pose',
+  'Brücke mit Armstreckung':'Glute Bridge with Overhead Reach',
+  'Reverse Hyperextension':'Reverse Hyperextension',
+  'Schattenrudern (Bent-over Row)':'Bodyweight Bent-Over Row',
+  'Y-Heben (Bauchlage)':'Prone Y-Raises',
+  'T-Heben (Bauchlage)':'Prone T-Raises',
+  'W-Heben (Bauchlage)':'Prone W-Raises',
+  'Seitliches Rückenheben':'Side-Lying Back Raises',
+  'Superman mit Beinpause':'Superman with Alternating Leg Lifts',
+  'Rumpfheben im Liegen':'Prone Torso Raises',
+  'Diagonales Rückenheben':'Prone Alternating Superman',
+  'Rücken-Extension langsam':'Slow Back Extensions',
+  'Hampelmänner':'Jumping Jacks',
+  'High Knees':'High Knees',
+  'Burpees':'Burpees',
+  'Skater-Sprünge':'Skater Jumps',
+  'Butt Kicks (Fersen-Sprint)':'Butt Kicks',
+  'Seilspringen (ohne Seil)':'Invisible Jump Rope',
+  'Standlauf schnell':'Running in Place',
+  'Squat-Jumps mit Twist':'Twisting Jump Squats',
+  'Sternsprünge (Star Jumps)':'Star Jumps',
+  'Strecksprünge (Tuck Jumps)':'Tuck Jumps',
+  'Seitliche Sprünge':'Lateral Hops',
+  'Boxer-Shuffle':'Boxer Shuffle',
+  'Sprint auf der Stelle':'Sprint in Place',
+  'Überkreuz-Hampelmänner (Cross Jacks)':'Cross Jacks',
+  'Seitliche Squat-Sprünge':'Lateral Squat Jumps',
+  'Halber Burpee (ohne Liegestütz)':'Half Burpees',
+  'Hampelmänner mit Kniehub':'Jumping Jacks with Knee Raise',
+  'Doppel-Sprünge simuliert':'Double-Under Simulation',
+  'Schnelle Wechselsprünge':'Fast Split Jumps',
+  'Explosive Kniebeugen-Sprünge':'Explosive Squat Jumps',
+};
+
+/* ---------- Töne ---------- */
+function beep(freq,dur,vol){
+  if(!wk.audio) return;
+  try{
+    const ctx=wk.audio, o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='sine'; o.frequency.value=freq;
+    g.gain.setValueAtTime(0,ctx.currentTime);
+    g.gain.linearRampToValueAtTime(vol,ctx.currentTime+0.02);
+    g.gain.linearRampToValueAtTime(0,ctx.currentTime+dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime+dur+0.02);
+  }catch(e){}
+}
+
+/* ---------- Ausgeglichene Übungsauswahl (Gegenspieler-Muskeln im Gleichgewicht) ---------- */
+function wkShuffled(arr){ return [...arr].sort(()=>Math.random()-0.5); }
+function wkDrawFrom(arr,count){
+  if(!arr.length || count<=0) return [];
+  const out=[]; let bag=wkShuffled(arr); let last=null;
+  for(let i=0;i<count;i++){
+    if(!bag.length) bag=wkShuffled(arr);
+    let pick=bag.shift();
+    if(arr.length>1 && pick.name===last && bag.length){ bag.push(pick); pick=bag.shift(); }
+    out.push(pick); last=pick.name;
+  }
+  return out;
+}
+// Baut die Basis-Übungsfolge: jeder gewählte Bereich bekommt einen fairen Anteil;
+// Bauch & unterer Rücken werden dabei als ein gemeinsamer, ausgeglichener Topf behandelt.
+function wkBuildBaseSequence(unique){
+  const selected = wkSettings.areas;
+  const hasTorso = selected.includes('core') || selected.includes('ruecken');
+  const otherAreas = selected.filter(a=>a!=='core' && a!=='ruecken');
+  const buckets = otherAreas.map(a=>({type:'simple', area:a}));
+  if(hasTorso) buckets.push({type:'torso'});
+  if(!buckets.length) return [];
+
+  const counts = buckets.map(()=>Math.floor(unique/buckets.length));
+  let remainder = unique - counts.reduce((a,b)=>a+b,0);
+  for(let i=0;i<buckets.length && remainder>0;i++){ counts[i]++; remainder--; }
+
+  let result=[];
+  buckets.forEach((b,i)=>{
+    if(b.type==='simple'){
+      const arr = WK_EXERCISES.filter(e=>e.tags.includes(b.area));
+      result = result.concat(wkDrawFrom(arr, counts[i]));
+    }else{
+      // Rumpf-Topf: Bauch und unterer Rücken je zur Hälfte
+      const coreArr = WK_EXERCISES.filter(e=>e.tags.includes('core'));
+      const backArr = WK_EXERCISES.filter(e=>e.tags.includes('ruecken'));
+      const n = counts[i];
+      const half = Math.floor(n/2);
+      const coreCount = Math.random()<0.5 ? half : (n-half);
+      const backCount = n - coreCount;
+      result = result.concat(wkDrawFrom(coreArr, coreCount));
+      result = result.concat(wkDrawFrom(backArr, backCount));
+    }
+  });
+
+  // Reihenfolge mischen, direkte Wiederholungen möglichst vermeiden
+  result = wkShuffled(result);
+  for(let i=1;i<result.length;i++){
+    if(result[i].name===result[i-1].name){
+      const swapIdx = result.findIndex((e,idx)=>idx>i && e.name!==result[i-1].name);
+      if(swapIdx>-1){ const tmp=result[i]; result[i]=result[swapIdx]; result[swapIdx]=tmp; }
+    }
+  }
+  return result;
+}
+
+/* ---------- Ablaufsteuerung ---------- */
+function wkStart(){
+  const pool=wkPool();
+  if(!pool.length){ notify('Bitte mindestens einen Bereich auswählen.'); return; }
+  const perBlock=wkSettings.exDur+wkSettings.pauseDur;
+  const totalCount=Math.max(1,Math.round(wkSettings.target*60/perBlock));
+  const unique=Math.max(1,Math.round(totalCount/wkSettings.sets));
+  const base = wkBuildBaseSequence(unique);
+  // Sätze: gleiche Folge mehrfach hintereinander
+  wk.plan=[];
+  for(let s=0;s<wkSettings.sets;s++){
+    base.forEach(e=>wk.plan.push({
+      name:e.name, tags:e.tags,
+      dur:wkSettings.exDur, pause:wkSettings.pauseDur,
+      set: wkSettings.sets>1 ? s+1 : 0
+    }));
+  }
+  show('scr-wk-plan'); wkRenderPlan();
+}
+
+/* ---------- Vorschau/Plan bearbeiten ---------- */
+function wkPlanTotal(){
+  let t=0;
+  wk.plan.forEach((it,i)=>{ t+=it.dur; if(i<wk.plan.length-1) t+=it.pause; });
+  return t;
+}
+function wkRenderPlan(){
+  const list=document.getElementById('wk-plan-list');
+  let lastSet=null;
+  list.innerHTML=wk.plan.map((it,i)=>{
+    const isLast=i===wk.plan.length-1;
+    let header='';
+    if(it.set && it.set!==lastSet){ header=`<div class="set-divider">Satz ${it.set}</div>`; lastSet=it.set; }
+    return header + `
+    <div class="plan-row">
+      <div class="plan-num">${i+1}</div>
+      <div class="plan-info">
+        <div class="pn">${esc(it.name)}</div>
+        <div class="pd">${it.dur} Sek.${isLast?'' : ` · <span class="pause">Pause ${it.pause} Sek.</span>`}</div>
+      </div>
+      <div class="plan-move">
+        <button onclick="wkMove(${i},-1)" ${i===0?'disabled':''}>▲</button>
+        <button onclick="wkMove(${i},1)" ${isLast?'disabled':''}>▼</button>
+      </div>
+      <button class="plan-edit" onclick="wkEditOpen(${i})">✎</button>
+    </div>`;
+  }).join('') || '<div class="empty">Keine Übungen. Füge welche hinzu.</div>';
+  const t=wkPlanTotal(), m=Math.floor(t/60), s=t%60;
+  document.getElementById('wk-plan-total').innerHTML=
+    `<b>${wk.plan.length}</b> Übungen · Gesamtzeit ca. <b>${m}:${String(s).padStart(2,'0')}</b> Min`;
+  document.getElementById('wk-begin-btn').disabled=wk.plan.length===0;
+}
+function wkMove(i,dir){
+  const j=i+dir;
+  if(j<0||j>=wk.plan.length) return;
+  [wk.plan[i],wk.plan[j]]=[wk.plan[j],wk.plan[i]];
+  wkRenderPlan();
+}
+function wkPlanAdd(){
+  const pool=wkPool().length?wkPool():WK_EXERCISES;
+  const e=pool[Math.floor(Math.random()*pool.length)];
+  wk.plan.push({name:e.name,tags:e.tags,dur:wkSettings.exDur,pause:wkSettings.pauseDur});
+  wkRenderPlan();
+  wkEditOpen(wk.plan.length-1);
+}
+let wkEditIdx=null;
+function wkEditOpen(i){
+  wkEditIdx=i;
+  const it=wk.plan[i];
+  const sel=document.getElementById('wk-edit-select');
+  sel.innerHTML=WK_EXERCISES.map((e,idx)=>
+    `<option value="${idx}" ${e.name===it.name?'selected':''}>${e.name}</option>`).join('');
+  document.getElementById('wk-edit-dur').textContent=it.dur;
+  document.getElementById('wk-edit-pause').textContent=it.pause;
+  document.getElementById('wk-edit-pause-wrap').style.display=(i===wk.plan.length-1)?'none':'';
+  document.getElementById('wk-edit-modal').classList.add('open');
+}
+function wkEditAdjust(key,delta){
+  if(wkEditIdx===null) return;
+  const limits={dur:[5,120],pause:[0,90]};
+  const [min,max]=limits[key];
+  const it=wk.plan[wkEditIdx];
+  it[key]=Math.min(max,Math.max(min,it[key]+delta));
+  document.getElementById('wk-edit-'+key).textContent=it[key];
+  wkRenderPlan();
+}
+function wkEditChangeExercise(idx){
+  if(wkEditIdx===null) return;
+  const e=WK_EXERCISES[parseInt(idx,10)];
+  const it=wk.plan[wkEditIdx];
+  it.name=e.name; it.tags=e.tags;
+  wkRenderPlan();
+}
+function wkEditDelete(){
+  if(wkEditIdx===null) return;
+  wk.plan.splice(wkEditIdx,1);
+  wkEditIdx=null;
+  document.getElementById('wk-edit-modal').classList.remove('open');
+  wkRenderPlan();
+}
+function wkEditClose(){
+  wkEditIdx=null;
+  document.getElementById('wk-edit-modal').classList.remove('open');
+  wkRenderPlan();
+}
+
+/* ---------- Training läuft ---------- */
+function wkBegin(){
+  if(!wk.plan.length) return;
+  try{ wk.audio = wk.audio || new (window.AudioContext||window.webkitAudioContext)(); if(wk.audio.state==='suspended') wk.audio.resume(); }catch(e){}
+  try{ if(navigator.wakeLock) navigator.wakeLock.request('screen').then(l=>wk.wakelock=l).catch(()=>{}); }catch(e){}
+  wk.idx=0; wk.paused=false; wk.pauseNext=0;
+  clearInterval(wk.timer);
+  wk.timer=setInterval(wkTick,1000);
+  show('scr-wk-run');
+  wkEnterReady();
+}
+function wkEnterReady(){
+  wk.phase='ready'; wk.remaining=5; wk.phaseTotal=5;
+  wkRenderPhase('Bereit machen','ready', wk.plan[0], 1);
+}
+function wkEnterExercise(i){
+  wk.idx=i; wk.phase='exercise';
+  wk.remaining=wk.plan[i].dur; wk.phaseTotal=wk.plan[i].dur;
+  wkRenderPhase('Übung','exercise', wk.plan[i], i+1);
+}
+function wkEnterPause(nextIdx,dur){
+  wk.phase='pause'; wk.pauseNext=nextIdx;
+  wk.remaining=dur; wk.phaseTotal=dur;
+  wkRenderPhase('Pause','pause', wk.plan[nextIdx], nextIdx+1, 'Als Nächstes:');
+}
+function wkAdvance(){
+  if(wk.phase==='ready'){ wkEnterExercise(0); return; }
+  if(wk.phase==='exercise'){
+    if(wk.idx>=wk.plan.length-1){ wkFinish(); return; }
+    const p=wk.plan[wk.idx].pause;
+    if(p>0) wkEnterPause(wk.idx+1,p); else wkEnterExercise(wk.idx+1);
+    return;
+  }
+  if(wk.phase==='pause'){ wkEnterExercise(wk.pauseNext); return; }
+}
+function wkTick(){
+  if(wk.paused || wk.phase==='idle' || wk.phase==='done') return;
+  wk.remaining--;
+  if(wk.remaining>0){
+    if(wk.remaining<=5) beep(820,0.12,0.22);
+    wkUpdateTime();
+  }else{
+    beep(1150,0.4,0.28);
+    wkUpdateTime();
+    wkAdvance();
+  }
+}
+function wkRenderPhase(label,cls,item,progressIdx,nextLabel){
+  const lbl=document.getElementById('wk-phase-label');
+  lbl.textContent=label; lbl.className='wk-phase '+cls;
+  document.getElementById('wk-name').textContent=item.name;
+  document.getElementById('wk-name-en').textContent=EX_EN[item.name]||'';
+  document.getElementById('wk-count').textContent=`Übung ${progressIdx} / ${wk.plan.length}`;
+  const ring=document.getElementById('wk-ring');
+  const color = cls==='exercise' ? getCss('--mint') : cls==='pause' ? getCss('--gold-text') : getCss('--blue');
+  ring.style.stroke=color;
+  ring.setAttribute('stroke-dasharray', RING_CIRC);
+  wkUpdateTime();
+}
+function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function wkUpdateTime(){
+  document.getElementById('wk-time').textContent=wk.remaining;
+  const frac = wk.phaseTotal>0 ? wk.remaining/wk.phaseTotal : 0;
+  document.getElementById('wk-ring').style.strokeDashoffset = RING_CIRC*(1-frac);
+}
+function wkTogglePause(){
+  wk.paused=!wk.paused;
+  document.getElementById('wk-pause-btn').textContent = wk.paused ? 'Weiter' : 'Pause';
+}
+function wkSkip(){ wkAdvance(); }
+function wkFinish(){
+  clearInterval(wk.timer); wk.phase='done';
+  wkReleaseLock();
+  const total=wkPlanTotal();
+  const m=Math.floor(total/60), s=total%60;
+  document.getElementById('wk-done-summary').textContent=`${wk.plan.length} Übungen`;
+  document.getElementById('wk-done-detail').textContent=
+    `Gesamtzeit ca. ${m} Min ${s>0?s+' Sek':''} · Bereiche: ${wkSettings.areas.map(a=>WK_AREAS.find(x=>x.key===a).label).join(', ')}`;
+  show('scr-wk-done');
+}
+function wkQuit(){
+  // Timer während der Rückfrage anhalten
+  const wasPaused = wk.paused;
+  wk.paused = true;
+  ask('Training jetzt beenden?', ()=>{
+    clearInterval(wk.timer); wk.timer=null;
+    wk.phase='idle'; wk.paused=false;
+    wkReleaseLock();
+    show('scr-wk-plan'); wkRenderPlan();
+  }, 'Ja, beenden', ()=>{ wk.paused = wasPaused; },
+  {detail:'Der Timer stoppt und du kommst zurück zur Plan-Übersicht. Dein Plan bleibt gespeichert, das Training beginnt beim nächsten Start von vorn.',
+   noLabel:'Nein, weitermachen'});
+}
+function wkReleaseLock(){ try{ if(wk.wakelock){ wk.wakelock.release(); wk.wakelock=null; } }catch(e){} }
+
+/* ==================== BESTÄTIGUNG / HINWEIS ==================== */
+// Ersetzt confirm()/alert(), da diese im iPhone-Homescreen-Modus blockiert werden
+let askCallback=null, askCancelCb=null;
+function ask(text, onYes, okLabel, onNo, opts){
+  opts = opts || {};
+  askCallback=onYes; askCancelCb=onNo||null;
+  document.getElementById('ask-text').textContent=text;
+  const det=document.getElementById('ask-detail');
+  det.textContent = opts.detail || '';
+  det.style.display = opts.detail ? '' : 'none';
+  document.getElementById('ask-ok').textContent=okLabel||'Ja';
+  document.getElementById('ask-no').textContent=opts.noLabel||'Zurück';
+  document.getElementById('ask-modal').classList.add('open');
+}
+function askClose(){
+  const no=askCancelCb;
+  askCallback=null; askCancelCb=null;
+  document.getElementById('ask-modal').classList.remove('open');
+  if(no) no();
+}
+function askConfirmYes(){
+  const cb=askCallback;
+  askCallback=null; askCancelCb=null;
+  document.getElementById('ask-modal').classList.remove('open');
+  if(cb) cb();
+}
+function notify(text){
+  let t=document.getElementById('toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='toast'; t.className='toast';
+    document.body.appendChild(t);
+  }
+  t.textContent=text;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+/* ---------- Hilfsfunktionen ---------- */
+function esc(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- Start ---------- */
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+wkLoad().then(()=>show('scr-wk-setup'));
+</script>
+</body>
+</html>
