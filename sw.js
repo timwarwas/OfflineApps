@@ -2,7 +2,7 @@
    Betrifft ausschließlich die Seiten in PAGES – alle anderen Seiten bleiben unberührt.
    Strategie: erst Netz (immer aktueller Stand), ohne Netz die zuletzt geladene Version. */
 const CACHE = 'essensplanung-v1';   // Name beibehalten, damit der bestehende Offline-Stand erhalten bleibt
-const PAGES = ['/essensplanung.html', '/kosten.html', '/workout.html'];
+const PAGES = ['/essensplanung.html', '/kosten.html', '/workout.html', '/cocktails.html'];
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {

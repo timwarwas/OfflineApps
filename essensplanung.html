@@ -290,6 +290,8 @@ details.box[open] summary:after{content:'−'}
   details.box>*{display:block}
 }
 
+details.ghalt summary{min-height:44px}
+
 </style>
 </head>
 <body>
@@ -1113,11 +1115,85 @@ const Auth = {
   },
 };
 
-/* ---------- Abgleich über ein privates GitHub-Repository ---------- */
+/* ---------- Eigener Server (PocketBase auf dem Pi) ----------
+   Ein Haushalt = ein Datensatz in der Collection "trips". Inhalt ist verschlüsselt (AES-GCM),
+   Schlüssel und Zugangsnachweis werden per HKDF aus dem Geheimnis im Verbindungslink abgeleitet.
+   Bilder liegen als eigene Datensätze mit fester, aus dem Bildschlüssel berechneter ID. */
+const PB = {
+  DEFAULT: 'https://kostenpi.tail281e3e.ts.net',
+  get url() { try { return localStorage.getItem('ep_server') || this.DEFAULT; } catch (e) { return this.DEFAULT; } },
+  b64e(u8) { return bytesToB64(u8).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); },
+  b64d(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return b64ToBytes(s); },
+  newSecret() { return this.b64e(crypto.getRandomValues(new Uint8Array(32))); },
+  cache: new Map(),
+  keysFor(secret) {
+    if (!this.cache.has(secret)) this.cache.set(secret, (async () => {
+      const te = t => new TextEncoder().encode(t), salt = te('essensplanung-v1');
+      const base = await crypto.subtle.importKey('raw', this.b64d(secret), 'HKDF', false, ['deriveKey', 'deriveBits']);
+      const enc = await crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt, info: te('enc') }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+      const bits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info: te('auth') }, base, 256);
+      return { enc, auth: this.b64e(new Uint8Array(bits)) };
+    })());
+    return this.cache.get(secret);
+  },
+  async enc(key, text) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text));
+    return 'v1.' + this.b64e(iv) + '.' + this.b64e(new Uint8Array(ct));
+  },
+  async dec(key, str) {
+    const p = String(str || '').split('.');
+    if (p.length !== 3 || p[0] !== 'v1') throw new Error('Unbekanntes Datenformat auf dem Server.');
+    return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: this.b64d(p[1]) }, key, this.b64d(p[2])));
+  },
+  async api(method, path, auth, body) {
+    const h = {}; if (auth) h['X-Trip-Auth'] = auth; if (body) h['Content-Type'] = 'application/json';
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 20000);
+    try {
+      const r = await fetch(this.url + '/api/collections/trips/records' + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', signal: ctl.signal });
+      let j = null; try { j = await r.json(); } catch (e) {}
+      return { status: r.status, json: j };
+    } catch (e) {
+      const err = new Error('Server nicht erreichbar.'); err.status = 0; throw err;
+    } finally { clearTimeout(to); }
+  },
+  fail(r) { const e = new Error('Server antwortet mit Fehler ' + r.status + '.'); e.status = r.status; return e; },
+  /* feste Datensatz-ID für ein Bild: 15 Zeichen a–z0–9 */
+  async imgId(household, key, suffix) {
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(household + '|' + key + '|' + suffix)));
+    const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = '';
+    for (let i = 0; i < 15; i++) s += a[h[i] % 36];
+    return s;
+  },
+  parseLink(str) {
+    const m = /(?:#join=)?([a-z0-9]{15})\.([A-Za-z0-9_-]{43})\s*$/.exec(String(str || '').trim());
+    return m ? { id: m[1], secret: m[2] } : null;
+  },
+  link(id, secret) { return location.origin + location.pathname + '#join=' + id + '.' + secret; },
+  /* Haushalt vom Server holen (für "Verbinden") */
+  async fetchHousehold(id, secret) {
+    const k = await this.keysFor(secret);
+    const r = await this.api('GET', '/' + id, k.auth);
+    if (r.status === 404) { const e = new Error('Haushalt nicht gefunden. Ist der Link vollständig?'); e.status = 404; throw e; }
+    if (r.status !== 200 || !r.json) throw this.fail(r);
+    return { remote: repairDb(JSON.parse(await this.dec(k.enc, r.json.data))), updated: r.json.updated, rev: +r.json.rev || 0 };
+  },
+  /* neuen Haushalt-Datensatz anlegen */
+  async create(secret, data) {
+    const k = await this.keysFor(secret);
+    const r = await this.api('POST', '', null, { auth: k.auth, data: await this.enc(k.enc, JSON.stringify(data)), rev: 1 });
+    if (r.status !== 200 || !r.json || !r.json.id) throw this.fail(r);
+    return r.json;
+  },
+};
+
+/* ---------- Abgleich über ein privates GitHub-Repository (alt) oder den eigenen Server ---------- */
 const Sync = {
   sha: null, dirty: false, busy: false, again: false, timer: null, poll: null,
   state: 'off', msg: '', lastSync: null,
+  gen: 0, remoteRev: 0,
   get repo() { return Auth.cfg.repo || null; },
+  get isPB() { const r = this.repo; return !!(r && r.pb); },
   enabled() { return !!(Auth.token && this.repo); },
   async api(path, opts) {
     opts = opts || {};
@@ -1173,13 +1249,14 @@ const Sync = {
   },
   saveMeta() { return Store.set('sync', { sha: this.sha, dirty: this.dirty, lastSync: this.lastSync }); },
   markDirty() {
-    this.dirty = true; this.saveMeta();
+    this.dirty = true; this.gen++; this.saveMeta();
     if (!this.enabled()) { this.setState('off'); return; }
     clearTimeout(this.timer);
     this.timer = setTimeout(() => this.run(), 1500);
   },
   setState(s, msg) { this.state = s; this.msg = msg || ''; if (typeof renderSyncPill === 'function') renderSyncPill(); },
   async pull() {
+    if (this.isPB) return this.pullPB();
     const f = await this.getFile('data.json');
     if (!f) { this.sha = null; if (db && db.household) this.dirty = true; return false; }
     if (f.sha === this.sha) return false;
@@ -1192,7 +1269,39 @@ const Sync = {
     await this.saveMeta();
     return true;
   },
+  async pullPB() {
+    const k = await PB.keysFor(Auth.token);
+    const r = await PB.api('GET', '/' + this.repo.pb, k.auth);
+    if (r.status === 404) { const e = new Error('Haushalt auf dem Server nicht gefunden.'); e.status = 404; throw e; }
+    if (r.status !== 200 || !r.json) throw PB.fail(r);
+    this.remoteRev = +r.json.rev || 0;
+    if (r.json.updated === this.sha) return false;
+    const remote = repairDb(JSON.parse(await PB.dec(k.enc, r.json.data)));
+    db = repairDb(EP.mergeDb(db, remote));
+    EP.normalizePlan(db);
+    this.sha = r.json.updated;
+    if (this.canon(db) !== this.canon(remote)) this.dirty = true;
+    await Store.set('db', db);
+    await this.saveMeta();
+    return true;
+  },
+  async pushPB() {
+    const k = await PB.keysFor(Auth.token);
+    for (let attempt = 0; attempt < 5 && this.dirty; attempt++) {
+      const g0 = this.gen;
+      const u = await PB.api('PATCH', '/' + this.repo.pb, k.auth, { data: await PB.enc(k.enc, JSON.stringify(db)), rev: (this.remoteRev || 0) + 1 });
+      if (u.status === 404) { const e = new Error('Haushalt auf dem Server nicht gefunden.'); e.status = 404; throw e; }
+      if (u.status !== 200 || !u.json) throw PB.fail(u);
+      this.sha = u.json.updated; this.remoteRev = +u.json.rev || 0;
+      if (this.gen === g0) this.dirty = false;
+      await this.saveMeta();
+      // Kontrolle: Hat zwischenzeitlich ein anderes Gerät geschrieben? Dann zusammenführen und erneut schreiben.
+      const v = await PB.api('GET', '/' + this.repo.pb, k.auth);
+      if (v.status === 200 && v.json && v.json.updated !== this.sha) await this.pullPB();
+    }
+  },
   async push() {
+    if (this.isPB) return this.pushPB();
     for (let attempt = 0; attempt < 4 && this.dirty; attempt++) {
       try {
         this.sha = await this.putFile('data.json', utf8ToB64(JSON.stringify(db)), this.sha, 'Essensplanung aktualisiert');
@@ -1219,7 +1328,8 @@ const Sync = {
       this.setState('ok');
       if (changed && typeof rerender === 'function') rerender();
     } catch (e) {
-      const m = e.status === 401 ? 'Zugang abgelaufen oder ungültig – Token neu eingeben.'
+      const m = this.isPB ? (e.status === 404 ? 'Haushalt auf dem Server nicht gefunden.' : e.status === 0 ? 'Server nicht erreichbar – wird automatisch wiederholt.' : (e.message || 'Abgleich fehlgeschlagen.'))
+        : e.status === 401 ? 'Zugang abgelaufen oder ungültig – Token neu eingeben.'
         : e.status === 403 ? 'Kein Schreibzugriff auf das Repository.'
         : e.status === 404 ? 'Repository nicht gefunden.' : (e.message || 'Abgleich fehlgeschlagen.');
       this.setState(navigator.onLine ? 'err' : 'offline', m);
@@ -1230,7 +1340,7 @@ const Sync = {
   },
   startPolling() {
     clearInterval(this.poll);
-    this.poll = setInterval(() => { if (document.visibilityState === 'visible') this.run(); }, 60000);
+    this.poll = setInterval(() => { if (document.visibilityState === 'visible') this.run(); }, this.isPB ? 30000 : 60000);
   },
   /* Verbindung prüfen: Repository muss existieren und privat sein */
   async checkRepo(owner, name, token) {
@@ -1262,14 +1372,21 @@ const Images = {
     let v = await Store.get(k);
     if (!v && Sync.enabled() && navigator.onLine) {
       try {
-        const f = await Sync.getFile(`images/${key}${thumb ? '_t' : ''}.jpg`);
-        if (f) { v = 'data:image/jpeg;base64,' + f.b64.replace(/\s/g, ''); await Store.set(k, v); }
+        if (Sync.isPB) {
+          const kk = await PB.keysFor(Auth.token);
+          const r = await PB.api('GET', '/' + await PB.imgId(Sync.repo.pb, key, thumb ? 't' : 'f'), kk.auth);
+          if (r.status === 200 && r.json) { v = await PB.dec(kk.enc, r.json.data); await Store.set(k, v); }
+        } else {
+          const f = await Sync.getFile(`images/${key}${thumb ? '_t' : ''}.jpg`);
+          if (f) { v = 'data:image/jpeg;base64,' + f.b64.replace(/\s/g, ''); await Store.set(k, v); }
+        }
       } catch (e) {}
     }
     if (v) this.mem.set(k, v);
     return v || null;
   },
   async sync() {
+    if (Sync.isPB) return this.syncPB();
     const q = (await Store.get('imgq')) || [];
     const rest = [];
     for (const key of q) {
@@ -1290,6 +1407,41 @@ const Images = {
     }
     await Store.set('imgdel', []);
   },
+  /* Bilder mit dem eigenen Server abgleichen: je Bild ein Datensatz für groß (f) und Vorschau (t) */
+  async syncPB() {
+    const kk = await PB.keysFor(Auth.token), hh = Sync.repo.pb;
+    const q = (await Store.get('imgq')) || [], rest = [];
+    for (const key of q) {
+      try {
+        for (const [suffix, sk] of [['f', 'img:'], ['t', 'thumb:']]) {
+          let v = await Store.get(sk + key);
+          if (!v) continue;
+          if (v.length > 1400000) v = await this.shrink(v);   // Obergrenze eines Datensatzes: 2 MB
+          const id = await PB.imgId(hh, key, suffix);
+          const r = await PB.api('POST', '', null, { id, auth: kk.auth, data: await PB.enc(kk.enc, v), rev: 1 });
+          if (r.status === 200) continue;
+          const g = await PB.api('GET', '/' + id, kk.auth);        // existiert schon?
+          if (g.status !== 200) throw PB.fail(r);
+        }
+      } catch (e) { rest.push(key); }
+    }
+    await Store.set('imgq', rest);
+    const d = (await Store.get('imgdel')) || [];
+    for (const key of d) {
+      try { for (const suffix of ['f', 't']) await PB.api('DELETE', '/' + await PB.imgId(hh, key, suffix), kk.auth); } catch (e) {}
+      await Store.del('img:' + key); await Store.del('thumb:' + key);
+    }
+    await Store.set('imgdel', []);
+  },
+  async shrink(url) {
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+    const s = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * s); c.height = Math.round(img.naturalHeight * s);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.72);
+  },
+  /* alle Bildschlüssel der Rezepte (zum ersten Hochladen) */
+  allKeys() { const out = new Set(); (db.recipes || []).forEach(r => { if (!r.deleted) (r.images || []).forEach(i => out.add(i.fileKey)); }); return [...out]; },
   /* Bild verkleinern: längste Kante 1600 px + Vorschau 400 px */
   async process(file) {
     if (file.size > 10 * 1024 * 1024) throw new Error('Das Bild ist größer als 10 MB.');
@@ -2443,7 +2595,7 @@ function vRotation() {
 function vSettings() {
   const s = db.settings;
   const segb = (key, val, label) => `<button data-act="set" data-arg="${key}|${val}" aria-pressed="${s[key] === val}">${label}</button>`;
-  const syncTxt = Sync.enabled() ? `Verbunden mit ${esc(Sync.repo.owner)}/${esc(Sync.repo.name)}` : 'Nicht eingerichtet – Daten nur auf diesem Gerät';
+  const syncTxt = Sync.enabled() ? (Sync.isPB ? 'Verbunden mit deinem Pi' : `Verbunden mit GitHub ${esc(Sync.repo.owner)}/${esc(Sync.repo.name)} (alt)`) : 'Nicht eingerichtet – Daten nur auf diesem Gerät';
   return `<div class="box stack">
       <div class="row"><span class="grow"><b>Portionen pro Tag</b><span class="hint" style="display:block;margin:0">Wie viel euer Haushalt pro Tag isst</span></span>
         <div class="stepper"><button data-act="ppd" data-arg="-1" aria-label="Weniger">−</button><output>${s.portionsPerDay}</output><button data-act="ppd" data-arg="1" aria-label="Mehr">+</button></div></div>
@@ -2500,25 +2652,82 @@ function vSources() {
 }
 
 /* ---------- Geräteabgleich ---------- */
+let pendingJoin = '';
+const pwField = id => `<label class="field"><span>Dein Haushaltspasswort</span><input class="in" id="${id}" type="password" autocomplete="current-password"></label>`;
+function pbJoinForm() {
+  return `<h3>Schon auf einem anderen Gerät eingerichtet</h3>
+    <label class="field"><span>Link vom anderen Gerät</span><input class="in" id="pb-in" value="${esc(pendingJoin)}" placeholder="…/essensplanung.html#join=…" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+    ${pwField('pb-pw3')}
+    <p class="hint">Die Daten dieses Geräts werden mit dem verbundenen Haushalt zusammengeführt.</p>
+    <div class="btns"><button class="btn${pendingJoin ? ' primary' : ''}" data-act="pbjoinhere">Verbinden</button></div>`;
+}
 function vSync() {
   const on = Sync.enabled(), r = Sync.repo;
   const last = Sync.lastSync ? new Date(Sync.lastSync).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'noch nie';
-  return `${on ? `<div class="box"><p><b>Verbunden</b> mit dem privaten Repository ${esc(r.owner)}/${esc(r.name)}.</p>
-      <p class="hint">Letzter Abgleich: ${last}${Sync.msg ? `<br><span class="warn">${esc(Sync.msg)}</span>` : ''}</p>
-      <div class="btns two"><button class="btn primary" data-act="syncnow">Jetzt abgleichen</button><button class="btn danger" data-act="syncoff">Trennen</button></div></div>
-      <h3>Zugang erneuern</h3>` : `<p class="sub">Damit Handy, Tablet und PC denselben Stand haben, speichert die App eure Daten zusätzlich in einem <b>privaten</b> GitHub-Repository. Ohne Einrichtung bleiben die Daten nur auf diesem Gerät.</p>
-      <h3>Einmalig einrichten</h3>
-      <ol class="steps box" style="padding-left:34px">
-        <li>Auf github.com ein neues Repository anlegen, z. B. <b>essensplanung-daten</b>, Sichtbarkeit <b>Private</b>.</li>
-        <li>Unter Settings → Developer settings → Personal access tokens → <b>Fine-grained tokens</b> einen Token erstellen: Zugriff nur auf dieses Repository, Berechtigung <b>Contents: Read and write</b>.</li>
-        <li>Den Token hier eintragen. Auf jedem weiteren Gerät wählst du beim Start „Mit bestehendem Haushalt verbinden“.</li>
-      </ol>`}
-    <label class="field"><span>GitHub-Benutzername</span><input class="in" id="g-o" value="${esc(r ? r.owner : '')}" autocapitalize="off" autocomplete="off"></label>
-    <label class="field"><span>Repository</span><input class="in" id="g-r" value="${esc(r ? r.name : 'essensplanung-daten')}" autocapitalize="off" autocomplete="off"></label>
-    <label class="field"><span>Token</span><input class="in" id="g-t" type="password" autocomplete="off" placeholder="github_pat_…"></label>
-    <label class="field"><span>Dein Haushaltspasswort</span><input class="in" id="g-p" type="password" autocomplete="current-password"></label>
-    <p class="hint">Der Token wird mit deinem Passwort verschlüsselt auf diesem Gerät gespeichert.</p>
-    <div class="btns"><button class="btn primary" data-act="syncsetup">${on ? 'Zugang speichern' : 'Verbinden'}</button></div>`;
+  const status = `<p class="hint">Letzter Abgleich: ${last}${Sync.msg ? `<br><span class="warn">${esc(Sync.msg)}</span>` : ''}</p>
+      <div class="btns two"><button class="btn primary" data-act="syncnow">Jetzt abgleichen</button><button class="btn danger" data-act="syncoff">Trennen</button></div>`;
+  if (on && Sync.isPB) return `<div class="box"><p><b>Verbunden</b> mit deinem Pi. Eure Daten liegen dort verschlüsselt.</p>${status}</div>
+    <h3>Weiteres Gerät verbinden</h3>
+    <p class="sub">Öffne diesen Link auf dem anderen Gerät oder füge ihn dort unter „Mit bestehendem Haushalt verbinden“ ein. Danach wird das Haushaltspasswort abgefragt.</p>
+    <div class="box stack"><input class="in" id="pb-link" readonly value="${esc(PB.link(r.pb, Auth.token))}" aria-label="Verbindungslink">
+      <div class="btns${navigator.share ? ' two' : ''}"><button class="btn primary" data-act="pbcopy">Link kopieren</button>${navigator.share ? '<button class="btn" data-act="pbshare">Senden …</button>' : ''}</div></div>
+    <p class="hint">Wer den Link hat, kann eure Daten entschlüsseln. Gib ihn nur an Personen im Haushalt weiter.</p>`;
+  if (on) return `<div class="box"><p><b>Verbunden</b> mit dem GitHub-Repository ${esc(r.owner)}/${esc(r.name)}.</p>${status}</div>
+    <h3>Auf deinen Pi umziehen</h3>
+    <p class="sub">Die Daten liegen dann verschlüsselt auf deinem Pi statt bei GitHub. Tokens werden nicht mehr gebraucht, die Bilder ziehen mit um.</p>
+    ${pwField('pb-pw2')}
+    <div class="btns"><button class="btn primary" data-act="pbmigrate">Jetzt umziehen</button></div>
+    <p class="hint">Danach verbindest du die anderen Geräte mit dem neuen Link. Das GitHub-Repository bleibt unverändert und kann später gelöscht werden.</p>
+    ${pbJoinForm()}`;
+  return `<p class="sub">Damit alle Geräte im Haushalt denselben Stand haben, speichert die App eure Daten verschlüsselt auf deinem Pi. Ohne Einrichtung bleiben die Daten nur auf diesem Gerät.</p>
+    ${pendingJoin ? '' : `<h3>Dieses Gerät ist das erste</h3>${pwField('pb-pw1')}<div class="btns"><button class="btn primary" data-act="pbcreate">Abgleich einrichten</button></div>`}
+    ${pbJoinForm()}
+    <details class="box ghalt" style="margin-top:22px"><summary>Alternativ: GitHub-Repository (alt)</summary>
+      <label class="field"><span>GitHub-Benutzername</span><input class="in" id="g-o" autocapitalize="off" autocomplete="off"></label>
+      <label class="field"><span>Repository</span><input class="in" id="g-r" value="essensplanung-daten" autocapitalize="off" autocomplete="off"></label>
+      <label class="field"><span>Token</span><input class="in" id="g-t" type="password" autocomplete="off" placeholder="github_pat_…"></label>
+      ${pwField('g-p')}
+      <div class="btns"><button class="btn" data-act="syncsetup">Mit GitHub verbinden</button></div></details>`;
+}
+async function pbCreate(pw) {
+  if (!(await Crypt.check(pw, db.household.verifier))) return notify('Das Passwort stimmt nicht.');
+  notify('Richte den Abgleich ein …');
+  try {
+    const secret = PB.newSecret();
+    const rec = await PB.create(secret, db);
+    await Auth.storeToken(pw, secret, { pb: rec.id });
+    Sync.sha = rec.updated; Sync.remoteRev = 1; Sync.dirty = false; await Sync.saveMeta();
+    await Store.set('imgq', Images.allKeys()); await Store.set('imgdel', []);
+    await Sync.run({ force: true }); Sync.startPolling();
+    rerender(); notify('Abgleich eingerichtet. Den Link für weitere Geräte findest du hier.');
+  } catch (e) { notify(e.message || 'Einrichten fehlgeschlagen.'); }
+}
+async function pbMigrate() {
+  const pw = $('#pb-pw2').value;
+  if (!(await Crypt.check(pw, db.household.verifier))) return notify('Das Passwort stimmt nicht.');
+  notify('Hole den aktuellen Stand von GitHub …');
+  await Sync.run({ force: true });
+  if (Sync.state !== 'ok') return notify('GitHub ist gerade nicht erreichbar: ' + (Sync.msg || 'bitte später erneut versuchen.'));
+  for (const key of Images.allKeys()) { await Images.get(key, false); await Images.get(key, true); }   // alle Bilder lokal holen
+  await pbCreate(pw);
+}
+async function pbJoinHere() {
+  const j = PB.parseLink($('#pb-in').value), pw = $('#pb-pw3').value;
+  if (!j) return notify('Das sieht nicht nach einem Verbindungslink aus.');
+  if (!pw) return notify('Bitte das Haushaltspasswort eingeben.');
+  try {
+    const f = await PB.fetchHousehold(j.id, j.secret);
+    if (!(await Crypt.check(pw, f.remote.household && f.remote.household.verifier))) return notify('Das Passwort passt nicht zu diesem Haushalt.');
+    const keys = Images.allKeys();
+    db = repairDb(EP.mergeDb(db, f.remote)); EP.normalizePlan(db);
+    await Store.set('db', db);
+    await Auth.storeToken(pw, j.secret, { pb: j.id });
+    Sync.sha = f.updated; Sync.remoteRev = f.rev; Sync.dirty = Sync.canon(db) !== Sync.canon(f.remote); await Sync.saveMeta();
+    await Store.set('imgq', keys);
+    pendingJoin = '';
+    await Sync.run({ force: true }); Sync.startPolling();
+    rerender(); notify('Verbunden.');
+  } catch (e) { notify(e.message || 'Verbinden fehlgeschlagen.'); }
 }
 async function setupSync() {
   const o = $('#g-o').value.trim(), n = $('#g-r').value.trim(), t = $('#g-t').value.trim(), pw = $('#g-p').value;
@@ -2672,8 +2881,13 @@ const ACT = {
   chpw: () => changePasswordSheet(),
   logout: () => confirmSheet('Abmelden?', 'Die Daten bleiben auf diesem Gerät gespeichert. Zum Öffnen brauchst du wieder dein Passwort.', 'Abmelden', 'Abbrechen', () => { Auth.logout(); location.reload(); }),
   syncsetup: () => setupSync(),
+  pbcreate: () => pbCreate($('#pb-pw1').value),
+  pbmigrate: () => pbMigrate(),
+  pbjoinhere: () => pbJoinHere(),
+  pbcopy: async () => { const l = $('#pb-link'); try { await navigator.clipboard.writeText(l.value); notify('Link kopiert.'); } catch (e) { l.focus(); l.select(); notify('Link markiert – jetzt kopieren.'); } },
+  pbshare: () => navigator.share({ title: 'Essensplanung verbinden', url: $('#pb-link').value }).catch(() => {}),
   syncnow: () => Sync.run({ force: true }).then(rerender),
-  syncoff: () => confirmSheet('Abgleich trennen?', 'Die Daten bleiben auf diesem Gerät. Andere Geräte gleichen sich weiter über das Repository ab.', 'Trennen', 'Abbrechen', async () => {
+  syncoff: () => confirmSheet('Abgleich trennen?', 'Die Daten bleiben auf diesem Gerät. Andere Geräte gleichen sich weiterhin untereinander ab.', 'Trennen', 'Abbrechen', async () => {
     const c = Auth.cfg; c.tokenEnc = null; c.repo = null; Auth.cfg = c; Auth.token = null;
     const s = LS.get('ep_session'); if (s) { s.tokenEnc = null; LS.set('ep_session', s); }
     Sync.setState('off'); rerender(); notify('Abgleich getrennt.');
@@ -2822,7 +3036,7 @@ function authWelcome() {
     <button class="btn" data-x="join">Mit bestehendem Haushalt verbinden</button></div>
     <p class="hint" style="text-align:center">Verbinden, wenn die Essensplanung schon auf einem anderen Gerät eingerichtet ist.</p>`, a => {
     $('[data-x=new]', a).onclick = authSetup;
-    $('[data-x=join]', a).onclick = authJoin;
+    $('[data-x=join]', a).onclick = () => authJoin(pendingJoin);
   });
 }
 function authSetup() {
@@ -2846,14 +3060,39 @@ function authSetup() {
     };
   });
 }
-function authJoin() {
+function authJoin(prefill) {
+  showAuth(`<h1>Verbinden</h1><p class="lead">Auf dem Gerät, auf dem die Essensplanung schon läuft: Einstellungen → Geräteabgleich → „Link kopieren“. Den Link hier einfügen oder direkt auf diesem Gerät öffnen.</p>
+    <label class="field"><span>Verbindungslink</span><input class="in" id="jl-l" value="${esc(prefill || '')}" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="…/essensplanung.html#join=…"></label>
+    <label class="field"><span>Haushaltspasswort</span><input class="in" type="password" id="jl-p" autocomplete="current-password"></label>
+    <div class="btns"><button class="btn primary" data-x="ok">Verbinden</button><button class="btn quiet" data-x="back">Zurück</button></div>
+    <p style="text-align:center;margin-top:18px"><button class="btn quiet" data-x="gh">Über GitHub-Repository verbinden (alt)</button></p>`, a => {
+    $('[data-x=back]', a).onclick = authWelcome;
+    $('[data-x=gh]', a).onclick = authJoinGH;
+    $('[data-x=ok]', a).onclick = async () => {
+      const j = PB.parseLink($('#jl-l', a).value), pw = $('#jl-p', a).value;
+      if (!j) return notify('Das sieht nicht nach einem Verbindungslink aus.');
+      if (!pw) return notify('Bitte das Haushaltspasswort eingeben.');
+      try {
+        const f = await PB.fetchHousehold(j.id, j.secret);
+        if (!(await Crypt.check(pw, f.remote.household && f.remote.household.verifier))) return notify('Das Passwort passt nicht zu diesem Haushalt.');
+        db = f.remote; Sync.sha = f.updated; Sync.remoteRev = f.rev; Sync.dirty = false; Sync.lastSync = Date.now();
+        await Store.set('db', db); await Sync.saveMeta();
+        await Auth.startSession(j.secret);
+        await Auth.storeToken(pw, j.secret, { pb: j.id });
+        pendingJoin = '';
+        enterApp();
+      } catch (e) { notify(e.message || 'Verbinden fehlgeschlagen.'); }
+    };
+  });
+}
+function authJoinGH() {
   showAuth(`<h1>Verbinden</h1><p class="lead">Die Daten liegen im privaten GitHub-Repository, das du beim ersten Gerät eingerichtet hast.</p>
     <label class="field"><span>GitHub-Benutzername</span><input class="in" id="j-o" autocapitalize="off" autocomplete="off"></label>
     <label class="field"><span>Repository</span><input class="in" id="j-r" value="essensplanung-daten" autocapitalize="off" autocomplete="off"></label>
     <label class="field"><span>Token</span><input class="in" type="password" id="j-t" autocomplete="off" placeholder="github_pat_…"></label>
     <label class="field"><span>Haushaltspasswort</span><input class="in" type="password" id="j-p" autocomplete="current-password"></label>
     <div class="btns"><button class="btn primary" data-x="ok">Verbinden</button><button class="btn quiet" data-x="back">Zurück</button></div>`, a => {
-    $('[data-x=back]', a).onclick = authWelcome;
+    $('[data-x=back]', a).onclick = () => authJoin();
     $('[data-x=ok]', a).onclick = async () => {
       const o = $('#j-o', a).value.trim(), n = $('#j-r', a).value.trim(), t = $('#j-t', a).value.trim(), pw = $('#j-p', a).value;
       if (!o || !n || !t || !pw) return notify('Bitte alle Felder ausfüllen.');
@@ -2902,6 +3141,11 @@ async function enterApp() {
   route = { name: 'suggest' }; stack = [];
   rerender();
   if (Sync.enabled()) { Sync.run(); Sync.startPolling(); }
+  if (pendingJoin) {
+    const j = PB.parseLink(pendingJoin);
+    if (j && Sync.isPB && Sync.repo.pb === j.id) pendingJoin = '';
+    else go('sync');
+  }
 }
 async function boot() {
   document.addEventListener('click', e => {
@@ -2923,9 +3167,11 @@ async function boot() {
   window.addEventListener('focus', () => { if (Sync.enabled()) Sync.run(); });
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
+  const hj = PB.parseLink(location.hash);
+  if (hj) { pendingJoin = PB.link(hj.id, hj.secret); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
   db = await Store.get('db');
   await Sync.loadMeta();
-  if (!db || !db.household) return authWelcome();
+  if (!db || !db.household) return pendingJoin ? authJoin(pendingJoin) : authWelcome();
   db = repairDb(db);
   if (await Auth.resume()) return enterApp();
   authLogin();
