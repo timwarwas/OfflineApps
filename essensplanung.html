@@ -291,6 +291,21 @@ details.box[open] summary:after{content:'−'}
 }
 
 details.ghalt summary{min-height:44px}
+/* Rezept-Import */
+.impbtn{margin-top:6px;width:100%;min-height:44px}
+.impcard{transition:opacity .15s}
+.impcard.off{opacity:.55}
+.imphead{display:flex;align-items:center;gap:12px;min-height:44px}
+.imphead input{width:24px;height:24px;flex-shrink:0;accent-color:var(--rim)}
+.impcard .meta{margin-left:36px}
+.impdetails{margin-top:8px}
+.impdetails summary{min-height:44px;display:flex;align-items:center;font-weight:600;font-size:14px;color:var(--rim);cursor:pointer}
+.impings{padding-left:0;margin:4px 0 8px}
+.impings li{list-style:none;font-size:14px;padding:3px 0;overflow-wrap:anywhere}
+.impings small{color:var(--speckle)}
+.impsteps{padding-left:22px;font-size:14px;line-height:1.5}
+.impsteps li{margin:4px 0;overflow-wrap:anywhere}
+
 
 </style>
 </head>
@@ -866,6 +881,121 @@ const EP = (function () {
       db[k] = (db[k] || []).filter(x => !x.deleted || (x.updatedAt || 0) > lim);
     });
   }
+  /* ---------- Rezept-Import (Format „essensplanung-import“ v1) ----------
+     Nimmt den Text aus dem Scanner-Chat entgegen (auch mit ```json-Zaun oder Begleittext)
+     und liefert normalisierte Rezepte mit Hinweisen. Keine Speicherzugriffe. */
+  const KIND_ALIAS = { HAUPT: 'MAIN', HAUPTGERICHT: 'MAIN', MAIN: 'MAIN', ABEND: 'MAIN', ABENDESSEN: 'MAIN',
+    MITTAG: 'LUNCH', MITTAGESSEN: 'LUNCH', LUNCH: 'LUNCH', KUCHEN: 'CAKE', CAKE: 'CAKE', GEBAECK: 'CAKE', BACKEN: 'CAKE' };
+  const UNIT_ALIAS = {
+    g: 'G', gr: 'G', gramm: 'G', kg: 'KG', kilo: 'KG', kilogramm: 'KG', ml: 'ML', milliliter: 'ML', l: 'L', liter: 'L',
+    stueck: 'STUECK', stück: 'STUECK', stk: 'STUECK', st: 'STUECK', el: 'EL', essloeffel: 'EL', esslöffel: 'EL',
+    tl: 'TL', teeloeffel: 'TL', teelöffel: 'TL', prise: 'PRISE', prisen: 'PRISE', bund: 'BUND', zehe: 'ZEHE', zehen: 'ZEHE',
+    dose: 'DOSE', dosen: 'DOSE', glas: 'GLAS', glaeser: 'GLAS', gläser: 'GLAS', packung: 'PACKUNG', packungen: 'PACKUNG',
+    pck: 'PACKUNG', pkg: 'PACKUNG', paeckchen: 'PACKUNG', päckchen: 'PACKUNG', scheibe: 'SCHEIBE', scheiben: 'SCHEIBE',
+  };
+  const UNIT_CONVERT = { cl: ['ML', 10], dl: ['ML', 100], tasse: ['ML', 250, 1], tassen: ['ML', 250, 1] };
+  const FRACTIONS = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': 0.125 };
+  function parseAmount(v) {
+    if (v == null || v === '') return null;
+    if (typeof v === 'number') return isFinite(v) && v > 0 ? v : null;
+    let t = String(v).trim().replace(',', '.');
+    let add = 0;
+    for (const [f, x] of Object.entries(FRACTIONS)) if (t.includes(f)) { add += x; t = t.replace(f, ' '); }
+    t = t.trim();
+    const range = t.match(/^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$/); // 2–3 → 3
+    if (range) return +range[2] + add;
+    const mixed = t.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+    if (mixed) return +mixed[1] + mixed[2] / mixed[3] + add;
+    const frac = t.match(/^(\d+)\/(\d+)$/);
+    if (frac) return +frac[1] / +frac[2] + add;
+    const n = t === '' ? 0 : parseFloat(t);
+    const r = (isFinite(n) ? n : 0) + add;
+    return r > 0 ? Math.round(r * 1000) / 1000 : null;
+  }
+  function extractJson(text) {
+    const s = String(text || '').trim();
+    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const body = fence ? fence[1] : s;
+    const a = body.search(/[{[]/);
+    if (a < 0) throw new Error('Im Text wurde kein Rezept-Block gefunden.');
+    const close = body[a] === '{' ? '}' : ']';
+    const b = body.lastIndexOf(close);
+    const raw = body.slice(a, b + 1);
+    try { return JSON.parse(raw); } catch (e) { /* Reparaturversuche unten */ }
+    const noComma = raw.replace(/,\s*([}\]])/g, '$1'); // überzählige Kommas
+    try { return JSON.parse(noComma); } catch (e) { /* weiter */ }
+    // von iOS-Autokorrektur ersetzte Anführungszeichen – nur die, die JSON-Syntax sein müssen
+    const fixed = noComma.replace(/[“”„](?=\s*[:,}\]])|(?<=[{\[,:]\s*)[“”„]/g, '"');
+    try { return JSON.parse(fixed); }
+    catch (e) { throw new Error('Der Rezept-Block ist unvollständig oder beschädigt. Bitte die Antwort komplett kopieren.'); }
+  }
+  const str = v => (v == null ? '' : String(v)).trim();
+  function normalizeImportRecipe(x, idx) {
+    const warn = [];
+    const name = str(x.name || x.titel || x.title).replace(/\s+/g, ' ').slice(0, 120);
+    const kindKey = str(x.art || x.kind).toUpperCase().replace(/Ä/g, 'AE').replace(/Ü/g, 'UE').replace(/Ö/g, 'OE');
+    const kind = KIND_ALIAS[kindKey] || 'MAIN';
+    if (kindKey && !KIND_ALIAS[kindKey]) warn.push(`Unbekannte Art „${str(x.art || x.kind)}“, als Hauptgericht übernommen.`);
+    let servings = Math.round(parseAmount(x.portionen != null ? x.portionen : x.servings) || 0);
+    if (kind === 'CAKE' && servings < 2) servings = 12;
+    if (servings < 1) { servings = 4; warn.push('Keine Portionen angegeben, 4 angenommen.'); }
+    servings = Math.min(99, servings);
+    const time = Math.round(parseAmount(x.zubereitungszeitMin != null ? x.zubereitungszeitMin : x.prepTimeMinutes) || 0) || null;
+    const tags = [...new Set((Array.isArray(x.tags) ? x.tags : str(x.tags).split(',')).map(str).filter(Boolean))].slice(0, 12);
+    let months = (Array.isArray(x.saison) ? x.saison : []).map(Number).filter(m => m >= 1 && m <= 12);
+    months = [...new Set(months)].sort((a, b) => a - b);
+    const seasonMonths = months.length && months.length < 12 ? months : null;
+    const ingredients = [];
+    (Array.isArray(x.zutaten) ? x.zutaten : Array.isArray(x.ingredients) ? x.ingredients : []).forEach(z => {
+      if (typeof z === 'string') z = { name: z };
+      const iname = str(z.name || z.zutat || z.ingredient).replace(/\s+/g, ' ').slice(0, 80);
+      if (!iname) return;
+      let quantity = parseAmount(z.menge != null ? z.menge : z.quantity);
+      let note = str(z.notiz || z.note);
+      const rawUnit = str(z.einheit != null ? z.einheit : z.unit);
+      const uKey = rawUnit.toLowerCase().replace(/\.$/, '');
+      let unit = null;
+      if (quantity != null) {
+        if (UNITS[rawUnit.toUpperCase()]) unit = rawUnit.toUpperCase();
+        else if (UNIT_ALIAS[uKey]) unit = UNIT_ALIAS[uKey];
+        else if (UNIT_CONVERT[uKey]) {
+          const [u, f, keep] = UNIT_CONVERT[uKey];
+          if (keep) note = [note, 'Original: ' + fmtNum(quantity) + ' ' + rawUnit].filter(Boolean).join(', ');
+          unit = u; quantity = Math.round(quantity * f * 100) / 100;
+        }
+        else if (!rawUnit) unit = 'STUECK';
+        else {
+          unit = 'STUECK';
+          note = [note, 'Original: ' + fmtNum(quantity) + ' ' + rawUnit].filter(Boolean).join(', ');
+          warn.push(`${iname}: Einheit „${rawUnit}“ unbekannt, als Stück übernommen.`);
+        }
+      }
+      const catRaw = str(z.kategorie || z.category).toUpperCase();
+      const category = CAT[catRaw] ? catRaw : guessCategory(iname);
+      ingredients.push({ name: iname, quantity, unit, note: note.slice(0, 120), category });
+    });
+    let steps = x.anleitung != null ? x.anleitung : x.instructions;
+    let instructions = '';
+    if (Array.isArray(steps)) {
+      instructions = steps.map(str).filter(Boolean).map((t, i) => `${i + 1}. ${t.replace(/^\d+[.)]\s*/, '')}`).join('\n');
+    } else instructions = str(steps);
+    const notes = [str(x.notizen || x.notes), str(x.quelle || x.source) ? 'Quelle: ' + str(x.quelle || x.source) : ''].filter(Boolean).join('\n');
+    (Array.isArray(x.hinweise) ? x.hinweise : x.hinweise ? [x.hinweise] : []).map(str).filter(Boolean).forEach(h => warn.push(h));
+    if (!ingredients.length) warn.push('Keine Zutaten erkannt.');
+    if (!instructions) warn.push('Keine Anleitung erkannt.');
+    return { name: name || `Rezept ${idx + 1}`, noName: !name, kind, servings, prepTimeMinutes: time, tags, seasonMonths,
+      ingredients, instructions, notes, warnings: warn };
+  }
+  function parseRecipeImport(text) {
+    const j = typeof text === 'string' ? extractJson(text) : text;
+    const list = Array.isArray(j) ? j : Array.isArray(j.rezepte) ? j.rezepte : Array.isArray(j.recipes) ? j.recipes : (j && (j.name || j.titel)) ? [j] : null;
+    if (!list) throw new Error(j && j.format === 'essensplanung' ? 'Das ist eine Sicherung. Bitte unter Einstellungen → „Sicherung einlesen“ öffnen.' : 'Im Block wurden keine Rezepte gefunden.');
+    const recipes = list.filter(x => x && typeof x === 'object').map(normalizeImportRecipe);
+    if (!recipes.length) throw new Error('Im Block wurden keine Rezepte gefunden.');
+    recipes.forEach(r => { if (r.noName) r.warnings.unshift('Kein Name erkannt – bitte nach dem Import umbenennen.'); });
+    return recipes;
+  }
+
 
   return {
     setClock, uuid, touch, live, tomb, seededRng,
@@ -878,6 +1008,7 @@ const EP = (function () {
     UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
     CATEGORIES, CAT, categorySource, sourceOf, guessCategory, buildShoppingList, shoppingText,
     mergeDb, normalizePlan, pruneTombstones,
+    parseAmount, parseRecipeImport,
   };
 })();
 
@@ -1496,6 +1627,16 @@ function firstLaneDay(lane, start) {
   return start;
 }
 
+/* nächster Rotationseintrag für „Tauschen“: möglichst ein anderes Gericht als bisher.
+   Holt wie gewohnt einen Eintrag (legt nur bei Bedarf einen Durchlauf an) und weicht sonst auf
+   bereits vorhandene offene Einträge aus – ohne zusätzliche Durchläufe zu erzeugen. */
+function nextDifferent(src, ex, lane, month, notRecipe) {
+  const first = EP.nextEntries(src, 1, ex, rng, lane, month)[0];
+  if (!first || first.recipeId !== notRecipe) return first;
+  const alt = EP.pendingSorted(src, lane).find(e => !ex.has(e.id) && e.recipeId !== notRecipe && EP.inSeason(recipeById(e.recipeId), month));
+  return alt || first;
+}
+
 /* ---------- Plan (übernommene Einträge, wirken sofort) ---------- */
 function placeBlock(start, o) {
   const recipe = recipeById(o.recipeId);
@@ -1522,7 +1663,7 @@ function swapLane(date, lane) {
   const p = laneAt(db, date, lane); if (!p) return null;
   const info = removeBlock(p.blockId, true);
   const ex = new Set(info && info.rotationEntryId ? [info.rotationEntryId] : []);
-  const next = EP.nextEntries(db, 1, ex, rng, lane, EP.monthOf(date))[0];
+  const next = nextDifferent(db, ex, lane, EP.monthOf(date), info.recipeId);
   if (!next) { placeLane(date, lane, info.recipeId, info.rotationEntryId); return null; }
   placeLane(date, lane, next.recipeId, next.id);
   return recipeById(next.recipeId);
@@ -1554,7 +1695,7 @@ function swapBlock(bid) {
   const info = removeBlock(bid, true);
   if (!info) return null;
   const ex = new Set(info.rotationEntryId ? [info.rotationEntryId] : []);
-  const next = EP.nextEntries(db, 1, ex, rng, 'MAIN', EP.monthOf(info.start))[0];
+  const next = nextDifferent(db, ex, 'MAIN', EP.monthOf(info.start), info.recipeId);
   if (!next) { placeBlock(info.start, info); return null; }
   placeBlock(info.start, { recipeId: next.recipeId, rotationEntryId: next.id, locked: info.locked });
   return recipeById(next.recipeId);
@@ -1563,8 +1704,86 @@ function moveBlock(bid, newStart) {
   const info = removeBlock(bid, false);
   if (info) placeBlock(newStart, Object.assign({}, info, { blockId: bid }));
 }
+/* ---------- Reste einzeln verschieben, streichen, weiterrutschen ---------- */
+/* Tage eines Gerichts neu durchzählen (Kochtag 1/n, Reste 2/n …) */
+function renumberBlock(bid, src) {
+  const es = blockEntries(bid, src), n = es.length;
+  es.forEach((p, i) => { if (p.dayIndex !== i + 1 || p.dayCount !== n) { p.dayIndex = i + 1; p.dayCount = n; EP.touch(p); } });
+}
+/* Prüft, ob Reste an einen Tag passen; liefert eine Fehlermeldung oder '' */
+function restMoveCheck(p, date, src) {
+  src = src || db;
+  if (!date) return 'Bitte einen Tag wählen.';
+  const cook = blockEntries(p.blockId, src).find(x => x.type === 'COOK');
+  if (cook && date <= cook.date) return `Reste gehen erst nach dem Kochtag (${EP.weekday(cook.date)} ${EP.fmtShort(cook.date)}).`;
+  if (date < EP.todayISO()) return 'Dieser Tag liegt in der Vergangenheit.';
+  if (date === p.date) return 'Die Reste sind schon an diesem Tag eingeplant.';
+  const other = planByDate(src).get(date);
+  if (other) return `An diesem Tag ist schon etwas eingeplant (${other.type === 'BLOCKED' ? 'gesperrt' : (recipeById(other.recipeId) || {}).name || 'Gericht'}).`;
+  if (draft && src === draft.clone && draft.blocked.has(date)) return 'Dieser Tag ist im Entwurf gesperrt.';
+  return '';
+}
+/* erster passender Tag für Reste nach dem aktuellen */
+function restSuggest(p, src) {
+  for (let i = 1, d = EP.addDays(p.date, 1); i < 60; i++, d = EP.addDays(d, 1)) if (!restMoveCheck(p, d, src)) return d;
+  return EP.addDays(p.date, 1);
+}
+function moveRest(entryId, date, src) {
+  const p = EP.live((src || db).plan).find(x => x.id === entryId);
+  if (!p) return;
+  p.date = date;
+  if (date >= EP.todayISO()) p.status = 'PLANNED';   // aus der Vergangenheit geholte Reste sind wieder offen
+  EP.touch(p);
+  renumberBlock(p.blockId, src);
+}
+/* erster freier Tag ab heute für Reste eines vergangenen Tages */
+function restFromToday(p, src) {
+  for (let i = 0, d = EP.todayISO(); i < 60; i++, d = EP.addDays(d, 1)) if (!restMoveCheck(p, d, src)) return d;
+  return null;
+}
+/* Resttag sperren: in der Zukunft rutschen die Reste weiter; in der Vergangenheit (z. B. doch auswärts
+   gegessen) kommen nur die Reste dieses Tages auf den ersten freien Tag ab heute */
+function blockRest(p, date, src, extra) {
+  if (date < EP.todayISO()) {
+    const to = restFromToday(p, src);
+    if (to) moveRest(p.id, to, src); else dropRest(p.id, src);
+  } else slideLeftovers(p.blockId, date, src, extra);
+}
+function dropRest(entryId, src) {
+  const p = EP.live((src || db).plan).find(x => x.id === entryId);
+  if (!p) return;
+  EP.tomb(p);
+  renumberBlock(p.blockId, src);
+}
+/* Reste ab einem Tag rutschen auf die nächsten freien Tage (Kochtag bleibt) */
+function slideLeftovers(bid, date, src, extra) {
+  src = src || db;
+  const later = blockEntries(bid, src).filter(x => x.type === 'LEFTOVER' && x.date >= date);
+  if (!later.length) return;
+  const occ = mainDates(src);
+  later.forEach(x => occ.delete(x.date));
+  occ.add(date);
+  (extra || []).forEach(d => occ.add(d));
+  const dates = EP.nextFreeDates(date, later.length, occ);
+  const today = EP.todayISO();
+  later.forEach((x, i) => { if (x.date !== dates[i]) { x.date = dates[i]; if (x.date >= today) x.status = 'PLANNED'; EP.touch(x); } });
+  renumberBlock(bid, src);
+}
+/* Im Wochenentwurf: Tag mit Übertrag-Resten sperren → Reste rutschen weiter, Entwurf plant drumherum */
+function draftBlockCarry(date, note) {
+  const p = planByDate(draft.clone).get(date);
+  draft.blocked.set(date, note);
+  if (p && p.type === 'LEFTOVER') blockRest(p, date, draft.clone, [...draft.blocked.keys()]);
+  relayoutDraft();
+}
 function blockDay(date, note) {
   const p = planByDate().get(date);
+  if (p && p.type === 'LEFTOVER') {   // Resttag: nur die Reste rutschen weiter, der Kochtag bleibt
+    db.plan.push(EP.touch({ id: EP.uuid(), date, type: 'BLOCKED', recipeId: null, blockId: null, dayIndex: 0, dayCount: 0,
+      rotationEntryId: null, source: 'MANUAL', locked: false, status: 'PLANNED', note: note || '', deleted: false }));
+    blockRest(p, date);
+    return;
+  }
   let info = null;
   if (p && p.blockId) info = removeBlock(p.blockId, false);
   else if (p) EP.tomb(p);
@@ -1651,7 +1870,7 @@ function draftSwap(bid) {
   const i = draft.sequence.findIndex(s => s.blockId === bid);
   if (i < 0) return;
   const at = (draft.drafts.find(x => x.blockId === bid) || {}).date || draft.ws;
-  const next = EP.nextEntries(draft.clone, 1, draftUsed(), rng, 'MAIN', EP.monthOf(at))[0];
+  const next = nextDifferent(draft.clone, draftUsed(), 'MAIN', EP.monthOf(at), draft.sequence[i].recipeId);
   if (!next) return notify('Keine weiteren Gerichte in der Rotation.');
   draft.sequence[i] = { kind: 'ROT', entryId: next.id, recipeId: next.recipeId, blockId: bid, locked: draft.sequence[i].locked };
   relayoutDraft();
@@ -1744,6 +1963,40 @@ function quickAdd(lines, kind) {
 function setWeight(r, w) { r.weight = Math.min(5, Math.max(1, w)); EP.touch(r); EP.syncRecipeIntoCycles(db, r, rng); }
 function setInRotation(r, v) { r.inRotation = v; EP.touch(r); EP.syncRecipeIntoCycles(db, r, rng); }
 function archiveRecipe(r) { r.archivedAt = Date.now(); EP.touch(r); EP.syncRecipeIntoCycles(db, r, rng); }
+/* ---------- Rezept-Import aus dem Scanner-Chat ----------
+   items: [{ rec (aus EP.parseRecipeImport), kind, mode: 'new' | 'replace' | 'copy' | 'skip' }]
+   liefert { added, replaced, skipped, newIngredients } */
+function uniqueRecipeName(name) {
+  if (!findRecipeByName(name)) return name;
+  for (let i = 2; i < 100; i++) { const n = `${name} (${i})`; if (!findRecipeByName(n)) return n; }
+  return name + ' ' + Date.now();
+}
+function importRecipes(items) {
+  const res = { added: 0, replaced: 0, skipped: 0, newIngredients: 0 };
+  items.forEach(it => {
+    if (it.mode === 'skip') { res.skipped++; return; }
+    const src = it.rec, kind = it.kind || src.kind;
+    const ings = src.ingredients.map((x, k) => {
+      let ing = findIngredient(x.name);
+      if (!ing) { ing = createIngredient(x.name, x.category, x.unit || 'STUECK', false); res.newIngredients++; }
+      return { ingredientId: ing.id, quantity: x.quantity, unit: x.quantity == null ? null : (x.unit || ing.defaultUnit || 'STUECK'), note: x.note || '', sortOrder: k + 1 };
+    });
+    const fields = { kind, servings: src.servings, prepTimeMinutes: src.prepTimeMinutes, instructions: src.instructions, ingredients: ings };
+    const ex = findRecipeByName(src.name);
+    if (ex && it.mode === 'replace') {
+      // Bilder, Gewichtung und Rotationsstatus bleiben; Saison nur, wenn im Import angegeben
+      Object.assign(ex, fields, { archivedAt: null, tags: src.tags.length ? src.tags : ex.tags, notes: src.notes || ex.notes,
+        seasonMonths: src.seasonMonths || ex.seasonMonths, daysOverride: kind === 'MAIN' ? ex.daysOverride : null });
+      EP.touch(ex); EP.syncRecipeIntoCycles(db, ex, rng); res.replaced++;
+      return;
+    }
+    const r = newRecipe(ex ? uniqueRecipeName(src.name) : src.name, kind);
+    Object.assign(r, fields, { tags: src.tags, notes: src.notes, seasonMonths: src.seasonMonths });
+    db.recipes.push(r); EP.syncRecipeIntoCycles(db, r, rng); res.added++;
+  });
+  return res;
+}
+
 
 /* ---------- Zutaten ---------- */
 function findIngredient(name) {
@@ -1956,6 +2209,24 @@ function dateSheet(title, recipe, start, okLabel, onOk) {
     $('#dv', el).oninput = upd; upd();
     $('[data-x=no]', el).onclick = closeSheet;
     $('[data-x=yes]', el).onclick = () => { const v = $('#dv', el).value; if (!v) return; closeSheet(); onOk(v); };
+  });
+}
+/* Neuen Tag für einen einzelnen Resttag wählen (mit Prüfung) */
+function restSheet(recipe, p, src, onOk) {
+  openSheet(`<h2>Reste verschieben</h2><p class="serif" style="font-size:19px;margin-top:4px">${esc(recipe ? recipe.name : '')}</p>
+    <p class="hint" style="margin-top:0">Bisher: ${EP.weekdayLong(p.date)}, ${EP.fmtShort(p.date)}</p>
+    <label class="field"><span>Neuer Tag</span><input class="in" type="date" id="dv" value="${restSuggest(p, src)}"></label>
+    <p class="hint" id="dp"></p>
+    <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">Verschieben</button></div>`, el => {
+    const upd = () => {
+      const v = $('#dv', el).value, err = restMoveCheck(p, v, src);
+      $('#dp', el).textContent = err || `Reste am ${EP.weekdayLong(v)}, ${EP.fmtShort(v)}`;
+      $('#dp', el).classList.toggle('warn', !!err);
+      $('[data-x=yes]', el).disabled = !!err;
+    };
+    $('#dv', el).oninput = upd; $('#dv', el).onchange = upd; upd();
+    $('[data-x=no]', el).onclick = closeSheet;
+    $('[data-x=yes]', el).onclick = () => { const v = $('#dv', el).value; if (restMoveCheck(p, v, src)) return; closeSheet(); onOk(v); };
   });
 }
 /* Tag für eine Zusatzspur wählen */
@@ -2188,6 +2459,13 @@ function dayActions(d) {
       opts.push({ label: 'Selbst wählen', run: () => recipePickSheet('Gericht wählen', id => { draftPick(p.blockId, id); rerender(); }) });
       opts.push({ label: p.locked ? 'Fixierung lösen' : 'Fixieren', hint: 'Wird beim erneuten Füllen nicht überschrieben', run: () => { draftToggleLock(p.blockId); rerender(); } });
     }
+    const carry = p && !p.drafted && p.type === 'LEFTOVER';
+    if (carry) {
+      const cr = recipeById(p.recipeId);
+      opts.push({ label: 'Reste verschieben', hint: 'Übertrag aus der Vorwoche auf einen anderen Tag legen', run: () => restSheet(cr, p, draft.clone, nd => { moveRest(p.id, nd, draft.clone); relayoutDraft(); rerender(); }) });
+      opts.push({ label: 'Reste streichen', hint: 'z. B. eingefroren oder schon gegessen – der Tag wird frei', run: () => { dropRest(p.id, draft.clone); relayoutDraft(); rerender(); } });
+      opts.push({ label: 'Tag sperren', hint: d < EP.todayISO() ? 'z. B. doch auswärts gegessen – diese Reste kommen auf heute oder später' : 'z. B. Auswärts essen – die Reste rutschen einen Tag weiter', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { draftBlockCarry(d, note); rerender(); }) });
+    }
     if (p && p.extraBlocked) opts.push({ label: 'Tag wieder freigeben', run: () => { draft.blocked.delete(d); relayoutDraft(); rerender(); } });
     else if (!p || p.drafted) opts.push({ label: 'Tag sperren', hint: 'z. B. Auswärts essen – Reste rutschen weiter', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { draft.blocked.set(d, note); relayoutDraft(); rerender(); }) });
     addLaneOptions(d, opts);
@@ -2213,7 +2491,11 @@ function dayActions(d) {
     if (r && (r.instructions || r.ingredients.length)) opts.push({ label: 'Kochansicht öffnen', run: () => openCook(r.id) });
     if (d >= today) {
       opts.push({ label: 'Tauschen', hint: 'Nächstes Gericht aus der Rotation', run: () => { const nr = swapBlock(p.blockId); change(nr ? 'Getauscht gegen ' + nr.name + '.' : 'Keine weiteren Gerichte in der Rotation.'); } });
-      opts.push({ label: 'Verschieben', run: () => {
+      if (p.type === 'LEFTOVER') {
+        opts.push({ label: 'Reste verschieben', hint: 'Nur diesen Resttag auf einen anderen Tag legen', run: () => restSheet(r, p, null, nd => { moveRest(p.id, nd); change('Reste verschoben.'); }) });
+        opts.push({ label: 'Reste streichen', hint: 'z. B. eingefroren oder schon gegessen – der Tag wird frei', run: () => { dropRest(p.id); change('Resttag gestrichen.'); } });
+      }
+      opts.push({ label: p.type === 'LEFTOVER' ? 'Ganzes Gericht verschieben' : 'Verschieben', hint: p.type === 'LEFTOVER' ? 'Kochtag und alle Reste' : '', run: () => {
         const cook = blockEntries(p.blockId).find(x => x.type === 'COOK');
         dateSheet('Verschieben', r, cook ? cook.date : d, 'Verschieben', nd => { moveBlock(p.blockId, nd); change('Verschoben.'); });
       } });
@@ -2224,7 +2506,11 @@ function dayActions(d) {
         placeBlock(cook ? cook.date : d, { recipeId: id, rotationEntryId: e ? e.id : null, locked: info && info.locked });
         change('Ersetzt.');
       }) });
-      opts.push({ label: 'Tag sperren', hint: 'Reste rutschen auf den nächsten freien Tag', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { blockDay(d, note); change('Tag gesperrt.'); }) });
+      opts.push({ label: 'Tag sperren', hint: p.type === 'LEFTOVER' ? 'z. B. Auswärts essen – die Reste rutschen einen Tag weiter' : 'Reste rutschen auf den nächsten freien Tag', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { blockDay(d, note); change('Tag gesperrt.'); }) });
+    } else if (p.type === 'LEFTOVER') {
+      opts.push({ label: 'Tag sperren', hint: 'z. B. doch auswärts gegessen – diese Reste kommen auf heute oder später', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { blockDay(d, note); change('Tag gesperrt, Reste neu eingeplant.'); }) });
+      opts.push({ label: 'Reste verschieben', hint: 'Auf heute oder einen späteren Tag legen', run: () => restSheet(r, p, null, nd => { moveRest(p.id, nd); change('Reste verschoben.'); }) });
+      opts.push({ label: 'Reste streichen', hint: 'z. B. eingefroren oder weggeworfen', run: () => { dropRest(p.id); change('Resttag gestrichen.'); } });
     }
     opts.push({ label: p.locked ? 'Fixierung lösen' : 'Fixieren', hint: 'Fixierte Gerichte bleiben beim Füllen der Woche stehen', run: () => { const v = toggleLock(p.blockId); change(v ? 'Fixiert.' : 'Fixierung gelöst.'); } });
     opts.push({ label: 'Aus dem Plan entfernen', danger: true, hint: 'Das Gericht kommt wieder nach vorne in die Rotation', run: () => { removeBlock(p.blockId, true); change('Entfernt.'); } });
@@ -2321,6 +2607,7 @@ function vRecipes() {
     <div class="quick" style="margin-top:12px"><input class="in" id="qa" placeholder="${ph}" enterkeyhint="done" autocomplete="off">
       <button class="btn primary" data-act="qa" aria-label="Rezept anlegen">+</button></div>
     <p class="hint">Enter legt das Rezept an. Mehrere Zeilen einfügen legt mehrere Rezepte an.</p>
+    <button class="btn quiet small impbtn" data-act="rimport">Rezepte aus JSON importieren</button>
     ${all.length ? `<input class="in" id="rq" placeholder="Suchen nach Name, Tag oder Zutat" value="${esc(recipeFilter.q)}" style="margin-top:14px">
     <div class="seg" style="margin-top:10px">${seg('all', 'Alle')}${seg('active', 'In Rotation')}${seg('paused', 'Pausiert')}</div>
     ${tags.length ? `<div class="chips">${tags.map(t => `<button class="chip" data-act="rtag" data-arg="${esc(t)}" aria-pressed="${recipeFilter.tag === t}">${esc(t)}</button>`).join('')}</div>` : ''}` : ''}
@@ -2341,6 +2628,107 @@ function vRecipes() {
       <div class="btns">${kind === 'MAIN' ? (liveRecipes().some(r => EP.laneOf(r) === 'MAIN') ? '' : '<button class="btn" data-act="seed">Beispielrezepte laden</button>')
         : `<button class="btn" data-act="seedlane" data-arg="${kind}">${kind === 'LUNCH' ? '6 Mittagsgerichte als Vorschlag laden' : '7 Kuchen als Vorschlag laden'}</button>`}</div></div>`)}</div>
     ${all.length ? `<p class="hint" style="text-align:center">${all.filter(r => r.inRotation).length} von ${all.length} in Rotation${kind === 'MAIN' ? `, ${pp} Portionen pro Tag` : ''}</p>` : ''}`;
+}
+
+/* ---------- Rezept-Import (Antwort aus dem Scanner-Chat) ---------- */
+function importSheet(prefill) {
+  const canRead = !!(navigator.clipboard && navigator.clipboard.readText);
+  openSheet(`<h2>Rezepte importieren</h2>
+    <p class="sub" style="margin-top:6px">Füge die Antwort aus dem Rezept-Scanner-Chat ein. Text vor oder nach dem Block stört nicht.</p>
+    <textarea class="in" id="imp-t" placeholder="{ &quot;format&quot;: &quot;essensplanung-import&quot;, … }" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-top:12px;min-height:150px;font-size:14px">${esc(prefill || '')}</textarea>
+    <p class="warn hidden" id="imp-err" role="alert" style="font-size:14px;margin-top:8px"></p>
+    <div class="btns two">${canRead ? '<button class="btn" data-x="paste">Einfügen</button>' : ''}<button class="btn" data-x="file" ${canRead ? '' : 'style="grid-column:1/-1"'}>Datei wählen</button></div>
+    <input type="file" id="imp-f" accept=".json,.txt,application/json,text/plain" class="hidden">
+    <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">Weiter</button></div>`, el => {
+    const ta = $('#imp-t', el), err = $('#imp-err', el);
+    const fail = m => { err.textContent = m; err.classList.remove('hidden'); };
+    const next = () => {
+      const t = ta.value.trim();
+      if (!t) return fail('Bitte zuerst die Antwort aus dem Chat einfügen.');
+      let recs;
+      try { recs = EP.parseRecipeImport(t); } catch (e) { return fail(e.message); }
+      importPreview(recs, t);
+    };
+    ta.oninput = () => err.classList.add('hidden');
+    const p = $('[data-x=paste]', el);
+    if (p) p.onclick = async () => {
+      try { const t = await navigator.clipboard.readText(); if (t) { ta.value = t; err.classList.add('hidden'); } else fail('Die Zwischenablage ist leer.'); }
+      catch (e) { fail('Kein Zugriff auf die Zwischenablage. Tippe lange ins Feld und wähle „Einsetzen“.'); }
+    };
+    $('[data-x=file]', el).onclick = () => $('#imp-f', el).click();
+    $('#imp-f', el).onchange = async e => { const f = e.target.files[0]; if (!f) return; ta.value = await f.text(); e.target.value = ''; next(); };
+    $('[data-x=no]', el).onclick = closeSheet;
+    $('[data-x=yes]', el).onclick = next;
+  });
+}
+function importPreview(recs, rawText) {
+  const items = recs.map(rec => {
+    const ex = findRecipeByName(rec.name);
+    const dup = !!(ex && !ex.archivedAt);
+    return { rec, kind: rec.kind, dup, include: true, mode: dup ? 'skip' : ex ? 'replace' : 'new' };
+  });
+  const segBtn = (i, attr, val, cur, label) => `<button data-x="${attr}" data-i="${i}" data-v="${val}" aria-pressed="${cur === val}">${label}</button>`;
+  const card = (it, i) => {
+    const r = it.rec, newIngs = r.ingredients.filter(x => !findIngredient(x.name)).length;
+    const steps = r.instructions ? r.instructions.split('\n').filter(l => l.trim()).length : 0;
+    const meta = [`${r.servings} ${it.kind === 'CAKE' ? 'Stücke' : 'Portionen'}`, `${r.ingredients.length} Zutaten${newIngs ? ` (${newIngs} neu)` : ''}`,
+      `${steps} ${steps === 1 ? 'Schritt' : 'Schritte'}`, r.prepTimeMinutes ? r.prepTimeMinutes + ' Min.' : ''].filter(Boolean).join(', ');
+    return `<div class="rcard impcard" data-card="${i}">
+      <label class="imphead"><input type="checkbox" data-inc="${i}" checked aria-label="${esc(r.name)} importieren"><span class="nm">${esc(r.name)}</span></label>
+      <p class="meta">${meta}</p>
+      <div class="seg lane-seg" style="margin-top:10px">${EP.LANES.map(l => segBtn(i, 'kind', l.key, it.kind, LANE_LABEL[l.key])).join('')}</div>
+      ${it.dup ? `<p class="hint warn" style="margin-top:10px">„${esc(r.name)}“ gibt es schon.</p>
+        <div class="seg" style="margin-top:6px">${segBtn(i, 'mode', 'skip', it.mode, 'Überspringen')}${segBtn(i, 'mode', 'replace', it.mode, 'Ersetzen')}${segBtn(i, 'mode', 'copy', it.mode, 'Als Kopie')}</div>
+        <p class="hint" data-modehint="${i}"></p>` : ''}
+      ${r.warnings.length ? `<ul class="box warnbox" style="margin-top:10px">${r.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+      <details class="impdetails"><summary>Zutaten und Anleitung ansehen</summary>
+        <ul class="impings">${r.ingredients.map(x => `<li><b>${x.quantity == null ? '' : esc(EP.fmtNum(x.quantity) + ' ' + (x.unit ? EP.UNITS[x.unit][x.quantity > 1 && EP.UNITS[x.unit].p ? 'p' : 's'] : ''))}</b> ${esc(x.name)}${x.note ? `<small>, ${esc(x.note)}</small>` : ''}</li>`).join('') || '<li>Keine Zutaten</li>'}</ul>
+        ${r.instructions ? `<div class="md">${renderMd(r.instructions).intro}<ol class="impsteps">${renderMd(r.instructions).steps.map(t => `<li>${t}</li>`).join('')}</ol></div>` : ''}
+        ${r.notes ? `<p class="hint">${esc(r.notes)}</p>` : ''}
+      </details>
+    </div>`;
+  };
+  const MODE_HINT = { skip: 'Das vorhandene Rezept bleibt unverändert.', replace: 'Zutaten, Portionen und Anleitung werden ersetzt. Bilder, Gewichtung und Rotation bleiben.', copy: 'Wird mit Zusatz „(2)“ im Namen angelegt.' };
+  openSheet(`<h2>${items.length === 1 ? '1 Rezept gefunden' : items.length + ' Rezepte gefunden'}</h2>
+    <p class="sub" style="margin-top:6px">Prüfe die Art und hake ab, was übernommen werden soll. Details kannst du danach im Rezept bearbeiten.</p>
+    ${items.map(card).join('')}
+    <div class="btns two"><button class="btn" data-x="back">Zurück</button><button class="btn primary" data-x="yes"></button></div>`, el => {
+    const count = () => items.filter(it => it.include && it.mode !== 'skip').length;
+    const refresh = () => {
+      const n = count(), b = $('[data-x=yes]', el);
+      b.textContent = n ? (n === 1 ? '1 Rezept importieren' : n + ' Rezepte importieren') : 'Nichts ausgewählt';
+      b.disabled = !n;
+      items.forEach((it, i) => {
+        const h = $(`[data-modehint="${i}"]`, el); if (h) h.textContent = MODE_HINT[it.mode];
+        $(`[data-card="${i}"]`, el).classList.toggle('off', !it.include || it.mode === 'skip');
+      });
+    };
+    $$('[data-inc]', el).forEach(c => c.onchange = () => {
+      const it = items[+c.dataset.inc]; it.include = c.checked;
+      if (c.checked && it.dup && it.mode === 'skip') { it.mode = 'copy'; $$(`[data-x=mode][data-i="${c.dataset.inc}"]`, el).forEach(b => b.setAttribute('aria-pressed', b.dataset.v === 'copy')); }
+      refresh();
+    });
+    $$('[data-x=kind],[data-x=mode]', el).forEach(b => b.onclick = () => {
+      const i = +b.dataset.i, key = b.dataset.x;
+      items[i][key] = b.dataset.v;
+      if (key === 'kind' && b.dataset.v === 'CAKE' && items[i].rec.servings <= 4) items[i].rec.servings = 12;
+      $$(`[data-x=${key}][data-i="${i}"]`, el).forEach(x => x.setAttribute('aria-pressed', x === b));
+      if (key === 'mode' && b.dataset.v !== 'skip') { items[i].include = true; $(`[data-inc="${i}"]`, el).checked = true; }
+      if (key === 'kind') { const m = $(`[data-card="${i}"] .meta`, el); m.textContent = m.textContent.replace(/^\d+ (Stücke|Portionen)/, `${items[i].rec.servings} ${b.dataset.v === 'CAKE' ? 'Stücke' : 'Portionen'}`); }
+      refresh();
+    });
+    $('[data-x=back]', el).onclick = () => importSheet(rawText);
+    $('[data-x=yes]', el).onclick = () => {
+      const chosen = items.filter(it => it.include && it.mode !== 'skip');
+      if (!chosen.length) return;
+      closeSheet();
+      const res = importRecipes(chosen);
+      recipeFilter = Object.assign(recipeFilter, { kind: chosen[0].kind, q: '', tag: '', status: 'all' });
+      const parts = [res.added ? `${res.added} importiert` : '', res.replaced ? `${res.replaced} ersetzt` : ''].filter(Boolean).join(', ');
+      change(`${parts || 'Nichts geändert'}.${res.newIngredients ? ` ${res.newIngredients} neue Zutaten – Einkaufsorte unter ⚙ prüfen.` : ''}`);
+    };
+    refresh();
+  });
 }
 
 /* ---------- Rezept bearbeiten ---------- */
@@ -2826,6 +3214,7 @@ const ACT = {
     inp.value = '';
     change(res.added ? 'Angelegt.' : res.restored ? 'Wiederhergestellt.' : 'Dieses Rezept gibt es schon.').then(() => { const i = $('#qa'); if (i) i.focus(); });
   },
+  rimport: () => importSheet(),
   rstatus: a => { recipeFilter.status = a; rerender(); },
   rtag: a => { recipeFilter.tag = recipeFilter.tag === a ? '' : a; rerender(); },
   w: a => { const [id, d] = a.split('|'); const r = recipeById(id); setWeight(r, r.weight + (+d)); change(); },
