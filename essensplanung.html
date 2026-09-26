@@ -305,7 +305,11 @@ details.ghalt summary{min-height:44px}
 .impings small{color:var(--speckle)}
 .impsteps{padding-left:22px;font-size:14px;line-height:1.5}
 .impsteps li{margin:4px 0;overflow-wrap:anywhere}
-
+.impbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.impbtns .impbtn{margin-top:0}
+.explist{margin:8px 0}
+.exph{display:flex;align-items:center;justify-content:space-between;margin:14px 0 4px;font-size:15px}
+.exph .btn{min-height:44px}
 
 </style>
 </head>
@@ -986,6 +990,31 @@ const EP = (function () {
     return { name: name || `Rezept ${idx + 1}`, noName: !name, kind, servings, prepTimeMinutes: time, tags, seasonMonths,
       ingredients, instructions, notes, warnings: warn };
   }
+  /* Rezepte im Import-Format ausgeben (wieder einlesbar mit parseRecipeImport) */
+  const KIND_OUT = { MAIN: 'Hauptgericht', LUNCH: 'Mittag', CAKE: 'Kuchen' };
+  function buildRecipeExport(db, ids) {
+    const ing = new Map((db.ingredients || []).map(i => [i.id, i]));
+    const pick = new Set(ids);
+    const rezepte = live(db.recipes).filter(r => !r.archivedAt && pick.has(r.id))
+      .sort((a, b) => a.name.localeCompare(b.name, 'de')).map(r => {
+        const o = { name: r.name, art: KIND_OUT[r.kind || 'MAIN'] || 'Hauptgericht', portionen: r.servings };
+        if (r.prepTimeMinutes) o.zubereitungszeitMin = r.prepTimeMinutes;
+        if (r.tags && r.tags.length) o.tags = r.tags.slice();
+        if (r.seasonMonths && r.seasonMonths.length) o.saison = r.seasonMonths.slice();
+        o.zutaten = (r.ingredients || []).slice().sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)).map(x => {
+          const i = ing.get(x.ingredientId); if (!i) return null;
+          const z = { name: i.name };
+          if (x.quantity != null) { z.menge = x.quantity; z.einheit = x.unit || 'STUECK'; }
+          if (x.note) z.notiz = x.note;
+          if (i.category) z.kategorie = i.category;
+          return z;
+        }).filter(Boolean);
+        if (r.instructions) o.anleitung = r.instructions;
+        if (r.notes) o.notizen = r.notes;
+        return o;
+      });
+    return { format: 'essensplanung-import', version: 1, exportiertAm: new Date().toISOString(), rezepte };
+  }
   function parseRecipeImport(text) {
     const j = typeof text === 'string' ? extractJson(text) : text;
     const list = Array.isArray(j) ? j : Array.isArray(j.rezepte) ? j.rezepte : Array.isArray(j.recipes) ? j.recipes : (j && (j.name || j.titel)) ? [j] : null;
@@ -1007,7 +1036,7 @@ const EP = (function () {
     nextFreeDates, layoutDraft, fillWeek,
     UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
     CATEGORIES, CAT, categorySource, sourceOf, guessCategory, buildShoppingList, shoppingText,
-    mergeDb, normalizePlan, pruneTombstones,
+    mergeDb, normalizePlan, pruneTombstones, buildRecipeExport,
     parseAmount, parseRecipeImport,
   };
 })();
@@ -2607,7 +2636,7 @@ function vRecipes() {
     <div class="quick" style="margin-top:12px"><input class="in" id="qa" placeholder="${ph}" enterkeyhint="done" autocomplete="off">
       <button class="btn primary" data-act="qa" aria-label="Rezept anlegen">+</button></div>
     <p class="hint">Enter legt das Rezept an. Mehrere Zeilen einfügen legt mehrere Rezepte an.</p>
-    <button class="btn quiet small impbtn" data-act="rimport">Rezepte aus JSON importieren</button>
+    <div class="impbtns"><button class="btn quiet small impbtn" data-act="rimport">Rezepte aus JSON importieren</button><button class="btn quiet small impbtn" data-act="rexport">Rezepte als JSON exportieren</button></div>
     ${all.length ? `<input class="in" id="rq" placeholder="Suchen nach Name, Tag oder Zutat" value="${esc(recipeFilter.q)}" style="margin-top:14px">
     <div class="seg" style="margin-top:10px">${seg('all', 'Alle')}${seg('active', 'In Rotation')}${seg('paused', 'Pausiert')}</div>
     ${tags.length ? `<div class="chips">${tags.map(t => `<button class="chip" data-act="rtag" data-arg="${esc(t)}" aria-pressed="${recipeFilter.tag === t}">${esc(t)}</button>`).join('')}</div>` : ''}` : ''}
@@ -2628,6 +2657,53 @@ function vRecipes() {
       <div class="btns">${kind === 'MAIN' ? (liveRecipes().some(r => EP.laneOf(r) === 'MAIN') ? '' : '<button class="btn" data-act="seed">Beispielrezepte laden</button>')
         : `<button class="btn" data-act="seedlane" data-arg="${kind}">${kind === 'LUNCH' ? '6 Mittagsgerichte als Vorschlag laden' : '7 Kuchen als Vorschlag laden'}</button>`}</div></div>`)}</div>
     ${all.length ? `<p class="hint" style="text-align:center">${all.filter(r => r.inRotation).length} von ${all.length} in Rotation${kind === 'MAIN' ? `, ${pp} Portionen pro Tag` : ''}</p>` : ''}`;
+}
+
+/* ---------- Rezept-Export (gleiches Format wie der Import) ---------- */
+function exportSheet() {
+  const lanes = [['MAIN', 'Hauptgerichte'], ['LUNCH', 'Mittag'], ['CAKE', 'Kuchen']];
+  const all = liveRecipes().filter(r => !r.archivedAt);
+  if (!all.length) return notify('Noch keine Rezepte vorhanden.');
+  const cur = recipeFilter.kind;
+  const groups = lanes.map(([k, l]) => {
+    const rs = all.filter(r => EP.laneOf(r) === k).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    if (!rs.length) return '';
+    return `<h3 class="exph">${l} <button class="btn quiet small" data-x="grp" data-k="${k}">alle</button></h3>`
+      + rs.map(r => `<label class="imphead"><input type="checkbox" data-exp="${r.id}" data-k="${k}" ${k === cur ? 'checked' : ''}><span class="nm">${esc(r.name)}</span></label>`).join('');
+  }).join('');
+  openSheet(`<h2>Rezepte exportieren</h2>
+    <p class="hint" style="margin-top:0">Gleiches Format wie beim Import – die Datei lässt sich hier oder in einem anderen Haushalt wieder einlesen. Bilder, Gewichtung und Plan sind nicht enthalten.</p>
+    <div class="btns two"><button class="btn" data-x="all">Alle wählen</button><button class="btn" data-x="none">Keine</button></div>
+    <div class="explist">${groups}</div>
+    <p class="hint" id="expn"></p>
+    <div class="btns two"><button class="btn" data-x="copy">Text kopieren</button><button class="btn primary" data-x="file">Als Datei</button></div>`, el => {
+    const boxes = () => [...el.querySelectorAll('[data-exp]')];
+    const chosen = () => boxes().filter(b => b.checked).map(b => b.dataset.exp);
+    const upd = () => { const n = chosen().length; $('#expn', el).textContent = n ? `${n} ${n === 1 ? 'Rezept' : 'Rezepte'} ausgewählt` : 'Nichts ausgewählt';
+      el.querySelectorAll('[data-x=copy],[data-x=file]').forEach(b => b.disabled = !n); };
+    el.addEventListener('change', upd);
+    $('[data-x=all]', el).onclick = () => { boxes().forEach(b => b.checked = true); upd(); };
+    $('[data-x=none]', el).onclick = () => { boxes().forEach(b => b.checked = false); upd(); };
+    el.querySelectorAll('[data-x=grp]').forEach(g => g.onclick = () => {
+      const bs = boxes().filter(b => b.dataset.k === g.dataset.k), on = !bs.every(b => b.checked);
+      bs.forEach(b => b.checked = on); upd();
+    });
+    const text = () => JSON.stringify(EP.buildRecipeExport(db, chosen()), null, 1);
+    $('[data-x=copy]', el).onclick = async () => {
+      try { await navigator.clipboard.writeText(text()); notify('Rezepte kopiert.'); closeSheet(); }
+      catch (e) { notify('Kopieren nicht erlaubt – bitte „Als Datei“ nutzen.'); }
+    };
+    $('[data-x=file]', el).onclick = () => {
+      const n = chosen().length, blob = new Blob([text()], { type: 'application/json' });
+      const name = `rezepte-${n}-${EP.todayISO()}.json`;
+      const file = typeof File !== 'undefined' ? new File([blob], name, { type: 'application/json' }) : null;
+      closeSheet();
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: 'Rezepte' }).catch(() => {}); return; }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    };
+    upd();
+  });
 }
 
 /* ---------- Rezept-Import (Antwort aus dem Scanner-Chat) ---------- */
@@ -3215,6 +3291,7 @@ const ACT = {
     change(res.added ? 'Angelegt.' : res.restored ? 'Wiederhergestellt.' : 'Dieses Rezept gibt es schon.').then(() => { const i = $('#qa'); if (i) i.focus(); });
   },
   rimport: () => importSheet(),
+  rexport: () => exportSheet(),
   rstatus: a => { recipeFilter.status = a; rerender(); },
   rtag: a => { recipeFilter.tag = recipeFilter.tag === a ? '' : a; rerender(); },
   w: a => { const [id, d] = a.split('|'); const r = recipeById(id); setWeight(r, r.weight + (+d)); change(); },
