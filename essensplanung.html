@@ -312,6 +312,15 @@ details.ghalt summary{min-height:44px}
 .explist{margin:8px 0}
 .exph{display:flex;align-items:center;justify-content:space-between;margin:14px 0 4px;font-size:15px}
 .exph .btn{min-height:44px}
+.dayrow{display:flex;align-items:stretch}
+.dayrow>.daymain,.dayrow>.laneline{flex:1;min-width:0}
+.cookbtn{width:52px;min-height:44px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--rim);border-left:1px solid var(--line)}
+.cookbtn svg{width:26px;height:26px}
+.cookbtn:active{background:var(--rim-soft)}
+.lanerow{border-top:1px dashed var(--line)}
+.lanerow>.laneline{border-top:0}
+.lanerow>.cookbtn{border-left-style:dashed}
+.lanerow>.cookbtn svg{width:22px;height:22px}
 
 </style>
 </head>
@@ -2111,6 +2120,7 @@ async function importData(json, mode) {
    Essensplanung – App Teil 3: Oberfläche
    ========================================================================== */
 const ICON = {
+  pot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 10h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M2 11h2M20 11h2M9 7.5V5M12 7.5V4M15 7.5V5"/></svg>',
   plate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/></svg>',
   week: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
   cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 4h2.5l2.2 11h10.6l2-7.5H7"/><circle cx="9.5" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg>',
@@ -2119,13 +2129,13 @@ const ICON = {
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg>',
   lock: '<svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
 };
-const TABS = [['suggest', 'Vorschlag', ICON.plate], ['week', 'Woche', ICON.week], ['shop', 'Einkauf', ICON.cart], ['recipes', 'Rezepte', ICON.book]];
+const TABS = [['week', 'Woche', ICON.week], ['suggest', 'Vorschlag', ICON.plate], ['shop', 'Einkauf', ICON.cart], ['recipes', 'Rezepte', ICON.book]];
 const TITLES = { suggest: 'Als Nächstes', week: 'Wochenplan', shop: 'Einkaufsliste', recipes: 'Rezepte',
   edit: 'Rezept', ingredients: 'Zutaten', rotation: 'Rotation', settings: 'Einstellungen', sync: 'Geräteabgleich', sources: 'Einkaufsorte' };
 const LANE_LABEL = { MAIN: 'Hauptgerichte', LUNCH: 'Mittag', CAKE: 'Kuchen' };
 let suggestLane = 'MAIN';
 
-let route = { name: 'suggest' }, stack = [];
+let route = { name: 'week' }, stack = [];
 let weekStartISO = EP.weekStart(EP.todayISO());
 let shopRange = null;
 let recipeFilter = { q: '', status: 'all', tag: '', kind: 'MAIN' };
@@ -2308,7 +2318,7 @@ function back() {
   if (route.name === 'edit' && editState && editState.dirty) {
     return confirmSheet('Änderungen verwerfen?', 'Das Rezept wurde noch nicht gespeichert.', 'Verwerfen', 'Weiter bearbeiten', () => { editState = null; back(); }, true);
   }
-  route = stack.pop() || { name: 'suggest' };
+  route = stack.pop() || { name: 'week' };
   rerender();
 }
 async function change(msg) { await persist(); if (msg) notify(msg); rerender(); }
@@ -2393,6 +2403,11 @@ function vSuggest() {
 }
 
 /* ---------- Woche (5.4) ---------- */
+/* Direktknopf in die Kochansicht (bei leeren Rezepten zeigt sie einen Hinweis zum Ergänzen) */
+function cookBtn(r) {
+  if (!r) return '';
+  return `<button class="cookbtn" data-act="cook" data-arg="${r.id}" aria-label="Kochansicht: ${esc(r.name)}">${ICON.pot}</button>`;
+}
 function laneVisible(lane) { return laneDays(lane).length > 0 && liveRecipes().some(r => EP.laneOf(r) === lane); }
 function vWeek() {
   const ws = weekStartISO, days = EP.weekDays(ws), today = EP.todayISO();
@@ -2419,12 +2434,13 @@ function vWeek() {
       const x = ents.lanes[l].get(d);
       if (!x && !(showLane[l] && laneActiveOn(l, d) && d >= today)) return '';
       const r = x && recipeById(x.recipeId);
-      return `<button class="laneline ${x && x.drafted ? 'drafted' : ''} lane-${l.toLowerCase()}" data-act="lane" data-arg="${d}|${l}">
+      return `<div class="dayrow lanerow"><button class="laneline ${x && x.drafted ? 'drafted' : ''} lane-${l.toLowerCase()}" data-act="lane" data-arg="${d}|${l}">
         <span class="lanelbl">${LANE_LABEL[l]}</span><span class="nm ${x ? '' : 'free'}">${x ? esc(r ? r.name : 'Gelöschtes Rezept') : 'Frei'}</span>
-        ${x && x.status === 'DONE' ? `<span class="badge done">${l === 'CAKE' ? 'Gebacken' : 'Gekocht'}</span>` : ''}</button>`;
+        ${x && x.status === 'DONE' ? `<span class="badge done">${l === 'CAKE' ? 'Gebacken' : 'Gekocht'}</span>` : ''}</button>${x ? cookBtn(r) : ''}</div>`;
     }).join('');
-    return `<div class="${cls}"><button class="daymain" data-act="day" data-arg="${d}"><div class="dt"><b>${EP.weekday(d)}</b><span>${EP.fmtShort(d)}</span></div>
-      <div class="what">${body}</div>${p && p.locked ? ICON.lock : ''}</button>${laneLines}</div>`;
+    const mainRecipe = p && p.recipeId ? recipeById(p.recipeId) : null;
+    return `<div class="${cls}"><div class="dayrow"><button class="daymain" data-act="day" data-arg="${d}"><div class="dt"><b>${EP.weekday(d)}</b><span>${EP.fmtShort(d)}</span></div>
+      <div class="what">${body}</div>${p && p.locked ? ICON.lock : ''}</button>${cookBtn(mainRecipe)}</div>${laneLines}</div>`;
   }).join('');
   return `<div class="weekhead">
       <button class="iconbtn" data-act="wk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
@@ -2967,6 +2983,8 @@ function openCook(id) {
     ${ing ? `<h3 style="font-size:20px">Zutaten</h3><ul class="ing">${ing}</ul>` : ''}
     ${md.steps.length ? `<h3 style="font-size:20px">Zubereitung</h3><div class="md">${md.intro}</div><ol class="steps-big">${md.steps.map(s => `<li>${s}</li>`).join('')}</ol>` : ''}
     ${r.notes ? `<h3 style="font-size:20px">Notizen</h3><p style="font-size:18px">${esc(r.notes)}</p>` : ''}
+    ${!ing && !md.steps.length && !String(r.instructions || '').trim() ? `<div class="box" style="margin-top:18px"><p style="font-size:18px;margin:0 0 12px">Für dieses Gericht sind noch keine Zutaten und keine Anleitung hinterlegt.</p>
+      <button class="btn primary" data-act="cookedit" data-arg="${r.id}">Rezept ergänzen</button></div>` : ''}
     <p class="hint" style="margin-top:24px">Der Bildschirm bleibt an, solange die Kochansicht offen ist. Tippe auf Zutaten und Schritte, um sie abzuhaken.</p></div>`;
   el.classList.remove('hidden');
   $$('.ing li, .steps-big li', el).forEach(li => li.onclick = () => li.classList.toggle('done'));
@@ -3300,6 +3318,7 @@ const ACT = {
   edit: id => openEdit(id),
   cook: id => openCook(id),
   closecook: () => closeCook(),
+  cookedit: id => { closeCook(); ACT.edit(id); },
   /* Editor */
   serv: d => { readEditForm(); editState.r.servings = Math.max(1, Math.min(99, editState.r.servings + (+d))); editState.dirty = true; rerender(); },
   ew: d => { readEditForm(); editState.r.weight = Math.max(1, Math.min(5, editState.r.weight + (+d))); editState.dirty = true; rerender(); },
@@ -3606,7 +3625,7 @@ async function enterApp() {
   $('#shell').classList.remove('hidden');
   db = repairDb(db);
   if (housekeeping()) await persist();
-  route = { name: 'suggest' }; stack = [];
+  route = { name: 'week' }; stack = [];
   rerender();
   if (Sync.enabled()) { Sync.run(); Sync.startPolling(); }
   if (pendingJoin) {
