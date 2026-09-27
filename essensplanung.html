@@ -265,20 +265,45 @@ details.box[open] summary:after{content:'−'}
 .backlink{display:inline-flex;align-items:center;min-height:44px;color:var(--rim);font-weight:600;text-decoration:none}
 
 /* ---------- Kochansicht ---------- */
-.cookscreen{position:fixed;inset:0;z-index:40;background:var(--plate);overflow:auto;padding:calc(12px + env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom))}
+.cookscreen{position:fixed;inset:0;z-index:40;background:var(--enamel);overflow:auto;padding:calc(10px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom))}
 .cookscreen .inner{max-width:720px;margin:0 auto}
-.cookscreen h1{font-family:var(--serif);font-size:clamp(30px,8vw,44px);line-height:1.1;font-weight:600;margin:10px 0 6px}
-.cookscreen .hero{width:100%;max-height:44dvh;object-fit:cover;border-radius:18px;margin:10px 0}
-.cookscreen .ing{font-size:20px;line-height:1.4}
-.cookscreen .ing li{list-style:none;padding:9px 0;border-bottom:1px solid var(--line);display:flex;gap:12px;cursor:pointer}
-.cookscreen .ing li.done{color:var(--speckle);text-decoration:line-through}
-.cookscreen .ing .q{min-width:96px;font-weight:700;font-variant-numeric:tabular-nums}
-.cookscreen ol.steps-big{padding:0;counter-reset:s}
-.cookscreen ol.steps-big li{list-style:none;counter-increment:s;font-size:22px;line-height:1.5;padding:16px 0 16px 54px;position:relative;border-bottom:1px solid var(--line);cursor:pointer}
-.cookscreen ol.steps-big li:before{content:counter(s);position:absolute;left:0;top:14px;width:38px;height:38px;border-radius:50%;border:3px solid var(--rim);
-  color:var(--rim);font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center}
-.cookscreen ol.steps-big li.done{color:var(--speckle)}
-.cookscreen ol.steps-big li.done:before{background:var(--rim);color:var(--rim-ink)}
+.cooktop{display:flex;justify-content:flex-end;margin-bottom:10px}
+.cookscreen .hero{width:100%;max-height:40dvh;object-fit:cover;border-radius:22px;display:block;margin-bottom:-28px}
+.ccard{background:var(--plate);border-radius:24px;padding:20px 20px 22px;margin-bottom:16px;box-shadow:0 2px 14px rgba(15,30,60,.07);position:relative}
+.ccard h2{font-size:24px;font-weight:800;margin:0 0 14px}
+.chead h1{font-family:var(--serif);font-size:clamp(28px,7.5vw,40px);line-height:1.12;font-weight:600;margin:0 0 14px}
+.cmeta{display:flex;flex-wrap:wrap;gap:10px 22px;font-size:17px}
+.cmeta span{display:inline-flex;align-items:center;gap:8px}
+.cmeta svg{width:22px;height:22px;color:var(--rim);flex-shrink:0}
+.ctags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.ctags span{background:var(--rim-soft);color:var(--rim);border-radius:99px;padding:3px 10px;font-size:14px;font-weight:600}
+.cstep{display:grid;grid-template-columns:56px 1fr 56px;border:1.5px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:8px}
+.cstep button{min-height:52px;font-size:26px;color:var(--ink);background:none}
+.cstep button:active{background:var(--rim-soft)}
+.cstep output{display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;border-left:1.5px solid var(--line);border-right:1.5px solid var(--line)}
+.cing{list-style:none;padding:0;margin:0}
+.cing li{display:grid;grid-template-columns:minmax(92px,32%) 1fr;gap:14px;padding:15px 0;border-bottom:1px solid var(--line);font-size:19px;line-height:1.35;cursor:pointer}
+.cing li:last-child{border-bottom:0}
+.cing .q{font-weight:800;font-variant-numeric:tabular-nums}
+.cing .nm small{display:block;font-size:15px;color:var(--speckle)}
+.cing li.done{color:var(--speckle)}
+.cing li.done .nm{text-decoration:line-through}
+.cintro{font-size:18px;margin-bottom:8px}
+.cookscreen ol.steps-big{list-style:none;padding:0;margin:0}
+.cookscreen ol.steps-big>li{padding:6px 0 20px;cursor:pointer}
+.cookscreen ol.steps-big>li+li{border-top:1px solid var(--line);padding-top:18px}
+.shead{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.spill{background:var(--rim-soft);color:var(--rim);font-weight:800;font-size:17px;padding:9px 16px;border-radius:99px}
+.scheck{width:44px;height:44px;border-radius:50%;border:2px solid var(--speckle);display:flex;align-items:center;justify-content:center;color:var(--speckle)}
+.scheck svg{width:24px;height:24px}
+.sing{display:flex;gap:12px;align-items:flex-start;margin:0 0 12px;color:var(--speckle);font-size:17px}
+.sing svg{width:28px;height:28px;flex-shrink:0;margin-top:1px}
+.sing ul{margin:0;padding-left:0;list-style:none}
+.sing li+li:before{content:'• '}
+.stxt{font-size:21px;line-height:1.5}
+.cookscreen ol.steps-big>li.done .stxt,.cookscreen ol.steps-big>li.done .sing{color:var(--speckle);text-decoration:line-through;text-decoration-thickness:1px}
+.cookscreen ol.steps-big>li.done .scheck{background:var(--basil);border-color:var(--basil);color:var(--plate)}
+.cnotes{font-size:18px;margin:0;white-space:pre-line}
 .md p{margin-top:8px} .md ul{padding-left:20px;margin-top:6px}
 
 /* ---------- Druck ---------- */
@@ -2984,30 +3009,115 @@ function renderMd(md) {
   if (!steps.length) return { steps: notes.map(fmt), intro: '' };
   return { steps: steps.map(fmt), intro: notes.map(n => `<p>${fmt(n)}</p>`).join('') };
 }
+/* ---------- Kochansicht (Karten wie in Rezept-Apps: Kopf, Zutaten mit Portionen-Umschalter, Schritte zum Abhaken) ---------- */
+let cookState = null;
+const COOK_ICON = {
+  time: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2c2.4.2 4.2 1.8 4.7 4.8"/></svg>',
+  leaf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l7-7"/></svg>',
+  basket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10h16l-1.6 8.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8z"/><path d="M8 10l3-5M16 10l-3-5"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+};
+/* Menge für n Portionen, sinnvoll gerundet; bei der Originalportion unverändert */
+function cookAmount(x, factor) {
+  if (x.quantity == null) return 'nach Geschmack';
+  let q = x.quantity * factor;
+  if (factor !== 1) {
+    const dim = EP.dimOf(x.unit);
+    if (dim === 'MASS' || dim === 'VOLUME') {
+      const base = q * ((EP.UNITS[x.unit] && EP.UNITS[x.unit].f) || 1);
+      const r = base >= 100 ? 5 : base >= 10 ? 1 : 0.1;
+      q = Math.round(base / r) * r / ((EP.UNITS[x.unit] && EP.UNITS[x.unit].f) || 1);
+    } else q = Math.max(0.25, Math.round(q * 4) / 4);
+  }
+  return EP.sumAmounts([{ quantity: q, unit: x.unit }]).text
+    .replace(/(\d+),5\b/g, (m, d) => (d === '0' ? '' : d) + '½').replace(/(\d+),25\b/g, (m, d) => (d === '0' ? '' : d) + '¼').replace(/(\d+),75\b/g, (m, d) => (d === '0' ? '' : d) + '¾');
+}
+function cookIngredients() {
+  const r = cookState.r;
+  return r.ingredients.slice().sort((a, b) => a.sortOrder - b.sortOrder).map(x => {
+    const i = ingById(x.ingredientId);
+    return { x, name: i ? i.name : '', key: (i ? i.name : '').split(/[(,/]/)[0].trim().toLowerCase() };
+  }).filter(o => o.name);
+}
+function cookFactor() { return cookState.n / (cookState.r.servings || cookState.n || 1); }
+function cookIngRows() {
+  const f = cookFactor();
+  return cookIngredients().map((o, k) => `<li data-ci="${k}" class="${cookState.done.has('i' + k) ? 'done' : ''}"><span class="q">${esc(cookAmount(o.x, f))}</span>
+    <span class="nm">${esc(o.name)}${o.x.note ? `<small>${esc(o.x.note)}</small>` : ''}</span></li>`).join('');
+}
+/* Zutaten, die in einem Schritt vorkommen: ganze Wörter, Mehrzahl (Tomate → Tomaten) und
+   Wortenden zusammengesetzter Namen (Reis → Milchreis), aber nicht Milch in „Milchreis“ */
+function mentions(text, key, others) {
+  const words = text.replace(/<[^>]+>/g, ' ').toLowerCase().split(/[^a-zäöüß]+/).filter(Boolean);
+  const stem = w => w.replace(/(en|n|e|s)$/, '');
+  const same = (w, k) => w === k || w === k + 'n' || w === k + 'en' || w === k + 'e' || w === k + 's' || w === k + 'er';
+  const taken = w => (others || []).some(o => o !== key && o.split(/\s+/).some(k => same(w, k)));   // Wort gehört klar zu einer anderen Zutat
+  return key.split(/\s+/).filter(k => k.length >= 3).some(k => words.some(w =>
+    same(w, k) ||
+    (w.length >= 4 && k.endsWith(w)) || (stem(w).length >= 4 && k.endsWith(stem(w))) ||
+    (k.length >= 5 && w.startsWith(k) && !taken(w))));
+}
+function stepIngs(text) {
+  const f = cookFactor();
+  const all = cookIngredients(), keys = all.map(o => o.key);
+  return all.filter(o => o.key && mentions(text, o.key, keys))
+    .map(o => `<li>${esc(cookAmount(o.x, f))} ${esc(o.name)}</li>`).join('');
+}
 function openCook(id) {
   const r = recipeById(id); if (!r) return;
-  const ck = coverKey(r), md = renderMd(r.instructions);
-  const ing = r.ingredients.slice().sort((a, b) => a.sortOrder - b.sortOrder).map(x => {
-    const i = ingById(x.ingredientId);
-    const q = x.quantity == null ? 'nach Geschmack' : EP.sumAmounts([{ quantity: x.quantity, unit: x.unit }]).text;
-    return `<li><span class="q">${esc(q)}</span><span>${esc(i ? i.name : '')}${x.note ? `, <span class="sub">${esc(x.note)}</span>` : ''}</span></li>`;
-  }).join('');
+  cookState = { r, n: r.servings || 2, done: new Set() };
   const el = $('#cookview');
-  el.innerHTML = `<div class="inner">
-    <div class="row"><span class="grow"></span><button class="btn small" data-act="closecook">Schließen</button></div>
-    <h1>${esc(r.name)}</h1>
-    <p class="sub" style="font-size:17px">${r.servings} Portionen${r.prepTimeMinutes ? `, ${r.prepTimeMinutes} min` : ''}</p>
-    ${ck ? `<img class="hero" data-img="${ck}" data-thumb="0" alt="">` : ''}
-    ${ing ? `<h3 style="font-size:20px">Zutaten</h3><ul class="ing">${ing}</ul>` : ''}
-    ${md.steps.length ? `<h3 style="font-size:20px">Zubereitung</h3><div class="md">${md.intro}</div><ol class="steps-big">${md.steps.map(s => `<li>${s}</li>`).join('')}</ol>` : ''}
-    ${r.notes ? `<h3 style="font-size:20px">Notizen</h3><p style="font-size:18px">${esc(r.notes)}</p>` : ''}
-    ${!ing && !md.steps.length && !String(r.instructions || '').trim() ? `<div class="box" style="margin-top:18px"><p style="font-size:18px;margin:0 0 12px">Für dieses Gericht sind noch keine Zutaten und keine Anleitung hinterlegt.</p>
-      <button class="btn primary" data-act="cookedit" data-arg="${r.id}">Rezept ergänzen</button></div>` : ''}
-    <p class="hint" style="margin-top:24px">Der Bildschirm bleibt an, solange die Kochansicht offen ist. Tippe auf Zutaten und Schritte, um sie abzuhaken.</p></div>`;
   el.classList.remove('hidden');
-  $$('.ing li, .steps-big li', el).forEach(li => li.onclick = () => li.classList.toggle('done'));
-  Images.hydrate(el);
+  renderCook();
   lockScreen();
+}
+function renderCook() {
+  const r = cookState.r, el = $('#cookview');
+  const ck = coverKey(r), md = renderMd(r.instructions), ings = cookIngredients();
+  const unit = EP.laneOf(r) === 'CAKE' ? 'Stücke' : 'Portionen';
+  const meta = [
+    r.prepTimeMinutes ? `<span>${COOK_ICON.time}${r.prepTimeMinutes} min</span>` : '',
+    `<span>${COOK_ICON.people}${r.servings} ${unit}</span>`,
+    EP.seasonLabel(r) ? `<span>${COOK_ICON.leaf}${esc(EP.seasonLabel(r))}</span>` : '',
+  ].filter(Boolean).join('');
+  const empty = !ings.length && !md.steps.length && !String(r.instructions || '').trim();
+  el.innerHTML = `<div class="inner">
+    <div class="cooktop"><button class="btn small" data-act="closecook">Schließen</button></div>
+    ${ck ? `<img class="hero" data-img="${ck}" data-thumb="0" alt="">` : ''}
+    <section class="ccard chead"><h1>${esc(r.name)}</h1>
+      <div class="cmeta">${meta}</div>
+      ${(r.tags || []).length ? `<div class="ctags">${r.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}</section>
+    ${ings.length ? `<section class="ccard"><h2>Zutaten</h2>
+      <div class="cstep" role="group" aria-label="${unit}"><button data-act="cookpp" data-arg="-1" aria-label="Weniger ${unit}">−</button><output id="cook-n">${cookState.n} ${unit}</output><button data-act="cookpp" data-arg="1" aria-label="Mehr ${unit}">+</button></div>
+      <ul class="cing" id="cook-ing">${cookIngRows()}</ul></section>` : ''}
+    ${md.steps.length ? `<section class="ccard"><h2>Zubereitung</h2>${md.intro ? `<div class="md cintro">${md.intro}</div>` : ''}
+      <ol class="steps-big">${md.steps.map((t, k) => {
+        const si = stepIngs(t);
+        return `<li data-cs="${k}" class="${cookState.done.has('s' + k) ? 'done' : ''}"><div class="shead"><span class="spill">Schritt ${k + 1}</span><span class="scheck" aria-hidden="true">${COOK_ICON.check}</span></div>
+          ${si ? `<div class="sing">${COOK_ICON.basket}<ul>${si}</ul></div>` : ''}<div class="stxt">${t}</div></li>`;
+      }).join('')}</ol></section>` : ''}
+    ${r.notes ? `<section class="ccard"><h2>Notizen</h2><p class="cnotes">${esc(r.notes)}</p></section>` : ''}
+    ${empty ? `<section class="ccard"><p style="font-size:18px;margin:0 0 12px">Für dieses Gericht sind noch keine Zutaten und keine Anleitung hinterlegt.</p>
+      <button class="btn primary" data-act="cookedit" data-arg="${r.id}">Rezept ergänzen</button></section>` : ''}
+    <p class="hint" style="margin-top:18px;text-align:center">Der Bildschirm bleibt an, solange die Kochansicht offen ist. Tippe auf Zutaten und Schritte, um sie abzuhaken.</p></div>`;
+  bindCook();
+  Images.hydrate(el);
+}
+function bindCook() {
+  const el = $('#cookview');
+  $$('[data-ci]', el).forEach(li => li.onclick = () => { const k = 'i' + li.dataset.ci; cookState.done.has(k) ? cookState.done.delete(k) : cookState.done.add(k); li.classList.toggle('done'); });
+  $$('[data-cs]', el).forEach(li => li.onclick = () => { const k = 's' + li.dataset.cs; cookState.done.has(k) ? cookState.done.delete(k) : cookState.done.add(k); li.classList.toggle('done'); });
+}
+function cookPortions(d) {
+  if (!cookState) return;
+  cookState.n = Math.max(1, Math.min(99, cookState.n + d));
+  const unit = EP.laneOf(cookState.r) === 'CAKE' ? 'Stücke' : 'Portionen';
+  $('#cook-n').textContent = `${cookState.n} ${unit}`;
+  $('#cook-ing').innerHTML = cookIngRows();
+  const md = renderMd(cookState.r.instructions);
+  $$('#cookview [data-cs]').forEach((li, k) => { const box = $('.sing ul', li); if (box) box.innerHTML = stepIngs(md.steps[k]); });
+  bindCook();
 }
 function closeCook() {
   $('#cookview').classList.add('hidden');
@@ -3336,6 +3446,7 @@ const ACT = {
   edit: id => openEdit(id),
   cook: id => openCook(id),
   closecook: () => closeCook(),
+  cookpp: d => cookPortions(+d),
   cookedit: id => { closeCook(); ACT.edit(id); },
   /* Editor */
   serv: d => { readEditForm(); editState.r.servings = Math.max(1, Math.min(99, editState.r.servings + (+d))); editState.dirty = true; rerender(); },
