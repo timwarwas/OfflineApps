@@ -216,6 +216,10 @@ dialog::backdrop{background:rgba(30,32,28,.55)}
 .editorwhere{flex:1;text-align:right;padding-right:6px}
 @media(max-width:640px){.editorwhere{display:none}}
 #dlg2{width:min(680px,96vw)}
+/* iOS zoomt bei Eingabefeldern unter 16 px automatisch heran – nur dort anheben */
+@supports (-webkit-touch-callout: none){
+  input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, select{font-size:16px!important}
+}
 #dlg3{width:min(460px,94vw)}
 #dlg3 .dlg-body p{margin:0 0 6px}
 #dlg3 input{width:100%;min-height:44px;font-size:16px;padding:0 10px;box-sizing:border-box}
