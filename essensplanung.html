@@ -2725,6 +2725,18 @@ function exportSheet() {
 }
 
 /* ---------- Rezept-Import (Antwort aus dem Scanner-Chat) ---------- */
+/* Schnellweg am Handy: ein Tipp auf „Importieren“ liest direkt die Zwischenablage (iOS fragt einmal „Einsetzen“).
+   Steht dort ein gültiger Rezeptblock, geht es sofort zur Vorschau – sonst öffnet sich das Eingabeblatt. */
+async function quickImport() {
+  const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+  if (!touch || !(navigator.clipboard && navigator.clipboard.readText)) return importSheet();
+  let t = '';
+  try { t = (await navigator.clipboard.readText()) || ''; } catch (e) { return importSheet(); }
+  let recs = null;
+  try { recs = t.trim() ? EP.parseRecipeImport(t) : null; } catch (e) { recs = null; }
+  if (recs) return importPreview(recs, t);
+  importSheet();
+}
 function importSheet(prefill) {
   const canRead = !!(navigator.clipboard && navigator.clipboard.readText);
   openSheet(`<h2>Rezepte importieren</h2>
@@ -2736,6 +2748,7 @@ function importSheet(prefill) {
     <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">Weiter</button></div>`, el => {
     const ta = $('#imp-t', el), err = $('#imp-err', el);
     const fail = m => { err.textContent = m; err.classList.remove('hidden'); };
+    const tryPreview = t => { try { const recs = EP.parseRecipeImport(t); importPreview(recs, t); return true; } catch (e) { return false; } };
     const next = () => {
       const t = ta.value.trim();
       if (!t) return fail('Bitte zuerst die Antwort aus dem Chat einfügen.');
@@ -2744,9 +2757,11 @@ function importSheet(prefill) {
       importPreview(recs, t);
     };
     ta.oninput = () => err.classList.add('hidden');
+    // Lange tippen → „Einsetzen“: gültiger Block springt direkt zur Vorschau
+    ta.addEventListener('paste', () => setTimeout(() => { const t = ta.value.trim(); if (t) tryPreview(t); }, 0));
     const p = $('[data-x=paste]', el);
     if (p) p.onclick = async () => {
-      try { const t = await navigator.clipboard.readText(); if (t) { ta.value = t; err.classList.add('hidden'); } else fail('Die Zwischenablage ist leer.'); }
+      try { const t = await navigator.clipboard.readText(); if (!t) return fail('Die Zwischenablage ist leer.'); ta.value = t; err.classList.add('hidden'); next(); }
       catch (e) { fail('Kein Zugriff auf die Zwischenablage. Tippe lange ins Feld und wähle „Einsetzen“.'); }
     };
     $('[data-x=file]', el).onclick = () => $('#imp-f', el).click();
@@ -3310,7 +3325,7 @@ const ACT = {
     inp.value = '';
     change(res.added ? 'Angelegt.' : res.restored ? 'Wiederhergestellt.' : 'Dieses Rezept gibt es schon.').then(() => { const i = $('#qa'); if (i) i.focus(); });
   },
-  rimport: () => importSheet(),
+  rimport: () => quickImport(),
   rexport: () => exportSheet(),
   rstatus: a => { recipeFilter.status = a; rerender(); },
   rtag: a => { recipeFilter.tag = recipeFilter.tag === a ? '' : a; rerender(); },
