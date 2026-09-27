@@ -2012,7 +2012,7 @@ function uniqueRecipeName(name) {
   return name + ' ' + Date.now();
 }
 function importRecipes(items) {
-  const res = { added: 0, replaced: 0, skipped: 0, newIngredients: 0 };
+  const res = { added: 0, replaced: 0, skipped: 0, newIngredients: 0, ids: [] };
   items.forEach(it => {
     if (it.mode === 'skip') { res.skipped++; return; }
     const src = it.rec, kind = it.kind || src.kind;
@@ -2027,12 +2027,12 @@ function importRecipes(items) {
       // Bilder, Gewichtung und Rotationsstatus bleiben; Saison nur, wenn im Import angegeben
       Object.assign(ex, fields, { archivedAt: null, tags: src.tags.length ? src.tags : ex.tags, notes: src.notes || ex.notes,
         seasonMonths: src.seasonMonths || ex.seasonMonths, daysOverride: kind === 'MAIN' ? ex.daysOverride : null });
-      EP.touch(ex); EP.syncRecipeIntoCycles(db, ex, rng); res.replaced++;
+      EP.touch(ex); EP.syncRecipeIntoCycles(db, ex, rng); res.replaced++; res.ids.push(ex.id);
       return;
     }
     const r = newRecipe(ex ? uniqueRecipeName(src.name) : src.name, kind);
     Object.assign(r, fields, { tags: src.tags, notes: src.notes, seasonMonths: src.seasonMonths });
-    db.recipes.push(r); EP.syncRecipeIntoCycles(db, r, rng); res.added++;
+    db.recipes.push(r); EP.syncRecipeIntoCycles(db, r, rng); res.added++; res.ids.push(r.id);
   });
   return res;
 }
@@ -2834,7 +2834,10 @@ function importPreview(recs, rawText) {
       const res = importRecipes(chosen);
       recipeFilter = Object.assign(recipeFilter, { kind: chosen[0].kind, q: '', tag: '', status: 'all' });
       const parts = [res.added ? `${res.added} importiert` : '', res.replaced ? `${res.replaced} ersetzt` : ''].filter(Boolean).join(', ');
-      change(`${parts || 'Nichts geändert'}.${res.newIngredients ? ` ${res.newIngredients} neue Zutaten – Einkaufsorte unter ⚙ prüfen.` : ''}`);
+      const msg = `${parts || 'Nichts geändert'}.${res.newIngredients ? ` ${res.newIngredients} neue Zutaten – Einkaufsorte unter ⚙ prüfen.` : ''}`;
+      if (res.ids.length === 1) {   // ein einzelnes Rezept: gleich im Editor öffnen, um Werte und Notizen anzupassen
+        persist().then(() => { openEdit(res.ids[0]); notify(msg + ' Du kannst es jetzt anpassen.'); });
+      } else change(msg);
     };
     refresh();
   });
