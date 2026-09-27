@@ -171,6 +171,13 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .laneline .lanelbl{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;flex-shrink:0}
 .lane-lunch .lanelbl{background:transparent;border:1.5px solid var(--basil);color:var(--basil)}
 .lane-cake .lanelbl{background:transparent;border:1.5px solid var(--tomato);color:var(--tomato)}
+.lane-x-main .lanelbl{background:transparent;border:1.5px solid var(--rim);color:var(--rim)}
+.lane-x-lunch .lanelbl{background:transparent;border:1.5px solid var(--basil);color:var(--basil)}
+.lane-x-cake .lanelbl{background:transparent;border:1.5px solid var(--tomato);color:var(--tomato)}
+.lane-x-side .lanelbl{background:transparent;border:1.5px solid var(--mustard,#b8860b);color:var(--mustard,#b8860b)}
+.seg4 button{flex:1 1 auto;font-size:13px;padding:6px 5px;min-width:0}
+.kind-seg{margin-top:10px}
+.pausetog{margin-top:10px;min-height:44px;font-size:15px}
 .laneline .nm{font-family:var(--serif);font-size:16px;flex:1;min-width:0;overflow-wrap:anywhere}
 .laneline .nm.free{font-family:var(--sans);font-size:14px;color:var(--speckle)}
 .laneline.drafted{background:linear-gradient(90deg,var(--rim-soft),transparent 60%)}
@@ -346,6 +353,13 @@ details.ghalt summary{min-height:44px}
 .lanerow>.laneline{border-top:0}
 .lanerow>.cookbtn{border-left-style:dashed}
 .lanerow>.cookbtn svg{width:22px;height:22px}
+.cookscreen mark.ning{background:var(--rim-soft);color:var(--rim);font-weight:700;border-radius:5px;padding:0 3px}
+.cookscreen li.done mark.ning{background:none;color:inherit}
+.sing li.spice,.cextra li.spice{font-style:italic}
+.cextra{background:var(--enamel);border-radius:16px;padding:12px 16px;margin:0 0 14px;font-size:17px}
+.cextra b{display:block;margin-bottom:4px}
+.cextra ul{margin:0;padding-left:20px}
+.cextra.spices{margin:14px 0 0}
 
 </style>
 </head>
@@ -450,6 +464,9 @@ const EP = (function () {
     { key: 'LUNCH', label: 'Mittagessen', short: 'Mittag' },
     { key: 'CAKE', label: 'Kuchen', short: 'Kuchen' },
   ];
+  /* Arten von Rezepten: Rotationsspuren + Beilagen (ohne Rotation) */
+  const KINDS = LANES.concat({ key: 'SIDE', label: 'Beilagen', short: 'Beilage' });
+  const ROTATES = k => LANES.some(l => l.key === k);
   const laneOf = x => (x && (x.lane || x.kind)) || 'MAIN';
   const MONTHS = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
   function inSeason(recipe, month) {
@@ -472,7 +489,7 @@ const EP = (function () {
   }
   function monthOf(isoDate) { return +isoDate.slice(5, 7); }
   function activeRecipes(db, lane) {
-    return live(db.recipes).filter(r => r.inRotation && !r.archivedAt && (!lane || laneOf(r) === lane));
+    return live(db.recipes).filter(r => r.inRotation && !r.archivedAt && ROTATES(laneOf(r)) && (!lane || laneOf(r) === lane));
   }
   function repairAdjacency(items, prevLastRecipeId) {
     let moves = 0;
@@ -623,7 +640,7 @@ const EP = (function () {
     const lane = laneOf(recipe);
     // offene Einträge in einer anderen Spur (Art des Gerichts geändert) entfernen
     live(db.rotation).filter(e => e.recipeId === recipe.id && e.status === 'PENDING' && laneOf(e) !== lane).forEach(tomb);
-    const active = recipe.inRotation && !recipe.archivedAt && !recipe.deleted;
+    const active = recipe.inRotation && !recipe.archivedAt && !recipe.deleted && ROTATES(lane);
     openCycles(db, lane).forEach(c => {
       const mine = cycleEntries(db, c, lane).filter(e => e.recipeId === recipe.id);
       if (!active) { mine.filter(e => e.status === 'PENDING').forEach(tomb); return; }
@@ -808,7 +825,7 @@ const EP = (function () {
   function buildShoppingList(db, from, to) {
     const recipes = new Map(live(db.recipes).map(r => [r.id, r]));
     const ings = new Map(live(db.ingredients).map(i => [i.id, i]));
-    const laneRank = { MAIN: 0, LUNCH: 1, CAKE: 2 };
+    const laneRank = { MAIN: 0, LUNCH: 1, CAKE: 2, EXTRA: 3, SIDE: 3 };
     const cooks = live(db.plan).filter(p => p.type === 'COOK' && p.date >= from && p.date <= to)
       .sort((a, b) => a.date.localeCompare(b.date) || laneRank[laneOf(a)] - laneRank[laneOf(b)]);
     const names = [], warnings = [], per = new Map();
@@ -907,6 +924,7 @@ const EP = (function () {
   function normalizePlan(db) {
     const byDate = new Map();
     live(db.plan).forEach(p => {
+      if (laneOf(p) === 'EXTRA') return; // zusätzliche Gerichte: beliebig viele pro Tag
       const k = p.date + '|' + laneOf(p);
       const o = byDate.get(k);
       if (!o) { byDate.set(k, p); return; }
@@ -925,7 +943,8 @@ const EP = (function () {
      Nimmt den Text aus dem Scanner-Chat entgegen (auch mit ```json-Zaun oder Begleittext)
      und liefert normalisierte Rezepte mit Hinweisen. Keine Speicherzugriffe. */
   const KIND_ALIAS = { HAUPT: 'MAIN', HAUPTGERICHT: 'MAIN', MAIN: 'MAIN', ABEND: 'MAIN', ABENDESSEN: 'MAIN',
-    MITTAG: 'LUNCH', MITTAGESSEN: 'LUNCH', LUNCH: 'LUNCH', KUCHEN: 'CAKE', CAKE: 'CAKE', GEBAECK: 'CAKE', BACKEN: 'CAKE' };
+    MITTAG: 'LUNCH', MITTAGESSEN: 'LUNCH', LUNCH: 'LUNCH', KUCHEN: 'CAKE', CAKE: 'CAKE', GEBAECK: 'CAKE', BACKEN: 'CAKE',
+    BEILAGE: 'SIDE', BEILAGEN: 'SIDE', SIDE: 'SIDE', SALAT: 'SIDE', SOSSE: 'SIDE', SAUCE: 'SIDE', DIP: 'SIDE' };
   const UNIT_ALIAS = {
     g: 'G', gr: 'G', gramm: 'G', kg: 'KG', kilo: 'KG', kilogramm: 'KG', ml: 'ML', milliliter: 'ML', l: 'L', liter: 'L',
     stueck: 'STUECK', stück: 'STUECK', stk: 'STUECK', st: 'STUECK', el: 'EL', essloeffel: 'EL', esslöffel: 'EL',
@@ -1027,7 +1046,7 @@ const EP = (function () {
       ingredients, instructions, notes, warnings: warn };
   }
   /* Rezepte im Import-Format ausgeben (wieder einlesbar mit parseRecipeImport) */
-  const KIND_OUT = { MAIN: 'Hauptgericht', LUNCH: 'Mittag', CAKE: 'Kuchen' };
+  const KIND_OUT = { MAIN: 'Hauptgericht', LUNCH: 'Mittag', CAKE: 'Kuchen', SIDE: 'Beilage' };
   function buildRecipeExport(db, ids) {
     const ing = new Map((db.ingredients || []).map(i => [i.id, i]));
     const pick = new Set(ids);
@@ -1065,7 +1084,7 @@ const EP = (function () {
   return {
     setClock, uuid, touch, live, tomb, seededRng,
     iso, parseISO, addDays, todayISO, weekStart, weekDays, isoWeek, fmtDate, fmtShort, fmtRange, weekday, weekdayLong,
-    daysFor, daysHint, LANES, laneOf, MONTHS, inSeason, seasonLabel, monthOf,
+    daysFor, daysHint, LANES, KINDS, ROTATES, laneOf, MONTHS, inSeason, seasonLabel, monthOf,
     activeRecipes, repairAdjacency, buildCycle, cycleEntries, maxCycle, openCycles, pendingSorted,
     lastRecipeOfCycle, appendCycle, nextEntries, planEntry, completeEntry, skipEntry, postpone, release,
     manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
@@ -1861,6 +1880,29 @@ function unblockDay(date) {
   if (p && p.type === 'BLOCKED') EP.tomb(p);
 }
 
+/* ---------- Zusätzliche Gerichte (beliebig viele pro Tag, ohne Rotation) ---------- */
+const isExtra = p => EP.laneOf(p) === 'EXTRA';
+const extraRank = { MAIN: 0, LUNCH: 1, CAKE: 2, SIDE: 3 };
+function extrasAt(src, date) {
+  return EP.live((src || db).plan).filter(p => p.date === date && isExtra(p))
+    .sort((a, b) => (extraRank[a.dishKind] || 0) - (extraRank[b.dishKind] || 0) || (a.createdAt || 0) - (b.createdAt || 0));
+}
+/* Änderung auf echten Plan und – falls vorhanden – auf den Entwurf anwenden */
+function eachPlan(fn) { fn(db.plan); if (draft) fn(draft.clone.plan); }
+function addExtra(date, recipeId) {
+  const r = recipeById(recipeId);
+  const id = EP.uuid();
+  const e = EP.touch({ id, date, lane: 'EXTRA', dishKind: EP.laneOf(r), type: 'COOK', recipeId, blockId: id, dayIndex: 1, dayCount: 1,
+    rotationEntryId: null, source: 'MANUAL', locked: false, status: date < EP.todayISO() ? 'DONE' : 'PLANNED', note: '', deleted: false });
+  eachPlan(pl => pl.push(deep(e)));
+  return e;
+}
+function removeExtra(id) { eachPlan(pl => { const p = pl.find(x => x.id === id && !x.deleted); if (p) EP.tomb(p); }); }
+function replaceExtra(id, recipeId) {
+  const r = recipeById(recipeId);
+  eachPlan(pl => { const p = pl.find(x => x.id === id && !x.deleted); if (p) { p.recipeId = recipeId; p.dishKind = EP.laneOf(r); EP.touch(p); } });
+}
+
 /* ---------- Wochenentwurf (5.4) ---------- */
 let draft = null;
 function startDraft(ws) {
@@ -1870,6 +1912,7 @@ function startDraft(ws) {
   const planLive = EP.live(clone.plan);
   const remove = new Set();
   planLive.forEach(p => {
+    if (EP.laneOf(p) === 'EXTRA') return; // zusätzliche Gerichte bleiben stehen
     if (!inWeek.has(p.date) || p.type === 'BLOCKED' || p.date < today || p.locked) return;
     const cook = planLive.find(x => x.blockId === p.blockId && x.type === 'COOK');
     if (cook && (cook.date < ws || cook.date < today)) return; // Übertrag bzw. bereits begonnen
@@ -1996,6 +2039,7 @@ function weekEntries(ws) {
     draft.lanes.forEach(x => lanes[x.lane].set(x.date, Object.assign({ drafted: true, type: 'COOK' }, x)));
   }
   out.lanes = lanes;
+  out.extras = new Map(days.map(d => [d, extrasAt(src, d)]).filter(x => x[1].length));
   return out;
 }
 
@@ -2007,7 +2051,7 @@ function findRecipeByName(name) {
 function newRecipe(name, kind) {
   kind = kind || 'MAIN';
   const max = EP.live(db.recipes).reduce((m, r) => Math.max(m, r.sortOrder || 0), 0);
-  return EP.touch({ id: EP.uuid(), name: name.trim().slice(0, 120), kind, seasonMonths: null, inRotation: true, weight: 1,
+  return EP.touch({ id: EP.uuid(), name: name.trim().slice(0, 120), kind, seasonMonths: null, inRotation: kind !== 'SIDE', weight: 1,
     servings: kind === 'CAKE' ? 12 : db.settings.portionsPerDay, daysOverride: null, sortOrder: max + 1, notes: '', instructions: '',
     prepTimeMinutes: null, tags: [], archivedAt: null, deleted: false, images: [], ingredients: [] });
 }
@@ -2157,7 +2201,8 @@ const ICON = {
 const TABS = [['week', 'Woche', ICON.week], ['suggest', 'Vorschlag', ICON.plate], ['shop', 'Einkauf', ICON.cart], ['recipes', 'Rezepte', ICON.book]];
 const TITLES = { suggest: 'Als Nächstes', week: 'Wochenplan', shop: 'Einkaufsliste', recipes: 'Rezepte',
   edit: 'Rezept', ingredients: 'Zutaten', rotation: 'Rotation', settings: 'Einstellungen', sync: 'Geräteabgleich', sources: 'Einkaufsorte' };
-const LANE_LABEL = { MAIN: 'Hauptgerichte', LUNCH: 'Mittag', CAKE: 'Kuchen' };
+const LANE_LABEL = { MAIN: 'Hauptgerichte', LUNCH: 'Mittag', CAKE: 'Kuchen', SIDE: 'Beilagen' };
+const DISH_LABEL = { MAIN: 'Hauptgericht', LUNCH: 'Mittag', CAKE: 'Kuchen', SIDE: 'Beilage' };
 let suggestLane = 'MAIN';
 
 let route = { name: 'week' }, stack = [];
@@ -2310,17 +2355,41 @@ function laneDateSheet(title, recipe, lane, start, okLabel, onOk) {
     $('[data-x=yes]', el).onclick = () => { const v = $('#dv', el).value; if (!v) return; closeSheet(); onOk(v); };
   });
 }
-/* Rezept auswählen (aktive zuerst), beschränkt auf eine Art */
-function recipePickSheet(title, onPick, kind) {
-  kind = kind || 'MAIN';
+/* Rezept auswählen, beschränkt auf eine Art. Pausierte nur mit Schalter „Auch außerhalb der Rotation“.
+   opts.kinds: Arten zum Umschalten (für zusätzliche Gerichte) */
+function recipePickSheet(title, onPick, kind, opts) {
+  opts = opts || {};
+  let cur = kind || 'MAIN';
   const m = EP.monthOf(EP.todayISO());
-  const list = liveRecipes().filter(r => EP.laneOf(r) === kind).sort((a, b) => (b.inRotation - a.inRotation) || a.name.localeCompare(b.name, 'de'));
-  const html = list.map(r => `<button class="opt" data-id="${r.id}"><span class="grow"><span class="serif" style="font-size:17px">${esc(r.name)}</span>
-    <small>${r.inRotation ? 'In Rotation' : 'Pausiert'}${kind === 'MAIN' ? ' · ' + daysLabel(daysOf(r)) : ''}${EP.inSeason(r, m) ? '' : ' · außerhalb der Saison (' + EP.seasonLabel(r) + ')'}</small></span></button>`).join('');
-  openSheet(`<h2>${esc(title)}</h2><input class="in" id="ps" placeholder="Rezept suchen" style="margin-top:10px">
-    <div class="pick" id="pl">${html || `<p class="empty">Noch keine ${esc(LANE_LABEL[kind])}-Rezepte angelegt.</p>`}</div>`, el => {
-    $('#ps', el).oninput = e => { const q = e.target.value.toLowerCase(); $$('.opt', el).forEach(b => b.classList.toggle('hidden', !b.textContent.toLowerCase().includes(q))); };
-    $$('.opt', el).forEach(b => b.onclick = () => { closeSheet(); onPick(b.dataset.id); });
+  const kinds = opts.kinds || null;
+  const pickHtml = () => {
+    const rot = EP.ROTATES(cur), all = !rot || !!LS.get('ep_showPaused');
+    const every = liveRecipes().filter(r => EP.laneOf(r) === cur);
+    const list = every.filter(r => all || r.inRotation).sort((a, b) => (rot ? b.inRotation - a.inRotation : 0) || a.name.localeCompare(b.name, 'de'));
+    const rows = list.map(r => `<button class="opt" data-id="${r.id}"><span class="grow"><span class="serif" style="font-size:17px">${esc(r.name)}</span>
+      <small>${rot ? (r.inRotation ? 'In Rotation' : 'Außerhalb der Rotation') : 'Ohne Rotation'}${cur === 'MAIN' ? ' · ' + daysLabel(daysOf(r)) : ''}${EP.inSeason(r, m) ? '' : ' · außerhalb der Saison (' + EP.seasonLabel(r) + ')'}</small></span></button>`).join('');
+    const empty = !every.length ? `Noch keine ${esc(LANE_LABEL[cur])}-Rezepte angelegt.`
+      : `Keine ${esc(LANE_LABEL[cur])}-Rezepte in der Rotation – Schalter oben einschalten, um die übrigen zu sehen.`;
+    return rows || `<p class="empty">${empty}</p>`;
+  };
+  const toggleHtml = () => EP.ROTATES(cur) ? `<label class="row pausetog"><span class="grow">Auch Rezepte außerhalb der Rotation</span>
+      <span class="switch"><input type="checkbox" id="pt" ${LS.get('ep_showPaused') ? 'checked' : ''} aria-label="Auch Rezepte außerhalb der Rotation anzeigen"><i></i></span></label>` : '';
+  openSheet(`<h2>${esc(title)}</h2>
+    ${kinds ? `<div class="seg seg4 kind-seg" id="pk">${kinds.map(k => `<button data-k="${k}" aria-pressed="${k === cur}">${DISH_LABEL[k]}</button>`).join('')}</div>` : ''}
+    <div id="ptw">${toggleHtml()}</div>
+    <input class="in" id="ps" placeholder="Rezept suchen" style="margin-top:10px">
+    <div class="pick" id="pl">${pickHtml()}</div>`, el => {
+    const filter = () => { const q = $('#ps', el).value.toLowerCase(); $$('#pl .opt', el).forEach(b => b.classList.toggle('hidden', !b.textContent.toLowerCase().includes(q))); };
+    const bindList = () => { $$('#pl .opt', el).forEach(b => b.onclick = () => { if (kinds) opts.onKind && opts.onKind(cur); closeSheet(); onPick(b.dataset.id); }); filter(); };
+    const bindToggle = () => { const t = $('#pt', el); if (t) t.onchange = () => { LS.set('ep_showPaused', t.checked); $('#pl', el).innerHTML = pickHtml(); bindList(); }; };
+    $('#ps', el).oninput = filter;
+    $$('#pk button', el).forEach(b => b.onclick = () => {
+      cur = b.dataset.k;
+      $$('#pk button', el).forEach(x => x.setAttribute('aria-pressed', x === b));
+      $('#ptw', el).innerHTML = toggleHtml(); bindToggle();
+      $('#pl', el).innerHTML = pickHtml(); bindList();
+    });
+    bindToggle(); bindList();
   });
 }
 function optionsSheet(title, sub, opts) {
@@ -2375,8 +2444,8 @@ function rerender() {
 }
 
 /* ---------- Vorschlag (5.3) ---------- */
-function laneSeg(cur, act) {
-  return `<div class="seg lane-seg">${EP.LANES.map(l => `<button data-act="${act}" data-arg="${l.key}" aria-pressed="${cur === l.key}">${LANE_LABEL[l.key]}</button>`).join('')}</div>`;
+function laneSeg(cur, act, kinds) {
+  return `<div class="seg lane-seg ${kinds && kinds.length > 3 ? 'seg4' : ''}">${(kinds || EP.LANES).map(l => `<button data-act="${act}" data-arg="${l.key}" aria-pressed="${cur === l.key}">${LANE_LABEL[l.key]}</button>`).join('')}</div>`;
 }
 function vSuggest() {
   const lane = suggestLane;
@@ -2463,9 +2532,15 @@ function vWeek() {
         <span class="lanelbl">${LANE_LABEL[l]}</span><span class="nm ${x ? '' : 'free'}">${x ? esc(r ? r.name : 'Gelöschtes Rezept') : 'Frei'}</span>
         ${x && x.status === 'DONE' ? `<span class="badge done">${l === 'CAKE' ? 'Gebacken' : 'Gekocht'}</span>` : ''}</button>${x ? cookBtn(r) : ''}</div>`;
     }).join('');
+    const extraLines = (ents.extras.get(d) || []).map(x => {
+      const r = recipeById(x.recipeId), k = x.dishKind || 'MAIN';
+      return `<div class="dayrow lanerow"><button class="laneline lane-extra lane-x-${k.toLowerCase()}" data-act="extra" data-arg="${x.id}">
+        <span class="lanelbl">${DISH_LABEL[k] || 'Gericht'}</span><span class="nm">${esc(r ? r.name : 'Gelöschtes Rezept')}</span>
+        ${x.status === 'DONE' ? `<span class="badge done">${k === 'CAKE' ? 'Gebacken' : 'Gekocht'}</span>` : ''}</button>${cookBtn(r)}</div>`;
+    }).join('');
     const mainRecipe = p && p.recipeId ? recipeById(p.recipeId) : null;
     return `<div class="${cls}"><div class="dayrow"><button class="daymain" data-act="day" data-arg="${d}"><div class="dt"><b>${EP.weekday(d)}</b><span>${EP.fmtShort(d)}</span></div>
-      <div class="what">${body}</div>${p && p.locked ? ICON.lock : ''}</button>${cookBtn(mainRecipe)}</div>${laneLines}</div>`;
+      <div class="what">${body}</div>${p && p.locked ? ICON.lock : ''}</button>${cookBtn(mainRecipe)}</div>${laneLines}${extraLines}</div>`;
   }).join('');
   return `<div class="weekhead">
       <button class="iconbtn" data-act="wk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
@@ -2590,6 +2665,31 @@ function dayActions(d) {
   addLaneOptions(d, opts);
   optionsSheet(title, p && p.recipeId ? esc((recipeById(p.recipeId) || {}).name || '') : '', opts);
 }
+/* Zusätzliche Gerichte: beliebig viele pro Tag, jeder Art, ohne Rotation */
+let extraKind = null;
+const EXTRA_KINDS = ['MAIN', 'LUNCH', 'SIDE', 'CAKE'];
+function addExtraSheet(d) {
+  const has = k => liveRecipes().some(r => EP.laneOf(r) === k);
+  const k = extraKind || (has('SIDE') ? 'SIDE' : 'MAIN');
+  recipePickSheet(`Weiteres Gericht am ${EP.weekday(d)} ${EP.fmtShort(d)}`, id => {
+    addExtra(d, id); change('Hinzugefügt.');
+  }, k, { kinds: EXTRA_KINDS, onKind: v => { extraKind = v; } });
+}
+function extraOption(d) {
+  return { label: 'Weiteres Gericht hinzufügen', hint: 'z. B. Beilage oder ein zweites Mittagessen – ohne Rotation', run: () => addExtraSheet(d) };
+}
+function extraActions(id) {
+  const src = draft && draft.ws === weekStartISO ? draft.clone : db;
+  const x = EP.live(src.plan).find(p => p.id === id) || EP.live(db.plan).find(p => p.id === id);
+  if (!x) return;
+  const r = recipeById(x.recipeId), k = x.dishKind || 'MAIN';
+  const opts = [];
+  if (r && (r.instructions || r.ingredients.length)) opts.push({ label: 'Kochansicht öffnen', run: () => openCook(r.id) });
+  opts.push({ label: 'Anderes Gericht wählen', run: () => recipePickSheet('Gericht wählen', nid => { replaceExtra(id, nid); change('Ersetzt.'); }, k, { kinds: EXTRA_KINDS }) });
+  opts.push({ label: 'Noch ein Gericht hinzufügen', run: () => addExtraSheet(x.date) });
+  opts.push({ label: 'Aus dem Plan entfernen', danger: true, run: () => { removeExtra(id); change('Entfernt.'); } });
+  optionsSheet(`${DISH_LABEL[k]} am ${EP.weekdayLong(x.date)}, ${EP.fmtShort(x.date)}`, r ? esc(r.name) : '', opts);
+}
 /* „Mittagessen/Kuchen hinzufügen“ für Tage, an denen keine Zeile dafür angezeigt wird */
 function addLaneOptions(d, opts) {
   const ents = weekEntries(weekStartISO);
@@ -2602,6 +2702,10 @@ function addLaneOptions(d, opts) {
     const i = opts.findIndex(x => x.danger);           // rote Aktion bleibt ganz unten
     i === -1 ? opts.push(o) : opts.splice(i, 0, o);
   });
+  if (liveRecipes().length) {
+    const i = opts.findIndex(x => x.danger);
+    i === -1 ? opts.push(extraOption(d)) : opts.splice(i, 0, extraOption(d));
+  }
 }
 
 /* ---------- Einkauf (5.5) ---------- */
@@ -2657,8 +2761,9 @@ function shopText() {
 function recipeMatches(r) {
   const f = recipeFilter;
   if (EP.laneOf(r) !== f.kind) return false;
-  if (f.status === 'active' && !r.inRotation) return false;
-  if (f.status === 'paused' && r.inRotation) return false;
+  const rot = EP.ROTATES(f.kind);
+  if (rot && f.status === 'active' && !r.inRotation) return false;
+  if (rot && f.status === 'paused' && r.inRotation) return false;
   if (f.tag && !(r.tags || []).includes(f.tag)) return false;
   if (f.q) {
     const q = f.q.toLowerCase();
@@ -2674,37 +2779,39 @@ function vRecipes() {
   const list = all.filter(recipeMatches).sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const pp = db.settings.portionsPerDay;
   const seg = (k, l) => `<button data-act="rstatus" data-arg="${k}" aria-pressed="${recipeFilter.status === k}">${l}</button>`;
-  const ph = { MAIN: 'Rezeptname eingeben', LUNCH: 'z. B. Nudelsuppe', CAKE: 'z. B. Apfelkuchen' }[kind];
-  return `${laneSeg(kind, 'rkind')}
+  const ph = { MAIN: 'Rezeptname eingeben', LUNCH: 'z. B. Nudelsuppe', CAKE: 'z. B. Apfelkuchen', SIDE: 'z. B. Gurkensalat' }[kind];
+  const rot = EP.ROTATES(kind);
+  return `${laneSeg(kind, 'rkind', EP.KINDS)}
+    ${rot ? '' : '<p class="hint" style="margin-top:-6px">Beilagen haben keine Rotation. Du fügst sie im Wochenplan über einen Tag → „Weiteres Gericht hinzufügen“ hinzu.</p>'}
     <div class="quick" style="margin-top:12px"><input class="in" id="qa" placeholder="${ph}" enterkeyhint="done" autocomplete="off">
       <button class="btn primary" data-act="qa" aria-label="Rezept anlegen">+</button></div>
     <p class="hint">Enter legt das Rezept an. Mehrere Zeilen einfügen legt mehrere Rezepte an.</p>
     <div class="impbtns"><button class="btn quiet small impbtn" data-act="rimport">Rezepte aus JSON importieren</button><button class="btn quiet small impbtn" data-act="rexport">Rezepte als JSON exportieren</button></div>
     ${all.length ? `<input class="in" id="rq" placeholder="Suchen nach Name, Tag oder Zutat" value="${esc(recipeFilter.q)}" style="margin-top:14px">
-    <div class="seg" style="margin-top:10px">${seg('all', 'Alle')}${seg('active', 'In Rotation')}${seg('paused', 'Pausiert')}</div>
+    ${rot ? `<div class="seg" style="margin-top:10px">${seg('all', 'Alle')}${seg('active', 'In Rotation')}${seg('paused', 'Pausiert')}</div>` : ''}
     ${tags.length ? `<div class="chips">${tags.map(t => `<button class="chip" data-act="rtag" data-arg="${esc(t)}" aria-pressed="${recipeFilter.tag === t}">${esc(t)}</button>`).join('')}</div>` : ''}` : ''}
     <div class="rlist">${list.map(r => {
       const n = daysOf(r), ck = coverKey(r);
-      return `<div class="rcard ${r.inRotation ? '' : 'paused'}">
+      return `<div class="rcard ${r.inRotation || !rot ? '' : 'paused'}">
         <button class="head" data-act="edit" data-arg="${r.id}" style="width:100%">
           ${ck ? `<img class="thumb" data-img="${ck}" data-thumb="1" alt="">` : ''}
           <span class="grow"><span class="nm" style="display:block">${esc(r.name)}</span>
           <span class="meta" style="display:block">${kind === 'MAIN' ? `${r.servings} Portionen = ${daysLabel(n)}${r.daysOverride ? ' (fest)' : ''}` : `${r.servings} ${kind === 'CAKE' ? 'Stücke' : 'Portionen'}`}${r.ingredients.length ? `, ${r.ingredients.length} Zutaten` : ''}${EP.seasonLabel(r) ? `<br>Saison: ${EP.seasonLabel(r)}` : ''}</span></span>
         </button>
-        <div class="ctrl">
+        ${rot ? `<div class="ctrl">
           <label><span class="switch"><input type="checkbox" data-rot="${r.id}" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></span>${r.inRotation ? 'In Rotation' : 'Pausiert'}</label>
           <div class="wstep"><button data-act="w" data-arg="${r.id}|-1" aria-label="Seltener">−</button><output>×${r.weight}</output><button data-act="w" data-arg="${r.id}|1" aria-label="Häufiger">+</button></div>
-        </div></div>`;
-    }).join('') || (all.length ? '<p class="empty">Keine Treffer.</p>' : `<div class="empty"><p class="serif">${{ MAIN: 'Dein Fundus ist leer', LUNCH: 'Noch keine Mittagsgerichte', CAKE: 'Noch keine Kuchen' }[kind]}</p>
-      <p>${{ MAIN: 'Tipp oben einen Gerichtnamen ein – Portionen, Zutaten und Anleitung kannst du später ergänzen.', LUNCH: 'Kleine Gerichte fürs Wochenende mit eigener Rotation.', CAKE: 'Kuchen kommen zusätzlich zum Essen dazu und haben ihre eigene Rotation.' }[kind]}</p>
-      <div class="btns">${kind === 'MAIN' ? (liveRecipes().some(r => EP.laneOf(r) === 'MAIN') ? '' : '<button class="btn" data-act="seed">Beispielrezepte laden</button>')
+        </div>` : ''}</div>`;
+    }).join('') || (all.length ? '<p class="empty">Keine Treffer.</p>' : `<div class="empty"><p class="serif">${{ MAIN: 'Dein Fundus ist leer', LUNCH: 'Noch keine Mittagsgerichte', CAKE: 'Noch keine Kuchen', SIDE: 'Noch keine Beilagen' }[kind]}</p>
+      <p>${{ MAIN: 'Tipp oben einen Gerichtnamen ein – Portionen, Zutaten und Anleitung kannst du später ergänzen.', LUNCH: 'Kleine Gerichte fürs Wochenende mit eigener Rotation.', CAKE: 'Kuchen kommen zusätzlich zum Essen dazu und haben ihre eigene Rotation.', SIDE: 'Salate, Soßen, Brot … ohne Rotation – du fügst sie selbst zu einem Tag hinzu.' }[kind]}</p>
+      <div class="btns">${kind === 'SIDE' ? '' : kind === 'MAIN' ? (liveRecipes().some(r => EP.laneOf(r) === 'MAIN') ? '' : '<button class="btn" data-act="seed">Beispielrezepte laden</button>')
         : `<button class="btn" data-act="seedlane" data-arg="${kind}">${kind === 'LUNCH' ? '6 Mittagsgerichte als Vorschlag laden' : '7 Kuchen als Vorschlag laden'}</button>`}</div></div>`)}</div>
-    ${all.length ? `<p class="hint" style="text-align:center">${all.filter(r => r.inRotation).length} von ${all.length} in Rotation${kind === 'MAIN' ? `, ${pp} Portionen pro Tag` : ''}</p>` : ''}`;
+    ${all.length && rot ? `<p class="hint" style="text-align:center">${all.filter(r => r.inRotation).length} von ${all.length} in Rotation${kind === 'MAIN' ? `, ${pp} Portionen pro Tag` : ''}</p>` : ''}`;
 }
 
 /* ---------- Rezept-Export (gleiches Format wie der Import) ---------- */
 function exportSheet() {
-  const lanes = [['MAIN', 'Hauptgerichte'], ['LUNCH', 'Mittag'], ['CAKE', 'Kuchen']];
+  const lanes = [['MAIN', 'Hauptgerichte'], ['LUNCH', 'Mittag'], ['CAKE', 'Kuchen'], ['SIDE', 'Beilagen']];
   const all = liveRecipes().filter(r => !r.archivedAt);
   if (!all.length) return notify('Noch keine Rezepte vorhanden.');
   const cur = recipeFilter.kind;
@@ -2810,7 +2917,7 @@ function importPreview(recs, rawText) {
     return `<div class="rcard impcard" data-card="${i}">
       <label class="imphead"><input type="checkbox" data-inc="${i}" checked aria-label="${esc(r.name)} importieren"><span class="nm">${esc(r.name)}</span></label>
       <p class="meta">${meta}</p>
-      <div class="seg lane-seg" style="margin-top:10px">${EP.LANES.map(l => segBtn(i, 'kind', l.key, it.kind, LANE_LABEL[l.key])).join('')}</div>
+      <div class="seg lane-seg seg4" style="margin-top:10px">${EP.KINDS.map(l => segBtn(i, 'kind', l.key, it.kind, LANE_LABEL[l.key])).join('')}</div>
       ${it.dup ? `<p class="hint warn" style="margin-top:10px">„${esc(r.name)}“ gibt es schon.</p>
         <div class="seg" style="margin-top:6px">${segBtn(i, 'mode', 'skip', it.mode, 'Überspringen')}${segBtn(i, 'mode', 'replace', it.mode, 'Ersetzen')}${segBtn(i, 'mode', 'copy', it.mode, 'Als Kopie')}</div>
         <p class="hint" data-modehint="${i}"></p>` : ''}
@@ -2907,8 +3014,8 @@ function vEdit() {
   return `<datalist id="inglist">${EP.live(db.ingredients).sort((a, b) => a.name.localeCompare(b.name, 'de')).map(i => `<option value="${esc(i.name)}">`).join('')}</datalist>
     <label class="field" style="margin-top:0"><span>Name</span><input class="in nameinput" id="e-name" value="${esc(r.name)}" maxlength="120" placeholder="z. B. Linsensuppe"></label>
     <div class="field"><span>Art</span>
-      <div class="seg">${EP.LANES.map(l => `<button data-act="ekind" data-arg="${l.key}" aria-pressed="${kind === l.key}">${l.short}</button>`).join('')}</div>
-      <p class="hint">${isMain ? 'Normale Mahlzeit, belegt je nach Portionen mehrere Tage.' : kind === 'LUNCH' ? 'Zusätzliches Mittagessen an den eingestellten Tagen, eigene Rotation.' : 'Kommt zusätzlich zum Essen dazu, eigene Rotation.'}</p></div>
+      <div class="seg seg4">${EP.KINDS.map(l => `<button data-act="ekind" data-arg="${l.key}" aria-pressed="${kind === l.key}">${l.short}</button>`).join('')}</div>
+      <p class="hint">${isMain ? 'Normale Mahlzeit, belegt je nach Portionen mehrere Tage.' : kind === 'LUNCH' ? 'Zusätzliches Mittagessen an den eingestellten Tagen, eigene Rotation.' : kind === 'SIDE' ? 'Salat, Soße, Brot … Keine Rotation – im Wochenplan über „Weiteres Gericht hinzufügen“ einplanen.' : 'Kommt zusätzlich zum Essen dazu, eigene Rotation.'}</p></div>
     <div class="field"><span>${kind === 'CAKE' ? 'Stücke' : 'Portionen pro Zubereitung'}</span>
       <div class="stepper"><button data-act="serv" data-arg="-1" aria-label="Weniger">−</button><output id="e-serv">${r.servings}</output><button data-act="serv" data-arg="1" aria-label="Mehr">+</button></div>
       ${isMain ? `<p class="live" id="e-live">${liveDaysText(r)}</p><p class="hint" id="e-hint">${esc(hint)}</p>` : ''}</div>
@@ -2918,10 +3025,10 @@ function vEdit() {
       ${allYear ? '' : `<p class="hint" style="margin:8px 0 6px">Nur in diesen Monaten vorschlagen:</p>
       <div class="months">${EP.MONTHS.map((m, i) => `<button class="chip" data-act="emonth" data-arg="${i + 1}" aria-pressed="${r.seasonMonths.includes(i + 1)}">${m}</button>`).join('')}</div>`}
     </div>
-    <div class="field"><span>Wie oft pro Durchlauf</span>
+    ${kind === 'SIDE' ? '' : `<div class="field"><span>Wie oft pro Durchlauf</span>
       <div class="stepper"><button data-act="ew" data-arg="-1" aria-label="Seltener">−</button><output>×${r.weight}</output><button data-act="ew" data-arg="1" aria-label="Häufiger">+</button></div></div>
     <div class="field"><div class="row"><span class="grow" style="margin:0;color:var(--ink);font-weight:600">In Rotation</span>
-      <label class="switch"><input type="checkbox" id="e-rot" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></label></div></div>
+      <label class="switch"><input type="checkbox" id="e-rot" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></label></div></div>`}
 
     <h3>Zutaten</h3>
     <p class="hint" style="margin-top:0">Mengen gelten für die ganze Zubereitung. Ohne Menge = nach Geschmack.</p>
@@ -3035,10 +3142,11 @@ function cookAmount(x, factor) {
 }
 function cookIngredients() {
   const r = cookState.r;
-  return r.ingredients.slice().sort((a, b) => a.sortOrder - b.sortOrder).map(x => {
+  const list = r.ingredients.slice().sort((a, b) => a.sortOrder - b.sortOrder).map(x => {
     const i = ingById(x.ingredientId);
-    return { x, name: i ? i.name : '', key: (i ? i.name : '').split(/[(,/]/)[0].trim().toLowerCase() };
+    return { x, name: i ? i.name : '', spice: !!(i && i.category === 'GEWUERZE'), key: (i ? i.name : '').split(/[(,/]/)[0].trim().toLowerCase() };
   }).filter(o => o.name);
+  return list.filter(o => !o.spice).concat(list.filter(o => o.spice));   // Gewürze immer zuletzt
 }
 function cookFactor() { return cookState.n / (cookState.r.servings || cookState.n || 1); }
 function cookIngRows() {
@@ -3046,24 +3154,37 @@ function cookIngRows() {
   return cookIngredients().map((o, k) => `<li data-ci="${k}" class="${cookState.done.has('i' + k) ? 'done' : ''}"><span class="q">${esc(cookAmount(o.x, f))}</span>
     <span class="nm">${esc(o.name)}${o.x.note ? `<small>${esc(o.x.note)}</small>` : ''}</span></li>`).join('');
 }
-/* Zutaten, die in einem Schritt vorkommen: ganze Wörter, Mehrzahl (Tomate → Tomaten) und
-   Wortenden zusammengesetzter Namen (Reis → Milchreis), aber nicht Milch in „Milchreis“ */
-function mentions(text, key, others) {
-  const words = text.replace(/<[^>]+>/g, ' ').toLowerCase().split(/[^a-zäöüß]+/).filter(Boolean);
-  const stem = w => w.replace(/(en|n|e|s)$/, '');
-  const same = (w, k) => w === k || w === k + 'n' || w === k + 'en' || w === k + 'e' || w === k + 's' || w === k + 'er';
-  const taken = w => (others || []).some(o => o !== key && o.split(/\s+/).some(k => same(w, k)));   // Wort gehört klar zu einer anderen Zutat
-  return key.split(/\s+/).filter(k => k.length >= 3).some(k => words.some(w =>
-    same(w, k) ||
-    (w.length >= 4 && k.endsWith(w)) || (stem(w).length >= 4 && k.endsWith(stem(w))) ||
-    (k.length >= 5 && w.startsWith(k) && !taken(w))));
+const cookStem = w => w.replace(/(en|n|e|s)$/, '');
+const cookSame = (w, k) => w === k || w === k + 'n' || w === k + 'en' || w === k + 'e' || w === k + 's' || w === k + 'er';
+/* Passt das Wort w (klein) zur Zutat key? Ganze Wörter, Mehrzahl (Tomate → Tomaten), Wortenden (Reis → Milchreis)
+   und Wortanfänge (Knoblauch → Knoblauchzehen), aber nicht Milch in „Milchreis“, wenn Milchreis selbst Zutat ist */
+function wordMatches(w, key, others) {
+  const taken = (others || []).some(o => o !== key && o.split(/\s+/).some(k => cookSame(w, k)));
+  return key.split(/\s+/).filter(k => k.length >= 3).some(k =>
+    cookSame(w, k) || (w.length >= 4 && k.endsWith(w)) || (cookStem(w).length >= 4 && k.endsWith(cookStem(w))) ||
+    (k.length >= 4 && w.startsWith(k) && !taken));
 }
-function stepIngs(text) {
-  const f = cookFactor();
+const cookWords = text => text.replace(/<[^>]+>/g, ' ').toLowerCase().split(/[^a-zäöüß]+/).filter(Boolean);
+function mentions(text, key, others) { return cookWords(text).some(w => wordMatches(w, key, others)); }
+/* Position der ersten Erwähnung im Text (für die Reihenfolge innerhalb eines Schritts) */
+function mentionPos(text, key, others) { const i = cookWords(text).findIndex(w => wordMatches(w, key, others)); return i < 0 ? 1e9 : i; }
+/* In welchem Schritt wird welche Zutat zum ersten Mal gebraucht? (-1 = nie erwähnt) */
+function cookPlan(steps) {
   const all = cookIngredients(), keys = all.map(o => o.key);
-  return all.filter(o => o.key && mentions(text, o.key, keys))
-    .map(o => `<li>${esc(cookAmount(o.x, f))} ${esc(o.name)}</li>`).join('');
+  const first = all.map(o => o.key ? steps.findIndex(t => mentions(t, o.key, keys)) : -1);
+  return { all, keys, first };
 }
+/* Hebt im Schritttext die erste Stelle jeder hier neu gebrauchten Zutat hervor */
+function markFirstUse(html, ings, keys) {
+  const open = new Set(ings.map(o => o.key));
+  return html.split(/(<[^>]+>)/).map(part => part.startsWith('<') ? part : part.replace(/[A-Za-zÄÖÜäöüß]+/g, w => {
+    const hit = [...open].find(k => wordMatches(w.toLowerCase(), k, keys));
+    if (!hit) return w;
+    open.delete(hit);
+    return `<mark class="ning">${w}</mark>`;
+  })).join('');
+}
+const ingLine = (o, f) => `<li class="${o.spice ? 'spice' : ''}">${esc(cookAmount(o.x, f))} ${esc(o.name)}</li>`;
 function openCook(id) {
   const r = recipeById(id); if (!r) return;
   cookState = { r, n: r.servings || 2, done: new Set() };
@@ -3091,12 +3212,20 @@ function renderCook() {
     ${ings.length ? `<section class="ccard"><h2>Zutaten</h2>
       <div class="cstep" role="group" aria-label="${unit}"><button data-act="cookpp" data-arg="-1" aria-label="Weniger ${unit}">−</button><output id="cook-n">${cookState.n} ${unit}</output><button data-act="cookpp" data-arg="1" aria-label="Mehr ${unit}">+</button></div>
       <ul class="cing" id="cook-ing">${cookIngRows()}</ul></section>` : ''}
-    ${md.steps.length ? `<section class="ccard"><h2>Zubereitung</h2>${md.intro ? `<div class="md cintro">${md.intro}</div>` : ''}
+    ${md.steps.length ? (() => {
+      const plan = cookPlan(md.steps), f = cookFactor();
+      const unused = plan.all.filter((o, k) => plan.first[k] < 0);
+      const prep = unused.filter(o => !o.spice), spices = unused.filter(o => o.spice);
+      return `<section class="ccard"><h2>Zubereitung</h2>${md.intro ? `<div class="md cintro">${md.intro}</div>` : ''}
+      ${prep.length ? `<div class="cextra" id="cook-prep"><b>Außerdem bereitlegen</b><ul>${prep.map(o => ingLine(o, f)).join('')}</ul></div>` : ''}
       <ol class="steps-big">${md.steps.map((t, k) => {
-        const si = stepIngs(t);
+        const here = plan.all.filter((o, j) => plan.first[j] === k)
+          .sort((a, b) => (a.spice - b.spice) || (mentionPos(t, a.key, plan.keys) - mentionPos(t, b.key, plan.keys)));
         return `<li data-cs="${k}" class="${cookState.done.has('s' + k) ? 'done' : ''}"><div class="shead"><span class="spill">Schritt ${k + 1}</span><span class="scheck" aria-hidden="true">${COOK_ICON.check}</span></div>
-          ${si ? `<div class="sing">${COOK_ICON.basket}<ul>${si}</ul></div>` : ''}<div class="stxt">${t}</div></li>`;
-      }).join('')}</ol></section>` : ''}
+          ${here.length ? `<div class="sing">${COOK_ICON.basket}<ul>${here.map(o => ingLine(o, f)).join('')}</ul></div>` : ''}<div class="stxt">${markFirstUse(t, here, plan.keys)}</div></li>`;
+      }).join('')}</ol>
+      ${spices.length ? `<div class="cextra spices" id="cook-spices"><b>Zum Würzen und Abschmecken</b><ul>${spices.map(o => ingLine(o, f)).join('')}</ul></div>` : ''}</section>`;
+    })() : ''}
     ${r.notes ? `<section class="ccard"><h2>Notizen</h2><p class="cnotes">${esc(r.notes)}</p></section>` : ''}
     ${empty ? `<section class="ccard"><p style="font-size:18px;margin:0 0 12px">Für dieses Gericht sind noch keine Zutaten und keine Anleitung hinterlegt.</p>
       <button class="btn primary" data-act="cookedit" data-arg="${r.id}">Rezept ergänzen</button></section>` : ''}
@@ -3112,12 +3241,9 @@ function bindCook() {
 function cookPortions(d) {
   if (!cookState) return;
   cookState.n = Math.max(1, Math.min(99, cookState.n + d));
-  const unit = EP.laneOf(cookState.r) === 'CAKE' ? 'Stücke' : 'Portionen';
-  $('#cook-n').textContent = `${cookState.n} ${unit}`;
-  $('#cook-ing').innerHTML = cookIngRows();
-  const md = renderMd(cookState.r.instructions);
-  $$('#cookview [data-cs]').forEach((li, k) => { const box = $('.sing ul', li); if (box) box.innerHTML = stepIngs(md.steps[k]); });
-  bindCook();
+  const el = $('#cookview'), y = el.scrollTop;
+  renderCook();       // Abhak-Zustand bleibt in cookState.done
+  el.scrollTop = y;
 }
 function closeCook() {
   $('#cookview').classList.add('hidden');
@@ -3368,8 +3494,9 @@ const ACT = {
     change(`${res.added} ${lane === 'CAKE' ? 'Kuchen' : 'Mittagsgerichte'} geladen.`);
   },
   lane: a => { const [d, l] = a.split('|'); laneActions(d, l); },
+  extra: id => extraActions(id),
   shopwk: n => { const f = EP.addDays(EP.weekStart(shopRange.from), +n); shopRange = { from: f, to: EP.addDays(f, 6) }; rerender(); },
-  ekind: k => { readEditForm(); const r = editState.r; if (EP.laneOf(r) === k) return; r.kind = k; if (k === 'CAKE' && r.servings <= 4) r.servings = 12; if (k !== 'CAKE' && r.servings > 8 && editState.isNew) r.servings = db.settings.portionsPerDay; editState.dirty = true; rerender(); },
+  ekind: k => { readEditForm(); const r = editState.r; if (EP.laneOf(r) === k) return; if (EP.laneOf(r) === 'SIDE') r.inRotation = true; r.kind = k; if (k === 'CAKE' && r.servings <= 4) r.servings = 12; if (k !== 'CAKE' && r.servings > 8 && editState.isNew) r.servings = db.settings.portionsPerDay; editState.dirty = true; rerender(); },
   emonth: m => { readEditForm(); m = +m; const r = editState.r; const set = new Set(r.seasonMonths || []); set.has(m) ? set.delete(m) : set.add(m); r.seasonMonths = [...set].sort((a, b) => a - b); editState.dirty = true; rerender(); },
   laneday: a => {
     const [l, d] = a.split('|'); const days = new Set(laneDays(l)); days.has(+d) ? days.delete(+d) : days.add(+d);
