@@ -469,6 +469,11 @@ main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 .toast{bottom:calc(76px + max(6px,calc(env(safe-area-inset-bottom) - 20px)))}
 @media (prefers-color-scheme:dark){.tabs{background:color-mix(in srgb,var(--plate) 45%,transparent)}}
 @media (prefers-reduced-transparency:reduce){.tabs{background:var(--plate)}}
+/* kompakter Hinweis mit Rückgängig */
+.toast{font-size:14px;padding:10px 16px;max-width:min(92vw,400px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.toast.act{gap:6px;padding:3px 3px 3px 14px;border-radius:14px}
+.toast.act span{overflow:hidden;text-overflow:ellipsis}
+.toast .undo{font-size:14px;padding:0 12px;flex-shrink:0}
 
 </style>
 </head>
@@ -496,7 +501,10 @@ main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
    Im Schlüsselbund liegen die Verbindungslinks (Reisen, Haushalt, Spielgruppe, Projekte)
    und – falls gewünscht – Passwörter der Brief-Profile.
    Angemeldet bleibt man bis zum Abmelden (localStorage „konto“, gilt für alle Apps derselben Adresse).
-   Face ID: optional über einen Passkey mit PRF-Erweiterung (iOS 18+). */
+   Face ID: optional über einen Passkey mit PRF-Erweiterung (iOS 18+).
+   Passwort vergessen: optional Sicherheitsfrage. Aus Benutzername + Antwort wird (PBKDF2) ein zweiter
+   Schlüssel abgeleitet, der einen Datensatz mit dem Hauptschlüssel öffnet. Die Frage selbst liegt
+   in einem Datensatz, der nur mit dem Benutzernamen lesbar ist. */
 const Konto = (() => {
   const DEFAULT = 'https://kostenpi.tail281e3e.ts.net';
   const ITER = 310000;
@@ -535,6 +543,27 @@ const Konto = (() => {
   }
   const vaultKeys = master => keys(master, 'konto-v1');
   const pkKeys = secret => keys(secret, 'konto-passkey-v1');
+  const normAnswer = a => String(a || '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  async function recoverySecret(user, answer) {
+    const base = await crypto.subtle.importKey('raw', te(normAnswer(answer)), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: te('anwendungssammlung-recovery-v1|' + normUser(user)), iterations: ITER }, base, 256);
+    return b64e(new Uint8Array(bits));
+  }
+  const recKeys = secret => keys(secret, 'konto-recovery-v1');
+  async function questionKeys(user) {
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', te('konto-frage-v1|' + normUser(user))));
+    return keys(b64e(h), 'konto-frage-v1');
+  }
+  /* Datensatz mit fester ID anlegen oder überschreiben */
+  async function upsert(k, obj) {
+    const data = await encrypt(k.enc, obj);
+    const r = await api('POST', '', null, { id: k.id, auth: k.auth, data, rev: 1 });
+    if (r.status === 200) return;
+    if (r.status !== 400) throw fail(r);
+    const u = await api('PATCH', '/' + k.id, k.auth, { data });
+    if (u.status !== 200) throw fail(u);
+  }
   async function encrypt(key, obj) {
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te(JSON.stringify(obj)));
@@ -561,11 +590,12 @@ const Konto = (() => {
   const fail = r => { const e = new Error('Server antwortet mit ' + r.status); e.status = r.status; return e; };
 
   /* ---------- Schlüsselbund zusammenführen ---------- */
-  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {} }; }
+  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {}, recovery: null }; }
   function clean(v, user) {
     v = v && typeof v === 'object' ? v : {};
     return { v: 1, user: v.user || user || '', items: v.items && typeof v.items === 'object' ? v.items : {},
-      deleted: v.deleted && typeof v.deleted === 'object' ? v.deleted : {}, passkeys: v.passkeys && typeof v.passkeys === 'object' ? v.passkeys : {} };
+      deleted: v.deleted && typeof v.deleted === 'object' ? v.deleted : {}, passkeys: v.passkeys && typeof v.passkeys === 'object' ? v.passkeys : {},
+      recovery: v.recovery && typeof v.recovery === 'object' ? v.recovery : null };
   }
   function merge(a, b) {
     a = clean(a); b = clean(b);
@@ -579,6 +609,8 @@ const Konto = (() => {
     for (const k in out.items) if (out.deleted[k] && out.deleted[k] >= (out.items[k].updatedAt || '')) delete out.items[k];
     for (const src of [a.passkeys, b.passkeys]) for (const k in src) if (!out.passkeys[k] || (src[k].createdAt || '') > (out.passkeys[k].createdAt || '')) out.passkeys[k] = src[k];
     for (const k in out.passkeys) if (out.deleted['pk:' + k]) delete out.passkeys[k];
+    out.recovery = [a.recovery, b.recovery].filter(Boolean).sort((x, y) => (y.createdAt || '').localeCompare(x.createdAt || ''))[0] || null;
+    if (out.recovery && out.deleted.recovery && out.deleted.recovery >= out.recovery.createdAt) out.recovery = null;
     return out;
   }
   const canon = v => { const s = x => Array.isArray(x) ? '[' + x.map(s).join(',') + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map(k => JSON.stringify(k) + ':' + s(x[k])).join(',') + '}' : JSON.stringify(x); return s(v); };
@@ -662,10 +694,11 @@ const Konto = (() => {
     return { ok: true };
   }
   function logout() { ['konto', 'konto-cache', 'konto-state'].forEach(ls.del); keyCache.clear(); emit(); }
+  let recovered = false;   // gerade über die Sicherheitsfrage angemeldet → neues Passwort ohne altes erlaubt
   async function changePassword(oldPw, newPw) {
     const s = session(); if (!s) throw new Error('Nicht angemeldet.');
     if (String(newPw || '').length < 8) throw new Error('Das neue Passwort braucht mindestens 8 Zeichen.');
-    if ((await masterFrom(s.user, oldPw)) !== s.master) throw new Error('Das bisherige Passwort stimmt nicht.');
+    if (!(recovered && oldPw == null) && (await masterFrom(s.user, oldPw)) !== s.master) throw new Error('Das bisherige Passwort stimmt nicht.');
     const v = await sync();
     const nm = await masterFrom(s.user, newPw);
     await createVault(nm, v);
@@ -673,10 +706,60 @@ const Konto = (() => {
       const p = v.passkeys[cid], pk = await pkKeys(p.secret);
       await api('PATCH', '/' + pk.id, pk.auth, { data: await encrypt(pk.enc, { user: s.user, master: nm }), rev: 2 });
     }
+    if (v.recovery && v.recovery.secret) await upsert(await recKeys(v.recovery.secret), { user: s.user, master: nm });
     const ok = await vaultKeys(s.master);
     await api('DELETE', '/' + ok.id, ok.auth);
     ls.set('konto', { user: s.user, master: nm, at: nowIso() });
+    recovered = false;
     emit();
+  }
+
+  /* ---------- Sicherheitsfrage ---------- */
+  async function setRecovery(question, answer) {
+    const s = session(); if (!s) throw new Error('Nicht angemeldet.');
+    question = String(question || '').trim();
+    if (question.length < 5) throw new Error('Bitte eine Frage eingeben.');
+    if (normAnswer(answer).length < 3) throw new Error('Die Antwort braucht mindestens 3 Zeichen.');
+    const v = await sync();
+    const secret = await recoverySecret(s.user, answer);
+    await upsert(await recKeys(secret), { user: s.user, master: s.master });
+    await upsert(await questionKeys(s.user), { question });
+    if (v.recovery && v.recovery.secret && v.recovery.secret !== secret) {   // alte Antwort ungültig machen
+      const old = await recKeys(v.recovery.secret); await api('DELETE', '/' + old.id, old.auth);
+    }
+    const c = cache(); c.recovery = { secret, question, createdAt: nowIso() }; delete c.deleted.recovery;
+    ls.set('konto-cache', c); await sync();
+    return true;
+  }
+  async function removeRecovery() {
+    const s = session(); if (!s) return;
+    const v = await sync();
+    if (v.recovery && v.recovery.secret) { const k = await recKeys(v.recovery.secret); await api('DELETE', '/' + k.id, k.auth); }
+    const q = await questionKeys(s.user); await api('DELETE', '/' + q.id, q.auth);
+    const c = cache(); c.recovery = null; c.deleted.recovery = nowIso(); ls.set('konto-cache', c); await sync();
+  }
+  async function getQuestion(user) {
+    const q = await questionKeys(String(user || '').trim());
+    const r = await api('GET', '/' + q.id, q.auth);
+    if (r.status === 404) return null;
+    if (r.status !== 200 || !r.json) throw fail(r);
+    return (await decrypt(q.enc, r.json.data)).question || null;
+  }
+  /* mit richtiger Antwort anmelden; danach muss ein neues Passwort gesetzt werden */
+  async function recover(user, answer) {
+    user = String(user || '').trim();
+    const k = await recKeys(await recoverySecret(user, answer));
+    const r = await api('GET', '/' + k.id, k.auth);
+    if (r.status === 404) return { wrong: true };
+    if (r.status !== 200 || !r.json) throw fail(r);
+    const d = await decrypt(k.enc, r.json.data);
+    const f = await fetchVault(d.master);
+    if (!f) return { wrong: true };
+    ls.set('konto', { user: d.user || user, master: d.master, at: nowIso() });
+    ls.set('konto-cache', f.vault);
+    recovered = true;
+    emit();
+    return { ok: true };
   }
 
   /* ---------- Einträge ---------- */
@@ -765,6 +848,7 @@ const Konto = (() => {
     session, user: () => (session() || {}).user || '', loggedIn: () => !!session(), state: () => ls.get('konto-state') || {},
     login, register, logout, changePassword, sync, items, put, remove, onChange: fn => listeners.add(fn),
     passkeySupported, enablePasskey, loginWithPasskey, hasPasskey: () => Object.keys(cache().passkeys).length > 0,
+    setRecovery, removeRecovery, getQuestion, recover, hasRecovery: () => !!cache().recovery, recoveryQuestion: () => (cache().recovery || {}).question || '',
     _merge: merge,
   };
 })();
@@ -2903,10 +2987,10 @@ function pickCheck(recipeId, date, ignore, run) {
 }
 /* Rückmeldung nach dem Einplanen: was ist mit der Rotation passiert? */
 function pickMsg(recipeId, e, o) {
-  if (o) return `Verlegt vom ${EP.weekday(o.date)} ${EP.fmtShort(o.date)}.`;
+  if (o) return `Verlegt vom ${EP.weekday(o.date)}.`;
   const r = recipeById(recipeId), lane = EP.laneOf(r);
-  if (e) { const first = EP.pendingSorted(db, lane)[0]; return first && first.id === e.id ? 'Eingeplant.' : 'Eingeplant – in der Rotation vorgezogen, kommt in diesem Durchlauf nicht nochmal.'; }
-  if (EP.ROTATES(lane) && r.inRotation) return 'Eingeplant – zusätzlich, die Rotation bleibt unverändert.';
+  if (e) { const first = EP.pendingSorted(db, lane)[0]; return first && first.id === e.id ? 'Eingeplant.' : 'Eingeplant · vorgezogen'; }
+  if (EP.ROTATES(lane) && r.inRotation) return 'Eingeplant · zusätzlich';
   return 'Eingeplant.';
 }
 /* Rezept auswählen, beschränkt auf eine Art. Pausierte nur mit Schalter „Auch außerhalb der Rotation“.
@@ -3272,7 +3356,7 @@ function dayActions(d) {
         if (o) removeOther(o);
         const e = EP.manualPickEntry(db, id), m = pickMsg(id, e, o);
         placeBlock(cook ? cook.date : d, { recipeId: id, rotationEntryId: e ? e.id : null, locked: info && info.locked });
-        return 'Ersetzt durch ' + (recipeById(id) || {}).name + '. ' + m.replace(/^Eingeplant\.?( – )?/, '').replace(/^./, c => c.toUpperCase());
+        return m.replace(/^Eingeplant/, 'Ersetzt');
       })), 'MAIN', { date: d, ignore: y => y.blockId === p.blockId }) });
       opts.push({ label: 'Tag sperren', hint: p.type === 'LEFTOVER' ? 'z. B. Auswärts essen – die Reste rutschen einen Tag weiter' : 'Reste rutschen auf den nächsten freien Tag', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => undoable(() => { blockDay(d, note); return 'Tag gesperrt.'; })) });
     } else if (p.type === 'LEFTOVER') {
@@ -4221,6 +4305,7 @@ const SRC = [['MARKT', 'Markt'], ['SUPERMARKT', 'Supermarkt'], ['VORRAT', 'Vorra
 function srcSeg(act, id, cur, extraCls) {
   return `<div class="seg srcseg ${extraCls || ''}">${SRC.map(([k, l]) => `<button data-act="${act}" data-arg="${id}|${k}" aria-pressed="${cur === k}">${l}</button>`).join('')}</div>`;
 }
+const srcOpen = new Set();   // aufgeklappte Kategorien bleiben beim Ändern offen
 function vSources() {
   const s = db.settings;
   const ings = EP.live(db.ingredients).sort((a, b) => a.name.localeCompare(b.name, 'de'));
@@ -4238,7 +4323,11 @@ function vSources() {
     <h3>Einzelne Zutaten</h3>
     ${ings.length ? EP.CATEGORIES.map(c => {
       const list = ings.filter(i => i.category === c.key && i.reviewed !== false);
-      return list.length ? `<details class="box srcgroup"><summary>${esc(c.label)} <span class="amt">${list.length}</span></summary>${list.map(row).join('')}</details>` : '';
+      if (!list.length) return '';
+      const cur = EP.categorySource(c.key, s), mixed = list.some(i => EP.sourceOf(i, s) !== cur);
+      return `<details class="box srcgroup" data-cat="${c.key}" ${srcOpen.has(c.key) ? 'open' : ''}><summary>${esc(c.label)} <span class="amt">${list.length}</span></summary>
+        <div class="srcrow srcall"><div class="row"><span class="grow nm">Alle ${esc(c.label)}${mixed ? ' <small class="hint" style="display:inline;margin:0">(teils abweichend)</small>' : ''}</span></div>
+        ${srcSeg('catall', c.key, mixed ? '' : cur)}</div>${list.map(row).join('')}</details>`;
     }).join('') : '<p class="empty">Noch keine Zutaten.</p>'}`;
 }
 
@@ -4373,6 +4462,12 @@ const ACT = {
     // einzelne Abweichungen, die jetzt der Kategorie entsprechen, aufheben
     EP.live(db.ingredients).filter(i => i.category === cat && i.shoppingSource === v).forEach(i => { i.shoppingSource = null; EP.touch(i); });
     change();
+  },
+  catall: a => {   // ganze Kategorie auf einen Einkaufsort setzen, einzelne Abweichungen aufheben
+    const [cat, v] = a.split('|');
+    db.settings.categorySources = Object.assign({}, db.settings.categorySources, { [cat]: v }); EP.touch(db.settings);
+    EP.live(db.ingredients).filter(i => i.category === cat).forEach(i => { if (i.shoppingSource || i.reviewed === false) { i.shoppingSource = null; i.reviewed = true; EP.touch(i); } });
+    change(`Alle ${(EP.CAT[cat] || {}).label || ''}: ${{ MARKT: 'Markt', SUPERMARKT: 'Supermarkt', VORRAT: 'Vorrat' }[v]}.`);
   },
   srcok: () => { EP.live(db.ingredients).filter(i => i.reviewed === false).forEach(i => { i.reviewed = true; EP.touch(i); }); change('Einkaufsorte übernommen.'); },
   to: a => go(a),
@@ -4536,6 +4631,7 @@ function changePasswordSheet() {
 
 /* Bindungen je Ansicht (Eingabefelder) */
 const BIND = {
+  sources: m => { $$('details[data-cat]', m).forEach(d => d.addEventListener('toggle', () => { d.open ? srcOpen.add(d.dataset.cat) : srcOpen.delete(d.dataset.cat); })); },
   shop: m => {
     const setRange = () => {
       const f = $('#sf', m).value, t = $('#st', m).value;

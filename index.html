@@ -160,6 +160,12 @@
   .lt-konto-note{background:color-mix(in srgb,var(--mint) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--mint) 45%,var(--line));
     border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.45;margin:12px 0 2px;color:var(--text)}
 
+  .konto-q{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:12px 0 0;
+    font-size:16px;font-weight:700;line-height:1.4;overflow-wrap:anywhere}
+  .konto-q small{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .konto-link-btn{display:block;margin:6px auto 0;min-height:44px;padding:10px 16px;background:none;color:var(--blue);font-weight:700;font-size:16px}
+  .sheet .ghost.danger{color:var(--coral)}
+
   /* ---------- Hinweis-Toast ---------- */
   .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
     background:var(--surface2);border:1px solid var(--line);color:var(--text);
@@ -338,6 +344,7 @@
     <button type="submit" class="primary" id="konto-login-btn" style="margin-top:18px">Anmelden</button>
   </form>
   <div id="konto-login-err" class="lt-error" role="alert"></div>
+  <button class="konto-link-btn" id="konto-forgot-btn" onclick="kontoForgotOpen()">Passwort vergessen?</button>
   <div id="konto-pk-wrap" style="display:none">
     <div class="konto-or">oder</div>
     <button class="ghost" id="konto-pk-btn" onclick="kontoPkLogin()" style="color:var(--text)">Mit Face ID anmelden</button>
@@ -687,6 +694,80 @@
   </div>
 </div>
 
+<!-- ========== KONTO: PASSWORT VERGESSEN ========== -->
+<div class="modal" id="konto-fg-modal" onclick="if(event.target===this)kontoForgotClose()">
+  <div class="sheet">
+    <h3 class="opt-title">Passwort vergessen</h3>
+    <div id="konto-fg-step1">
+      <p class="opt-sub">Mit der Antwort auf deine Sicherheitsfrage kannst du dich anmelden und ein neues Passwort festlegen.</p>
+      <form class="lt-form" onsubmit="event.preventDefault();kontoForgotNext()">
+        <label for="konto-fg-user">Benutzername</label>
+        <input id="konto-fg-user" type="text" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Benutzername" enterkeyhint="next">
+      </form>
+    </div>
+    <div id="konto-fg-step2" style="display:none">
+      <div class="konto-q"><small>Sicherheitsfrage</small><span id="konto-fg-q"></span></div>
+      <form class="lt-form" onsubmit="event.preventDefault();kontoForgotNext()">
+        <label for="konto-fg-answer">Antwort</label>
+        <input id="konto-fg-answer" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Deine Antwort" enterkeyhint="go">
+      </form>
+    </div>
+    <div id="konto-fg-err" class="lt-error" role="alert"></div>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="kontoForgotClose()">Abbrechen</button>
+      <button class="ok" id="konto-fg-ok" onclick="kontoForgotNext()">Weiter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== KONTO: NEUES PASSWORT FESTLEGEN ========== -->
+<div class="modal" id="konto-np-modal">
+  <div class="sheet">
+    <h3 class="opt-title">Neues Passwort festlegen</h3>
+    <p class="opt-sub">Du bist angemeldet. Lege jetzt ein neues Passwort fest.</p>
+    <div class="konto-warn">Das Passwort kann niemand zurücksetzen – auch nicht der Pi. Gut merken (z. B. im iPhone-Passwortmanager speichern).</div>
+    <form class="lt-form" onsubmit="event.preventDefault();kontoNewPwSave()">
+      <input type="text" name="username" id="konto-np-username" autocomplete="username" style="display:none" tabindex="-1" aria-hidden="true">
+      <label for="konto-np-new">Neues Passwort</label>
+      <input id="konto-np-new" type="password" autocomplete="new-password" placeholder="Mindestens 8 Zeichen">
+      <label for="konto-np-new2">Neues Passwort wiederholen</label>
+      <input id="konto-np-new2" type="password" autocomplete="new-password" placeholder="Neues Passwort noch einmal" enterkeyhint="done">
+    </form>
+    <div id="konto-np-err" class="lt-error" role="alert"></div>
+    <div class="sheet-actions">
+      <button class="cancel" id="konto-np-later" onclick="kontoNewPwLater()">Später</button>
+      <button class="ok" id="konto-np-ok" onclick="kontoNewPwSave()">Festlegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== KONTO: SICHERHEITSFRAGE ========== -->
+<div class="modal" id="konto-rec-modal" onclick="if(event.target===this)kontoRecClose()">
+  <div class="sheet">
+    <h3 class="opt-title">Sicherheitsfrage</h3>
+    <p class="opt-sub" id="konto-rec-sub">Falls du dein Passwort vergisst, kannst du dich mit der Antwort wieder anmelden.</p>
+    <form class="lt-form" onsubmit="event.preventDefault();kontoRecSave()">
+      <label for="konto-rec-sel">Frage</label>
+      <select id="konto-rec-sel" class="edit-select" onchange="kontoRecSel()"><option value="Name deines ersten Haustiers?">Name deines ersten Haustiers?</option><option value="Straße, in der du aufgewachsen bist?">Straße, in der du aufgewachsen bist?</option><option value="Lieblingslehrer in der Grundschule?">Lieblingslehrer in der Grundschule?</option><option value="Wo hast du deine Partnerin/deinen Partner kennengelernt?">Wo hast du deine Partnerin/deinen Partner kennengelernt?</option><option value="">Eigene Frage …</option></select>
+      <div id="konto-rec-ownwrap" class="lt-form" style="margin:0;display:none">
+        <label for="konto-rec-own">Eigene Frage</label>
+        <input id="konto-rec-own" type="text" autocomplete="off" placeholder="z. B. Lieblingsgericht als Kind?">
+      </div>
+      <label for="konto-rec-a1">Antwort</label>
+      <input id="konto-rec-a1" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Antwort">
+      <label for="konto-rec-a2">Antwort wiederholen</label>
+      <input id="konto-rec-a2" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Antwort noch einmal" enterkeyhint="done">
+    </form>
+    <div class="lt-hint" style="margin:10px 0 0">Groß-/Kleinschreibung und Satzzeichen spielen keine Rolle. Wähle eine Antwort, die andere nicht leicht erraten oder in sozialen Medien finden können.</div>
+    <div id="konto-rec-err" class="lt-error" role="alert" style="margin-top:8px"></div>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="kontoRecClose()">Abbrechen</button>
+      <button class="ok" id="konto-rec-ok" onclick="kontoRecSave()">Speichern</button>
+    </div>
+    <button class="ghost danger" id="konto-rec-del" style="display:none" onclick="kontoRecRemoveAsk()">Sicherheitsfrage entfernen</button>
+  </div>
+</div>
+
 <!-- ========== BESTÄTIGUNG ========== -->
 <div class="modal" id="ask-modal" onclick="if(event.target===this)askClose()">
   <div class="sheet">
@@ -734,7 +815,10 @@
    Im Schlüsselbund liegen die Verbindungslinks (Reisen, Haushalt, Spielgruppe, Projekte)
    und – falls gewünscht – Passwörter der Brief-Profile.
    Angemeldet bleibt man bis zum Abmelden (localStorage „konto“, gilt für alle Apps derselben Adresse).
-   Face ID: optional über einen Passkey mit PRF-Erweiterung (iOS 18+). */
+   Face ID: optional über einen Passkey mit PRF-Erweiterung (iOS 18+).
+   Passwort vergessen: optional Sicherheitsfrage. Aus Benutzername + Antwort wird (PBKDF2) ein zweiter
+   Schlüssel abgeleitet, der einen Datensatz mit dem Hauptschlüssel öffnet. Die Frage selbst liegt
+   in einem Datensatz, der nur mit dem Benutzernamen lesbar ist. */
 const Konto = (() => {
   const DEFAULT = 'https://kostenpi.tail281e3e.ts.net';
   const ITER = 310000;
@@ -773,6 +857,27 @@ const Konto = (() => {
   }
   const vaultKeys = master => keys(master, 'konto-v1');
   const pkKeys = secret => keys(secret, 'konto-passkey-v1');
+  const normAnswer = a => String(a || '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  async function recoverySecret(user, answer) {
+    const base = await crypto.subtle.importKey('raw', te(normAnswer(answer)), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: te('anwendungssammlung-recovery-v1|' + normUser(user)), iterations: ITER }, base, 256);
+    return b64e(new Uint8Array(bits));
+  }
+  const recKeys = secret => keys(secret, 'konto-recovery-v1');
+  async function questionKeys(user) {
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', te('konto-frage-v1|' + normUser(user))));
+    return keys(b64e(h), 'konto-frage-v1');
+  }
+  /* Datensatz mit fester ID anlegen oder überschreiben */
+  async function upsert(k, obj) {
+    const data = await encrypt(k.enc, obj);
+    const r = await api('POST', '', null, { id: k.id, auth: k.auth, data, rev: 1 });
+    if (r.status === 200) return;
+    if (r.status !== 400) throw fail(r);
+    const u = await api('PATCH', '/' + k.id, k.auth, { data });
+    if (u.status !== 200) throw fail(u);
+  }
   async function encrypt(key, obj) {
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te(JSON.stringify(obj)));
@@ -799,11 +904,12 @@ const Konto = (() => {
   const fail = r => { const e = new Error('Server antwortet mit ' + r.status); e.status = r.status; return e; };
 
   /* ---------- Schlüsselbund zusammenführen ---------- */
-  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {} }; }
+  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {}, recovery: null }; }
   function clean(v, user) {
     v = v && typeof v === 'object' ? v : {};
     return { v: 1, user: v.user || user || '', items: v.items && typeof v.items === 'object' ? v.items : {},
-      deleted: v.deleted && typeof v.deleted === 'object' ? v.deleted : {}, passkeys: v.passkeys && typeof v.passkeys === 'object' ? v.passkeys : {} };
+      deleted: v.deleted && typeof v.deleted === 'object' ? v.deleted : {}, passkeys: v.passkeys && typeof v.passkeys === 'object' ? v.passkeys : {},
+      recovery: v.recovery && typeof v.recovery === 'object' ? v.recovery : null };
   }
   function merge(a, b) {
     a = clean(a); b = clean(b);
@@ -817,6 +923,8 @@ const Konto = (() => {
     for (const k in out.items) if (out.deleted[k] && out.deleted[k] >= (out.items[k].updatedAt || '')) delete out.items[k];
     for (const src of [a.passkeys, b.passkeys]) for (const k in src) if (!out.passkeys[k] || (src[k].createdAt || '') > (out.passkeys[k].createdAt || '')) out.passkeys[k] = src[k];
     for (const k in out.passkeys) if (out.deleted['pk:' + k]) delete out.passkeys[k];
+    out.recovery = [a.recovery, b.recovery].filter(Boolean).sort((x, y) => (y.createdAt || '').localeCompare(x.createdAt || ''))[0] || null;
+    if (out.recovery && out.deleted.recovery && out.deleted.recovery >= out.recovery.createdAt) out.recovery = null;
     return out;
   }
   const canon = v => { const s = x => Array.isArray(x) ? '[' + x.map(s).join(',') + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map(k => JSON.stringify(k) + ':' + s(x[k])).join(',') + '}' : JSON.stringify(x); return s(v); };
@@ -900,10 +1008,11 @@ const Konto = (() => {
     return { ok: true };
   }
   function logout() { ['konto', 'konto-cache', 'konto-state'].forEach(ls.del); keyCache.clear(); emit(); }
+  let recovered = false;   // gerade über die Sicherheitsfrage angemeldet → neues Passwort ohne altes erlaubt
   async function changePassword(oldPw, newPw) {
     const s = session(); if (!s) throw new Error('Nicht angemeldet.');
     if (String(newPw || '').length < 8) throw new Error('Das neue Passwort braucht mindestens 8 Zeichen.');
-    if ((await masterFrom(s.user, oldPw)) !== s.master) throw new Error('Das bisherige Passwort stimmt nicht.');
+    if (!(recovered && oldPw == null) && (await masterFrom(s.user, oldPw)) !== s.master) throw new Error('Das bisherige Passwort stimmt nicht.');
     const v = await sync();
     const nm = await masterFrom(s.user, newPw);
     await createVault(nm, v);
@@ -911,10 +1020,60 @@ const Konto = (() => {
       const p = v.passkeys[cid], pk = await pkKeys(p.secret);
       await api('PATCH', '/' + pk.id, pk.auth, { data: await encrypt(pk.enc, { user: s.user, master: nm }), rev: 2 });
     }
+    if (v.recovery && v.recovery.secret) await upsert(await recKeys(v.recovery.secret), { user: s.user, master: nm });
     const ok = await vaultKeys(s.master);
     await api('DELETE', '/' + ok.id, ok.auth);
     ls.set('konto', { user: s.user, master: nm, at: nowIso() });
+    recovered = false;
     emit();
+  }
+
+  /* ---------- Sicherheitsfrage ---------- */
+  async function setRecovery(question, answer) {
+    const s = session(); if (!s) throw new Error('Nicht angemeldet.');
+    question = String(question || '').trim();
+    if (question.length < 5) throw new Error('Bitte eine Frage eingeben.');
+    if (normAnswer(answer).length < 3) throw new Error('Die Antwort braucht mindestens 3 Zeichen.');
+    const v = await sync();
+    const secret = await recoverySecret(s.user, answer);
+    await upsert(await recKeys(secret), { user: s.user, master: s.master });
+    await upsert(await questionKeys(s.user), { question });
+    if (v.recovery && v.recovery.secret && v.recovery.secret !== secret) {   // alte Antwort ungültig machen
+      const old = await recKeys(v.recovery.secret); await api('DELETE', '/' + old.id, old.auth);
+    }
+    const c = cache(); c.recovery = { secret, question, createdAt: nowIso() }; delete c.deleted.recovery;
+    ls.set('konto-cache', c); await sync();
+    return true;
+  }
+  async function removeRecovery() {
+    const s = session(); if (!s) return;
+    const v = await sync();
+    if (v.recovery && v.recovery.secret) { const k = await recKeys(v.recovery.secret); await api('DELETE', '/' + k.id, k.auth); }
+    const q = await questionKeys(s.user); await api('DELETE', '/' + q.id, q.auth);
+    const c = cache(); c.recovery = null; c.deleted.recovery = nowIso(); ls.set('konto-cache', c); await sync();
+  }
+  async function getQuestion(user) {
+    const q = await questionKeys(String(user || '').trim());
+    const r = await api('GET', '/' + q.id, q.auth);
+    if (r.status === 404) return null;
+    if (r.status !== 200 || !r.json) throw fail(r);
+    return (await decrypt(q.enc, r.json.data)).question || null;
+  }
+  /* mit richtiger Antwort anmelden; danach muss ein neues Passwort gesetzt werden */
+  async function recover(user, answer) {
+    user = String(user || '').trim();
+    const k = await recKeys(await recoverySecret(user, answer));
+    const r = await api('GET', '/' + k.id, k.auth);
+    if (r.status === 404) return { wrong: true };
+    if (r.status !== 200 || !r.json) throw fail(r);
+    const d = await decrypt(k.enc, r.json.data);
+    const f = await fetchVault(d.master);
+    if (!f) return { wrong: true };
+    ls.set('konto', { user: d.user || user, master: d.master, at: nowIso() });
+    ls.set('konto-cache', f.vault);
+    recovered = true;
+    emit();
+    return { ok: true };
   }
 
   /* ---------- Einträge ---------- */
@@ -1003,6 +1162,7 @@ const Konto = (() => {
     session, user: () => (session() || {}).user || '', loggedIn: () => !!session(), state: () => ls.get('konto-state') || {},
     login, register, logout, changePassword, sync, items, put, remove, onChange: fn => listeners.add(fn),
     passkeySupported, enablePasskey, loginWithPasskey, hasPasskey: () => Object.keys(cache().passkeys).length > 0,
+    setRecovery, removeRecovery, getQuestion, recover, hasRecovery: () => !!cache().recovery, recoveryQuestion: () => (cache().recovery || {}).question || '',
     _merge: merge,
   };
 })();
@@ -1938,6 +2098,7 @@ const KONTO_APPS = [
 const KONTO_IC = {
   face: KONTO_SVG('<path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9v1.5M15 9v1.5M12 9v4h-1M9.5 16c1.5 1 3.5 1 5 0"/>'),
   key:  KONTO_SVG('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>'),
+  shield: KONTO_SVG('<path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9.5 10a2.5 2.5 0 1 1 3.3 2.4c-.5.2-.8.6-.8 1.1v.5M12 17h.01"/>'),
   sync: KONTO_SVG('<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/>'),
 };
 let kontoPkOk = false;       // Face ID (Passkey mit PRF) auf diesem Gerät möglich?
@@ -2009,7 +2170,15 @@ function kontoRenderPage(){
       <span class="gic" style="--c:#34C759">${KONTO_IC.face}</span>
       <span class="gbody"><span class="glbl">${pkOn?'Face ID aktiv':'Face ID einrichten'}<small>${pkOn?'Anmelden ohne Passwort ist auf diesem Gerät eingerichtet':'Künftig ohne Passwort anmelden'}</small></span>${pkOn?'':LT_IC.chev}</span>
     </button>` : '')+
-    `<button class="gi" id="konto-pw-row" onclick="kontoPwOpen()">
+    (kontoMustSetPw ? `<button class="gi" id="konto-np-row" onclick="kontoNewPwOpen()">
+      <span class="gic" style="--c:#FF3B30">${KONTO_IC.key}</span>
+      <span class="gbody"><span class="glbl danger">Bitte neues Passwort festlegen<small>Du hast dich über die Sicherheitsfrage angemeldet</small></span>${LT_IC.chev}</span>
+    </button>` : '')+
+    `<button class="gi" id="konto-rec-row" onclick="kontoRecOpen()">
+      <span class="gic" style="--c:#5856D6">${KONTO_IC.shield}</span>
+      <span class="gbody"><span class="glbl">Sicherheitsfrage</span><span class="gval" id="konto-rec-val">${Konto.hasRecovery()?'Ein':'Aus'}</span>${LT_IC.chev}</span>
+    </button>
+    <button class="gi" id="konto-pw-row" onclick="kontoPwOpen()">
       <span class="gic" style="--c:#FF9500">${KONTO_IC.key}</span>
       <span class="gbody"><span class="glbl">Passwort ändern</span>${LT_IC.chev}</span>
     </button>
@@ -2088,6 +2257,8 @@ async function kontoRegister(){
     const r=await Konto.register(pend.user, pend.pw);
     kontoRegClose();
     kontoAfterLogin(r && r.existed ? 'Konto gab es schon – du bist angemeldet.' : 'Konto angelegt – du bist angemeldet.');
+    if(r && r.ok && !Konto.hasRecovery()) setTimeout(()=>ask('Sicherheitsfrage einrichten, falls du dein Passwort vergisst?', kontoRecOpen, 'Einrichten', null,
+      {detail:'Mit der richtigen Antwort kannst du dich auch ohne Passwort wieder anmelden. Das geht auch später auf der Kontoseite.', noLabel:'Später'}), 400);
   }catch(e){ err.textContent=kontoErrText(e); }
   finally{ kontoBusy('konto-reg-ok', false, 'Konto anlegen'); }
 }
@@ -2159,7 +2330,145 @@ function kontoHash(){
   try{ history.replaceState(null, '', location.pathname+location.search); }catch(e){}
   kontoOpen();
 }
-Konto.onChange(()=>{ ltKontoImport(); kontoRender(); });
+
+/* ---------- Konto: Passwort vergessen / Sicherheitsfrage ---------- */
+let kontoMustSetPw=false;   // über die Sicherheitsfrage angemeldet, neues Passwort noch nicht festgelegt
+let kontoFgQuestion=null;
+const KONTO_QUESTIONS=['Name deines ersten Haustiers?','Straße, in der du aufgewachsen bist?','Lieblingslehrer in der Grundschule?','Wo hast du deine Partnerin/deinen Partner kennengelernt?'];
+function kontoForgotOpen(){
+  kontoFgQuestion=null;
+  document.getElementById('konto-fg-user').value=document.getElementById('konto-user').value.trim();
+  document.getElementById('konto-fg-answer').value='';
+  document.getElementById('konto-fg-step1').style.display='';
+  document.getElementById('konto-fg-step2').style.display='none';
+  document.getElementById('konto-fg-err').textContent='';
+  kontoBusy('konto-fg-ok', false, 'Weiter');
+  document.getElementById('konto-fg-modal').classList.add('open');
+}
+function kontoForgotClose(){
+  document.getElementById('konto-fg-answer').value='';
+  document.getElementById('konto-fg-modal').classList.remove('open');
+}
+async function kontoForgotNext(){
+  const err=document.getElementById('konto-fg-err');
+  if(document.getElementById('konto-fg-ok').disabled) return;
+  const u=document.getElementById('konto-fg-user').value.trim();
+  err.textContent='';
+  if(kontoFgQuestion===null){
+    if(!u){ err.textContent='Bitte den Benutzernamen eingeben.'; return; }
+    kontoBusy('konto-fg-ok', true, 'Suche …');
+    try{
+      const q=await Konto.getQuestion(u);
+      if(!q){ err.textContent='Für dieses Konto ist keine Sicherheitsfrage hinterlegt.'; kontoBusy('konto-fg-ok', false, 'Weiter'); return; }
+      kontoFgQuestion=q;
+      document.getElementById('konto-fg-q').textContent=q;
+      document.getElementById('konto-fg-step1').style.display='none';
+      document.getElementById('konto-fg-step2').style.display='';
+      kontoBusy('konto-fg-ok', false, 'Anmelden');
+      setTimeout(()=>document.getElementById('konto-fg-answer').focus(), 100);
+    }catch(e){ err.textContent=kontoErrText(e); kontoBusy('konto-fg-ok', false, 'Weiter'); }
+    return;
+  }
+  const a=document.getElementById('konto-fg-answer').value;
+  if(!a.trim()){ err.textContent='Bitte die Antwort eingeben.'; return; }
+  kontoBusy('konto-fg-ok', true, 'Prüfe …');
+  try{
+    const r=await Konto.recover(u, a);
+    if(r && r.ok){
+      kontoMustSetPw=true;
+      kontoForgotClose();
+      document.getElementById('konto-pass').value='';
+      show('scr-konto');
+      kontoNewPwOpen();
+      return;
+    }
+    err.textContent='Die Antwort stimmt nicht.';
+  }catch(e){ err.textContent=kontoErrText(e); }
+  kontoBusy('konto-fg-ok', false, 'Anmelden');
+}
+function kontoNewPwOpen(){
+  ['konto-np-new','konto-np-new2'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('konto-np-username').value=Konto.user();
+  document.getElementById('konto-np-err').textContent='';
+  kontoBusy('konto-np-ok', false, 'Festlegen');
+  document.getElementById('konto-np-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('konto-np-new').focus(), 200);
+}
+function kontoNewPwLater(){
+  ask('Ohne neues Passwort weiter?', ()=>{
+    ['konto-np-new','konto-np-new2'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('konto-np-modal').classList.remove('open');
+    kontoRender();
+  }, 'Später festlegen', null, {detail:'Du bleibst angemeldet. Lege das neue Passwort bald auf der Kontoseite fest („Bitte neues Passwort festlegen“) – nur solange die App geöffnet bleibt, geht das ohne altes Passwort.', noLabel:'Jetzt festlegen'});
+}
+async function kontoNewPwSave(){
+  const n=document.getElementById('konto-np-new').value, n2=document.getElementById('konto-np-new2').value;
+  const err=document.getElementById('konto-np-err');
+  if(document.getElementById('konto-np-ok').disabled) return;
+  if(n.length<8){ err.textContent='Das neue Passwort braucht mindestens 8 Zeichen.'; return; }
+  if(n!==n2){ err.textContent='Die Passwörter stimmen nicht überein.'; return; }
+  err.textContent='';
+  kontoBusy('konto-np-ok', true, 'Wird gespeichert …');
+  try{
+    await Konto.changePassword(null, n);
+    kontoMustSetPw=false;
+    ['konto-np-new','konto-np-new2'].forEach(i=>document.getElementById(i).value='');
+    document.getElementById('konto-np-modal').classList.remove('open');
+    notify('Passwort geändert, du bist angemeldet.');
+  }catch(e){
+    err.textContent = /bisherige Passwort/.test(e.message||'') ? 'Das geht nur direkt nach „Passwort vergessen“. Bitte über „Passwort ändern“ oder erneut über „Passwort vergessen?“.' : kontoErrText(e);
+  }
+  kontoBusy('konto-np-ok', false, 'Festlegen');
+  kontoRender();
+}
+function kontoRecSel(){
+  document.getElementById('konto-rec-ownwrap').style.display = document.getElementById('konto-rec-sel').value ? 'none' : '';
+}
+function kontoRecOpen(){
+  if(!Konto.loggedIn()) return;
+  const cur=Konto.hasRecovery() ? Konto.recoveryQuestion() : '';
+  const sel=document.getElementById('konto-rec-sel');
+  sel.value = !cur || KONTO_QUESTIONS.includes(cur) ? (cur || KONTO_QUESTIONS[0]) : '';
+  document.getElementById('konto-rec-own').value = cur && !KONTO_QUESTIONS.includes(cur) ? cur : '';
+  kontoRecSel();
+  ['konto-rec-a1','konto-rec-a2'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('konto-rec-err').textContent='';
+  document.getElementById('konto-rec-sub').textContent = cur
+    ? 'Die Sicherheitsfrage ist eingerichtet. Du kannst Frage und Antwort ändern oder sie entfernen.'
+    : 'Falls du dein Passwort vergisst, kannst du dich mit der Antwort wieder anmelden.';
+  document.getElementById('konto-rec-del').style.display = cur ? '' : 'none';
+  kontoBusy('konto-rec-ok', false, 'Speichern');
+  document.getElementById('konto-rec-modal').classList.add('open');
+}
+function kontoRecClose(){
+  ['konto-rec-a1','konto-rec-a2'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('konto-rec-modal').classList.remove('open');
+}
+async function kontoRecSave(){
+  const err=document.getElementById('konto-rec-err');
+  if(document.getElementById('konto-rec-ok').disabled) return;
+  const sel=document.getElementById('konto-rec-sel').value;
+  const q=(sel || document.getElementById('konto-rec-own').value).trim();
+  const a1=document.getElementById('konto-rec-a1').value, a2=document.getElementById('konto-rec-a2').value;
+  if(q.length<5){ err.textContent='Bitte eine eigene Frage eingeben.'; return; }
+  if(a1.trim().length<3){ err.textContent='Die Antwort braucht mindestens 3 Zeichen.'; return; }
+  if(a1.trim()!==a2.trim()){ err.textContent='Die Antworten stimmen nicht überein.'; return; }
+  err.textContent='';
+  kontoBusy('konto-rec-ok', true, 'Wird gespeichert …');
+  try{ await Konto.setRecovery(q, a1); kontoRecClose(); notify('Sicherheitsfrage eingerichtet.'); }
+  catch(e){ err.textContent=kontoErrText(e); }
+  kontoBusy('konto-rec-ok', false, 'Speichern');
+  kontoRender();
+}
+function kontoRecRemoveAsk(){
+  kontoRecClose();
+  ask('Sicherheitsfrage entfernen?', async ()=>{
+    try{ await Konto.removeRecovery(); notify('Sicherheitsfrage entfernt.'); }
+    catch(e){ notify(kontoErrText(e)); }
+    kontoRender();
+  }, 'Entfernen', null, {detail:'Wenn du dein Passwort vergisst, kommst du dann nicht mehr an dein Konto.', noLabel:'Behalten'});
+}
+Konto.onChange(()=>{ if(!Konto.loggedIn()) kontoMustSetPw=false; ltKontoImport(); kontoRender(); });
 window.addEventListener('hashchange', kontoHash);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ kontoRender(); kontoBgSync(); } });
 Konto.passkeySupported().then(v=>{ kontoPkOk=!!v; kontoRender(); }).catch(()=>{});
