@@ -437,25 +437,38 @@ button.gi:active{background:var(--rim-soft)}
 .stepper.small output{min-width:26px;font-size:17px}
 .daypick{margin-top:14px}
 .daypick .chip{min-width:44px;min-height:44px;justify-content:center}
-/* ---------- Liquid Glass: schwebende Navigation, durchscheinender Kopf ---------- */
-.tabs{left:12px;right:12px;bottom:calc(8px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto;border-radius:30px;padding:6px;
-  background:color-mix(in srgb,var(--plate) 58%,transparent);border:1px solid color-mix(in srgb,#fff 55%,transparent);border-top-color:color-mix(in srgb,#fff 80%,transparent);
-  -webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);
-  box-shadow:0 10px 30px rgba(15,25,45,.16),0 1px 3px rgba(15,25,45,.08),inset 0 1px 0 rgba(255,255,255,.55)}
-.tabs button{border-radius:24px;transition:background .2s,color .2s}
-.tabs button[aria-current="page"]{background:color-mix(in srgb,var(--rim) 13%,transparent)}
+/* ---------- Liquid Glass: schwebende Navigation dicht am unteren Rand, durchscheinender Kopf ---------- */
+.tabs{left:10px;right:10px;bottom:max(8px,calc(env(safe-area-inset-bottom) - 22px));max-width:520px;margin:0 auto;border-radius:30px;padding:4px;
+  background:color-mix(in srgb,var(--plate) 32%,transparent);
+  border:1px solid rgba(255,255,255,.6);border-top-color:rgba(255,255,255,.9);
+  -webkit-backdrop-filter:blur(14px) saturate(190%) brightness(1.04);backdrop-filter:blur(14px) saturate(190%) brightness(1.04);
+  box-shadow:0 8px 24px rgba(15,25,45,.14),0 1px 2px rgba(15,25,45,.08),inset 0 1px 1px rgba(255,255,255,.7),inset 0 -1px 1px rgba(255,255,255,.25)}
+.tabs button{border-radius:26px;min-height:48px;padding:4px 2px;gap:1px;transition:background .2s,color .2s}
+.tabs button[aria-current="page"]{background:color-mix(in srgb,var(--rim) 12%,rgba(255,255,255,.35))}
 .top{background:color-mix(in srgb,var(--enamel) 72%,transparent);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);
   border-bottom-color:color-mix(in srgb,var(--line) 60%,transparent)}
 .syncpill{background:color-mix(in srgb,var(--plate) 60%,transparent)}
-main{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
-.timerbar{bottom:calc(92px + env(safe-area-inset-bottom))}
-.toast{bottom:calc(96px + env(safe-area-inset-bottom))}
+main{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+.timerbar{bottom:calc(58px + max(8px,calc(env(safe-area-inset-bottom) - 22px)) + 10px)}
+.toast{bottom:calc(58px + max(8px,calc(env(safe-area-inset-bottom) - 22px)) + 14px)}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.tabs{background:var(--plate)}.top{background:var(--enamel)}}
 @media (prefers-color-scheme:dark){
-  .tabs{border-color:rgba(255,255,255,.12);border-top-color:rgba(255,255,255,.22);box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12)}
-  .tabs button[aria-current="page"]{background:color-mix(in srgb,var(--rim) 20%,transparent)}
+  .tabs{background:color-mix(in srgb,var(--plate) 38%,transparent);border-color:rgba(255,255,255,.14);border-top-color:rgba(255,255,255,.28);
+    box-shadow:0 8px 24px rgba(0,0,0,.4),inset 0 1px 1px rgba(255,255,255,.14)}
+  .tabs button[aria-current="page"]{background:color-mix(in srgb,var(--rim) 22%,rgba(255,255,255,.06))}
 }
 @media (prefers-reduced-transparency:reduce){.tabs{background:var(--plate)}.top{background:var(--enamel)}}
+/* Feinschliff Glas-Leiste: tiefer, flacher, klarer; Kopf deckend wie die Statusleiste */
+.tabs{bottom:max(6px,calc(env(safe-area-inset-bottom) - 20px));padding:4px;border-radius:28px;
+  background:color-mix(in srgb,var(--plate) 32%,transparent);
+  -webkit-backdrop-filter:blur(14px) saturate(200%) brightness(1.04);backdrop-filter:blur(14px) saturate(200%) brightness(1.04)}
+.tabs button{min-height:50px;padding:5px 2px 4px}
+.top{background:var(--enamel);-webkit-backdrop-filter:none;backdrop-filter:none}
+main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+.timerbar{bottom:calc(72px + max(6px,calc(env(safe-area-inset-bottom) - 20px)))}
+.toast{bottom:calc(76px + max(6px,calc(env(safe-area-inset-bottom) - 20px)))}
+@media (prefers-color-scheme:dark){.tabs{background:color-mix(in srgb,var(--plate) 45%,transparent)}}
+@media (prefers-reduced-transparency:reduce){.tabs{background:var(--plate)}}
 
 </style>
 </head>
