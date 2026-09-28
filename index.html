@@ -17,182 +17,139 @@
     --yellow:#FFD447; --gold-text:#FFD447;
     --coral:#FF6B7A; --mint:#43DFA0; --blue:#5B8DEF; --violet:#A78BFA;
     --radius:20px;
+    --shadow:0 1px 2px rgba(0,0,0,.25),0 6px 18px rgba(0,0,0,.18);
+    --press:rgba(255,255,255,.06);
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   body{
     background:var(--bg); color:var(--text);
     font-family:ui-rounded,-apple-system,"SF Pro Rounded","Segoe UI",Roboto,sans-serif;
     padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
-    overscroll-behavior:none;
+    overscroll-behavior:none; overflow-x:hidden;
   }
-  .screen{display:none;max-width:520px;margin:0 auto;padding:20px 18px 40px;min-height:100dvh}
+  .screen{display:none;max-width:520px;margin:0 auto;padding:20px 16px 40px;min-height:100dvh}
   .screen.active{display:block}
-  header{display:flex;align-items:center;gap:12px;margin-bottom:22px}
-  .back{background:var(--surface);border:1px solid var(--line);color:var(--text);
-    width:42px;height:42px;border-radius:14px;font-size:20px;display:flex;align-items:center;justify-content:center}
-  h1{font-size:26px;font-weight:800;letter-spacing:-.3px}
+  /* Kopfzeile: deckend (kein Glas), scrollt mit */
+  header{display:flex;align-items:center;gap:12px;margin-bottom:22px;background:var(--bg)}
+  header>div{min-width:0}
+  .back{background:var(--surface);border:1px solid var(--line);color:var(--text);flex-shrink:0;
+    width:44px;height:44px;border-radius:14px;font-size:20px;display:flex;align-items:center;justify-content:center}
+  .back:active{background:var(--surface2)}
+  .back svg{width:22px;height:22px}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.3px;overflow-wrap:anywhere}
   .sub{color:var(--muted);font-size:14px;margin-top:2px}
-  button{font-family:inherit;border:none;cursor:pointer;font-size:16px}
+  button{font-family:inherit;border:none;cursor:pointer;font-size:16px;color:inherit}
 
   /* ---------- Hauptmenü ---------- */
-  .hero{margin:8px 0 26px}
+  .hero{margin:8px 0 10px}
   .hero-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
-  .qr-btn{font-size:22px;flex-shrink:0}
+  .hero-row>div{min-width:0;flex:1}
+  .hero .kicker{color:var(--gold-text);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+  .hero h1{font-size:clamp(21px,6.6vw,34px);line-height:1.12;margin-top:6px;overflow-wrap:anywhere;hyphens:auto;-webkit-hyphens:auto}
+  .hero .sub{margin-top:6px}
   .qr-box{background:#fff;padding:14px;border-radius:16px;display:inline-block;margin:14px auto 10px;min-width:160px;min-height:60px}
   .qr-box .qr-msg{color:#333;font-size:13px;padding:10px;max-width:200px}
   .qr-box img, .qr-box canvas{display:block}
   .qr-url{color:var(--muted);font-size:13px;word-break:break-all;padding:0 6px;margin-bottom:6px}
-  .hero .kicker{color:var(--gold-text);font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
-  .hero h1{font-size:clamp(22px,6.8vw,34px);line-height:1.1;margin-top:6px;overflow-wrap:break-word;hyphens:auto}
-  .hero-row>div{min-width:0}
-  .games{display:grid;gap:14px}
-  .game-card{
-    background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-    padding:18px;display:flex;align-items:center;gap:16px;color:var(--text);text-align:left;
-    transition:transform .12s ease;
-  }
-  .game-card:active{transform:scale(.98)}
-  .game-card .icon{
-    width:58px;height:58px;border-radius:16px;display:flex;align-items:center;justify-content:center;
-    font-size:26px;font-weight:800;flex-shrink:0;color:#12152B;
-  }
-  .game-card h2{font-size:19px;font-weight:800}
-  .game-card p{color:var(--muted);font-size:13px;margin-top:3px}
-  .game-card.soon{opacity:.45}
-  .chip{margin-left:auto;background:var(--surface2);border:1px solid var(--line);color:var(--muted);
-    font-size:11px;padding:5px 10px;border-radius:99px;flex-shrink:0}
+  .menu-foot{color:var(--muted);font-size:12px;text-align:center;margin:26px 0 0}
 
-  /* ---------- Spieler-Setup ---------- */
-  .player-input{display:flex;gap:10px;margin-bottom:16px}
-  .player-input input{
-    flex:1;background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    color:var(--text);padding:15px 16px;font-size:17px;font-family:inherit;outline:none;
-  }
-  .player-input input:focus{border-color:var(--blue)}
-  .add-btn{background:var(--blue);color:#fff;border-radius:16px;width:56px;font-size:26px;font-weight:700}
-  .plist{display:grid;gap:10px;margin-bottom:24px}
-  .prow{background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:14px 16px;display:flex;align-items:center;gap:12px}
-  .dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
-  .prow span{font-size:17px;font-weight:600}
-  .del{margin-left:auto;background:none;color:var(--muted);font-size:20px;padding:4px 8px}
+  /* ---------- Listen im iOS-Stil (wie Essensplanung) ---------- */
+  .ghead{margin:22px 0 7px 16px;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  .glist{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
+  .gfoot{margin:7px 16px 0;font-size:13px;line-height:1.45;color:var(--muted)}
+  .gi{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:0 0 0 14px;min-height:52px;
+    color:var(--text);background:none;text-decoration:none;font:inherit}
+  a.gi:active,button.gi:active,label.gi:active{background:var(--press)}
+  .gic{width:30px;height:30px;border-radius:8px;flex-shrink:0;display:grid;place-items:center;background:var(--c);color:#fff;
+    font-size:16px;font-weight:800}
+  .gic svg{width:19px;height:19px}
+  .gbody{flex:1;min-width:0;display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px 8px 0}
+  .gi+.gi .gbody{border-top:1px solid var(--line)}
+  .glbl{flex:1;min-width:0;font-size:16px;font-weight:600;overflow-wrap:anywhere}
+  .glbl small{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-top:2px;line-height:1.3}
+  .glbl.danger{color:var(--coral)}
+  .gval{color:var(--muted);font-size:15px;text-align:right;white-space:nowrap;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+  .gchev{width:15px;height:15px;color:var(--muted);opacity:.7;flex-shrink:0}
+  /* große Zeilen im Hauptmenü und in der Profilliste */
+  .glist.big .gi{min-height:64px}
+  .glist.big .gbody{min-height:64px;padding:10px 14px 10px 0}
+  .glist.big .gic{width:40px;height:40px;border-radius:10px;font-size:19px}
+  .glist.big .gic svg{width:23px;height:23px}
+  .glist.big .glbl{font-size:17px;font-weight:700}
+  .glist.big .glbl small{font-size:13px;font-weight:500}
+  .glist.inform{margin:6px 0 4px}
+  .gi select.gsel{flex:0 1 auto;max-width:58%;background:none;border:none;color:var(--muted);font:inherit;font-size:16px;
+    text-align:right;text-align-last:right;padding:10px 0;-webkit-appearance:none;appearance:none;outline:none}
+  /* Schalter */
+  .switch{position:relative;display:inline-block;width:51px;height:31px;flex-shrink:0}
+  .switch input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1}
+  .switch i{position:absolute;inset:0;border-radius:99px;background:var(--surface2);border:1px solid var(--line);transition:background .2s}
+  .switch i:after{content:'';position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;background:#fff;
+    box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .2s}
+  .switch input:checked+i{background:#34C759;border-color:#34C759}
+  .switch input:checked+i:after{transform:translateX(20px)}
+  .switch input:focus-visible+i{outline:2px solid var(--blue);outline-offset:2px}
+
+  /* ---------- Aktionsmenü mit getönten Symbolkacheln ---------- */
+  .optlist{margin-top:6px;max-height:60vh;overflow-y:auto}
+  .opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:52px;padding:10px 14px;border-radius:14px;
+    background:var(--surface2);border:1px solid var(--line);margin-top:8px;font-weight:700;color:var(--text)}
+  .opt small{display:block;font-weight:400;color:var(--muted);font-size:13px;margin-top:1px}
+  .opt .grow{flex:1;min-width:0}
+  .opt .oic{flex-shrink:0;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:var(--tc);
+    background:color-mix(in srgb,var(--tc) 16%,transparent)}
+  .opt .oic svg{width:21px;height:21px}
+  .opt:active{transform:scale(.985)}
+  .opt.danger{color:var(--coral);border-color:color-mix(in srgb,var(--coral) 35%,var(--line))}
+  .tone-blue{--tc:var(--blue)}.tone-mint{--tc:var(--mint)}.tone-coral{--tc:var(--coral)}
+  .tone-violet{--tc:var(--violet)}.tone-gold{--tc:var(--gold-text)}.tone-muted{--tc:var(--muted)}
+  .sheet h3.opt-title{color:var(--text);font-size:18px;font-weight:800;text-align:left}
+  .opt-sub{color:var(--muted);font-size:14px;margin-top:4px}
+
+  /* ---------- Allgemeine Knöpfe & Bedienelemente ---------- */
   .primary{
-    width:100%;background:var(--yellow);color:#12152B;font-weight:800;font-size:18px;
-    padding:17px;border-radius:18px;transition:opacity .15s;
+    width:100%;background:var(--yellow);color:#12152B;font-weight:800;font-size:18px;min-height:52px;
+    padding:15px;border-radius:18px;transition:opacity .15s;margin-top:6px;
   }
   .primary:disabled{opacity:.35}
-  .ghost{width:100%;background:var(--surface);border:1px solid var(--line);color:var(--muted);
-    font-weight:600;padding:14px;border-radius:16px;margin-top:10px}
-  .empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:15px}
-
-  /* ---------- Spiel-Übersicht ---------- */
-  .goalbar{background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-  .goalbar b{color:var(--gold-text);font-size:20px}
-  .goalbar small{color:var(--muted);font-size:13px}
-  .toggle{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:14px;
-    padding:4px;margin-bottom:18px}
-  .toggle button{flex:1;padding:10px;border-radius:11px;background:none;color:var(--muted);font-weight:700;font-size:15px}
-  .toggle button.on{background:var(--surface2);color:var(--text)}
-
-  .score-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-    padding:16px;margin-bottom:12px}
-  .sc-top{display:flex;align-items:center;gap:10px}
-  .sc-top .name{font-size:18px;font-weight:800}
-  .sc-top .total{margin-left:auto;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums}
-  .sc-missing{color:var(--muted);font-size:14px;margin-top:2px}
-  .sc-missing b{color:var(--mint);font-weight:800}
-  .sc-meta{display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap}
-  .sc-meta .gap{background:var(--surface2);border:1px solid var(--line);color:var(--coral);
-    font-size:13px;font-weight:800;padding:3px 9px;border-radius:99px}
-  .sc-meta .lead{background:var(--surface2);border:1px solid var(--line);color:var(--gold-text);
-    font-size:13px;font-weight:800;padding:3px 9px;border-radius:99px}
-  .sc-meta .miss{color:var(--muted);font-size:13px}
-  .sc-meta .miss b{color:var(--mint);font-weight:800}
-  .rank-badge{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;
-    font-weight:800;font-size:14px;background:var(--surface2);border:1px solid var(--line);color:var(--muted);flex-shrink:0}
-  .rank-badge.r1{background:var(--yellow);color:#12152B;border-color:var(--yellow)}
-  .rank-badge.r2{background:#C8CEEE;color:#12152B;border-color:#C8CEEE}
-  .rank-badge.r3{background:#E8A46B;color:#12152B;border-color:#E8A46B}
-  .bar-label .gap{color:var(--coral);font-weight:800}
-  .winner-tag{color:#12152B;background:var(--yellow);font-size:12px;font-weight:800;
-    padding:3px 9px;border-radius:99px}
-  .track{height:8px;background:var(--surface2);border-radius:99px;margin:12px 0;overflow:hidden}
-  .track i{display:block;height:100%;border-radius:99px;transition:width .4s ease}
-  .sc-actions{display:flex;gap:8px}
-  .sc-actions button{flex:1;background:var(--surface2);border:1px solid var(--line);color:var(--text);
-    padding:11px;border-radius:12px;font-weight:700;font-size:15px}
-  .sc-actions .big{background:var(--blue);border-color:var(--blue);color:#fff}
-
-  /* ---------- Diagramm ---------- */
-  .chart{display:grid;gap:14px;margin-top:6px}
-  .bar-row{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:center}
-  .rank{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;
-    font-weight:800;font-size:17px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
-  .rank.r1{background:var(--yellow);color:#12152B;border-color:var(--yellow)}
-  .rank.r2{background:#C8CEEE;color:#12152B;border-color:#C8CEEE}
-  .rank.r3{background:#E8A46B;color:#12152B;border-color:#E8A46B}
-  .bar-info{min-width:0}
-  .bar-label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:6px}
-  .bar-label b{font-weight:800}
-  .bar-label span{color:var(--muted);font-variant-numeric:tabular-nums}
-  .bar-bg{height:26px;background:var(--surface);border:1px solid var(--line);border-radius:9px;overflow:hidden;position:relative}
-  .bar-fill{height:100%;border-radius:8px 0 0 8px;transition:width .5s ease;min-width:2px}
-  .goal-line{position:absolute;top:0;bottom:0;right:0;width:2px;background:var(--yellow);opacity:.6}
-  .history{margin-top:26px}
-  .history h4{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
-  .h-row{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;
-    padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;color:var(--text)}
-  .h-row:active{background:var(--surface2)}
-  .h-row .h-name{font-weight:700;font-size:15px}
-  .h-row .h-pts{margin-left:auto;font-weight:800;font-variant-numeric:tabular-nums}
-  .h-row .h-edit{color:var(--muted);font-size:13px;margin-left:10px}
-
-  /* ---------- Punkte-Tracker ---------- */
-  .seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:14px}
-  .seg button{flex:1;padding:11px;border-radius:11px;background:none;color:var(--muted);font-weight:700;font-size:15px}
-  .seg button.on{background:var(--surface2);color:var(--text)}
-  .tr-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-    padding:14px;margin-bottom:12px}
-  .tr-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-  .tr-head .tn{font-size:17px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .tr-head .tv{margin-left:auto;font-size:32px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0}
-  .tr-head button.tv{background:none;border:1px dashed var(--line);border-radius:12px;padding:2px 12px}
-  .tr-head button.tv:active{background:var(--surface2)}
-  .tr-head .crown{font-size:16px;flex-shrink:0}
-  .tr-btns{display:flex;gap:7px}
-  .tr-btns button{flex:1;padding:12px 4px;border-radius:12px;font-weight:800;font-size:15px;
-    background:var(--surface2);border:1px solid var(--line);color:var(--text)}
-  .tr-btns button.minus{color:var(--coral)}
-  .tr-btns button.plus{color:var(--mint)}
-  .tr-btns button.num{background:var(--blue);border-color:var(--blue);color:#fff;flex:1.1}
-  .tr-out{opacity:.5}
-  .tr-out .tv{text-decoration:line-through}
-  .field{margin-bottom:18px}
-  .field > label{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-bottom:8px}
+  .ghost{width:100%;background:var(--surface);border:1px solid var(--line);color:var(--muted);min-height:48px;
+    font-weight:600;padding:13px;border-radius:16px;margin-top:10px}
+  .empty{color:var(--muted);text-align:center;padding:26px 10px;font-size:15px;line-height:1.45}
+  .toggle,.seg{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:18px}
+  .toggle button,.seg button{flex:1;min-height:44px;padding:8px 6px;border-radius:11px;background:none;color:var(--muted);font-weight:700;font-size:15px}
+  .toggle button.on,.seg button.on{background:var(--surface2);color:var(--text)}
+  .seg{margin-bottom:14px}
   .stepper{display:flex;align-items:center;justify-content:space-between;
-    background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 12px}
   .stepper .val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
-  .stepper button.tapval{width:auto;min-width:88px;height:42px;background:none;border:1px dashed var(--line);
-    border-radius:12px;padding:0 14px;color:var(--text);font-weight:800;font-size:22px}
-  .stepper button.tapval:active{background:var(--surface2)}
-  .tap-hint{font-weight:600;font-size:12px;opacity:.75}
   .stepper .val small{font-size:14px;color:var(--muted);font-weight:600;margin-left:3px}
-  .stepper button{width:42px;height:42px;border-radius:12px;background:var(--surface2);
+  .stepper button{width:44px;height:44px;border-radius:12px;background:var(--surface2);
     border:1px solid var(--line);color:var(--text);font-size:24px;font-weight:700}
   .stepper button:active{background:var(--line)}
-  .area-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .area-chip{background:var(--surface);border:2px solid var(--line);border-radius:16px;
-    padding:14px;color:var(--text);text-align:left;display:flex;align-items:center;gap:10px}
-  .area-chip .em{font-size:22px}
-  .area-chip b{font-size:15px;font-weight:700}
-  .area-chip.on{border-color:var(--mint);background:var(--surface2)}
-  .area-chip .check{margin-left:auto;color:var(--mint);font-weight:800;opacity:0}
-  .area-chip.on .check{opacity:1}
-  .est{background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:14px 16px;text-align:center;color:var(--muted);font-size:14px;margin-bottom:18px}
-  .est b{color:var(--gold-text);font-size:18px}
+  .stepper.small{gap:6px;background:none;border:none;padding:0}
+  .stepper.small button{width:44px;height:44px;font-size:20px}
+  .stepper.small .val{min-width:44px;text-align:center;font-size:17px}
+  .tap-hint{font-weight:600;font-size:12px;opacity:.75}
+  .edit-select{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:14px;
+    color:var(--text);padding:14px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
+  .danger{color:var(--coral)}
+  .center-stage{min-height:52dvh;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;gap:14px;padding:20px 0}
+  .center-stage .hint{color:var(--muted);font-size:16px;max-width:290px;line-height:1.45}
+  .lock-ic{width:72px;height:72px;border-radius:20px;background:#0A84FF;color:#fff;display:grid;place-items:center;box-shadow:var(--shadow)}
+  .lock-ic svg{width:38px;height:38px}
+
+  /* ---------- Konto ---------- */
+  .konto-warn{background:color-mix(in srgb,var(--gold-text) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--gold-text) 45%,var(--line));
+    border-radius:14px;padding:12px 14px;color:var(--text);font-size:14px;line-height:1.45;margin:12px 0 4px}
+  .konto-warn b{display:block;margin-bottom:2px}
+  .konto-user-badge{font-size:13px;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+  .sheet .lt-form{margin-bottom:4px}
+  .sheet .lt-error{margin-top:8px}
+  .konto-or{text-align:center;color:var(--muted);font-size:13px;margin:14px 0 0}
+  .sheet-actions .ok:disabled{opacity:.45}
 
   /* ---------- Hinweis-Toast ---------- */
   .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
@@ -201,63 +158,12 @@
     opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80}
   .toast.show{opacity:1;transform:translate(-50%,0)}
 
-  /* ---------- Gemeinsame Formularteile ---------- */
-  .plan-add{width:100%;background:var(--surface);border:1px dashed var(--line);color:var(--muted);
-    font-weight:700;padding:14px;border-radius:16px;margin-bottom:16px}
-  .edit-select{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:14px;
-    color:var(--text);padding:14px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
-
-  /* ---------- Poker-Assistent ---------- */
-  .pk-slots{display:flex;gap:10px;flex-wrap:wrap}
-  .pk-board{gap:8px}
-  .pk-slot{position:relative;width:56px;height:78px;border-radius:12px;background:var(--surface);
-    border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;
-    font-weight:800;font-size:15px;color:var(--muted)}
-  .pk-board .pk-slot{width:48px;height:68px;font-size:13px}
-  .pk-slot.filled{border-style:solid;background:var(--surface2)}
-  .pk-slot.spade{color:var(--text)}
-  .pk-slot.heart{color:var(--coral);border-color:var(--coral)}
-  .pk-slot.diamond{color:var(--blue);border-color:var(--blue)}
-  .pk-slot.club{color:var(--mint);border-color:var(--mint)}
-  .pk-slot .clr{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;
-    background:var(--coral);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;
-    border:2px solid var(--bg)}
-  .pk-slot-label{width:100%;flex-basis:100%;color:var(--muted);font-size:11px;font-weight:700;
-    text-transform:uppercase;letter-spacing:.08em;margin-top:6px}
-  .pk-slot-label:first-child{margin-top:0}
-  .pk-result{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-    padding:20px;margin:18px 0;text-align:center}
-  .pk-result-empty{color:var(--muted);font-size:14px}
-  .pk-result-loading{color:var(--muted);font-size:14px}
-  .pk-headline{font-size:15px;color:var(--muted);font-weight:700;margin-bottom:4px}
-  .pk-pct{font-size:52px;font-weight:800;color:var(--mint);font-variant-numeric:tabular-nums;line-height:1}
-  .pk-breakdown{display:flex;justify-content:center;gap:18px;margin-top:14px;flex-wrap:wrap}
-  .pk-breakdown .item{text-align:center}
-  .pk-breakdown .n{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
-  .pk-breakdown .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-  .pk-hand-name{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);
-    color:var(--gold-text);font-weight:700;font-size:14px}
-  .pk-nuts{margin-top:10px;border-radius:14px;padding:12px 14px;font-size:14px}
-  .pk-nuts-sole{background:rgba(67,223,160,.14);border:1px solid var(--mint);color:var(--mint);font-weight:800}
-  .pk-nuts-tied{background:rgba(255,212,71,.14);border:1px solid var(--gold-text);color:var(--gold-text);font-weight:700}
-  .pk-nuts-behind{background:var(--surface2);border:1px solid var(--line);text-align:left}
-  .pk-nuts-label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
-  .pk-nuts-val{color:var(--coral);font-weight:800;font-size:15px;margin-top:2px}
-  .pk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;max-height:56vh;overflow-y:auto;margin:14px 0}
-  .pk-cell{height:44px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);
-    display:flex;align-items:center;justify-content:center;gap:3px;font-weight:800;font-size:14px}
-  .pk-cell.current{outline:2px solid var(--mint)}
-  .pk-cell.used{opacity:.2;pointer-events:none}
-  .pk-cell.spade{color:var(--text)}
-  .pk-cell.heart{color:var(--coral)}
-  .pk-cell.diamond{color:var(--blue)}
-  .pk-cell.club{color:var(--mint)}
-
+  /* ---------- Briefe ---------- */
   .lt-toolbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
     background:var(--surface);border:1px solid var(--line);border-radius:14px 14px 0 0;
     border-bottom:none;padding:8px}
   .lt-toolbar button{background:var(--surface2);border:1px solid var(--line);color:var(--text);
-    border-radius:10px;padding:9px 13px;font-size:15px;font-weight:700;min-width:42px}
+    border-radius:10px;padding:8px 12px;font-size:15px;font-weight:700;min-width:44px;min-height:44px}
   .lt-toolbar button:active{background:var(--line)}
   .lt-tb-sep{width:1px;height:24px;background:var(--line);margin:0 2px}
   .lt-editable{background:var(--surface);border:1px solid var(--line);border-radius:0 0 14px 14px;
@@ -267,24 +173,16 @@
   .lt-editable:empty:before{content:attr(data-placeholder);color:var(--muted);opacity:.7}
   .lt-editable ul,.lt-editable ol{padding-left:22px;margin:6px 0}
   .lt-form select.edit-select{margin-top:0}
-  .lt-row-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-  .lt-mini{flex:1;min-width:110px;background:var(--surface2);border:1px solid var(--line);color:var(--text);
-    border-radius:12px;padding:11px 10px;font-size:14px;font-weight:700}
-  .lt-mini.danger{color:var(--coral)}
-  .lt-check{display:flex;align-items:center;gap:10px;color:var(--text);font-size:15px;
-    font-weight:600;margin:12px 0 4px}
-  .lt-check input{width:22px;height:22px;accent-color:var(--blue);flex-shrink:0}
   .lt-ab-list{max-height:52vh;overflow-y:auto;margin-bottom:6px}
-  .lt-ab-row{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:14px;
-    padding:13px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;color:var(--text);text-align:left}
-  .lt-ab-row .ab-info{min-width:0;flex:1}
-  .lt-ab-row .ab-n{font-weight:800;font-size:15px}
-  .lt-ab-row .ab-a{color:var(--muted);font-size:12px;margin-top:2px}
-  .lt-ab-row .ab-del{background:none;border:none;color:var(--coral);font-size:18px;padding:4px 8px;flex-shrink:0}
+  .lt-ab-list .glist{box-shadow:none;background:var(--surface2)}
+  .lt-ab-list .gi .gbody{padding-right:4px}
+  .lt-ab-del{width:44px;height:44px;border-radius:12px;background:none;color:var(--coral);display:grid;place-items:center;flex-shrink:0}
+  .lt-ab-del svg{width:20px;height:20px}
+  .lt-ab-del:active{background:var(--press)}
   .lt-sig-preview{background:#fff;border:1px dashed var(--line);border-radius:12px;min-height:70px;
     display:flex;align-items:center;justify-content:center;margin-top:8px;padding:8px}
   .lt-sig-preview img{max-height:70px;max-width:100%}
-  .lt-sig-preview .none{color:#888;font-size:13px}
+  .lt-sig-preview .none{color:#666;font-size:13px}
   .lt-sign-canvas{width:100%;height:190px;background:#fff;border-radius:12px;touch-action:none;display:block}
   /* Fenstermarken (DIN-Umschlag mit Sichtfenster) */
   .lt-preview-box.winmarks{position:relative}
@@ -297,15 +195,15 @@
   .lt-preview-box .p-note{font-weight:bold;font-size:11px;margin-bottom:5px}
   .lt-preview-box .p-attach{margin-top:20px;font-size:11px}
   .lt-preview-box .p-attach b{display:block;margin-bottom:3px}
-  .lt-preview-box .p-sig img{max-height:52px;margin:6px 0 -4px}
+  .lt-preview-box .p-sig img,.lt-preview-box .p-sign img{max-height:52px;max-width:100%;margin:6px 0 -4px}
   .lt-preview-box .p-page2{border-top:1px dashed #bbb;margin-top:22px;padding-top:14px}
   .lt-preview-box .p-pagenum{text-align:right;font-size:9px;color:#666;margin-bottom:10px}
-  /* ---------- Briefe ---------- */
   .lt-form{display:flex;flex-direction:column;margin-bottom:16px}
   .lt-form label{font-size:13px;font-weight:700;color:var(--muted);margin:12px 0 6px}
-  .lt-form input,.lt-form textarea{
+  .lt-form label.gi{margin:0;font-size:inherit;color:var(--text)}
+  .lt-form input:not([type=checkbox]),.lt-form textarea{
     background:var(--surface);border:1px solid var(--line);border-radius:14px;color:var(--text);
-    padding:13px 14px;font-size:16px;font-family:inherit;outline:none;width:100%;resize:vertical}
+    padding:13px 14px;font-size:16px;font-family:inherit;outline:none;width:100%;resize:vertical;min-height:48px}
   .lt-form input:focus,.lt-form textarea:focus{border-color:var(--blue)}
   .lt-sep{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
     color:var(--blue);margin:22px 0 4px;padding-top:14px;border-top:1px solid var(--line)}
@@ -314,24 +212,17 @@
   .lt-hint{background:var(--surface);border:1px solid var(--line);border-radius:14px;
     padding:13px 15px;color:var(--muted);font-size:13px;line-height:1.5;margin:14px 0}
   .lt-error{color:var(--coral);font-size:14px;font-weight:700;min-height:20px;text-align:center}
-  .lt-profile-row{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:18px;
-    padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:10px;color:var(--text);text-align:left}
-  .lt-profile-row:active{background:var(--surface2)}
-  .lt-avatar{width:44px;height:44px;border-radius:14px;background:var(--blue);color:#fff;
-    display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;flex-shrink:0}
-  .lt-profile-row .pname{font-size:17px;font-weight:800}
-  .lt-profile-row .pmeta{color:var(--muted);font-size:13px;margin-top:2px}
-  .lt-profile-row .lock{margin-left:auto;font-size:17px}
+  .lt-avatar{background:var(--c,#0A84FF)}
   .lt-sender-card{background:var(--surface);border:1px solid var(--mint);border-radius:16px;
-    padding:14px 16px;margin-bottom:6px;font-size:14px;line-height:1.5}
+    padding:14px 16px;margin-bottom:6px;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
   .lt-sender-card .t{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
     color:var(--mint);margin-bottom:5px}
   .lt-ai-links{display:flex;gap:10px;margin-top:10px}
-  .lt-ai-link{flex:1;text-align:center;background:var(--surface);border:1px solid var(--line);
+  .lt-ai-link{flex:1;text-align:center;background:var(--surface);border:1px solid var(--line);min-height:48px;
     border-radius:14px;padding:13px;color:var(--text);text-decoration:none;font-weight:700;font-size:15px}
   .lt-preview-box{background:#fff;color:#111;border-radius:12px;padding:22px 20px;
     font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.55;margin-bottom:16px;
-    box-shadow:0 4px 18px rgba(0,0,0,.25)}
+    box-shadow:0 4px 18px rgba(0,0,0,.25);overflow-wrap:break-word}
   .lt-preview-box .p-from{font-size:9px;color:#555;border-bottom:.5px solid #999;padding-bottom:3px;margin-bottom:14px}
   .lt-preview-box .p-to{margin-bottom:24px;white-space:pre-line}
   .lt-preview-box .p-date{text-align:right;margin-bottom:22px;font-size:12px}
@@ -341,64 +232,17 @@
   .lt-preview-box .p-sign{white-space:pre-line}
   .lt-preview-box .p-sign .nm{margin-top:26px}
 
-  /* ---------- Uno ---------- */
-  .uno-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
-    padding:14px 16px;margin-bottom:10px}
-  .uno-top{display:flex;align-items:center;gap:10px}
-  .uno-top .rank-badge{flex-shrink:0}
-  .uno-top .un{font-size:17px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .uno-top .uv{margin-left:auto;font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;flex-shrink:0}
-  .uno-meta{display:flex;align-items:center;gap:9px;margin-top:5px;flex-wrap:wrap}
-  .uno-meta .gap{background:var(--surface2);border:1px solid var(--line);color:var(--coral);
-    font-size:12px;font-weight:800;padding:3px 9px;border-radius:99px}
-  .uno-meta .lead{background:var(--surface2);border:1px solid var(--line);color:var(--gold-text);
-    font-size:12px;font-weight:800;padding:3px 9px;border-radius:99px}
-  .uno-meta .miss{color:var(--muted);font-size:13px}
-  .uno-meta .miss b{color:var(--mint);font-weight:800}
-  .uno-card.out{opacity:.5}
-  .uno-card.out .uv{text-decoration:line-through}
-  .uno-add{margin-top:10px;width:100%;background:var(--surface2);border:1px solid var(--line);
-    color:var(--text);border-radius:12px;padding:10px;font-weight:700;font-size:14px}
-  /* Runden-Abrechnung */
-  .uno-win-pick{display:grid;gap:8px;margin-bottom:16px}
-  .uno-win-btn{background:var(--surface);border:2px solid var(--line);border-radius:14px;
-    padding:14px;color:var(--text);font-weight:700;font-size:16px;text-align:left;display:flex;align-items:center;gap:10px}
-  .uno-win-btn.on{border-color:var(--mint);background:var(--surface2)}
-  .uno-win-btn .chk{margin-left:auto;color:var(--mint);font-weight:800;opacity:0}
-  .uno-win-btn.on .chk{opacity:1}
-  .uno-pt-row{background:var(--surface);border:1px solid var(--line);border-radius:14px;
-    padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
-  .uno-pt-row.winner{border-color:var(--mint)}
-  .uno-pt-row .pn{font-weight:700;font-size:15px;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .uno-pt-row .pv{background:var(--surface2);border:1px dashed var(--line);border-radius:10px;
-    color:var(--text);font-weight:800;font-size:17px;padding:8px 14px;min-width:66px;text-align:center;flex-shrink:0}
-  .uno-pt-row .tag{font-size:11px;font-weight:800;color:var(--mint);flex-shrink:0}
-  .uno-round-total{background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:14px 16px;text-align:center;color:var(--muted);font-size:14px;margin:14px 0}
-  .uno-round-total b{color:var(--gold-text);font-size:19px}
-  .uno-sect{font-size:12px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;
-    color:var(--muted);margin:18px 0 9px}
-  /* Kartenrechner */
-  .uno-calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:6px}
-  .uno-calc-grid button{background:var(--surface2);border:1px solid var(--line);color:var(--text);
-    border-radius:12px;padding:13px 4px;font-size:18px;font-weight:800;display:flex;
-    flex-direction:column;align-items:center;justify-content:center;gap:1px}
-  .uno-calc-grid button small{font-size:10px;color:var(--muted);font-weight:700}
-  .uno-calc-grid button.sp{font-size:12px;color:var(--blue)}
-  .uno-calc-grid button.wd{font-size:12px;color:var(--violet)}
-  .uno-calc-grid button.fn{color:var(--muted)}
-  .uno-calc-grid button:active{background:var(--line)}
-  /* Verlauf */
-  .uno-log-round{background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:13px 15px;margin-bottom:10px}
-  .uno-log-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-  .uno-log-head .rt{font-weight:800;font-size:15px}
-  .uno-log-head .rw{color:var(--mint);font-size:12px;font-weight:700}
-  .uno-log-head .rdel{margin-left:auto;background:none;border:none;color:var(--coral);font-size:17px;padding:2px 6px}
-  .uno-log-line{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
-  .uno-log-line .ln{font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .uno-log-line .lv{background:var(--surface2);border:1px dashed var(--line);border-radius:9px;
-    font-weight:800;font-size:14px;padding:5px 11px;color:var(--text);flex-shrink:0;font-variant-numeric:tabular-nums}
+  /* ---------- Dialoge (Bottom-Sheets) ---------- */
+  .modal{position:fixed;inset:0;background:rgba(10,12,26,.75);display:none;
+    align-items:flex-end;justify-content:center;z-index:50}
+  .modal.open{display:flex}
+  .sheet{background:var(--surface);border-radius:26px 26px 0 0;width:100%;max-width:520px;
+    padding:22px 20px calc(24px + env(safe-area-inset-bottom));max-height:92dvh;overflow-y:auto}
+  .sheet h3{font-size:17px;color:var(--muted);font-weight:600;text-align:center}
+  .sheet-actions{display:flex;gap:10px;margin-top:14px}
+  .sheet-actions .cancel{flex:1;background:var(--surface2);border:1px solid var(--line);min-height:50px;
+    color:var(--muted);padding:14px;border-radius:16px;font-weight:700}
+  .sheet-actions .ok{flex:2;background:var(--mint);color:#12152B;min-height:50px;padding:14px;border-radius:16px;font-weight:800;font-size:17px}
 
   /* ---------- Helles Farbschema (automatisch je nach System-Einstellung) ---------- */
   @media (prefers-color-scheme: light){
@@ -407,58 +251,15 @@
       --text:#13152B; --muted:#3E4468;
       --yellow:#FFC933; --gold-text:#7E5C00;
       --coral:#C52B41; --mint:#067A52; --blue:#2451B8; --violet:#5E32C4;
+      --shadow:0 1px 2px rgba(19,21,43,.06),0 6px 18px rgba(19,21,43,.06);
+      --press:rgba(19,21,43,.06);
     }
+    .glist{border-color:#DDE0F0}
+    .gi+.gi .gbody{border-top-color:#E3E6F3}
     .modal{background:rgba(19,21,43,.45)}
-    .role-card.innocent{background:linear-gradient(160deg,#E4F7EE,#FFFFFF)}
-    .role-card.imposter{background:linear-gradient(160deg,#FBE6EA,#FFFFFF)}
-    .add-btn, .sc-actions .big{color:#FFFFFF}
-    .primary, .winner-tag, .rank.r1, .rank.r2, .rank.r3, .sheet-actions .ok{color:#13152B}
+    .primary{color:#13152B}
+    .sheet-actions .ok{color:#fff}
   }
-
-  /* ---------- Imposter ---------- */
-  .cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .cat-btn{background:var(--surface);border:1px solid var(--line);border-radius:18px;
-    padding:20px 14px;color:var(--text);text-align:center}
-  .cat-btn:active{transform:scale(.97)}
-  .cat-btn .emoji{font-size:30px;display:block;margin-bottom:8px}
-  .cat-btn b{font-size:15px;font-weight:800}
-  .cat-btn small{display:block;color:var(--muted);font-size:12px;margin-top:3px}
-  .center-stage{min-height:60dvh;display:flex;flex-direction:column;align-items:center;
-    justify-content:center;text-align:center;gap:14px;padding:20px 0}
-  .center-stage .big-name{font-size:38px;font-weight:800;letter-spacing:-.5px}
-  .center-stage .hint{color:var(--muted);font-size:16px;max-width:280px}
-  .role-card{border-radius:26px;padding:36px 28px;width:100%;text-align:center}
-  .role-card.innocent{background:linear-gradient(160deg,#1d4235,#12152B);border:1px solid var(--mint)}
-  .role-card.imposter{background:linear-gradient(160deg,#4a1d28,#12152B);border:1px solid var(--coral)}
-  .role-card .role-label{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-  .role-card .role-name{font-size:32px;font-weight:800;margin:8px 0 4px}
-  .role-card.innocent .role-name{color:var(--mint)}
-  .role-card.imposter .role-name{color:var(--coral)}
-  .role-card .word{font-size:40px;font-weight:800;margin-top:18px;color:var(--gold-text)}
-  .role-card .word-label{color:var(--muted);font-size:13px;margin-top:20px}
-  .role-card p{color:var(--muted);font-size:15px;margin-top:14px;line-height:1.5}
-
-  /* ---------- Nummernpad ---------- */
-  .modal{position:fixed;inset:0;background:rgba(10,12,26,.75);display:none;
-    align-items:flex-end;justify-content:center;z-index:50}
-  .modal.open{display:flex}
-  .sheet{background:var(--surface);border-radius:26px 26px 0 0;width:100%;max-width:520px;
-    padding:22px 20px calc(24px + env(safe-area-inset-bottom))}
-  .sheet h3{font-size:17px;color:var(--muted);font-weight:600;text-align:center}
-  .pad-display{font-size:52px;font-weight:800;text-align:center;margin:10px 0 16px;
-    font-variant-numeric:tabular-nums;min-height:64px}
-  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .pad button{background:var(--surface2);border:1px solid var(--line);color:var(--text);
-    padding:16px;border-radius:16px;font-size:24px;font-weight:700}
-  .pad button:active{background:var(--line)}
-  .pad .fn{font-size:17px;color:var(--muted)}
-  .sheet-actions{display:flex;gap:10px;margin-top:14px}
-  .sheet-actions .cancel{flex:1;background:var(--surface2);border:1px solid var(--line);
-    color:var(--muted);padding:15px;border-radius:16px;font-weight:700}
-  .sheet-actions .ok{flex:2;background:var(--mint);color:#12152B;padding:15px;border-radius:16px;font-weight:800;font-size:17px}
-
-  .footer-actions{margin-top:20px}
-  .danger{color:var(--coral)}
 </style>
 </head>
 <body>
@@ -471,165 +272,95 @@
         <div class="kicker">Deine Apps</div>
         <h1>Anwendungssammlung</h1>
       </div>
-      <button class="back qr-btn" onclick="openQr()" aria-label="Seite per QR-Code teilen">▦</button>
+      <button class="back qr-btn" onclick="openQr()" aria-label="Seite per QR-Code teilen">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v.01M14 20v.01M17 20h4v-3"/></svg>
+      </button>
     </div>
   </div>
-  <div class="games">
-    <button class="game-card" onclick="show('scr-spiele')">
-      <div class="icon" style="background:var(--yellow)">🎲</div>
-      <div>
-        <h2>Spiele</h2>
-        <p>Flip7 · Imposter · Punkte-Tracker</p>
-      </div>
-      <span class="chip">3 Apps</span>
+
+  <h3 class="ghead">Konto</h3>
+  <div class="glist big" id="menu-konto">
+    <a class="gi" href="#konto" id="konto-row">
+      <span class="gic" style="--c:#8E8E93" id="konto-row-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg></span>
+      <span class="gbody"><span class="glbl" id="konto-row-lbl">Anmelden<small>Einmal anmelden – Reisen, Haushalt, Spielgruppe und Projekte auf allen Geräten</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+    </a>
+  </div>
+
+  <h3 class="ghead">Alltag</h3>
+  <div class="glist big" id="menu-alltag">
+    <a class="gi" href="essensplanung.html">
+      <span class="gic" style="--c:#FF9500"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a2 2 0 0 0 2 2v9M10 3v7a2 2 0 0 1-2 2M8 3v6"/><path d="M17 21V3c-2.2 1.2-3 3.6-3 6.5V13h3"/></svg></span>
+      <span class="gbody"><span class="glbl">Essensplanung<small>Rotation · Wochenplan · Einkaufsliste</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+    </a>
+    <a class="gi" href="kosten.html">
+      <span class="gic" style="--c:#5856D6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6.5A7 7 0 1 0 18 17.5"/><path d="M4 10h9M4 14h9"/></svg></span>
+      <span class="gbody"><span class="glbl">Kostenaufteilung<small>Reise-Ausgaben · fair teilen · abrechnen</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+    </a>
+    <button class="gi" onclick="openLetter()">
+      <span class="gic" style="--c:#0A84FF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg></span>
+      <span class="gbody"><span class="glbl">Briefe<small>Profile · Briefkopf · KI-Textentwurf</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
     </button>
-    <a class="game-card" href="workout.html" style="text-decoration:none">
-      <div class="icon" style="background:var(--mint)">🏋️</div>
-      <div>
-        <h2>Workout</h2>
-        <p>Intervall-Training · Timer & Übungen</p>
-      </div>
+  </div>
+
+  <h3 class="ghead">Freizeit</h3>
+  <div class="glist big" id="menu-freizeit">
+    <a class="gi" href="spiele.html">
+      <span class="gic" style="--c:#FF2D55"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/></svg></span>
+      <span class="gbody"><span class="glbl">Spiele<small>Flip7 · Imposter · Uno · Poker &amp; mehr</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
     </a>
-    <button class="game-card" onclick="openLetter()">
-      <div class="icon" style="background:var(--blue)">✉️</div>
-      <div>
-        <h2>Briefe</h2>
-        <p>Profile · Briefkopf · KI-Textentwurf</p>
-      </div>
+    <a class="gi" href="workout.html">
+      <span class="gic" style="--c:#34C759"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></span>
+      <span class="gbody"><span class="glbl">Workout<small>Intervall-Training · Timer &amp; Übungen</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+    </a>
+    <a class="gi" href="cocktails.html">
+      <span class="gic" style="--c:#AF52DE"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-8 9z"/><path d="M12 13v7M8 20h8M16.5 4l2-2"/></svg></span>
+      <span class="gbody"><span class="glbl">Cocktails<small>Rezepte als Zeichnung · PDF-Export</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+    </a>
+  </div>
+</div>
+
+<!-- ========== KONTO: ANMELDEN ========== -->
+<div class="screen" id="scr-konto-login">
+  <header>
+    <button class="back" onclick="show('scr-menu')" aria-label="Zurück">‹</button>
+    <div>
+      <h1>Anmelden</h1>
+      <div class="sub">Ein Konto für alle Apps</div>
+    </div>
+  </header>
+  <form class="lt-form" id="konto-login-form" onsubmit="event.preventDefault();kontoLogin()" autocomplete="on">
+    <label for="konto-user">Benutzername</label>
+    <input id="konto-user" name="username" type="text" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="z. B. tim" enterkeyhint="next">
+    <label for="konto-pass">Passwort</label>
+    <input id="konto-pass" name="password" type="password" autocomplete="current-password" placeholder="Passwort" enterkeyhint="go">
+    <button type="submit" class="primary" id="konto-login-btn" style="margin-top:18px">Anmelden</button>
+  </form>
+  <div id="konto-login-err" class="lt-error" role="alert"></div>
+  <div id="konto-pk-wrap" style="display:none">
+    <div class="konto-or">oder</div>
+    <button class="ghost" id="konto-pk-btn" onclick="kontoPkLogin()" style="color:var(--text)">Mit Face ID anmelden</button>
+  </div>
+  <div class="lt-hint">Mit einem Konto erscheinen deine Reisen, dein Haushalt, deine Spielgruppe und deine Cocktail-Projekte automatisch auf allen Geräten. Außerdem merkt sich das Konto die Passwörter deiner Brief-Profile.<br><br>Noch kein Konto? Einfach Wunschname und Passwort eingeben und „Anmelden“ tippen – dann kannst du ein neues Konto anlegen.<br><br>🔒 Alles wird auf dem Gerät verschlüsselt; der Server kennt weder Namen noch Passwort.</div>
+</div>
+
+<!-- ========== KONTO: ÜBERSICHT ========== -->
+<div class="screen" id="scr-konto">
+  <header>
+    <button class="back" onclick="show('scr-menu')" aria-label="Zurück">‹</button>
+    <div>
+      <h1 id="konto-name">Konto</h1>
+      <div class="sub" id="konto-status"></div>
+    </div>
+  </header>
+  <div id="konto-links"></div>
+  <h3 class="ghead">Einstellungen</h3>
+  <div class="glist" id="konto-actions"></div>
+  <div class="glist" style="margin-top:22px">
+    <button class="gi" id="konto-logout-btn" onclick="kontoLogoutAsk()">
+      <span class="gbody"><span class="glbl danger">Abmelden</span></span>
     </button>
-    <a class="game-card" href="cocktails.html" style="text-decoration:none">
-      <div class="icon" style="background:var(--coral)">🍸</div>
-      <div>
-        <h2>Cocktails</h2>
-        <p>Rezepte als Zeichnung · PDF-Export</p>
-      </div>
-    </a>
-    <a class="game-card" href="essensplanung.html" style="text-decoration:none">
-      <div class="icon" style="background:var(--blue)">🍽️</div>
-      <div>
-        <h2>Essensplanung</h2>
-        <p>Rezept-Rotation · Wochenplan · Einkaufsliste</p>
-      </div>
-    </a>
-    <a class="game-card" href="kosten.html" style="text-decoration:none">
-      <div class="icon" style="background:var(--violet)">💶</div>
-      <div>
-        <h2>Kostenaufteilung</h2>
-        <p>Reise-Ausgaben · fair teilen · abrechnen</p>
-      </div>
-    </a>
   </div>
-</div>
-
-<!-- ========== UNO: SETUP ========== -->
-<div class="screen" id="scr-uno-setup">
-  <header>
-    <button class="back" onclick="show('scr-spiele')">‹</button>
-    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
-    <div>
-      <h1>Uno</h1>
-      <div class="sub">Spieler &amp; Regeln</div>
-    </div>
-  </header>
-
-  <div class="field">
-    <label>Zählweise</label>
-    <div class="seg" id="uno-mode-seg">
-      <button onclick="unoSetMode('winner')">Sieger sammelt</button>
-      <button onclick="unoSetMode('own')">Jeder eigene Karten</button>
-    </div>
-    <div class="lt-hint" id="uno-mode-hint" style="margin-top:8px"></div>
-  </div>
-
-  <div class="field">
-    <label>Punkteziel <span class="tap-hint">– auf die Zahl tippen zum Eingeben</span></label>
-    <div class="stepper">
-      <button onclick="unoAdjustGoal(-50)">−</button>
-      <button class="val tapval" onclick="unoOpenGoalPad()"><span id="uno-goal">500</span></button>
-      <button onclick="unoAdjustGoal(50)">+</button>
-    </div>
-  </div>
-
-  <div class="player-input">
-    <input id="uno-name-input" type="text" placeholder="Name eingeben" autocomplete="off" enterkeyhint="done">
-    <button class="add-btn" onclick="unoAddPlayer()">+</button>
-  </div>
-  <div class="plist" id="uno-setup-list"></div>
-  <button class="primary" id="uno-start-btn" onclick="unoStart()" disabled>Spiel starten</button>
-</div>
-
-<!-- ========== UNO: ÜBERSICHT ========== -->
-<div class="screen" id="scr-uno-game">
-  <header>
-    <button class="back" onclick="show('scr-spiele')">‹</button>
-    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
-    <div>
-      <h1>Uno</h1>
-      <div class="sub" id="uno-sub"></div>
-    </div>
-  </header>
-
-  <div class="goalbar">
-    <small id="uno-goal-label">Ziel</small>
-    <b id="uno-goal-show">500</b>
-  </div>
-
-  <button class="primary" onclick="unoOpenRound()">🏁 Runde abrechnen</button>
-
-  <div class="toggle" style="margin-top:14px">
-    <button id="uno-tab-list" class="on" onclick="unoSetView('list')">Punkte</button>
-    <button id="uno-tab-log" onclick="unoSetView('log')">Verlauf</button>
-  </div>
-
-  <div id="uno-view-list"></div>
-  <div id="uno-view-log" style="display:none"></div>
-
-  <div class="footer-actions">
-    <button class="ghost" onclick="unoUndo()">↩︎ Letzte Buchung rückgängig</button>
-    <button class="ghost danger" onclick="unoReset()">Neues Spiel (Punkte löschen)</button>
-    <button class="ghost" onclick="show('scr-uno-setup')">Spieler &amp; Einstellungen</button>
-  </div>
-</div>
-
-<!-- ========== UNO: RUNDE ABRECHNEN ========== -->
-<div class="screen" id="scr-uno-round">
-  <header>
-    <button class="back" onclick="show('scr-uno-game')">‹</button>
-    <div>
-      <h1 id="uno-round-title">Runde abrechnen</h1>
-      <div class="sub" id="uno-round-sub"></div>
-    </div>
-  </header>
-  <div id="uno-round-body"></div>
-  <div class="uno-round-total" id="uno-round-total"></div>
-  <button class="primary" onclick="unoCommitRound()">Runde verbuchen</button>
-  <button class="ghost" onclick="show('scr-uno-game')">Abbrechen</button>
-</div>
-
-<!-- ========== UNO: KARTENRECHNER ========== -->
-<div class="modal" id="uno-calc-modal" onclick="if(event.target===this)unoCloseCalc()">
-  <div class="sheet">
-    <h3 id="uno-calc-title">Restkarten</h3>
-    <div class="pad-display" id="uno-calc-display">0</div>
-    <div class="uno-calc-grid">
-      <button onclick="unoCalcAdd(0)">0</button><button onclick="unoCalcAdd(1)">1</button>
-      <button onclick="unoCalcAdd(2)">2</button><button onclick="unoCalcAdd(3)">3</button>
-      <button onclick="unoCalcAdd(4)">4</button><button onclick="unoCalcAdd(5)">5</button>
-      <button onclick="unoCalcAdd(6)">6</button><button onclick="unoCalcAdd(7)">7</button>
-      <button onclick="unoCalcAdd(8)">8</button><button onclick="unoCalcAdd(9)">9</button>
-      <button class="sp" onclick="unoCalcAdd(20)">Zieh 2<small>20</small></button>
-      <button class="sp" onclick="unoCalcAdd(20)">Retour<small>20</small></button>
-      <button class="sp" onclick="unoCalcAdd(20)">Aussetzen<small>20</small></button>
-      <button class="wd" onclick="unoCalcAdd(50)">Farbwahl<small>50</small></button>
-      <button class="wd" onclick="unoCalcAdd(50)">+4<small>50</small></button>
-      <button class="fn" onclick="unoCalcUndo()">⌫</button>
-    </div>
-    <div class="sheet-actions">
-      <button class="cancel" onclick="unoCalcClear()">Null</button>
-      <button class="cancel" onclick="unoCloseCalc()">Abbrechen</button>
-      <button class="ok" onclick="unoCalcApply()">Übernehmen</button>
-    </div>
-  </div>
+  <p class="gfoot">Im Konto liegen nur verschlüsselte Verknüpfungen. Neue Reisen, Haushalte, Spielgruppen und Projekte werden automatisch verknüpft, sobald du sie in der jeweiligen App öffnest.</p>
 </div>
 
 <!-- ========== BRIEFE: PROFILE ========== -->
@@ -641,9 +372,16 @@
       <div class="sub">Profil wählen</div>
     </div>
   </header>
+  <h3 class="ghead">Profile</h3>
   <div id="lt-profile-list"></div>
-  <button class="plan-add" onclick="ltNewProfile()">＋ Neues Profil anlegen</button>
-  <div class="lt-hint">🔒 Deine Adressdaten werden mit deinem Passwort verschlüsselt gespeichert und sind ohne Passwort nicht lesbar.</div>
+  <div class="glist" style="margin-top:14px">
+    <button class="gi" id="lt-new-btn" onclick="ltNewProfile()">
+      <span class="gic" style="--c:#34C759"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+      <span class="gbody"><span class="glbl">Neues Profil anlegen</span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+    </button>
+  </div>
+  <p class="gfoot" id="lt-konto-hint" style="display:none">🔑 Passwörter werden in deinem Konto gemerkt.</p>
+  <p class="gfoot">🔒 Deine Adressdaten werden mit deinem Passwort verschlüsselt gespeichert und sind ohne Passwort nicht lesbar.</p>
 </div>
 
 <!-- ========== BRIEFE: PROFIL ANLEGEN ========== -->
@@ -687,8 +425,8 @@
     </div>
   </header>
   <div class="center-stage">
-    <div style="font-size:52px">🔒</div>
-    <div class="hint">Die Adressdaten sind verschlüsselt. Gib dein Passwort ein, um das Profil zu öffnen.</div>
+    <div class="lock-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div>
+    <div class="hint" id="lt-unlock-hint">Die Adressdaten sind verschlüsselt. Gib dein Passwort ein, um das Profil zu öffnen.</div>
     <div class="lt-form" style="width:100%">
       <input id="lt-unlock-pass" type="password" placeholder="Passwort" autocomplete="current-password" enterkeyhint="go">
     </div>
@@ -713,19 +451,29 @@
 
   <div class="lt-form">
     <div class="lt-sep">Schrift</div>
-    <label>Schriftart</label>
-    <select id="lt-font" class="edit-select" onchange="ltSetFont(this.value)"></select>
-    <label>Schriftgröße</label>
-    <div class="stepper">
-      <button onclick="ltAdjustSize(-1)">−</button>
-      <span class="val"><span id="lt-fontsize">11</span><small>pt</small></span>
-      <button onclick="ltAdjustSize(1)">+</button>
+    <div class="glist inform">
+      <label class="gi" for="lt-font">
+        <span class="gic" style="--c:#8E8E93"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l6-16h1l6 16M6.5 14h9"/></svg></span>
+        <span class="gbody"><span class="glbl">Schriftart</span><select id="lt-font" class="gsel" onchange="ltSetFont(this.value)"></select></span>
+      </label>
+      <div class="gi">
+        <span class="gic" style="--c:#5856D6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5h10v2M8 5v14M6 19h4M14 12v-1h7v1M17.5 11v8M16 19h3"/></svg></span>
+        <span class="gbody"><span class="glbl">Schriftgröße</span>
+          <span class="stepper small"><button type="button" onclick="ltAdjustSize(-1)" aria-label="Kleiner">−</button><span class="val"><span id="lt-fontsize">11</span><small>pt</small></span><button type="button" onclick="ltAdjustSize(1)" aria-label="Größer">+</button></span>
+        </span>
+      </div>
     </div>
 
     <div class="lt-sep">Empfänger</div>
-    <div class="lt-row-btns">
-      <button type="button" class="lt-mini" onclick="ltOpenAddressBook()">📇 Adressbuch</button>
-      <button type="button" class="lt-mini" onclick="ltSaveRecipient()">＋ Empfänger merken</button>
+    <div class="glist inform">
+      <button type="button" class="gi" onclick="ltOpenAddressBook()">
+        <span class="gic" style="--c:#FF9500"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v18H6.5A1.5 1.5 0 0 1 5 19.5z"/><circle cx="12" cy="10" r="2.5"/><path d="M8.5 16c.6-1.8 2-2.7 3.5-2.7s2.9.9 3.5 2.7"/></svg></span>
+        <span class="gbody"><span class="glbl">Adressbuch<small>Gespeicherten Empfänger einsetzen</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+      </button>
+      <button type="button" class="gi" onclick="ltSaveRecipient()">
+        <span class="gic" style="--c:#34C759"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/><path d="M12 7v6M9 10h6"/></svg></span>
+        <span class="gbody"><span class="glbl">Empfänger merken<small>Aktuelle Adresse ins Adressbuch</small></span></span>
+      </button>
     </div>
     <label>Postvermerk (optional)</label>
     <input id="lt-r-note" type="text" placeholder="z. B. Einschreiben · Persönlich/Vertraulich" oninput="ltSaveDraft()">
@@ -739,7 +487,12 @@
     <input id="lt-r-city" type="text" placeholder="10115 Berlin" oninput="ltSaveDraft()">
 
     <div class="lt-sep">Datum &amp; Ort</div>
-    <label class="lt-check"><input type="checkbox" id="lt-date-auto" checked onchange="ltToggleDateAuto()"> Heutiges Datum verwenden</label>
+    <div class="glist inform">
+      <label class="gi">
+        <span class="gic" style="--c:#FF3B30"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>
+        <span class="gbody"><span class="glbl">Heutiges Datum verwenden</span><span class="switch"><input type="checkbox" id="lt-date-auto" checked onchange="ltToggleDateAuto()"><i></i></span></span>
+      </label>
+    </div>
     <div id="lt-date-manual" style="display:none">
       <label>Datum</label>
       <input id="lt-date" type="date" oninput="ltSaveDraft()">
@@ -748,7 +501,12 @@
     <input id="lt-place" type="text" placeholder="z. B. Stuttgart" oninput="ltSaveDraft()">
 
     <div class="lt-sep">Info-Block rechts</div>
-    <label class="lt-check"><input type="checkbox" id="lt-info-on" onchange="ltToggleInfo()"> Info-Block anzeigen</label>
+    <div class="glist inform">
+      <label class="gi">
+        <span class="gic" style="--c:#30B0C7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 8.5h8M8 12h8M8 15.5h5"/></svg></span>
+        <span class="gbody"><span class="glbl">Info-Block anzeigen<small>Kundennr., Aktenzeichen usw. rechts oben</small></span><span class="switch"><input type="checkbox" id="lt-info-on" onchange="ltToggleInfo()"><i></i></span></span>
+      </label>
+    </div>
     <div id="lt-info-fields" style="display:none">
       <label>Kundennummer</label>
       <input id="lt-i-kunde" type="text" placeholder="z. B. 4711" oninput="ltSaveDraft()">
@@ -783,10 +541,11 @@
     <div class="lt-sep">Unterschrift</div>
     <div class="lt-hint" style="margin:6px 0 0">🔒 Wird verschlüsselt im Profil „<span id="lt-sig-profile"></span>" gespeichert und steht für jeden Brief bereit.</div>
     <div id="lt-sig-preview" class="lt-sig-preview"></div>
-    <div class="lt-row-btns">
-      <button type="button" class="lt-mini" onclick="ltOpenSignPad()">✍️ Malen</button>
-      <button type="button" class="lt-mini" onclick="document.getElementById('lt-sig-file').click()">🖼 Bild wählen</button>
-      <button type="button" class="lt-mini danger" onclick="ltClearSignature()">✕ Entfernen</button>
+    <div class="glist inform" style="margin-top:10px">
+      <button type="button" class="gi" id="lt-sig-btn" onclick="ltSignatureMenu()">
+        <span class="gic" style="--c:#AF52DE"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17c3-6 5-9 6.5-9S9 14 11 14s3-5 4.5-5-.5 6 1.5 6 2.5-2 4-2"/><path d="M3 21h18"/></svg></span>
+        <span class="gbody"><span class="glbl">Unterschrift ändern<small>Malen, Bild wählen oder entfernen</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+      </button>
     </div>
     <input type="file" id="lt-sig-file" accept="image/*" style="display:none" onchange="ltSignatureFile(event)">
 
@@ -880,313 +639,43 @@
   </div>
 </div>
 
-<!-- ========== ORDNER: SPIELE ========== -->
-<div class="screen" id="scr-spiele">
-  <header>
-    <button class="back" onclick="show('scr-menu')">‹</button>
-    <div>
-      <h1>Spiele</h1>
-      <div class="sub">Wähle ein Spiel</div>
-    </div>
-  </header>
-  <div class="games">
-    <button class="game-card" onclick="openFlip7()">
-      <div class="icon" style="background:var(--yellow)">7</div>
-      <div>
-        <h2>Flip7</h2>
-        <p>Punktezähler · Erster bei 200 gewinnt</p>
-      </div>
-    </button>
-    <button class="game-card" onclick="openImposter()">
-      <div class="icon" style="background:var(--coral)">🕵️</div>
-      <div>
-        <h2>Imposter</h2>
-        <p>Einer kennt das Wort nicht · Findet ihn!</p>
-      </div>
-    </button>
-    <button class="game-card" onclick="openTracker()">
-      <div class="icon" style="background:var(--blue)">🎯</div>
-      <div>
-        <h2>Punkte-Tracker</h2>
-        <p>Für alle Brett- & Kartenspiele</p>
-      </div>
-    </button>
-    <button class="game-card" onclick="openUno()">
-      <div class="icon" style="background:var(--coral)">🎴</div>
-      <div>
-        <h2>Uno-Punktetracker</h2>
-        <p>Rundenweise zählen bis zum Ziel</p>
-      </div>
-    </button>
-    <button class="game-card" onclick="openPoker()">
-      <div class="icon" style="background:var(--violet)">🃏</div>
-      <div>
-        <h2>Poker-Assistent</h2>
-        <p>Gewinnwahrscheinlichkeit live berechnen</p>
-      </div>
-    </button>
-  </div>
-</div>
-
-<!-- ========== SPIELER-SETUP ========== -->
-<div class="screen" id="scr-setup">
-  <header>
-    <button class="back" onclick="show('scr-spiele')">‹</button>
-    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
-    <div>
-      <h1>Flip7 · Spieler</h1>
-      <div class="sub">Wer spielt mit?</div>
-    </div>
-  </header>
-  <div class="player-input">
-    <input id="name-input" type="text" placeholder="Name eingeben" autocomplete="off" enterkeyhint="done">
-    <button class="add-btn" onclick="addPlayer()">+</button>
-  </div>
-  <div class="plist" id="setup-list"></div>
-  <button class="primary" id="start-btn" onclick="startGame()" disabled>Spiel starten</button>
-</div>
-
-<!-- ========== SPIEL ========== -->
-<div class="screen" id="scr-game">
-  <header>
-    <button class="back" onclick="show('scr-spiele')">‹</button>
-    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
-    <div>
-      <h1>Flip7</h1>
-      <div class="sub" id="round-info"></div>
-    </div>
-  </header>
-
-  <div class="goalbar">
-    <small>Ziel</small>
-    <b>200 Punkte</b>
-  </div>
-
-  <div class="toggle">
-    <button id="tab-list" class="on" onclick="setView('list')">Liste</button>
-    <button id="tab-chart" onclick="setView('chart')">Diagramm</button>
-  </div>
-
-  <div id="view-list"></div>
-  <div id="view-chart" class="chart" style="display:none"></div>
-
-  <div class="footer-actions">
-    <button class="ghost" onclick="undoLast()">↩︎ Letzten Eintrag rückgängig</button>
-    <button class="ghost danger" onclick="resetGame()">Neues Spiel (Punkte löschen)</button>
-    <button class="ghost" onclick="show('scr-setup')">Spieler bearbeiten</button>
-  </div>
-</div>
-
-<!-- ========== IMPOSTER: SPIELER ========== -->
-<div class="screen" id="scr-imp-setup">
-  <header>
-    <button class="back" onclick="show('scr-spiele')">‹</button>
-    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
-    <div>
-      <h1>Imposter · Spieler</h1>
-      <div class="sub">Mindestens 3 Spieler</div>
-    </div>
-  </header>
-  <div class="player-input">
-    <input id="imp-name-input" type="text" placeholder="Name eingeben" autocomplete="off" enterkeyhint="done">
-    <button class="add-btn" onclick="impAddPlayer()">+</button>
-  </div>
-  <div class="plist" id="imp-setup-list"></div>
-  <button class="primary" id="imp-next-btn" onclick="show('scr-imp-cat')" disabled>Weiter zur Kategorie</button>
-</div>
-
-<!-- ========== IMPOSTER: KATEGORIE / MODUS ========== -->
-<div class="screen" id="scr-imp-cat">
-  <header>
-    <button class="back" onclick="show('scr-imp-setup')">‹</button>
-    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
-    <div>
-      <h1>Modus wählen</h1>
-      <div class="sub">Wörter oder Szenarien</div>
-    </div>
-  </header>
-  <div class="toggle">
-    <button id="imp-mode-word" class="on" onclick="impSetMode('word')">Wörter</button>
-    <button id="imp-mode-scn" onclick="impSetMode('scenario')">Szenarien</button>
-  </div>
-  <div id="imp-word-panel">
-    <div class="cat-grid" id="cat-grid"></div>
-  </div>
-  <div id="imp-scenario-panel" style="display:none">
-    <div class="est" style="text-align:left;line-height:1.5">
-      Jeder Unschuldige bekommt denselben <b>Ort</b> und eine eigene <b>Rolle</b> (z.B. Pilot, Stewardess).
-      Der <b>Imposter</b> kennt weder Ort noch Rolle und muss mitraten. Das Szenario wird zufällig gewählt.
-    </div>
-    <button class="primary" onclick="impStartScenario()">Zufälliges Szenario starten</button>
-  </div>
-</div>
-
-<!-- ========== IMPOSTER: WEITERGEBEN ========== -->
-<div class="screen" id="scr-imp-pass">
-  <header>
-    <button class="back" onclick="impQuit()">✕</button>
-    <div>
-      <h1>Imposter</h1>
-      <div class="sub" id="imp-pass-progress"></div>
-    </div>
-  </header>
-  <div class="center-stage">
-    <div class="hint">Gib das Handy an</div>
-    <div class="big-name" id="imp-pass-name"></div>
-    <div class="hint">Niemand sonst darf auf den Bildschirm schauen!</div>
-  </div>
-  <button class="primary" onclick="impShowRole()">Rolle anzeigen</button>
-</div>
-
-<!-- ========== IMPOSTER: ROLLE ========== -->
-<div class="screen" id="scr-imp-role">
-  <header>
-    <button class="back" style="visibility:hidden">‹</button>
-    <div>
-      <h1 id="imp-role-playername"></h1>
-      <div class="sub">Nur für deine Augen</div>
-    </div>
-  </header>
-  <div class="center-stage">
-    <div class="role-card" id="imp-role-card"></div>
-  </div>
-  <button class="primary" onclick="impNextPlayer()">Verstanden – weitergeben</button>
-</div>
-
-<!-- ========== IMPOSTER: LOS GEHT'S ========== -->
-<div class="screen" id="scr-imp-final">
-  <header>
-    <button class="back" onclick="impQuit()">✕</button>
-    <div>
-      <h1>Alle bereit!</h1>
-      <div class="sub">Die Jagd beginnt</div>
-    </div>
-  </header>
-  <div class="center-stage">
-    <div class="hint">Es beginnt:</div>
-    <div class="big-name" style="color:var(--gold-text)" id="imp-final-name"></div>
-    <div class="hint">Beschreibt reihum das Wort mit je einem Begriff – aber verratet es nicht zu deutlich. Dann wird abgestimmt, wer der Imposter ist!</div>
-  </div>
-  <button class="primary" onclick="impStartRound()">Neue Runde (gleiche Gruppe)</button>
-  <button class="ghost" onclick="show('scr-imp-cat')">Modus / Kategorie ändern</button>
-  <button class="ghost" onclick="show('scr-spiele')">Zurück zu Spiele</button>
-</div>
-
-<!-- ========== TRACKER: SETUP ========== -->
-<div class="screen" id="scr-tr-setup">
-  <header>
-    <button class="back" onclick="show('scr-spiele')">‹</button>
-    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
-    <div>
-      <h1>Punkte-Tracker</h1>
-      <div class="sub">Für alle Brett- & Kartenspiele</div>
-    </div>
-  </header>
-
-  <div class="field">
-    <label>Was möchtest du zählen?</label>
-    <div class="seg" id="tr-mode-seg">
-      <button onclick="trSetMode('punkte')">Punkte</button>
-      <button onclick="trSetMode('leben')">Leben</button>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Startwert <span class="tap-hint">– auf die Zahl tippen zum Eingeben</span></label>
-    <div class="stepper">
-      <button onclick="trAdjustCfg('start',-5)">−</button>
-      <button class="val tapval" onclick="trOpenCfgPad('start')"><span id="tr-start">0</span></button>
-      <button onclick="trAdjustCfg('start',5)">+</button>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Schnell-Buttons (Schrittweite)</label>
-    <div class="stepper">
-      <button onclick="trAdjustCfg('step',-1)">−</button>
-      <button class="val tapval" onclick="trOpenCfgPad('step')">± <span id="tr-step">1</span></button>
-      <button onclick="trAdjustCfg('step',1)">+</button>
-    </div>
-  </div>
-
-  <div class="player-input">
-    <input id="tr-name-input" type="text" placeholder="Name eingeben" autocomplete="off" enterkeyhint="done">
-    <button class="add-btn" onclick="trAddPlayer()">+</button>
-  </div>
-  <div class="plist" id="tr-setup-list"></div>
-  <button class="primary" id="tr-start-btn" onclick="trStart()" disabled>Los geht's</button>
-</div>
-
-<!-- ========== TRACKER: ÜBERSICHT ========== -->
-<div class="screen" id="scr-tr-game">
-  <header>
-    <button class="back" onclick="show('scr-spiele')">‹</button>
-    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
-    <div>
-      <h1 id="tr-title">Punkte</h1>
-      <div class="sub" id="tr-sub"></div>
-    </div>
-  </header>
-
-  <div class="toggle">
-    <button id="tr-tab-list" class="on" onclick="trSetView('list')">Liste</button>
-    <button id="tr-tab-chart" onclick="trSetView('chart')">Diagramm</button>
-  </div>
-
-  <div id="tr-view-list"></div>
-  <div id="tr-view-chart" class="chart" style="display:none"></div>
-
-  <div class="footer-actions">
-    <button class="ghost" onclick="trUndo()">↩︎ Letzte Änderung rückgängig</button>
-    <button class="ghost danger" onclick="trReset()">Auf Startwert zurücksetzen</button>
-    <button class="ghost" onclick="show('scr-tr-setup')">Spieler & Einstellungen</button>
-  </div>
-</div>
-
-<!-- ========== POKER-ASSISTENT ========== -->
-<div class="screen" id="scr-poker">
-  <header>
-    <button class="back" onclick="show('scr-spiele')">‹</button>
-    <button class="back" onclick="show('scr-menu')" aria-label="Hauptmenü">⌂</button>
-    <div>
-      <h1>Poker-Assistent</h1>
-      <div class="sub">Live-Gewinnwahrscheinlichkeit</div>
-    </div>
-  </header>
-
-  <div class="field">
-    <label>Anzahl Gegner am Tisch</label>
-    <div class="stepper">
-      <button onclick="pkAdjustOpp(-1)">−</button>
-      <span class="val" id="pk-opp">1</span>
-      <button onclick="pkAdjustOpp(1)">+</button>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Deine Karten</label>
-    <div class="pk-slots" id="pk-hero-slots"></div>
-  </div>
-
-  <div class="field">
-    <label>Board <span class="tap-hint">– Flop, Turn, River</span></label>
-    <div class="pk-slots pk-board" id="pk-board-slots"></div>
-  </div>
-
-  <div class="pk-result" id="pk-result">
-    <div class="pk-result-empty">Wähle deine 2 Karten, um die Gewinnwahrscheinlichkeit zu sehen.</div>
-  </div>
-
-  <button class="ghost danger" onclick="pkReset()">↺ Neue Runde (schnell zurücksetzen)</button>
-</div>
-
-<!-- ========== POKER: KARTENRASTER ========== -->
-<div class="modal" id="pk-picker-modal" onclick="if(event.target===this)pkClosePicker()">
+<!-- ========== KONTO: NEU ANLEGEN ========== -->
+<div class="modal" id="konto-reg-modal" onclick="if(event.target===this)kontoRegClose()">
   <div class="sheet">
-    <h3 id="pk-picker-title">Karte wählen</h3>
-    <div class="pk-grid" id="pk-grid"></div>
+    <h3 class="opt-title">Neues Konto anlegen</h3>
+    <div class="konto-user-badge" id="konto-reg-user"></div>
+    <div class="konto-warn"><b>Passwort gut merken!</b>Das Passwort kann niemand zurücksetzen – auch nicht der Pi. Gut merken (z. B. im iPhone-Passwortmanager speichern).</div>
+    <form class="lt-form" onsubmit="event.preventDefault();kontoRegister()">
+      <input type="text" name="username" id="konto-reg-username" autocomplete="username" style="display:none" tabindex="-1" aria-hidden="true">
+      <label for="konto-reg-pass2">Passwort wiederholen</label>
+      <input id="konto-reg-pass2" type="password" autocomplete="new-password" placeholder="Passwort noch einmal" enterkeyhint="done">
+    </form>
+    <div id="konto-reg-err" class="lt-error" role="alert"></div>
     <div class="sheet-actions">
-      <button class="cancel" onclick="pkClosePicker()">Fertig</button>
+      <button class="cancel" onclick="kontoRegClose()">Abbrechen</button>
+      <button class="ok" id="konto-reg-ok" onclick="kontoRegister()">Konto anlegen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== KONTO: PASSWORT ÄNDERN ========== -->
+<div class="modal" id="konto-pw-modal" onclick="if(event.target===this)kontoPwClose()">
+  <div class="sheet">
+    <h3 class="opt-title">Passwort ändern</h3>
+    <div class="konto-warn">Das neue Passwort kann niemand zurücksetzen – auch nicht der Pi. Gut merken (z. B. im iPhone-Passwortmanager speichern).</div>
+    <form class="lt-form" onsubmit="event.preventDefault();kontoPwSave()">
+      <input type="text" name="username" id="konto-pw-username" autocomplete="username" style="display:none" tabindex="-1" aria-hidden="true">
+      <label for="konto-pw-old">Bisheriges Passwort</label>
+      <input id="konto-pw-old" type="password" autocomplete="current-password" placeholder="Bisheriges Passwort">
+      <label for="konto-pw-new">Neues Passwort</label>
+      <input id="konto-pw-new" type="password" autocomplete="new-password" placeholder="Mindestens 8 Zeichen">
+      <label for="konto-pw-new2">Neues Passwort wiederholen</label>
+      <input id="konto-pw-new2" type="password" autocomplete="new-password" placeholder="Neues Passwort noch einmal" enterkeyhint="done">
+    </form>
+    <div id="konto-pw-err" class="lt-error" role="alert"></div>
+    <div class="sheet-actions">
+      <button class="cancel" onclick="kontoPwClose()">Abbrechen</button>
+      <button class="ok" id="konto-pw-ok" onclick="kontoPwSave()">Ändern</button>
     </div>
   </div>
 </div>
@@ -1216,1015 +705,349 @@
   </div>
 </div>
 
-<!-- ========== NUMMERNPAD ========== -->
-<div class="modal" id="pad-modal" onclick="if(event.target===this)closePad()">
+
+<!-- ========== AKTIONSMENÜ ========== -->
+<div class="modal" id="opt-modal" onclick="if(event.target===this)optClose()">
   <div class="sheet">
-    <h3 id="pad-title">Punkte für …</h3>
-    <div class="pad-display" id="pad-display">0</div>
-    <div class="pad">
-      <button onclick="padKey(1)">1</button><button onclick="padKey(2)">2</button><button onclick="padKey(3)">3</button>
-      <button onclick="padKey(4)">4</button><button onclick="padKey(5)">5</button><button onclick="padKey(6)">6</button>
-      <button onclick="padKey(7)">7</button><button onclick="padKey(8)">8</button><button onclick="padKey(9)">9</button>
-      <button class="fn" onclick="padClear()">C</button><button onclick="padKey(0)">0</button><button class="fn" onclick="padBack()">⌫</button>
-      <button class="fn" id="pad-sign" style="display:none;grid-column:1/-1" onclick="padToggleSign()">± Vorzeichen wechseln</button>
-    </div>
+    <h3 class="opt-title" id="opt-title">Aktionen</h3>
+    <div class="opt-sub" id="opt-sub" style="display:none"></div>
+    <div class="optlist" id="opt-list"></div>
     <div class="sheet-actions">
-      <button class="cancel" onclick="closePad()">Abbrechen</button>
-      <button class="cancel danger" id="pad-delete" style="display:none" onclick="padDelete()">Löschen</button>
-      <button class="ok" id="pad-ok" onclick="padConfirm()">Hinzufügen</button>
+      <button class="cancel" onclick="optClose()">Schließen</button>
     </div>
   </div>
 </div>
 
 <script>
-const GOAL = 200;
-const COLORS_DARK  = ['#FFD447','#5B8DEF','#43DFA0','#FF6B7A','#A78BFA','#4FD1E8','#F49D5C','#E86BC6'];
-const COLORS_LIGHT = ['#9A7000','#2451B8','#067A52','#C52B41','#5E32C4','#0A7D96','#B35A12','#B0247F'];
-const lightMode = window.matchMedia('(prefers-color-scheme: light)');
-let COLORS = lightMode.matches ? COLORS_LIGHT : COLORS_DARK;
-lightMode.addEventListener('change', e=>{
-  COLORS = e.matches ? COLORS_LIGHT : COLORS_DARK;
-  renderSetup(); impRenderSetup(); renderGame();
-});
-let state = { players: [], view: 'list', log: [] }; // log: {playerId, points}
-let padTarget = null, padValue = '', padEditId = null, padTrackerId = null, padNeg = false, padCfg = null, padPrefilled = false;
+/* ==== Zentrales Konto der Anwendungssammlung (gleicher Code in allen Apps) ====
+   Ein Konto = ein verschlüsselter „Schlüsselbund“ auf dem Pi (Collection trips).
+   Aus Benutzername + Passwort wird per PBKDF2 ein Hauptschlüssel abgeleitet, daraus per HKDF
+   die Datensatz-ID, der Zugangsnachweis (X-Trip-Auth) und der AES-GCM-Schlüssel.
+   Der Server sieht nur verschlüsselte Daten und kennt weder Namen noch Passwort.
+   Im Schlüsselbund liegen die Verbindungslinks (Reisen, Haushalt, Spielgruppe, Projekte)
+   und – falls gewünscht – Passwörter der Brief-Profile.
+   Angemeldet bleibt man bis zum Abmelden (localStorage „konto“, gilt für alle Apps derselben Adresse).
+   Face ID: optional über einen Passkey mit PRF-Erweiterung (iOS 18+). */
+const Konto = (() => {
+  const DEFAULT = 'https://kostenpi.tail281e3e.ts.net';
+  const ITER = 310000;
+  const te = t => new TextEncoder().encode(t);
+  const b64e = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const b64d = str => { str = String(str).replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const b = atob(str), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+  const ls = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  };
+  const server = () => { try { return localStorage.getItem('konto-server') || DEFAULT; } catch (e) { return DEFAULT; } };
+  const normUser = u => String(u || '').trim().toLowerCase();
+  const nowIso = () => new Date().toISOString();
 
-/* ---------- Persistenz: Claude-Speicher, sonst Browser-Speicher (z.B. GitHub Pages) ---------- */
-async function saveState(){
-  const json = JSON.stringify(state);
-  try{ await window.storage.set('flip7-state', json); return; }catch(e){}
-  try{ localStorage.setItem('flip7-state', json); }catch(e){}
-}
-async function loadState(){
-  let json = null;
-  try{
-    const r = await window.storage.get('flip7-state');
-    if(r && r.value) json = r.value;
-  }catch(e){}
-  if(!json){
-    try{ json = localStorage.getItem('flip7-state'); }catch(e){}
+  /* ---------- Schlüssel ---------- */
+  async function masterFrom(user, pw) {
+    const base = await crypto.subtle.importKey('raw', te(pw), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: te('anwendungssammlung-konto-v1|' + normUser(user)), iterations: ITER }, base, 256);
+    return b64e(new Uint8Array(bits));
   }
-  if(json){
-    try{
-      state = JSON.parse(json);
-      if(!state.log) state.log = [];
-      state.log.forEach((e,i)=>{ if(!e.id) e.id = 'mig-'+i+'-'+Date.now(); });
-    }catch(e){}
+  const keyCache = new Map();
+  function keys(master, salt) {
+    const ck = salt + '|' + master;
+    if (!keyCache.has(ck)) keyCache.set(ck, (async () => {
+      const s = te(salt);
+      const base = await crypto.subtle.importKey('raw', b64d(master), 'HKDF', false, ['deriveKey', 'deriveBits']);
+      const enc = await crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: s, info: te('enc') }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+      const auth = b64e(new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: s, info: te('auth') }, base, 256)));
+      const idb = new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: s, info: te('id') }, base, 256));
+      const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let id = '';
+      for (let i = 0; i < 15; i++) id += a[idb[i] % 36];
+      return { id, auth, enc };
+    })());
+    return keyCache.get(ck);
   }
-}
+  const vaultKeys = master => keys(master, 'konto-v1');
+  const pkKeys = secret => keys(secret, 'konto-passkey-v1');
+  async function encrypt(key, obj) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te(JSON.stringify(obj)));
+    return 'v1.' + b64e(iv) + '.' + b64e(new Uint8Array(ct));
+  }
+  async function decrypt(key, str) {
+    const p = String(str || '').split('.');
+    if (p.length !== 3 || p[0] !== 'v1') throw new Error('Unbekanntes Datenformat');
+    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(p[1]) }, key, b64d(p[2]))));
+  }
+
+  /* ---------- Server ---------- */
+  async function api(method, path, auth, body) {
+    const h = {}; if (auth) h['X-Trip-Auth'] = auth; if (body) h['Content-Type'] = 'application/json';
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 15000);
+    try {
+      const r = await fetch(server() + '/api/collections/trips/records' + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', signal: ctl.signal });
+      let j = null; try { j = await r.json(); } catch (e) {}
+      return { status: r.status, json: j };
+    } catch (e) {
+      const err = new Error('Server nicht erreichbar'); err.offline = true; throw err;
+    } finally { clearTimeout(to); }
+  }
+  const fail = r => { const e = new Error('Server antwortet mit ' + r.status); e.status = r.status; return e; };
+
+  /* ---------- Schlüsselbund zusammenführen ---------- */
+  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {} }; }
+  function clean(v, user) {
+    v = v && typeof v === 'object' ? v : {};
+    return { v: 1, user: v.user || user || '', items: v.items && typeof v.items === 'object' ? v.items : {},
+      deleted: v.deleted && typeof v.deleted === 'object' ? v.deleted : {}, passkeys: v.passkeys && typeof v.passkeys === 'object' ? v.passkeys : {} };
+  }
+  function merge(a, b) {
+    a = clean(a); b = clean(b);
+    const out = emptyVault(a.user || b.user);
+    const cut = new Date(Date.now() - 365 * 864e5).toISOString();
+    for (const d of [a.deleted, b.deleted]) for (const k in d) if (d[k] >= cut && (!out.deleted[k] || d[k] > out.deleted[k])) out.deleted[k] = d[k];
+    for (const src of [a.items, b.items]) for (const k in src) {
+      const x = src[k], o = out.items[k];
+      if (!o || (x.updatedAt || '') > (o.updatedAt || '') || ((x.updatedAt || '') === (o.updatedAt || '') && JSON.stringify(x) > JSON.stringify(o))) out.items[k] = x;
+    }
+    for (const k in out.items) if (out.deleted[k] && out.deleted[k] >= (out.items[k].updatedAt || '')) delete out.items[k];
+    for (const src of [a.passkeys, b.passkeys]) for (const k in src) if (!out.passkeys[k] || (src[k].createdAt || '') > (out.passkeys[k].createdAt || '')) out.passkeys[k] = src[k];
+    for (const k in out.passkeys) if (out.deleted['pk:' + k]) delete out.passkeys[k];
+    return out;
+  }
+  const canon = v => { const s = x => Array.isArray(x) ? '[' + x.map(s).join(',') + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map(k => JSON.stringify(k) + ':' + s(x[k])).join(',') + '}' : JSON.stringify(x); return s(v); };
+
+  /* ---------- Sitzung ---------- */
+  const session = () => { const s = ls.get('konto'); return s && s.master && s.user ? s : null; };
+  const cache = () => clean(ls.get('konto-cache'), (session() || {}).user);
+  const listeners = new Set();
+  const emit = () => listeners.forEach(fn => { try { fn(); } catch (e) {} });
+
+  async function fetchVault(master) {
+    const k = await vaultKeys(master);
+    const r = await api('GET', '/' + k.id, k.auth);
+    if (r.status === 404) return null;
+    if (r.status !== 200 || !r.json) throw fail(r);
+    return { vault: clean(await decrypt(k.enc, r.json.data)), rev: +r.json.rev || 0 };
+  }
+  async function createVault(master, vault) {
+    const k = await vaultKeys(master);
+    const r = await api('POST', '', null, { id: k.id, auth: k.auth, data: await encrypt(k.enc, vault), rev: 1 });
+    if (r.status !== 200) throw fail(r);
+  }
+
+  let busy = null, again = false;
+  /* Abgleich: holen, zusammenführen, bei Bedarf zurückschreiben */
+  async function sync() {
+    const s = session(); if (!s) return null;
+    if (busy) { again = true; return busy; }
+    busy = (async () => {
+      try {
+        const k = await vaultKeys(s.master);
+        for (let round = 0; round < 4; round++) {
+          const r = await api('GET', '/' + k.id, k.auth);
+          if (r.status === 404) { const e = new Error('Konto nicht mehr vorhanden'); e.gone = true; throw e; }
+          if (r.status !== 200 || !r.json) throw fail(r);
+          const remote = clean(await decrypt(k.enc, r.json.data), s.user);
+          const local = ls.get('konto-cache') ? cache() : remote;
+          const merged = merge(local, remote);
+          ls.set('konto-cache', merged);
+          if (canon(merged) === canon(remote)) { ls.set('konto-state', { at: nowIso(), err: '' }); break; }
+          const u = await api('PATCH', '/' + k.id, k.auth, { data: await encrypt(k.enc, merged), rev: (+r.json.rev || 0) + 1 });
+          if (u.status === 200) { ls.set('konto-state', { at: nowIso(), err: '' }); break; }
+          if (u.status !== 400 && u.status !== 409) throw fail(u);
+        }
+        emit();
+        return cache();
+      } catch (e) {
+        ls.set('konto-state', { at: (ls.get('konto-state') || {}).at || null, err: e.message || 'Fehler' });
+        if (e.gone) { logout(); emit(); }
+        throw e;
+      } finally {
+        busy = null;
+        if (again) { again = false; setTimeout(() => sync().catch(() => {}), 50); }
+      }
+    })();
+    return busy;
+  }
+
+  async function login(user, pw) {
+    user = String(user || '').trim();
+    if (!user || !pw) throw new Error('Bitte Benutzername und Passwort eingeben.');
+    const master = await masterFrom(user, pw);
+    const f = await fetchVault(master);
+    if (!f) return { notFound: true };
+    ls.set('konto', { user: f.vault.user || user, master, at: nowIso() });
+    ls.set('konto-cache', f.vault);
+    emit();
+    return { ok: true };
+  }
+  async function register(user, pw) {
+    user = String(user || '').trim();
+    if (user.length < 2) throw new Error('Der Benutzername braucht mindestens 2 Zeichen.');
+    if (String(pw || '').length < 8) throw new Error('Das Passwort braucht mindestens 8 Zeichen.');
+    const master = await masterFrom(user, pw);
+    const f = await fetchVault(master);
+    if (f) { ls.set('konto', { user: f.vault.user || user, master, at: nowIso() }); ls.set('konto-cache', f.vault); emit(); return { existed: true }; }
+    await createVault(master, emptyVault(user));
+    ls.set('konto', { user, master, at: nowIso() });
+    ls.set('konto-cache', emptyVault(user));
+    emit();
+    return { ok: true };
+  }
+  function logout() { ['konto', 'konto-cache', 'konto-state'].forEach(ls.del); keyCache.clear(); emit(); }
+  async function changePassword(oldPw, newPw) {
+    const s = session(); if (!s) throw new Error('Nicht angemeldet.');
+    if (String(newPw || '').length < 8) throw new Error('Das neue Passwort braucht mindestens 8 Zeichen.');
+    if ((await masterFrom(s.user, oldPw)) !== s.master) throw new Error('Das bisherige Passwort stimmt nicht.');
+    const v = await sync();
+    const nm = await masterFrom(s.user, newPw);
+    await createVault(nm, v);
+    for (const cid in v.passkeys) {   // Face-ID-Zugänge auf den neuen Schlüssel umstellen
+      const p = v.passkeys[cid], pk = await pkKeys(p.secret);
+      await api('PATCH', '/' + pk.id, pk.auth, { data: await encrypt(pk.enc, { user: s.user, master: nm }), rev: 2 });
+    }
+    const ok = await vaultKeys(s.master);
+    await api('DELETE', '/' + ok.id, ok.auth);
+    ls.set('konto', { user: s.user, master: nm, at: nowIso() });
+    emit();
+  }
+
+  /* ---------- Einträge ---------- */
+  function items(app) {
+    const v = cache();
+    return Object.keys(v.items).filter(k => !app || v.items[k].app === app).map(k => Object.assign({ key: k }, v.items[k]));
+  }
+  function put(key, item) {
+    if (!session()) return false;
+    const v = cache();
+    const old = v.items[key];
+    const nx = Object.assign({}, item, { updatedAt: nowIso() });
+    if (old) { const a = Object.assign({}, old), b = Object.assign({}, nx); delete a.updatedAt; delete b.updatedAt; if (canon(a) === canon(b)) return false; }
+    v.items[key] = nx; delete v.deleted[key];
+    ls.set('konto-cache', v);
+    sync().catch(() => {});
+    return true;
+  }
+  function remove(key) {
+    if (!session()) return false;
+    const v = cache();
+    if (!v.items[key]) return false;
+    delete v.items[key]; v.deleted[key] = nowIso();
+    ls.set('konto-cache', v);
+    sync().catch(() => {});
+    return true;
+  }
+
+  /* ---------- Face ID (Passkey mit PRF) ---------- */
+  const PRF_SALT = te('anwendungssammlung-konto-prf-v1');
+  const rpId = () => location.hostname;
+  async function passkeySupported() {
+    try {
+      if (!window.PublicKeyCredential || !navigator.credentials || location.protocol !== 'https:') return false;
+      if (PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable && !(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())) return false;
+      if (PublicKeyCredential.getClientCapabilities) { const c = await PublicKeyCredential.getClientCapabilities(); if (c && c['extension:prf'] === false) return false; }
+      return true;
+    } catch (e) { return false; }
+  }
+  const prfOut = cred => { const x = cred.getClientExtensionResults && cred.getClientExtensionResults(); return x && x.prf && x.prf.results && x.prf.results.first ? new Uint8Array(x.prf.results.first) : null; };
+  async function enablePasskey() {
+    const s = session(); if (!s) throw new Error('Nicht angemeldet.');
+    const cred = await navigator.credentials.create({ publicKey: {
+      rp: { name: 'Anwendungssammlung', id: rpId() },
+      user: { id: crypto.getRandomValues(new Uint8Array(16)), name: s.user, displayName: s.user },
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: { residentKey: 'required', userVerification: 'required', authenticatorAttachment: 'platform' },
+      extensions: { prf: { eval: { first: PRF_SALT } } },
+    } });
+    let out = prfOut(cred);
+    if (!out) {   // manche Geräte liefern das Ergebnis erst bei der ersten Anmeldung
+      const a = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: rpId(), userVerification: 'required',
+        allowCredentials: [{ type: 'public-key', id: cred.rawId }], extensions: { prf: { eval: { first: PRF_SALT } } } } });
+      out = prfOut(a);
+    }
+    if (!out) throw new Error('Dieses Gerät unterstützt die Anmeldung per Face ID für Web-Apps noch nicht (nötig: iOS 18 oder neuer).');
+    const secret = b64e(out), pk = await pkKeys(secret);
+    const r = await api('POST', '', null, { id: pk.id, auth: pk.auth, data: await encrypt(pk.enc, { user: s.user, master: s.master }), rev: 1 });
+    if (r.status !== 200 && r.status !== 400) throw fail(r);
+    const v = cache(); const cid = b64e(new Uint8Array(cred.rawId));
+    v.passkeys[cid] = { secret, createdAt: nowIso(), device: (navigator.platform || 'Gerät') };
+    ls.set('konto-cache', v); await sync();
+    ls.set('konto-passkey', true);
+    return true;
+  }
+  async function loginWithPasskey() {
+    const a = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: rpId(), userVerification: 'required',
+      extensions: { prf: { eval: { first: PRF_SALT } } } }, mediation: 'optional' });
+    const out = prfOut(a);
+    if (!out) throw new Error('Face ID hat keinen Schlüssel geliefert. Bitte mit Passwort anmelden.');
+    const pk = await pkKeys(b64e(out));
+    const r = await api('GET', '/' + pk.id, pk.auth);
+    if (r.status === 404) throw new Error('Für diesen Passkey ist kein Konto hinterlegt. Bitte mit Passwort anmelden und Face ID neu einrichten.');
+    if (r.status !== 200 || !r.json) throw fail(r);
+    const d = await decrypt(pk.enc, r.json.data);
+    const f = await fetchVault(d.master);
+    if (!f) throw new Error('Konto nicht gefunden.');
+    ls.set('konto', { user: d.user, master: d.master, at: nowIso() });
+    ls.set('konto-cache', f.vault);
+    emit();
+    return { ok: true };
+  }
+
+  return {
+    session, user: () => (session() || {}).user || '', loggedIn: () => !!session(), state: () => ls.get('konto-state') || {},
+    login, register, logout, changePassword, sync, items, put, remove, onChange: fn => listeners.add(fn),
+    passkeySupported, enablePasskey, loginWithPasskey, hasPasskey: () => Object.keys(cache().passkeys).length > 0,
+    _merge: merge,
+  };
+})();
+
+</script>
+<script>
+/* ---------- Symbole (weiße bzw. getönte Linien-SVGs) ---------- */
+const LT_SVG = d => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const LT_IC = {
+  pen:   LT_SVG('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
+  image: LT_SVG('<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 16l-4.5-4.5L7 19.5"/>'),
+  trash: LT_SVG('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+  lock:  LT_SVG('<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'),
+  chev:  '<svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+};
 
 /* ---------- Navigation ---------- */
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if(id==='scr-setup') renderSetup();
-  if(id==='scr-game') renderGame();
-  if(id==='scr-imp-setup') impRenderSetup();
-  if(id==='scr-imp-cat') impRenderCats();
-  if(id==='scr-tr-setup') trRenderSetup();
-  if(id==='scr-tr-game') trRenderGame();
-  if(id==='scr-uno-setup') unoRenderSetup();
-  if(id==='scr-uno-game') unoRenderGame();
   if(id==='scr-lt-profiles') ltRenderProfiles();
+  if(id==='scr-konto') kontoRenderPage();
+  if(id==='scr-konto-login') kontoRenderLogin();
+  window.scrollTo(0,0);
   if(id==='scr-lt-editor') ltRenderEditor();
   if(id==='scr-lt-ai') ltSetTone(ltTone);
   if(id==='scr-lt-preview') ltSetWindowMarks(ltWinMarks);
-  if(id==='scr-poker'){ pkRenderSlots(); poker.result?pkRenderResult():document.getElementById('pk-result').innerHTML='<div class="pk-result-empty">Wähle deine 2 Karten, um die Gewinnwahrscheinlichkeit zu sehen.</div>'; }
-}
-function openFlip7(){
-  show(state.players.length ? 'scr-game' : 'scr-setup');
-}
-
-/* ---------- Spieler-Setup ---------- */
-function addPlayer(){
-  const inp = document.getElementById('name-input');
-  const name = inp.value.trim();
-  if(!name) return;
-  state.players.push({ id: Date.now()+''+Math.random(), name, scores: [] });
-  inp.value=''; inp.focus();
-  saveState(); renderSetup();
 }
 document.addEventListener('DOMContentLoaded', ()=>{
-  document.getElementById('name-input').addEventListener('keydown', e=>{
-    if(e.key==='Enter') addPlayer();
-  });
-  document.getElementById('imp-name-input').addEventListener('keydown', e=>{
-    if(e.key==='Enter') impAddPlayer();
-  });
-  document.getElementById('tr-name-input').addEventListener('keydown', e=>{
-    if(e.key==='Enter') trAddPlayer();
-  });
-  const unoIn=document.getElementById('uno-name-input');
-  if(unoIn) unoIn.addEventListener('keydown', e=>{ if(e.key==='Enter') unoAddPlayer(); });
   const unlockInput=document.getElementById('lt-unlock-pass');
   if(unlockInput) unlockInput.addEventListener('keydown', e=>{ if(e.key==='Enter') ltUnlock(); });
 });
-function removePlayer(id){
-  state.players = state.players.filter(p=>p.id!==id);
-  state.log = state.log.filter(l=>l.playerId!==id);
-  saveState(); renderSetup();
-}
-function renderSetup(){
-  const list = document.getElementById('setup-list');
-  if(!state.players.length){
-    list.innerHTML = '<div class="empty">Noch keine Spieler.<br>Füge oben Namen hinzu.</div>';
-  }else{
-    list.innerHTML = state.players.map((p,i)=>`
-      <div class="prow">
-        <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
-        <span>${esc(p.name)}</span>
-        <button class="del" onclick="removePlayer('${p.id}')">✕</button>
-      </div>`).join('');
-  }
-  document.getElementById('start-btn').disabled = state.players.length < 1;
-}
-function startGame(){ show('scr-game'); }
 
-/* ---------- Spiel-Logik ---------- */
-const total = p => p.scores.reduce((a,b)=>a+b,0);
-
-// Punktestände immer aus dem Eintrags-Log ableiten (hält alles konsistent)
-function rebuildScores(){
-  state.players.forEach(p=>{
-    p.scores = state.log.filter(l=>l.playerId===p.id).map(l=>l.points);
-  });
-}
-function addPoints(id, pts){
-  const p = state.players.find(x=>x.id===id);
-  if(!p) return;
-  state.log.push({ id: Date.now()+''+Math.random(), playerId:id, points:pts });
-  rebuildScores();
-  saveState(); renderGame();
-}
-function editLogEntry(logId, pts){
-  const e = state.log.find(l=>l.id===logId);
-  if(!e) return;
-  e.points = pts;
-  rebuildScores();
-  saveState(); renderGame();
-}
-function deleteLogEntry(logId){
-  state.log = state.log.filter(l=>l.id!==logId);
-  rebuildScores();
-  saveState(); renderGame();
-}
-function undoLast(){
-  if(!state.log.length) return;
-  state.log.pop();
-  rebuildScores();
-  saveState(); renderGame();
-}
-function resetGame(){
-  ask('Punkte aller Spieler löschen?', ()=>{
-    state.players.forEach(p=>p.scores=[]);
-    state.log = [];
-    saveState(); renderGame();
-  }, 'Ja, löschen', null,
-  {detail:'Alle Punktestände werden auf 0 gesetzt und der Eingabe-Verlauf geleert. Die Spieler bleiben erhalten. Das lässt sich nicht rückgängig machen.',
-   noLabel:'Nein, behalten'});
-}
-
-/* ---------- Rendering ---------- */
-function setView(v){
-  state.view = v; saveState();
-  document.getElementById('tab-list').classList.toggle('on', v==='list');
-  document.getElementById('tab-chart').classList.toggle('on', v==='chart');
-  document.getElementById('view-list').style.display = v==='list' ? '' : 'none';
-  document.getElementById('view-chart').style.display = v==='chart' ? '' : 'none';
-}
-function renderGame(){
-  setView(state.view || 'list');
-  const rounds = Math.max(0, ...state.players.map(p=>p.scores.length));
-  document.getElementById('round-info').textContent =
-    rounds ? `Runde ${rounds}` : 'Noch keine Punkte eingetragen';
-
-  // Gewinner: bei mehreren über 200 gewinnt die höchste Punktzahl
-  const over = state.players.filter(p=>total(p)>=GOAL);
-  const maxOver = over.length ? Math.max(...over.map(p=>total(p))) : null;
-
-  /* Listenansicht – sortiert nach Punkten, mit Platz und Rückstand zum Vordermann */
-  const ranked = [...state.players].sort((a,b)=>total(b)-total(a));
-  document.getElementById('view-list').innerHTML = ranked.map((p,idx)=>{
-    const i = state.players.indexOf(p);
-    const t = total(p);
-    const missing = Math.max(0, GOAL - t);
-    const pct = Math.min(100, t/GOAL*100);
-    const color = COLORS[i%COLORS.length];
-    const reached = t >= GOAL;
-    const won = reached && t === maxOver;
-    const rankCls = idx===0?'r1':idx===1?'r2':idx===2?'r3':'';
-    // Rückstand zum Platz davor
-    const gapAhead = idx>0 ? total(ranked[idx-1]) - t : 0;
-    const gapTxt = idx===0
-      ? (state.players.length>1 ? '<span class="lead">Führung</span>' : '')
-      : `<span class="gap">−${gapAhead} zu Platz ${idx}</span>`;
-    return `
-    <div class="score-card">
-      <div class="sc-top">
-        <span class="rank-badge ${rankCls}">${idx+1}.</span>
-        <span class="name">${esc(p.name)}</span>
-        ${won ? '<span class="winner-tag">🏆 Gewonnen!</span>' :
-          reached ? '<span class="winner-tag" style="background:var(--surface2);color:var(--muted)">🎯 200 erreicht</span>' : ''}
-        <span class="total" style="color:${color}">${t}</span>
-      </div>
-      <div class="sc-meta">
-        ${gapTxt}
-        <span class="miss">${won ? 'Höchste Punktzahl – Sieg!' : reached ? 'jemand hat mehr' : `noch <b>${missing}</b> bis 200`}</span>
-      </div>
-      <div class="track"><i style="width:${pct}%;background:${color}"></i></div>
-      <div class="sc-actions">
-        <button onclick="addPoints('${p.id}',1)">+1</button>
-        <button onclick="addPoints('${p.id}',5)">+5</button>
-        <button onclick="addPoints('${p.id}',10)">+10</button>
-        <button class="big" onclick="openPad('${p.id}')">Eingeben</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  /* Diagrammansicht */
-  const sorted = [...state.players].sort((a,b)=>total(b)-total(a));
-  const bars = sorted.map((p,idx)=>{
-    const t = total(p);
-    const pct = Math.min(100, t/GOAL*100);
-    const i = state.players.indexOf(p);
-    const rankCls = idx===0?'r1':idx===1?'r2':idx===2?'r3':'';
-    const won = t >= GOAL && t === maxOver;
-    const gapAhead = idx>0 ? total(sorted[idx-1]) - t : 0;
-    const gapTxt = idx>0 ? ` · <span class="gap">−${gapAhead}</span>` : '';
-    return `
-    <div class="bar-row">
-      <div class="rank ${rankCls}">${idx+1}.</div>
-      <div class="bar-info">
-        <div class="bar-label"><b>${won?'🏆 ':''}${esc(p.name)}</b><span>${t} / ${GOAL}${gapTxt}</span></div>
-        <div class="bar-bg">
-          <div class="bar-fill" style="width:${pct}%;background:${COLORS[i%COLORS.length]}"></div>
-          <div class="goal-line"></div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  const recent = [...state.log].slice(-8).reverse();
-  const history = `
-    <div class="history">
-      <h4>Letzte Eingaben · Tippen zum Bearbeiten</h4>
-      ${recent.length ? recent.map(e=>{
-        const p = state.players.find(x=>x.id===e.playerId);
-        if(!p) return '';
-        const i = state.players.indexOf(p);
-        return `
-        <button class="h-row" onclick="openPadEdit('${e.id}')">
-          <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
-          <span class="h-name">${esc(p.name)}</span>
-          <span class="h-pts">+${e.points}</span>
-          <span class="h-edit">✎</span>
-        </button>`;
-      }).join('') : '<div class="empty">Noch keine Eingaben.</div>'}
-    </div>`;
-
-  document.getElementById('view-chart').innerHTML = bars + history;
-}
-
-/* ---------- Nummernpad ---------- */
-function openPad(id){
-  padTarget = id; padValue = ''; padEditId = null; padTrackerId = null; padNeg = false; padCfg = null; padPrefilled = false;
-  const p = state.players.find(x=>x.id===id);
-  document.getElementById('pad-title').textContent = 'Punkte für ' + p.name;
-  document.getElementById('pad-display').textContent = '0';
-  document.getElementById('pad-ok').textContent = 'Hinzufügen';
-  document.getElementById('pad-delete').style.display = 'none';
-  document.getElementById('pad-sign').style.display = 'none';
-  document.getElementById('pad-modal').classList.add('open');
-}
-function openPadEdit(logId){
-  const e = state.log.find(l=>l.id===logId);
-  if(!e) return;
-  const p = state.players.find(x=>x.id===e.playerId);
-  padTarget = null; padEditId = logId; padTrackerId = null; padNeg = false; padCfg = null; padValue = String(e.points); padPrefilled = true;
-  document.getElementById('pad-title').textContent = 'Eintrag bearbeiten – ' + (p?p.name:'');
-  document.getElementById('pad-display').textContent = padValue;
-  document.getElementById('pad-ok').textContent = 'Speichern';
-  document.getElementById('pad-delete').style.display = '';
-  document.getElementById('pad-sign').style.display = 'none';
-  document.getElementById('pad-modal').classList.add('open');
-}
-function closePad(){ padCfg=null; document.getElementById('pad-modal').classList.remove('open'); }
-function padDelete(){
-  const id = padEditId;
-  closePad();
-  if(id) deleteLogEntry(id);
-}
-function padKey(n){
-  if(padPrefilled){ padValue=''; padPrefilled=false; }
-  if(padValue.length >= 4) return;
-  padValue = (padValue + n).replace(/^0+(?=\d)/,'');
-  padUpdateDisplay();
-}
-function padBack(){
-  padPrefilled=false;
-  padValue = padValue.slice(0,-1);
-  padUpdateDisplay();
-}
-function padClear(){
-  padValue = ''; padNeg = false; padPrefilled=false;
-  padUpdateDisplay();
-}
-function padConfirm(){
-  const raw = parseInt(padValue || '0', 10);
-  const editId = padEditId, target = padTarget, trId = padTrackerId, neg = padNeg, cfg = padCfg;
-  closePad();
-  if(cfg){
-    const v = isNaN(raw) ? 0 : raw;
-    const clamped = Math.min(cfg.max, Math.max(cfg.min, v));
-    cfg.apply(clamped);
-    return;
-  }
-  if(trId){
-    if(raw > 0) trChange(trId, neg ? -raw : raw);
-  }else if(editId){
-    if(raw > 0) editLogEntry(editId, raw);
-    else deleteLogEntry(editId);
-  }else if(raw > 0 && target){
-    addPoints(target, raw);
-  }
-}
-
-/* ---------- Zahlenpad für Einstellungswerte ---------- */
-function openCfgPad(title, current, min, max, applyFn){
-  padTarget=null; padEditId=null; padTrackerId=null; padNeg=false;
-  padValue = String(current); padPrefilled = true;
-  padCfg = {min, max, apply: applyFn};
-  document.getElementById('pad-title').textContent = title + ` (${min}–${max})`;
-  document.getElementById('pad-display').textContent = padValue;
-  document.getElementById('pad-ok').textContent = 'Übernehmen';
-  document.getElementById('pad-delete').style.display = 'none';
-  document.getElementById('pad-sign').style.display = 'none';
-  document.getElementById('pad-modal').classList.add('open');
-}
-function trOpenCfgPad(key){
-  const limits={start:[0,999],step:[1,99]};
-  const [min,max]=limits[key];
-  const title = key==='start' ? 'Startwert' : 'Schrittweite';
-  openCfgPad(title, tr[key], min, max, v=>{
-    if(key==='start') trSetStart(v);
-    else { tr[key]=v; trSave(); trRenderSetup(); }
-  });
-}
-/* ==================== IMPOSTER ==================== */
-const CATEGORIES = {
-  'Städte': { emoji:'🌆', words:['Berlin','Paris','London','New York','Tokio','Rom','Madrid','Wien','Amsterdam','Barcelona','Lissabon','Prag','Budapest','Istanbul','Dubai','Sydney','Los Angeles','Chicago','Toronto','Rio de Janeiro','Kapstadt','Moskau','Peking','Hongkong','Singapur','Bangkok','Mumbai','Kairo','Athen','Stockholm','Oslo','Kopenhagen','Zürich','München','Hamburg','Köln','Venedig','Florenz','Dublin','Las Vegas'] },
-  'Ü18 Begriffe': { emoji:'🔞', words:['Handschellen','Striptease','Dessous','Lapdance','One-Night-Stand','Seitensprung','Knutschfleck','Dirty Talk','Massageöl','Rotlichtviertel','Junggesellenabschied','Verführung','Aktfoto','Peepshow','Bettgeflüster','Kamasutra','Stripclub','Poledance','Aphrodisiakum','Nacktbaden','FKK-Strand','Casanova','Playboy','Blind Date','Tinder-Date','Flitterwochen','Bettkante','Morgen danach','Hotelzimmer','Whirlpool','Champagnerfrühstück','Liebesschwur','Kuschelalarm','Pikantes Foto','Bettgeschichte','Schürzenjäger','Nachtclub','Verbotene Liebe','Wilde Nacht','Techtelmechtel'] },
-  'Berufe': { emoji:'🧑‍🚒', words:['Arzt','Lehrer','Polizist','Feuerwehrmann','Pilot','Koch','Bäcker','Friseur','Anwalt','Richter','Zahnarzt','Tierarzt','Ingenieur','Architekt','Elektriker','Klempner','Gärtner','Landwirt','Kellner','Barkeeper','Metzger','Schreiner','Maler','Mechaniker','Busfahrer','Taxifahrer','Astronaut','Wissenschaftler','Apotheker','Krankenpfleger','Journalist','Fotograf','Schauspieler','Sänger','Tänzer','Profifußballer','Briefträger','Bibliothekar','Programmierer','Schornsteinfeger'] },
-  'Tiere': { emoji:'🦁', words:['Hund','Katze','Elefant','Löwe','Tiger','Giraffe','Zebra','Affe','Pinguin','Delfin','Wal','Hai','Adler','Eule','Papagei','Schlange','Krokodil','Schildkröte','Frosch','Biene','Schmetterling','Spinne','Ameise','Pferd','Kuh','Schwein','Schaf','Ziege','Huhn','Ente','Fuchs','Wolf','Bär','Igel','Eichhörnchen','Hase','Maus','Fledermaus','Känguru','Panda'] },
-  'Essen & Trinken': { emoji:'🍕', words:['Pizza','Spaghetti','Burger','Pommes','Döner','Sushi','Schnitzel','Bratwurst','Brezel','Käsekuchen','Schokolade','Eis','Gummibärchen','Popcorn','Salat','Suppe','Lasagne','Pfannkuchen','Müsli','Joghurt','Käse','Brot','Honig','Marmelade','Kaffee','Tee','Cola','Orangensaft','Bier','Wein','Sekt','Smoothie','Milchshake','Apfel','Banane','Erdbeere','Wassermelone','Avocado','Currywurst','Raclette'] },
-  'Sport & Freizeit': { emoji:'⚽️', words:['Fußball','Basketball','Tennis','Golf','Schwimmen','Joggen','Radfahren','Skifahren','Snowboarden','Surfen','Klettern','Wandern','Yoga','Boxen','Karate','Tanzen','Reiten','Angeln','Segeln','Tauchen','Volleyball','Handball','Tischtennis','Badminton','Bowling','Billard','Darts','Schach','Skateboarden','Eislaufen','Turnen','Marathon','Fitnessstudio','Zumba','Pilates','Rudern','Hockey','Minigolf','Trampolin','Camping'] },
-  'Alltagsgegenstände': { emoji:'🧴', words:['Zahnbürste','Handtuch','Kissen','Wecker','Spiegel','Kamm','Schere','Regenschirm','Schlüssel','Geldbeutel','Brille','Sonnenbrille','Armbanduhr','Handy','Kopfhörer','Fernbedienung','Laptop','Ladekabel','Glühbirne','Kerze','Feuerzeug','Besen','Staubsauger','Waschmaschine','Kühlschrank','Mikrowelle','Toaster','Wasserkocher','Pfanne','Topf','Teller','Tasse','Gabel','Messer','Löffel','Flasche','Rucksack','Mülleimer','Bügeleisen','Gießkanne'] }
-};
-
-const SCENARIOS = [
-  {name:'Flugzeug', emoji:'✈️', roles:['Pilot','Co-Pilot','Flugbegleiterin','Air Marshall','Fluglotse','Bodenpersonal','Bordmechaniker','Passagier','Steward','Sicherheitsbegleiter']},
-  {name:'Krankenhaus', emoji:'🏥', roles:['Chefarzt','Chirurg','Krankenpfleger','Anästhesist','Patient','Empfangskraft','Sanitäter','Hebamme','Reinigungskraft','Stationsarzt']},
-  {name:'Restaurant', emoji:'🍽️', roles:['Küchenchef','Kellner','Sommelier','Tellerwäscher','Gastgeber','Barkeeper','Gast','Souschef','Aushilfe','Restaurantkritiker']},
-  {name:'Schule', emoji:'🏫', roles:['Lehrer','Schüler','Direktor','Hausmeister','Sekretärin','Schulpsychologe','Sportlehrer','Vertretungslehrer','Küchenpersonal','Referendar']},
-  {name:'Hotel', emoji:'🏨', roles:['Rezeptionist','Zimmermädchen','Hotelmanager','Page','Concierge','Hotelkoch','Gast','Portier','Nachtwächter','Barkeeper']},
-  {name:'Kreuzfahrtschiff', emoji:'🚢', roles:['Kapitän','Matrose','Animateur','Schiffskoch','Passagier','Bordarzt','Kellner','Maschinist','Bademeister','Bordsängerin']},
-  {name:'Bank', emoji:'🏦', roles:['Bankberater','Kassierer','Filialleiter','Wachmann','Kunde','Vermögensberater','Auszubildender','Reinigungskraft','Geldbote','IT-Techniker']},
-  {name:'Filmset', emoji:'🎬', roles:['Regisseur','Hauptdarsteller','Kameramann','Maskenbildner','Statist','Produzent','Tontechniker','Stuntman','Drehbuchautor','Beleuchter']},
-  {name:'Baustelle', emoji:'🏗️', roles:['Polier','Maurer','Kranführer','Architekt','Elektriker','Bauleiter','Dachdecker','Zimmermann','Bauhelfer','Statiker']},
-  {name:'Fußballstadion', emoji:'🏟️', roles:['Spieler','Schiedsrichter','Trainer','Fan','Stadionsprecher','Ordner','Physiotherapeut','Bratwurstverkäufer','Kameramann','Balljunge']},
-  {name:'Zoo', emoji:'🦁', roles:['Tierpfleger','Tierarzt','Besucher','Kassierer','Zoodirektor','Gärtner','Souvenirverkäufer','Reinigungskraft','Tierführer','Falkner']},
-  {name:'Flughafen', emoji:'🛫', roles:['Check-in-Personal','Sicherheitskontrolleur','Zollbeamter','Gepäckträger','Passagier','Info-Schalter','Pilot','Reinigungskraft','Duty-Free-Verkäufer','Fluglotse']},
-  {name:'Supermarkt', emoji:'🛒', roles:['Kassierer','Filialleiter','Regalauffüller','Metzger','Bäcker','Kunde','Wachmann','Reinigungskraft','Lieferant','Auszubildender']},
-  {name:'Polizeirevier', emoji:'🚓', roles:['Kommissar','Streifenpolizist','Wachhabender','Verdächtiger','Anwalt','Spurensicherung','Praktikant','Empfang','Hundeführer','Zeuge']},
-  {name:'Theater', emoji:'🎭', roles:['Schauspieler','Regisseur','Souffleur','Bühnenbildner','Zuschauer','Platzanweiser','Beleuchter','Kostümbildner','Intendant','Orchestermusiker']},
-  {name:'Bauernhof', emoji:'🚜', roles:['Bauer','Melker','Traktorfahrer','Tierarzt','Erntehelfer','Hofladen-Verkäufer','Praktikant','Imker','Schäfer','Hufschmied']},
-];
-let imp = { players: [], mode:'word', category: null, scenario:null, scenarioEmoji:'', assign:[], roles: [], word: null, revealIndex: 0, starter: null };
-
-function openImposter(){ show('scr-imp-setup'); }
-
-function impAddPlayer(){
-  const inp = document.getElementById('imp-name-input');
-  const name = inp.value.trim();
-  if(!name) return;
-  imp.players.push(name);
-  inp.value=''; inp.focus();
-  impRenderSetup();
-}
-function impRemovePlayer(i){
-  imp.players.splice(i,1);
-  impRenderSetup();
-}
-function impRenderSetup(){
-  const list = document.getElementById('imp-setup-list');
-  if(!imp.players.length){
-    list.innerHTML = '<div class="empty">Noch keine Spieler.<br>Füge oben Namen hinzu.</div>';
-  }else{
-    list.innerHTML = imp.players.map((n,i)=>`
-      <div class="prow">
-        <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
-        <span>${esc(n)}</span>
-        <button class="del" onclick="impRemovePlayer(${i})">✕</button>
-      </div>`).join('');
-  }
-  document.getElementById('imp-next-btn').disabled = imp.players.length < 3;
-}
-function impRenderCats(){
-  document.getElementById('cat-grid').innerHTML = Object.keys(CATEGORIES).map(c=>`
-    <button class="cat-btn" onclick="impPickCategory('${c}')">
-      <span class="emoji">${CATEGORIES[c].emoji}</span>
-      <b>${c}</b>
-      <small>${CATEGORIES[c].words.length} Wörter</small>
+/* ---------- Aktionsmenü (Bottom-Sheet mit getönten Symbolkacheln) ---------- */
+let optItems=[];
+function optionsSheet(title, sub, opts){
+  optItems=opts.filter(Boolean);
+  document.getElementById('opt-title').textContent=title;
+  const subEl=document.getElementById('opt-sub');
+  subEl.textContent=sub||''; subEl.style.display=sub?'':'none';
+  document.getElementById('opt-list').innerHTML=optItems.map((o,i)=>
+    `<button type="button" class="opt tone-${o.tone||'blue'}${o.danger?' danger':''}" onclick="optRun(${i})">
+      <span class="oic">${o.icon||''}</span>
+      <span class="grow">${esc(o.label)}${o.hint?`<small>${esc(o.hint)}</small>`:''}</span>
     </button>`).join('');
-  impSetMode(imp.mode||'word');
+  document.getElementById('opt-modal').classList.add('open');
 }
-function impSetMode(m){
-  imp.mode=m;
-  document.getElementById('imp-mode-word').classList.toggle('on', m==='word');
-  document.getElementById('imp-mode-scn').classList.toggle('on', m==='scenario');
-  document.getElementById('imp-word-panel').style.display = m==='word'?'':'none';
-  document.getElementById('imp-scenario-panel').style.display = m==='scenario'?'':'none';
-}
-function impPickCategory(c){
-  imp.mode='word';
-  imp.category = c;
-  impStartRound();
-}
-function impStartScenario(){
-  imp.mode='scenario';
-  impStartRound();
-}
-// Imposter + Startspieler bestimmen (für beide Modi gleich)
-function impPrepareRoles(){
-  const n = imp.players.length;
-  const imposterIdx = Math.floor(Math.random()*n);
-  imp.roles = imp.players.map((_,i)=> i===imposterIdx ? 'imposter' : 'innocent');
-  // Startspieler gewichtet: Unschuldige Gewicht 4, Imposter Gewicht 1
-  const weights = imp.roles.map(r => r==='imposter' ? 1 : 4);
-  const sum = weights.reduce((a,b)=>a+b,0);
-  let r = Math.random()*sum, starterIdx = 0;
-  for(let i=0;i<n;i++){ r -= weights[i]; if(r<0){ starterIdx=i; break; } }
-  imp.starter = imp.players[starterIdx];
-  imp.revealIndex = 0;
-}
-function impStartRound(){
-  impPrepareRoles();
-  if(imp.mode==='scenario'){
-    const scn = SCENARIOS[Math.floor(Math.random()*SCENARIOS.length)];
-    imp.scenario = scn.name;
-    imp.scenarioEmoji = scn.emoji;
-    // Rollen an Unschuldige verteilen (bei Bedarf mit Wiederholung)
-    let bag = [...scn.roles].sort(()=>Math.random()-0.5);
-    imp.assign = imp.players.map((_,i)=>{
-      if(imp.roles[i]==='imposter') return '';
-      if(!bag.length) bag = [...scn.roles].sort(()=>Math.random()-0.5);
-      return bag.shift();
-    });
-  }else{
-    const words = CATEGORIES[imp.category].words;
-    imp.word = words[Math.floor(Math.random()*words.length)];
-  }
-  impShowPass();
-}
-function impShowPass(){
-  document.getElementById('imp-pass-name').textContent = imp.players[imp.revealIndex];
-  document.getElementById('imp-pass-progress').textContent =
-    `Spieler ${imp.revealIndex+1} von ${imp.players.length}`;
-  show('scr-imp-pass');
-}
-function impShowRole(){
-  const i = imp.revealIndex;
-  const role = imp.roles[i];
-  document.getElementById('imp-role-playername').textContent = imp.players[i];
-  const card = document.getElementById('imp-role-card');
-  if(imp.mode==='scenario'){
-    if(role==='innocent'){
-      card.className = 'role-card innocent';
-      card.innerHTML = `
-        <div class="role-label">Dein Ort ${imp.scenarioEmoji}</div>
-        <div class="role-name">${esc(imp.scenario)}</div>
-        <div class="word-label">Deine Rolle</div>
-        <div class="word">${esc(imp.assign[i])}</div>`;
-    }else{
-      card.className = 'role-card imposter';
-      card.innerHTML = `
-        <div class="role-label">Deine Rolle</div>
-        <div class="role-name">Imposter</div>
-        <p>Du kennst <b>weder den Ort noch deine Rolle</b>.<br>Hör gut zu, tu so als gehörst du dazu – und flieg nicht auf!</p>`;
-    }
-  }else if(role==='innocent'){
-    card.className = 'role-card innocent';
-    card.innerHTML = `
-      <div class="role-label">Deine Rolle</div>
-      <div class="role-name">Unschuldig</div>
-      <div class="word-label">Das geheime Wort lautet:</div>
-      <div class="word">${esc(imp.word)}</div>`;
-  }else{
-    card.className = 'role-card imposter';
-    card.innerHTML = `
-      <div class="role-label">Deine Rolle</div>
-      <div class="role-name">Imposter</div>
-      <p>Du kennst das Wort <b>nicht</b>.<br>Bluffe dich durch und flieg nicht auf!</p>`;
-  }
-  show('scr-imp-role');
-}
-function impNextPlayer(){
-  imp.revealIndex++;
-  if(imp.revealIndex < imp.players.length){
-    impShowPass();
-  }else{
-    document.getElementById('imp-final-name').textContent = imp.starter;
-    show('scr-imp-final');
-  }
-}
-function impQuit(){
-  ask('Laufende Runde beenden?', ()=>show('scr-spiele'), 'Ja, beenden', null,
-  {detail:'Die aktuelle Rollenverteilung geht verloren und du landest wieder in der Spiele-Übersicht.',
-   noLabel:'Nein, weiterspielen'});
-}
-
-/* ==================== PUNKTE-TRACKER ==================== */
-let tr = { mode:'punkte', start:0, step:1, players:[], log:[], view:'list' };
-
-async function trSave(){
-  const json=JSON.stringify(tr);
-  try{ await window.storage.set('tracker-state', json); return; }catch(e){}
-  try{ localStorage.setItem('tracker-state', json); }catch(e){}
-}
-async function trLoad(){
-  let json=null;
-  try{ const r=await window.storage.get('tracker-state'); if(r&&r.value) json=r.value; }catch(e){}
-  if(!json){ try{ json=localStorage.getItem('tracker-state'); }catch(e){} }
-  if(json){ try{ const s=JSON.parse(json); if(s&&s.players) tr=s; if(!tr.log) tr.log=[]; }catch(e){} }
-}
-function openTracker(){ show(tr.players.length ? 'scr-tr-game' : 'scr-tr-setup'); }
-
-function trSetMode(m){
-  tr.mode=m;
-  if(m==='leben' && tr.start===0){ tr.step=1; trSetStart(20); return; }
-  if(m==='punkte' && tr.start===20){ trSetStart(0); return; }
-  trSave(); trRenderSetup();
-}
-function trSetStart(newVal){
-  const old = tr.start;
-  tr.start = newVal;
-  // Spieler, die noch auf dem alten Startwert stehen (also unverändert sind), mitziehen
-  tr.players.forEach(p=>{
-    const touched = tr.log.some(l=>l.playerId===p.id);
-    if(!touched || p.value===old) p.value = newVal;
-  });
-  trSave(); trRenderSetup();
-}
-function trAdjustCfg(key,delta){
-  const limits={start:[0,999],step:[1,99]};
-  const [min,max]=limits[key];
-  const v=Math.min(max,Math.max(min,tr[key]+delta));
-  if(key==='start') trSetStart(v);
-  else { tr[key]=v; trSave(); trRenderSetup(); }
-}
-function trAddPlayer(){
-  const inp=document.getElementById('tr-name-input');
-  const name=inp.value.trim();
-  if(!name) return;
-  tr.players.push({id:Date.now()+''+Math.random(), name, value:tr.start});
-  inp.value=''; inp.focus();
-  trSave(); trRenderSetup();
-}
-function trRemovePlayer(id){
-  tr.players=tr.players.filter(p=>p.id!==id);
-  tr.log=tr.log.filter(l=>l.playerId!==id);
-  trSave(); trRenderSetup();
-}
-function trRenderSetup(){
-  document.getElementById('tr-start').textContent=tr.start;
-  document.getElementById('tr-step').textContent=tr.step;
-  const segs=document.querySelectorAll('#tr-mode-seg button');
-  segs[0].classList.toggle('on', tr.mode==='punkte');
-  segs[1].classList.toggle('on', tr.mode==='leben');
-  const list=document.getElementById('tr-setup-list');
-  list.innerHTML = tr.players.length ? tr.players.map((p,i)=>`
-    <div class="prow">
-      <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
-      <span>${esc(p.name)}</span>
-      <button class="del" onclick="trRemovePlayer('${p.id}')">✕</button>
-    </div>`).join('') : '<div class="empty">Noch keine Spieler.<br>Füge oben Namen hinzu.</div>';
-  document.getElementById('tr-start-btn').disabled = tr.players.length<1;
-}
-function trStart(){
-  // Alle Spieler ohne bisherige Änderung auf den aktuellen Startwert setzen
-  tr.players.forEach(p=>{
-    const touched = tr.log.some(l=>l.playerId===p.id);
-    if(!touched || typeof p.value!=='number') p.value = tr.start;
-  });
-  trSave(); show('scr-tr-game');
-}
-function trChange(id,delta){
-  const p=tr.players.find(x=>x.id===id);
-  if(!p) return;
-  p.value+=delta;
-  tr.log.push({playerId:id, delta});
-  trSave(); trRenderGame();
-}
-function trUndo(){
-  const last=tr.log.pop();
-  if(!last) return;
-  const p=tr.players.find(x=>x.id===last.playerId);
-  if(p) p.value-=last.delta;
-  trSave(); trRenderGame();
-}
-function trReset(){
-  const s = Number(tr.start)||0;
-  ask('Alle Werte auf '+s+' zurücksetzen?', ()=>{
-    tr.start = s;
-    tr.players.forEach(p=>{ p.value = s; });
-    tr.log=[];
-    trSave(); trRenderGame();
-  }, 'Ja, zurücksetzen', null,
-  {detail:'Jeder Spieler startet wieder bei '+s+' und der Änderungsverlauf wird geleert. Die Spieler bleiben erhalten.',
-   noLabel:'Nein, behalten'});
-}
-function trSetView(v){
-  tr.view=v; trSave();
-  document.getElementById('tr-tab-list').classList.toggle('on', v==='list');
-  document.getElementById('tr-tab-chart').classList.toggle('on', v==='chart');
-  document.getElementById('tr-view-list').style.display = v==='list'?'':'none';
-  document.getElementById('tr-view-chart').style.display = v==='chart'?'':'none';
-}
-function trRenderGame(){
-  trSetView(tr.view||'list');
-  const isLife = tr.mode==='leben';
-  document.getElementById('tr-title').textContent = isLife?'Leben':'Punkte';
-  document.getElementById('tr-sub').textContent =
-    `${tr.players.length} Spieler · Start ${tr.start} · Schritt ±${tr.step}`;
-
-  const values=tr.players.map(p=>p.value);
-  const best = values.length ? Math.max(...values) : 0;
-
-  document.getElementById('tr-view-list').innerHTML = tr.players.map((p,i)=>{
-    const color=COLORS[i%COLORS.length];
-    const out = isLife && p.value<=0;
-    return `
-    <div class="tr-card ${out?'tr-out':''}">
-      <div class="tr-head">
-        <span class="dot" style="background:${color}"></span>
-        <span class="tn">${esc(p.name)}</span>
-        ${out?'<span class="crown">💀</span>':(p.value===best&&values.length>1?'<span class="crown">👑</span>':'')}
-        <button class="tv tapval-inline" style="color:${color}" onclick="trOpenValuePad('${p.id}')">${p.value}</button>
-      </div>
-      <div class="tr-btns">
-        <button class="minus" onclick="trChange('${p.id}',-${tr.step*5})">−${tr.step*5}</button>
-        <button class="minus" onclick="trChange('${p.id}',-${tr.step})">−${tr.step}</button>
-        <button class="plus" onclick="trChange('${p.id}',${tr.step})">+${tr.step}</button>
-        <button class="plus" onclick="trChange('${p.id}',${tr.step*5})">+${tr.step*5}</button>
-        <button class="num" onclick="trOpenPad('${p.id}')">123</button>
-      </div>
-    </div>`;
-  }).join('') || '<div class="empty">Keine Spieler.</div>';
-
-  // Diagramm
-  const sorted=[...tr.players].sort((a,b)=>b.value-a.value);
-  const maxAbs = Math.max(1, ...tr.players.map(p=>Math.abs(p.value)));
-  const bars = sorted.map((p,idx)=>{
-    const i=tr.players.indexOf(p);
-    const pct=Math.min(100, Math.abs(p.value)/maxAbs*100);
-    const rankCls=idx===0?'r1':idx===1?'r2':idx===2?'r3':'';
-    return `
-    <div class="bar-row">
-      <div class="rank ${rankCls}">${idx+1}.</div>
-      <div class="bar-info">
-        <div class="bar-label"><b>${esc(p.name)}</b><span>${p.value}</span></div>
-        <div class="bar-bg">
-          <div class="bar-fill" style="width:${pct}%;background:${COLORS[i%COLORS.length]}"></div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-
-  const recent=[...tr.log].slice(-8).reverse();
-  const history=`
-    <div class="history">
-      <h4>Letzte Änderungen</h4>
-      ${recent.length ? recent.map(e=>{
-        const p=tr.players.find(x=>x.id===e.playerId);
-        if(!p) return '';
-        const i=tr.players.indexOf(p);
-        return `<div class="h-row">
-          <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
-          <span class="h-name">${esc(p.name)}</span>
-          <span class="h-pts" style="color:${e.delta<0?'var(--coral)':'var(--mint)'}">${e.delta>0?'+':''}${e.delta}</span>
-        </div>`;
-      }).join('') : '<div class="empty">Noch keine Änderungen.</div>'}
-    </div>`;
-
-  document.getElementById('tr-view-chart').innerHTML = bars + history;
-}
-function trOpenValuePad(id){
-  const p=tr.players.find(x=>x.id===id);
-  if(!p) return;
-  openCfgPad('Wert setzen – '+p.name, p.value, 0, 999, v=>{
-    const delta = v - p.value;
-    if(delta!==0){ p.value=v; tr.log.push({playerId:id, delta}); }
-    trSave(); trRenderGame();
-  });
-}
-function trOpenPad(id){
-  const p=tr.players.find(x=>x.id===id);
-  padTarget=null; padEditId=null; padTrackerId=id; padValue=''; padNeg=false; padCfg=null; padPrefilled=false;
-  document.getElementById('pad-title').textContent = (tr.mode==='leben'?'Leben':'Punkte')+' ändern – '+p.name;
-  document.getElementById('pad-display').textContent='0';
-  document.getElementById('pad-ok').textContent='Übernehmen';
-  document.getElementById('pad-delete').style.display='none';
-  document.getElementById('pad-sign').style.display='';
-  document.getElementById('pad-modal').classList.add('open');
-}
-function padToggleSign(){
-  padNeg=!padNeg;
-  padUpdateDisplay();
-}
-function padUpdateDisplay(){
-  const v=padValue||'0';
-  document.getElementById('pad-display').textContent=(padNeg&&v!=='0'?'−':'')+v;
-}
-
-/* ==================== UNO-PUNKTETRACKER ==================== */
-// mode 'winner': Rundensieger bekommt die Restpunkte aller anderen (Ziel erreichen = gewinnen)
-// mode 'own':    jeder sammelt seine eigenen Restkarten (Ziel erreichen = ausscheiden, niedrigster gewinnt)
-let uno = { mode:'winner', goal:500, players:[], rounds:[], view:'list' };
-let unoRound = null;   // {winner:id|null, values:{id:punkte}}
-let unoCalcTarget = null, unoCalcVal = 0, unoCalcSteps = [];
-
-async function unoSave(){
-  const json=JSON.stringify(uno);
-  try{ await window.storage.set('uno-state', json); return; }catch(e){}
-  try{ localStorage.setItem('uno-state', json); }catch(e){}
-}
-async function unoLoad(){
-  let json=null;
-  try{ const r=await window.storage.get('uno-state'); if(r&&r.value) json=r.value; }catch(e){}
-  if(!json){ try{ json=localStorage.getItem('uno-state'); }catch(e){} }
-  if(json){ try{ const s=JSON.parse(json); if(s&&s.players) uno=s; if(!uno.rounds) uno.rounds=[]; }catch(e){} }
-}
-function openUno(){ show(uno.players.length ? 'scr-uno-game' : 'scr-uno-setup'); }
-
-/* ---------- Setup ---------- */
-function unoSetMode(m){
-  uno.mode=m; unoSave(); unoRenderSetup();
-}
-function unoAdjustGoal(d){
-  uno.goal=Math.min(2000,Math.max(50,uno.goal+d));
-  unoSave(); unoRenderSetup();
-}
-function unoOpenGoalPad(){
-  openCfgPad('Punkteziel', uno.goal, 50, 2000, v=>{ uno.goal=v; unoSave(); unoRenderSetup(); });
-}
-function unoAddPlayer(){
-  const inp=document.getElementById('uno-name-input');
-  const name=inp.value.trim();
-  if(!name) return;
-  uno.players.push({id:Date.now()+''+Math.random(), name});
-  inp.value=''; inp.focus();
-  unoSave(); unoRenderSetup();
-}
-function unoRemovePlayer(id){
-  uno.players=uno.players.filter(p=>p.id!==id);
-  uno.rounds.forEach(r=>{ delete r.values[id]; if(r.winner===id) r.winner=null; });
-  unoSave(); unoRenderSetup();
-}
-function unoRenderSetup(){
-  document.getElementById('uno-goal').textContent=uno.goal;
-  const segs=document.querySelectorAll('#uno-mode-seg button');
-  segs[0].classList.toggle('on', uno.mode==='winner');
-  segs[1].classList.toggle('on', uno.mode==='own');
-  document.getElementById('uno-mode-hint').innerHTML = uno.mode==='winner'
-    ? 'Klassisch: Wer die Runde gewinnt, bekommt die Kartenpunkte aller anderen gutgeschrieben. <b>Wer das Ziel zuerst erreicht, gewinnt.</b>'
-    : 'Variante: Jeder sammelt die Punkte seiner eigenen Restkarten. <b>Wer das Ziel erreicht, scheidet aus – der Niedrigste gewinnt.</b>';
-  const list=document.getElementById('uno-setup-list');
-  list.innerHTML = uno.players.length ? uno.players.map((p,i)=>`
-    <div class="prow">
-      <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
-      <span>${esc(p.name)}</span>
-      <button class="del" onclick="unoRemovePlayer('${p.id}')">✕</button>
-    </div>`).join('') : '<div class="empty">Noch keine Spieler.<br>Füge oben Namen hinzu.</div>';
-  document.getElementById('uno-start-btn').disabled = uno.players.length<2;
-}
-function unoStart(){ show('scr-uno-game'); }
-
-/* ---------- Punktestände ---------- */
-function unoTotal(id){
-  return uno.rounds.reduce((sum,r)=>sum + (r.points[id]||0), 0);
-}
-function unoIsOut(id){ return uno.mode==='own' && unoTotal(id)>=uno.goal; }
-
-/* ---------- Runde abrechnen ---------- */
-function unoOpenRound(){
-  if(uno.players.length<2){ notify('Bitte mindestens zwei Spieler anlegen.'); return; }
-  unoRound={ winner:null, values:{}, editIndex:null };
-  uno.players.forEach(p=>unoRound.values[p.id]=0);
-  unoRenderRound();
-  show('scr-uno-round');
-}
-function unoEditRound(idx){
-  const r=uno.rounds[idx];
-  if(!r) return;
-  unoRound={ winner:r.winner, values:Object.assign({},r.values), editIndex:idx };
-  unoRenderRound();
-  show('scr-uno-round');
-}
-function unoPickWinner(id){
-  unoRound.winner = (unoRound.winner===id) ? null : id;
-  if(unoRound.winner) unoRound.values[unoRound.winner]=0;
-  unoRenderRound();
-}
-function unoRenderRound(){
-  const isEdit = unoRound.editIndex!==null;
-  document.getElementById('uno-round-title').textContent = isEdit ? 'Runde bearbeiten' : 'Runde abrechnen';
-  document.getElementById('uno-round-sub').textContent = isEdit
-    ? 'Runde '+(unoRound.editIndex+1)
-    : 'Runde '+(uno.rounds.length+1);
-  let html='';
-  if(uno.mode==='winner'){
-    html+='<div class="uno-sect">1 · Wer hat die Runde gewonnen?</div><div class="uno-win-pick">';
-    html+=uno.players.map((p,i)=>`
-      <button class="uno-win-btn ${unoRound.winner===p.id?'on':''}" onclick="unoPickWinner('${p.id}')">
-        <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
-        ${esc(p.name)}<span class="chk">✓</span>
-      </button>`).join('');
-    html+='</div><div class="uno-sect">2 · Restkarten der anderen</div>';
-  }else{
-    html+='<div class="uno-sect">Restkarten jedes Spielers</div>';
-  }
-  html+=uno.players.map((p,i)=>{
-    const isWin = uno.mode==='winner' && unoRound.winner===p.id;
-    const out = unoIsOut(p.id) && !isEdit;
-    return `<div class="uno-pt-row ${isWin?'winner':''}" ${out?'style="opacity:.5"':''}>
-      <span class="dot" style="background:${COLORS[i%COLORS.length]}"></span>
-      <span class="pn">${esc(p.name)}</span>
-      ${isWin?'<span class="tag">Sieger</span>'
-        :`<button class="pv" onclick="unoOpenCalc('${p.id}')">${unoRound.values[p.id]||0}</button>`}
-    </div>`;
-  }).join('');
-  document.getElementById('uno-round-body').innerHTML=html;
-  // Summenanzeige
-  const sum=uno.players.reduce((s,p)=>
-    s + ((uno.mode==='winner'&&unoRound.winner===p.id)?0:(unoRound.values[p.id]||0)), 0);
-  const tot=document.getElementById('uno-round-total');
-  if(uno.mode==='winner'){
-    const w=uno.players.find(p=>p.id===unoRound.winner);
-    tot.innerHTML = w ? `<b>${esc(w.name)}</b> erhält <b>${sum}</b> Punkte`
-      : `Summe der Restkarten: <b>${sum}</b> · bitte oben den Sieger wählen`;
-  }else{
-    tot.innerHTML = `Vergebene Punkte gesamt: <b>${sum}</b>`;
-  }
-}
-function unoCommitRound(){
-  if(uno.mode==='winner' && !unoRound.winner){ notify('Bitte zuerst den Rundensieger wählen.'); return; }
-  // Punkte je Spieler berechnen
-  const points={};
-  if(uno.mode==='winner'){
-    const sum=uno.players.reduce((s,p)=> s + (p.id===unoRound.winner?0:(unoRound.values[p.id]||0)), 0);
-    uno.players.forEach(p=>{ points[p.id] = (p.id===unoRound.winner) ? sum : 0; });
-  }else{
-    uno.players.forEach(p=>{ points[p.id] = unoRound.values[p.id]||0; });
-  }
-  const entry={ winner:unoRound.winner, values:Object.assign({},unoRound.values), points };
-  if(unoRound.editIndex!==null) uno.rounds[unoRound.editIndex]=entry;
-  else uno.rounds.push(entry);
-  unoSave();
-  show('scr-uno-game');
-  notify(unoRound.editIndex!==null ? 'Runde aktualisiert.' : 'Runde verbucht.');
-}
-function unoDeleteRound(idx){
-  ask('Runde '+(idx+1)+' löschen?', ()=>{
-    uno.rounds.splice(idx,1); unoSave(); unoRenderGame(); notify('Runde gelöscht.');
-  }, 'Ja, löschen', null,
-  {detail:'Die Punkte dieser Runde werden aus allen Punkteständen entfernt.', noLabel:'Nein, behalten'});
-}
-function unoUndo(){
-  if(!uno.rounds.length){ notify('Es gibt keine Buchung zum Rückgängigmachen.'); return; }
-  uno.rounds.pop(); unoSave(); unoRenderGame(); notify('Letzte Runde entfernt.');
-}
-function unoReset(){
-  ask('Alle Punkte löschen?', ()=>{
-    uno.rounds=[]; unoSave(); unoRenderGame(); notify('Punkte gelöscht.');
-  }, 'Ja, löschen', null,
-  {detail:'Alle Runden und Punktestände werden entfernt. Die Spieler bleiben erhalten.', noLabel:'Nein, behalten'});
-}
-
-/* ---------- Kartenrechner ---------- */
-function unoOpenCalc(id){
-  const p=uno.players.find(x=>x.id===id);
-  unoCalcTarget=id; unoCalcVal=unoRound.values[id]||0; unoCalcSteps=[];
-  document.getElementById('uno-calc-title').textContent='Restkarten – '+p.name;
-  document.getElementById('uno-calc-display').textContent=unoCalcVal;
-  document.getElementById('uno-calc-modal').classList.add('open');
-}
-function unoCalcAdd(v){
-  unoCalcVal+=v; unoCalcSteps.push(v);
-  document.getElementById('uno-calc-display').textContent=unoCalcVal;
-}
-function unoCalcUndo(){
-  const last=unoCalcSteps.pop();
-  if(last!==undefined) unoCalcVal=Math.max(0,unoCalcVal-last);
-  document.getElementById('uno-calc-display').textContent=unoCalcVal;
-}
-function unoCalcClear(){
-  unoCalcVal=0; unoCalcSteps=[];
-  document.getElementById('uno-calc-display').textContent='0';
-}
-function unoCloseCalc(){ document.getElementById('uno-calc-modal').classList.remove('open'); }
-function unoCalcApply(){
-  if(unoCalcTarget) unoRound.values[unoCalcTarget]=unoCalcVal;
-  unoCloseCalc(); unoRenderRound();
-}
-
-/* ---------- Übersicht ---------- */
-function unoSetView(v){
-  uno.view=v; unoSave();
-  document.getElementById('uno-tab-list').classList.toggle('on', v==='list');
-  document.getElementById('uno-tab-log').classList.toggle('on', v==='log');
-  document.getElementById('uno-view-list').style.display = v==='list'?'':'none';
-  document.getElementById('uno-view-log').style.display = v==='log'?'':'none';
-}
-function unoRenderGame(){
-  unoSetView(uno.view||'list');
-  document.getElementById('uno-goal-show').textContent=uno.goal+' Punkte';
-  document.getElementById('uno-goal-label').textContent = uno.mode==='winner' ? 'Ziel (wer zuerst)' : 'Ziel (wer erreicht, scheidet aus)';
-  document.getElementById('uno-sub').textContent =
-    uno.rounds.length ? `Runde ${uno.rounds.length} gespielt · ${uno.players.length} Spieler`
-                      : `${uno.players.length} Spieler · noch keine Runde`;
-
-  // Rangfolge: bei 'winner' absteigend, bei 'own' aufsteigend (weniger ist besser)
-  const ranked=[...uno.players].sort((a,b)=>
-    uno.mode==='winner' ? unoTotal(b)-unoTotal(a) : unoTotal(a)-unoTotal(b));
-  const reached=uno.players.filter(p=>unoTotal(p.id)>=uno.goal);
-  let champion=null;
-  if(uno.mode==='winner' && reached.length){
-    champion=reached.reduce((best,p)=>unoTotal(p.id)>unoTotal(best.id)?p:best);
-  }else if(uno.mode==='own'){
-    const alive=uno.players.filter(p=>unoTotal(p.id)<uno.goal);
-    if(reached.length && alive.length===1) champion=alive[0];
-  }
-
-  document.getElementById('uno-view-list').innerHTML = ranked.map((p,idx)=>{
-    const i=uno.players.indexOf(p);
-    const color=COLORS[i%COLORS.length];
-    const t=unoTotal(p.id);
-    const out=unoIsOut(p.id);
-    const won=champion && champion.id===p.id;
-    const rankCls=idx===0?'r1':idx===1?'r2':idx===2?'r3':'';
-    const ahead = idx>0 ? Math.abs(unoTotal(ranked[idx-1].id)-t) : 0;
-    const gapTxt = idx===0
-      ? (uno.players.length>1?'<span class="lead">'+(uno.mode==='winner'?'Führung':'Bester')+'</span>':'')
-      : `<span class="gap">${uno.mode==='winner'?'−':'+'}${ahead} zu Platz ${idx}</span>`;
-    const missTxt = uno.mode==='winner'
-      ? (won?'Ziel erreicht – gewonnen!':`noch <b>${Math.max(0,uno.goal-t)}</b> bis ${uno.goal}`)
-      : (out?'ausgeschieden':`noch <b>${Math.max(0,uno.goal-t)}</b> bis zum Aus`);
-    return `
-    <div class="uno-card ${out?'out':''}">
-      <div class="uno-top">
-        <span class="rank-badge ${rankCls}">${idx+1}.</span>
-        <span class="un">${esc(p.name)}</span>
-        ${won?'<span class="winner-tag">🏆 Gewinner</span>':(out?'<span class="crown">💀</span>':'')}
-        <span class="uv" style="color:${color}">${t}</span>
-      </div>
-      <div class="uno-meta">${gapTxt}<span class="miss">${missTxt}</span></div>
-      <div class="track"><i style="width:${Math.min(100,t/uno.goal*100)}%;background:${color}"></i></div>
-      <button class="uno-add" onclick="unoQuickAdd('${p.id}')">Punkte einzeln hinzufügen</button>
-    </div>`;
-  }).join('') || '<div class="empty">Keine Spieler.</div>';
-
-  // Verlauf – jede Runde einzeln bearbeitbar
-  document.getElementById('uno-view-log').innerHTML = uno.rounds.length
-    ? [...uno.rounds].map((r,idx)=>({r,idx})).reverse().map(({r,idx})=>{
-        const w=uno.players.find(p=>p.id===r.winner);
-        return `<div class="uno-log-round">
-          <div class="uno-log-head">
-            <span class="rt">Runde ${idx+1}</span>
-            ${w?`<span class="rw">🏁 ${esc(w.name)}</span>`:''}
-            <button class="rdel" onclick="unoDeleteRound(${idx})">✕</button>
-          </div>
-          ${uno.players.map(p=>{
-            const pts=r.points[p.id]||0;
-            return `<div class="uno-log-line">
-              <span class="ln">${esc(p.name)}</span>
-              <span class="lv" style="color:${pts>0?'var(--mint)':'var(--muted)'}">+${pts}</span>
-            </div>`;
-          }).join('')}
-          <button class="uno-add" onclick="unoEditRound(${idx})">✎ Runde bearbeiten</button>
-        </div>`;
-      }).join('')
-    : '<div class="empty">Noch keine Runde gespielt.</div>';
-}
-function unoQuickAdd(id){
-  const p=uno.players.find(x=>x.id===id);
-  if(!p) return;
-  openCfgPad('Punkte für '+p.name, 0, 0, 999, v=>{
-    if(v<=0) return;
-    const points={}; uno.players.forEach(x=>points[x.id]=0);
-    points[id]=v;
-    uno.rounds.push({ winner:null, values:Object.assign({},points), points, manual:true });
-    unoSave(); unoRenderGame();
-  });
+function optClose(){ document.getElementById('opt-modal').classList.remove('open'); }
+function optRun(i){
+  const o=optItems[i];
+  optClose();
+  if(o && o.run) o.run();   // synchron, damit z. B. die Dateiauswahl auf iOS erlaubt bleibt
 }
 
 /* ==================== BRIEFE ==================== */
@@ -2277,14 +1100,14 @@ function ltOpenAddressBook(){
 function ltCloseAddressBook(){ document.getElementById('lt-ab-modal').classList.remove('open'); }
 function ltRenderAB(){
   const list=document.getElementById('lt-ab-list');
-  list.innerHTML = ltAddressBook.length ? ltAddressBook.map(a=>`
-    <div class="lt-ab-row">
-      <div class="ab-info" onclick="ltUseAddress('${a.id}')">
-        <div class="ab-n">${esc(a.name)}</div>
-        <div class="ab-a">${esc([a.extra,a.street,a.city].filter(Boolean).join(' · '))}</div>
-      </div>
-      <button class="ab-del" onclick="event.stopPropagation();ltDeleteAddress('${a.id}')">✕</button>
-    </div>`).join('')
+  list.innerHTML = ltAddressBook.length ? '<div class="glist">'+ltAddressBook.map(a=>`
+    <div class="gi lt-ab-row">
+      <span class="gic" style="--c:#FF9500">${esc((a.name||'?').charAt(0).toUpperCase())}</span>
+      <span class="gbody">
+        <button type="button" class="glbl" style="background:none;text-align:left;min-height:44px;padding:4px 0" onclick="ltUseAddress('${a.id}')">${esc(a.name)}<small>${esc([a.extra,a.street,a.city].filter(Boolean).join(' · '))}</small></button>
+        <button type="button" class="lt-ab-del" aria-label="Empfänger löschen" onclick="event.stopPropagation();ltDeleteAddress('${a.id}')">${LT_IC.trash}</button>
+      </span>
+    </div>`).join('')+'</div>'
     : '<div class="empty">Noch keine Empfänger gespeichert.<br>Fülle die Empfängerfelder aus und tippe auf „Empfänger merken".</div>';
 }
 function ltUseAddress(id){
@@ -2374,6 +1197,15 @@ function ltClearSignature(){
     'Ja, entfernen', null,
     {detail:'Die gespeicherte Unterschrift wird gelöscht. Du kannst jederzeit eine neue malen oder hochladen.',
      noLabel:'Nein, behalten'});
+}
+function ltSignatureMenu(){
+  const has=!!ltCurrentSig();
+  optionsSheet('Unterschrift', has?'Im Profil hinterlegt':'Noch keine Unterschrift hinterlegt', [
+    {icon:LT_IC.pen,   label:'Malen',       hint:'Mit dem Finger unterschreiben', tone:'violet', run:ltOpenSignPad},
+    {icon:LT_IC.image, label:'Bild wählen', hint:'Foto oder Scan der Unterschrift', tone:'blue',
+      run:()=>document.getElementById('lt-sig-file').click()},
+    has ? {icon:LT_IC.trash, label:'Entfernen', hint:'Unterschrift aus dem Profil löschen', tone:'coral', danger:true, run:ltClearSignature} : null,
+  ]);
 }
 function ltSignatureFile(e){
   const f=e.target.files && e.target.files[0];
@@ -2552,15 +1384,15 @@ function openLetter(){
 }
 function ltRenderProfiles(){
   const list=document.getElementById('lt-profile-list');
-  list.innerHTML = letterProfiles.length ? letterProfiles.map(p=>`
-    <button class="lt-profile-row" onclick="ltOpenUnlock('${p.id}')">
-      <span class="lt-avatar">${esc((p.name||'?').charAt(0).toUpperCase())}</span>
-      <span>
-        <span class="pname">${esc(p.name)}</span>
-        <span class="pmeta">Adressdaten verschlüsselt</span>
-      </span>
-      <span class="lock">🔒</span>
-    </button>`).join('') : '<div class="empty">Noch kein Profil.<br>Lege unten dein erstes Profil an.</div>';
+  const tints=['#0A84FF','#FF9500','#34C759','#AF52DE','#FF3B30','#5856D6','#30B0C7','#FF2D55'];
+  list.innerHTML = letterProfiles.length ? '<div class="glist big">'+letterProfiles.map((p,i)=>`
+    <button class="gi lt-profile-row" onclick="ltOpenUnlock('${p.id}')">
+      <span class="gic lt-avatar" style="--c:${tints[i%tints.length]}">${esc((p.name||'?').charAt(0).toUpperCase())}</span>
+      <span class="gbody"><span class="glbl">${esc(p.name)}<small>Adressdaten verschlüsselt</small></span>
+        <span class="gval" aria-hidden="true" style="display:grid;place-items:center;width:20px">${LT_IC.lock}</span>${LT_IC.chev}</span>
+    </button>`).join('')+'</div>' : '<div class="glist"><div class="empty">Noch kein Profil.<br>Lege unten dein erstes Profil an.</div></div>';
+  const kh=document.getElementById('lt-konto-hint');
+  if(kh) kh.style.display = Konto.loggedIn() ? '' : 'none';
 }
 function ltNewProfile(){
   ['lt-n-profile','lt-n-pass','lt-n-pass2','lt-n-name','lt-n-street','lt-n-city','lt-n-mail','lt-n-phone']
@@ -2577,8 +1409,10 @@ async function ltCreateProfile(){
   const sender={ name:v('lt-n-name'), street:v('lt-n-street'), city:v('lt-n-city'), mail:v('lt-n-mail'), phone:v('lt-n-phone') };
   try{
     const blob=await ltEncrypt(pass, sender);
-    letterProfiles.push({ id:Date.now()+''+Math.random(), name:profile, blob });
+    const np={ id:Date.now()+''+Math.random(), name:profile, blob };
+    letterProfiles.push(np);
     await ltSave();
+    ltKontoPut(np, pass);
     notify('Profil verschlüsselt gespeichert.');
     show('scr-lt-profiles');
   }catch(e){ notify('Verschlüsselung fehlgeschlagen.'); }
@@ -2590,8 +1424,34 @@ function ltOpenUnlock(id){
   document.getElementById('lt-unlock-name').textContent=p.name;
   document.getElementById('lt-unlock-pass').value='';
   document.getElementById('lt-unlock-error').textContent='';
+  document.getElementById('lt-unlock-hint').textContent=LT_UNLOCK_HINT;
   show('scr-lt-unlock');
+  const saved=ltKontoPass(id);
+  if(saved){ ltAutoUnlock(p, saved); return; }
   setTimeout(()=>{ const el=document.getElementById('lt-unlock-pass'); if(el) el.focus(); },250);
+}
+const LT_UNLOCK_HINT='Die Adressdaten sind verschlüsselt. Gib dein Passwort ein, um das Profil zu öffnen.';
+/* Konto: gemerkte Profil-Passwörter */
+function ltKontoPut(p, pass){
+  try{ if(Konto.loggedIn()) Konto.put('brief:'+p.id, {app:'brief', profileId:p.id, password:pass, label:p.name}); }catch(e){}
+}
+function ltKontoPass(id){
+  try{
+    if(!Konto.loggedIn()) return null;
+    const it=Konto.items('brief').find(x=>x.key==='brief:'+id);
+    return it && it.password ? it.password : null;
+  }catch(e){ return null; }
+}
+async function ltAutoUnlock(p, pass){
+  const hint=document.getElementById('lt-unlock-hint');
+  hint.textContent='Wird mit dem im Konto gemerkten Passwort geöffnet …';
+  let sender=null;
+  try{ sender=await ltDecrypt(pass, p.blob); }catch(e){}
+  if(ltPendingDeleteId!==p.id || !document.getElementById('scr-lt-unlock').classList.contains('active')) return;
+  if(sender){ await ltFinishUnlock(p, sender, pass); return; }
+  hint.textContent=LT_UNLOCK_HINT;
+  document.getElementById('lt-unlock-error').textContent='Das gemerkte Passwort passt nicht mehr – bitte eingeben.';
+  setTimeout(()=>{ const el=document.getElementById('lt-unlock-pass'); if(el) el.focus(); },100);
 }
 async function ltUnlock(){
   const p=letterProfiles.find(x=>x.id===ltPendingDeleteId);
@@ -2599,20 +1459,22 @@ async function ltUnlock(){
   const pass=document.getElementById('lt-unlock-pass').value;
   const errEl=document.getElementById('lt-unlock-error');
   errEl.textContent='';
-  try{
-    const sender=await ltDecrypt(pass, p.blob);
-    ltActive={ id:p.id, name:p.name, sender };
-    ltSessionPass = pass;
-    // Einmalige Übernahme: früher im Entwurf gespeicherte Unterschrift ins Profil verschieben
-    if(!sender.sig && ltDraft.sig){
-      await ltStoreSignature(ltDraft.sig);
-      ltDraft.sig=''; ltSaveDraftStore();
-    }
-    document.getElementById('lt-unlock-pass').value='';
-    show('scr-lt-editor');
-  }catch(e){
-    errEl.textContent='Falsches Passwort.';
+  let sender;
+  try{ sender=await ltDecrypt(pass, p.blob); }
+  catch(e){ errEl.textContent='Falsches Passwort.'; return; }
+  await ltFinishUnlock(p, sender, pass);
+}
+async function ltFinishUnlock(p, sender, pass){
+  ltActive={ id:p.id, name:p.name, sender };
+  ltSessionPass = pass;
+  // Einmalige Übernahme: früher im Entwurf gespeicherte Unterschrift ins Profil verschieben
+  if(!sender.sig && ltDraft.sig){
+    await ltStoreSignature(ltDraft.sig);
+    ltDraft.sig=''; ltSaveDraftStore();
   }
+  document.getElementById('lt-unlock-pass').value='';
+  ltKontoPut(p, pass);   // angemeldet → Passwort im Konto merken (bzw. aktualisieren)
+  show('scr-lt-editor');
 }
 function ltLock(){
   ltActive=null;
@@ -2625,6 +1487,7 @@ function ltDeleteProfilePrompt(){
   ask('Profil „'+p.name+'" löschen?', async ()=>{
     letterProfiles=letterProfiles.filter(x=>x.id!==p.id);
     await ltSave();
+    try{ Konto.remove('brief:'+p.id); }catch(e){}
     ltActive=null; ltSessionPass=null;
     show('scr-lt-profiles');
     notify('Profil gelöscht.');
@@ -2863,316 +1726,6 @@ function ltCopyLetter(){
   }else notify('Kopieren wird nicht unterstützt.');
 }
 
-/* ==================== POKER-ASSISTENT ==================== */
-const PK_RANKS = [
-  {v:14,l:'A'},{v:13,l:'K'},{v:12,l:'Q'},{v:11,l:'J'},{v:10,l:'10'},
-  {v:9,l:'9'},{v:8,l:'8'},{v:7,l:'7'},{v:6,l:'6'},{v:5,l:'5'},{v:4,l:'4'},{v:3,l:'3'},{v:2,l:'2'}
-];
-const PK_SUITS = [
-  {k:'s',sym:'♠',cls:'spade'},{k:'h',sym:'♥',cls:'heart'},
-  {k:'d',sym:'♦',cls:'diamond'},{k:'c',sym:'♣',cls:'club'}
-];
-const PK_SUIT_BY_KEY = Object.fromEntries(PK_SUITS.map(s=>[s.k,s]));
-const PK_CATEGORY_NAMES = ['Hochkarte','Ein Paar','Zwei Paare','Drilling','Straße','Flush','Full House','Vierling','Straight Flush'];
-const PK_RW_S = {2:'Zwei',3:'Drei',4:'Vier',5:'Fünf',6:'Sechs',7:'Sieben',8:'Acht',9:'Neun',10:'Zehn',11:'Bube',12:'Dame',13:'König',14:'Ass'};
-const PK_RW_P = {2:'Zweien',3:'Dreien',4:'Vieren',5:'Fünfen',6:'Sechsen',7:'Siebenen',8:'Achten',9:'Neunen',10:'Zehnen',11:'Buben',12:'Damen',13:'Könige',14:'Asse'};
-// Wandelt einen Score wieder in einen lesbaren deutschen Hand-Namen um
-function pkDescribeScore(score){
-  let rem=score;
-  const category=Math.floor(rem/Math.pow(15,5)); rem%=Math.pow(15,5);
-  const k=[];
-  for(let i=4;i>=0;i--){ const div=Math.pow(15,i); k.push(Math.floor(rem/div)); rem%=div; }
-  switch(category){
-    case 8: return k[0]===14 ? 'Royal Flush' : `Straight Flush (${PK_RW_S[k[0]]} hoch)`;
-    case 7: return `Vierling ${PK_RW_P[k[0]]}`;
-    case 6: return `Full House, ${PK_RW_P[k[0]]} über ${PK_RW_P[k[1]]}`;
-    case 5: return `Flush (${PK_RW_S[k[0]]} hoch)`;
-    case 4: return `Straße bis ${PK_RW_S[k[0]]}`;
-    case 3: return `Drilling ${PK_RW_P[k[0]]}`;
-    case 2: return `Zwei Paare, ${PK_RW_P[k[0]]} & ${PK_RW_P[k[1]]}`;
-    case 1: return `Ein Paar ${PK_RW_P[k[0]]}`;
-    default: return `Hochkarte ${PK_RW_S[k[0]]}`;
-  }
-}
-// Bestmögliche Hand, die irgendjemand mit dem aktuellen Board haben könnte ("die Nuts")
-function pkComputeNuts(heroIds, boardIds){
-  const usedIds = new Set([...heroIds, ...boardIds]);
-  const remaining = pkFullDeck().filter(c=>!usedIds.has(c.id));
-  const boardCards = boardIds.map(pkIdToCard);
-  let best=-1;
-  for(let i=0;i<remaining.length;i++){
-    for(let j=i+1;j<remaining.length;j++){
-      const combo=[remaining[i],remaining[j]].concat(boardCards);
-      const sc=pkBestOfN(combo);
-      if(sc>best) best=sc;
-    }
-  }
-  return best;
-}
-// alle 5er-Kombinationen aus 7 Karten (einmalig berechnet)
-const PK_COMBO5_7 = (function(){
-  const res=[], all=[0,1,2,3,4,5,6];
-  (function rec(start,combo){
-    if(combo.length===5){ res.push(combo.slice()); return; }
-    for(let i=start;i<7;i++){ combo.push(all[i]); rec(i+1,combo); combo.pop(); }
-  })(0,[]);
-  return res;
-})();
-
-let poker = { opp:1, hero:[null,null], board:[null,null,null,null,null], result:null };
-let pkPickerGroup=null, pkPickerIndex=null, pkPickerEditOnly=false;
-let pkCalcTimer=null, pkCalcSeq=0;
-
-async function pkSave(){
-  const json=JSON.stringify(poker);
-  try{ await window.storage.set('poker-state', json); return; }catch(e){}
-  try{ localStorage.setItem('poker-state', json); }catch(e){}
-}
-async function pkLoad(){
-  let json=null;
-  try{ const r=await window.storage.get('poker-state'); if(r&&r.value) json=r.value; }catch(e){}
-  if(!json){ try{ json=localStorage.getItem('poker-state'); }catch(e){} }
-  if(json){ try{ const s=JSON.parse(json); if(s&&s.hero&&s.board) poker=s; poker.result=null; }catch(e){} }
-}
-function openPoker(){ show('scr-poker'); }
-
-function pkIdToCard(id){ const m=id.match(/^(\d+)([shdc])$/); return {r:+m[1], s:m[2]}; }
-function pkCardLabel(id){
-  const c=pkIdToCard(id);
-  const rl=PK_RANKS.find(r=>r.v===c.r).l;
-  return {rank:rl, sym:PK_SUIT_BY_KEY[c.s].sym, cls:PK_SUIT_BY_KEY[c.s].cls};
-}
-function pkUsedIds(){
-  return new Set([...poker.hero, ...poker.board].filter(Boolean));
-}
-
-/* ---------- Slots rendern ---------- */
-function pkRenderSlots(){
-  document.getElementById('pk-opp').textContent = poker.opp;
-  document.getElementById('pk-hero-slots').innerHTML = poker.hero.map((id,i)=>pkSlotHTML('hero',i,id)).join('');
-  const labels=['Flop','Flop','Flop','Turn','River'];
-  let html='';
-  poker.board.forEach((id,i)=>{
-    if(i===0 || labels[i]!==labels[i-1]) html+=`<span class="pk-slot-label">${labels[i]}</span>`;
-    html+=pkSlotHTML('board',i,id);
-  });
-  document.getElementById('pk-board-slots').innerHTML=html;
-}
-function pkSlotHTML(group,index,id){
-  if(!id) return `<button class="pk-slot" onclick="pkOpenPicker('${group}',${index})">+</button>`;
-  const lb=pkCardLabel(id);
-  return `<button class="pk-slot filled ${lb.cls}" onclick="pkOpenPicker('${group}',${index})">
-    ${lb.rank}${lb.sym}
-    <span class="clr" onclick="event.stopPropagation();pkClearSlot('${group}',${index})">✕</span>
-  </button>`;
-}
-function pkClearSlot(group,index){
-  poker[group][index]=null;
-  pkSave(); pkRenderSlots(); pkScheduleCalc();
-}
-function pkAdjustOpp(delta){
-  poker.opp=Math.min(8,Math.max(1,poker.opp+delta));
-  pkSave(); pkRenderSlots(); pkScheduleCalc();
-}
-
-/* ---------- Kartenraster (schnelle Auswahl) ---------- */
-function pkOpenPicker(group,index){
-  pkPickerGroup=group; pkPickerIndex=index;
-  pkPickerEditOnly = !!poker[group][index];
-  document.getElementById('pk-picker-title').textContent =
-    group==='hero' ? `Deine Karte ${index+1}` : (index<3?'Board – Flop':(index===3?'Board – Turn':'Board – River'));
-  pkRenderGrid();
-  document.getElementById('pk-picker-modal').classList.add('open');
-}
-function pkClosePicker(){
-  document.getElementById('pk-picker-modal').classList.remove('open');
-}
-function pkRenderGrid(){
-  const used = pkUsedIds();
-  const currentId = poker[pkPickerGroup][pkPickerIndex];
-  let html='';
-  PK_RANKS.forEach(rk=>{
-    PK_SUITS.forEach(su=>{
-      const id = rk.v+su.k;
-      const isUsed = used.has(id) && id!==currentId;
-      const isCurrent = id===currentId;
-      html+=`<button class="pk-cell ${su.cls} ${isUsed?'used':''} ${isCurrent?'current':''}"
-        onclick="pkSelectCard('${id}')">${rk.l}${su.sym}</button>`;
-    });
-  });
-  document.getElementById('pk-grid').innerHTML=html;
-}
-function pkSelectCard(id){
-  poker[pkPickerGroup][pkPickerIndex]=id;
-  pkSave(); pkRenderSlots(); pkScheduleCalc();
-  if(pkPickerEditOnly){ pkClosePicker(); return; }
-  const arr=poker[pkPickerGroup];
-  let next=-1;
-  for(let i=pkPickerIndex+1;i<arr.length;i++){ if(!arr[i]){ next=i; break; } }
-  if(next===-1){ pkClosePicker(); return; }
-  pkPickerIndex=next;
-  document.getElementById('pk-picker-title').textContent =
-    pkPickerGroup==='hero' ? `Deine Karte ${next+1}` : (next<3?'Board – Flop':(next===3?'Board – Turn':'Board – River'));
-  pkRenderGrid();
-}
-
-/* ---------- Berechnung (Monte-Carlo-Simulation) ---------- */
-function pkFullDeck(){
-  let d=[];
-  for(let r=2;r<=14;r++) for(const s of ['s','h','d','c']) d.push({r,s,id:r+''+s});
-  return d;
-}
-function pkShuffleDraw(deck,count){
-  const n=deck.length;
-  for(let i=0;i<count;i++){
-    const j=i+Math.floor(Math.random()*(n-i));
-    const tmp=deck[i]; deck[i]=deck[j]; deck[j]=tmp;
-  }
-}
-function pkEvaluate5(cards){
-  const ranks = cards.map(c=>c.r).sort((a,b)=>b-a);
-  const suits = cards.map(c=>c.s);
-  const isFlush = suits.every(s=>s===suits[0]);
-  const uniq = [...new Set(ranks)];
-  let isStraight=false, straightHigh=0;
-  if(uniq.length===5){
-    if(uniq[0]-uniq[4]===4){ isStraight=true; straightHigh=uniq[0]; }
-    else if(uniq[0]===14 && uniq[1]===5 && uniq[2]===4 && uniq[3]===3 && uniq[4]===2){ isStraight=true; straightHigh=5; }
-  }
-  const countMap={};
-  ranks.forEach(r=>countMap[r]=(countMap[r]||0)+1);
-  const groups = Object.keys(countMap).map(r=>({r:+r,c:countMap[r]})).sort((a,b)=> b.c-a.c || b.r-a.r);
-  let category, kick=[];
-  if(isStraight && isFlush){ category=8; kick=[straightHigh]; }
-  else if(groups[0].c===4){ category=7; kick=[groups[0].r, groups[1].r]; }
-  else if(groups[0].c===3 && groups[1] && groups[1].c===2){ category=6; kick=[groups[0].r, groups[1].r]; }
-  else if(isFlush){ category=5; kick=ranks.slice(); }
-  else if(isStraight){ category=4; kick=[straightHigh]; }
-  else if(groups[0].c===3){ category=3; kick=[groups[0].r, ...groups.slice(1).map(g=>g.r)]; }
-  else if(groups[0].c===2 && groups[1] && groups[1].c===2){ category=2; kick=[groups[0].r, groups[1].r, groups[2]?groups[2].r:0]; }
-  else if(groups[0].c===2){ category=1; kick=[groups[0].r, ...groups.slice(1).map(g=>g.r)]; }
-  else { category=0; kick=ranks.slice(); }
-  while(kick.length<5) kick.push(0);
-  let score=category;
-  for(let i=0;i<5;i++){ score = score*15 + kick[i]; }
-  return score;
-}
-function pkBest5of7(cards7){
-  let best=-1;
-  for(const combo of PK_COMBO5_7){
-    const hand=[cards7[combo[0]],cards7[combo[1]],cards7[combo[2]],cards7[combo[3]],cards7[combo[4]]];
-    const sc=pkEvaluate5(hand);
-    if(sc>best) best=sc;
-  }
-  return best;
-}
-function pkScheduleCalc(){
-  clearTimeout(pkCalcTimer);
-  const heroIds = poker.hero.filter(Boolean);
-  if(heroIds.length<2){
-    poker.result=null;
-    document.getElementById('pk-result').innerHTML =
-      '<div class="pk-result-empty">Wähle deine 2 Karten, um die Gewinnwahrscheinlichkeit zu sehen.</div>';
-    return;
-  }
-  document.getElementById('pk-result').innerHTML = '<div class="pk-result-loading">Berechne Wahrscheinlichkeit…</div>';
-  const mySeq = ++pkCalcSeq;
-  pkCalcTimer=setTimeout(()=>{
-    if(mySeq!==pkCalcSeq) return; // veraltete Berechnung verwerfen
-    const res = pkRunSimulation();
-    if(mySeq!==pkCalcSeq) return;
-    poker.result=res;
-    pkRenderResult();
-  }, 220);
-}
-function pkRunSimulation(){
-  const heroIds = poker.hero.filter(Boolean);
-  const boardIds = poker.board.filter(Boolean);
-  const usedIds = new Set([...heroIds, ...boardIds]);
-  const deck = pkFullDeck().filter(c=>!usedIds.has(c.id));
-  const heroCards = heroIds.map(pkIdToCard);
-  const boardCards = boardIds.map(pkIdToCard);
-  const neededBoard = 5-boardCards.length;
-  const opp = poker.opp;
-  const drawCount = neededBoard + 2*opp;
-  const trials = opp<=3 ? 2800 : (opp<=6 ? 1700 : 1000);
-  let win=0, tie=0, lose=0;
-  for(let t=0;t<trials;t++){
-    pkShuffleDraw(deck, drawCount);
-    const extraBoard = deck.slice(0,neededBoard);
-    const fullBoard = boardCards.concat(extraBoard);
-    const heroScore = pkBest5of7(heroCards.concat(fullBoard));
-    let idx=neededBoard, oppMax=-1;
-    for(let o=0;o<opp;o++){
-      const oh=[deck[idx],deck[idx+1]].concat(fullBoard); idx+=2;
-      const sc=pkBest5of7(oh);
-      if(sc>oppMax) oppMax=sc;
-    }
-    if(heroScore>oppMax) win++; else if(heroScore===oppMax) tie++; else lose++;
-  }
-  let handName=null, nutsText=null, holdsNuts=null;
-  if(boardCards.length>=3){
-    // beste Hand aus Hero + aktuellem Board
-    const combined = heroCards.concat(boardCards);
-    const heroBestScore = pkBestOfN(combined);
-    handName = pkDescribeScore(heroBestScore);
-    // Bestmögliche Hand, die irgendjemand mit diesem Board haben könnte ("die Nuts")
-    const nutsScore = pkComputeNuts(heroIds, boardIds);
-    nutsText = pkDescribeScore(nutsScore);
-    holdsNuts = heroBestScore > nutsScore ? 'sole' : (heroBestScore === nutsScore ? 'tied' : 'behind');
-  }
-  return { win:win/trials*100, tie:tie/trials*100, lose:lose/trials*100, handName, nutsText, holdsNuts };
-}
-// beste 5er-Hand aus einer beliebigen Anzahl Karten (5,6 oder 7) – für die aktuelle Handanzeige
-function pkBestOfN(cards){
-  const n=cards.length;
-  if(n===5) return pkEvaluate5(cards);
-  const idxAll=[...Array(n).keys()];
-  let best=-1;
-  (function rec(start,combo){
-    if(combo.length===5){ best=Math.max(best, pkEvaluate5(combo.map(i=>cards[i]))); return; }
-    for(let i=start;i<n;i++){ combo.push(idxAll[i]); rec(i+1,combo); combo.pop(); }
-  })(0,[]);
-  return best;
-}
-function pkRenderResult(){
-  const r=poker.result;
-  if(!r) return;
-  let nutsBlock='';
-  if(r.nutsText){
-    if(r.holdsNuts==='sole'){
-      nutsBlock = `<div class="pk-nuts pk-nuts-sole">🔥 Du hältst aktuell die Nuts – niemand kann dich schlagen!</div>`;
-    }else if(r.holdsNuts==='tied'){
-      nutsBlock = `<div class="pk-nuts pk-nuts-tied">🤝 Du teilst dir aktuell die bestmögliche Hand (${r.nutsText}).</div>`;
-    }else{
-      nutsBlock = `<div class="pk-nuts pk-nuts-behind">
-        <div class="pk-nuts-label">Bestmögliche Hand gerade</div>
-        <div class="pk-nuts-val">${r.nutsText}</div>
-      </div>`;
-    }
-  }
-  document.getElementById('pk-result').innerHTML = `
-    <div class="pk-headline">Gewinnwahrscheinlichkeit</div>
-    <div class="pk-pct">${r.win.toFixed(1)}%</div>
-    <div class="pk-breakdown">
-      <div class="item"><div class="n" style="color:var(--mint)">${r.win.toFixed(1)}%</div><div class="l">Sieg</div></div>
-      <div class="item"><div class="n" style="color:var(--gold-text)">${r.tie.toFixed(1)}%</div><div class="l">Unentschieden</div></div>
-      <div class="item"><div class="n" style="color:var(--coral)">${r.lose.toFixed(1)}%</div><div class="l">Niederlage</div></div>
-    </div>
-    ${r.handName ? `<div class="pk-hand-name">Deine aktuelle Hand: ${r.handName}</div>` : ''}
-    ${nutsBlock}
-  `;
-}
-function pkReset(){
-  poker.hero=[null,null];
-  poker.board=[null,null,null,null,null];
-  poker.result=null;
-  pkSave(); pkRenderSlots();
-  document.getElementById('pk-result').innerHTML =
-    '<div class="pk-result-empty">Wähle deine 2 Karten, um die Gewinnwahrscheinlichkeit zu sehen.</div>';
-  notify('Neue Runde – Karten zurückgesetzt');
-}
-
 /* ==================== BESTÄTIGUNG / HINWEIS ==================== */
 // Ersetzt confirm()/alert(), da diese im iPhone-Homescreen-Modus blockiert werden
 let askCallback=null, askCancelCb=null;
@@ -3255,14 +1808,252 @@ function copyQrUrl(){
 /* ---------- Hilfsfunktionen ---------- */
 function esc(s){ return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+
+/* ==================== KONTO ==================== */
+const KONTO_SVG = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const KONTO_APPS = [
+  {app:'kosten',    title:'Reisen',      sub:'Kostenaufteilung', href:'kosten.html',        c:'#5856D6', ic:'<path d="M18 6.5A7 7 0 1 0 18 17.5"/><path d="M4 10h9M4 14h9"/>'},
+  {app:'essen',     title:'Haushalt',    sub:'Essensplanung',    href:'essensplanung.html', c:'#FF9500', ic:'<path d="M6 3v7a2 2 0 0 0 2 2v9M10 3v7a2 2 0 0 1-2 2M8 3v6"/><path d="M17 21V3c-2.2 1.2-3 3.6-3 6.5V13h3"/>'},
+  {app:'spiele',    title:'Spielgruppe', sub:'Spiele',           href:'spiele.html',        c:'#FF2D55', ic:'<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>'},
+  {app:'cocktails', title:'Projekte',    sub:'Cocktails',        href:'cocktails.html',     c:'#AF52DE', ic:'<path d="M4 4h16l-8 9z"/><path d="M12 13v7M8 20h8"/>'},
+  {app:'brief',     title:'Briefe · gemerkte Profil-Passwörter', sub:'Briefe', href:null,   c:'#0A84FF', ic:'<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>'},
+];
+const KONTO_IC = {
+  face: KONTO_SVG('<path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9v1.5M15 9v1.5M12 9v4h-1M9.5 16c1.5 1 3.5 1 5 0"/>'),
+  key:  KONTO_SVG('<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>'),
+  sync: KONTO_SVG('<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/>'),
+};
+let kontoPkOk = false;       // Face ID (Passkey mit PRF) auf diesem Gerät möglich?
+let kontoSyncing = false;
+let kontoRegPending = null;  // {user, pw} nur im Arbeitsspeicher, bis das Konto angelegt ist
+
+function kontoWhen(iso){
+  if(!iso) return '';
+  const d=new Date(iso), now=new Date(), s=(now-d)/1000;
+  if(isNaN(s)) return '';
+  const hm=d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  if(s<60) return 'gerade eben';
+  if(s<3600) return 'vor '+Math.floor(s/60)+' Min.';
+  if(d.toDateString()===now.toDateString()) return 'heute um '+hm;
+  const y=new Date(now); y.setDate(now.getDate()-1);
+  if(d.toDateString()===y.toDateString()) return 'gestern um '+hm;
+  return 'am '+d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+' um '+hm;
+}
+function kontoErrText(e){
+  if(!e) return 'Unbekannter Fehler.';
+  if(e.offline) return 'Keine Verbindung zum Server – bist du offline? Bitte später erneut versuchen.';
+  if(e.name==='NotAllowedError' || e.name==='AbortError') return 'Face ID wurde abgebrochen.';
+  if(e.status) return 'Der Server hat einen Fehler gemeldet ('+e.status+'). Bitte später erneut versuchen.';
+  return e.message || 'Unbekannter Fehler.';
+}
+function kontoStatusText(){
+  const st=Konto.state()||{};
+  if(kontoSyncing) return 'Wird abgeglichen …';
+  if(st.err){
+    const why=/nicht erreichbar/.test(st.err) ? 'offline' : st.err;
+    return 'Abgleich fehlgeschlagen ('+why+')'+(st.at?' · zuletzt '+kontoWhen(st.at):'');
+  }
+  return st.at ? 'zuletzt abgeglichen '+kontoWhen(st.at) : 'noch nicht abgeglichen';
+}
+function kontoCountText(n){ return n===1 ? '1 Verknüpfung' : n+' Verknüpfungen'; }
+function kontoRenderMenu(){
+  const lbl=document.getElementById('konto-row-lbl'), ic=document.getElementById('konto-row-ic');
+  if(!lbl) return;
+  if(Konto.loggedIn()){
+    lbl.innerHTML=esc(Konto.user())+'<small>'+esc(kontoCountText(Konto.items().length)+' · '+kontoStatusText())+'</small>';
+    ic.style.setProperty('--c','#0A84FF');
+  }else{
+    lbl.innerHTML='Anmelden<small>Einmal anmelden – Reisen, Haushalt, Spielgruppe und Projekte auf allen Geräten</small>';
+    ic.style.setProperty('--c','#8E8E93');
+  }
+}
+function kontoPkActive(){ try{ return localStorage.getItem('konto-passkey')==='true'; }catch(e){ return false; } }
+function kontoRenderPage(){
+  if(!Konto.loggedIn()){ if(document.getElementById('scr-konto').classList.contains('active')) show('scr-konto-login'); return; }
+  document.getElementById('konto-name').textContent=Konto.user();
+  document.getElementById('konto-status').textContent=kontoStatusText();
+  const all=Konto.items();
+  let html='';
+  KONTO_APPS.forEach(a=>{
+    const its=all.filter(x=>x.app===a.app).sort((x,y)=>String(x.label||'').localeCompare(String(y.label||''),'de'));
+    if(!its.length) return;
+    html+=`<h3 class="ghead">${esc(a.title)}</h3><div class="glist">`+its.map(it=>{
+      const inner=`<span class="gic" style="--c:${a.c}">${KONTO_SVG(a.ic)}</span>
+        <span class="gbody"><span class="glbl">${esc(String(it.label||'Ohne Namen'))}<small>${esc(a.sub)}</small></span>${LT_IC.chev}</span>`;
+      return a.href ? `<a class="gi konto-link" href="${a.href}">${inner}</a>`
+        : `<button class="gi konto-link" data-id="${esc(String(it.profileId||''))}" onclick="kontoOpenBrief(this.dataset.id)">${inner}</button>`;
+    }).join('')+'</div>';
+  });
+  if(!html) html='<h3 class="ghead">Verknüpfungen</h3><div class="glist"><div class="empty">Noch keine Verknüpfungen.<br>Reisen, Haushalt, Spielgruppen und Projekte erscheinen hier automatisch, sobald du sie in der jeweiligen App öffnest.</div></div>';
+  document.getElementById('konto-links').innerHTML=html;
+  const pkOn=kontoPkActive();
+  document.getElementById('konto-actions').innerHTML=
+    (kontoPkOk ? `<button class="gi" id="konto-pk-row" onclick="kontoPasskey()">
+      <span class="gic" style="--c:#34C759">${KONTO_IC.face}</span>
+      <span class="gbody"><span class="glbl">${pkOn?'Face ID aktiv':'Face ID einrichten'}<small>${pkOn?'Anmelden ohne Passwort ist auf diesem Gerät eingerichtet':'Künftig ohne Passwort anmelden'}</small></span>${pkOn?'':LT_IC.chev}</span>
+    </button>` : '')+
+    `<button class="gi" id="konto-pw-row" onclick="kontoPwOpen()">
+      <span class="gic" style="--c:#FF9500">${KONTO_IC.key}</span>
+      <span class="gbody"><span class="glbl">Passwort ändern</span>${LT_IC.chev}</span>
+    </button>
+    <button class="gi" id="konto-sync-row" onclick="kontoSyncNow()">
+      <span class="gic" style="--c:#30B0C7">${KONTO_IC.sync}</span>
+      <span class="gbody"><span class="glbl">Jetzt abgleichen</span><span class="gval">${kontoSyncing?'läuft …':''}</span></span>
+    </button>`;
+}
+function kontoRenderLogin(){
+  document.getElementById('konto-pk-wrap').style.display = kontoPkOk ? '' : 'none';
+}
+function kontoRender(){
+  kontoRenderMenu();
+  if(document.getElementById('scr-konto').classList.contains('active')) kontoRenderPage();
+  if(document.getElementById('scr-konto-login').classList.contains('active')) kontoRenderLogin();
+  if(document.getElementById('scr-lt-profiles').classList.contains('active')) ltRenderProfiles();
+}
+function kontoOpen(){
+  if(Konto.loggedIn()){ show('scr-konto'); kontoBgSync(); }
+  else{
+    document.getElementById('konto-login-err').textContent='';
+    show('scr-konto-login');
+  }
+}
+function kontoBgSync(){
+  if(!Konto.loggedIn()) return Promise.resolve();
+  kontoSyncing=true; kontoRender();
+  return Konto.sync().catch(()=>{}).then(()=>{ kontoSyncing=false; kontoRender(); });
+}
+function kontoBusy(id, on, label){
+  const b=document.getElementById(id); if(!b) return;
+  b.disabled=on; b.textContent=label;
+}
+async function kontoLogin(){
+  const u=document.getElementById('konto-user').value.trim();
+  const p=document.getElementById('konto-pass').value;
+  const err=document.getElementById('konto-login-err');
+  err.textContent='';
+  if(!u || !p){ err.textContent='Bitte Benutzername und Passwort eingeben.'; return; }
+  if(document.getElementById('konto-login-btn').disabled) return;
+  kontoBusy('konto-login-btn', true, 'Anmelden …');
+  try{
+    const r=await Konto.login(u, p);
+    if(r && r.notFound){ kontoAskRegister(u, p); return; }
+    kontoAfterLogin();
+  }catch(e){ err.textContent=kontoErrText(e); }
+  finally{ kontoBusy('konto-login-btn', false, 'Anmelden'); }
+}
+function kontoAskRegister(u, p){
+  kontoRegPending={user:u, pw:p};
+  ask('Kein Konto mit diesen Daten gefunden. Neues Konto anlegen?', ()=>{
+    document.getElementById('konto-reg-user').textContent='Benutzername: '+u;
+    document.getElementById('konto-reg-username').value=u;
+    document.getElementById('konto-reg-pass2').value='';
+    document.getElementById('konto-reg-err').textContent = p.length<8 ? 'Das Passwort braucht mindestens 8 Zeichen – bitte abbrechen und ein längeres wählen.' : '';
+    document.getElementById('konto-reg-modal').classList.add('open');
+    setTimeout(()=>document.getElementById('konto-reg-pass2').focus(), 200);
+  }, 'Konto anlegen', ()=>{ kontoRegPending=null; },
+  {detail:'Hast du dich nur vertippt? Dann „Zurück“ und Benutzername und Passwort prüfen.', noLabel:'Zurück'});
+}
+function kontoRegClose(){
+  kontoRegPending=null;
+  document.getElementById('konto-reg-pass2').value='';
+  document.getElementById('konto-reg-modal').classList.remove('open');
+}
+async function kontoRegister(){
+  const err=document.getElementById('konto-reg-err');
+  const pend=kontoRegPending; if(!pend){ kontoRegClose(); return; }
+  if(document.getElementById('konto-reg-ok').disabled) return;
+  const p2=document.getElementById('konto-reg-pass2').value;
+  if(pend.pw.length<8){ err.textContent='Das Passwort braucht mindestens 8 Zeichen – bitte abbrechen und ein längeres wählen.'; return; }
+  if(p2!==pend.pw){ err.textContent='Die Passwörter stimmen nicht überein.'; return; }
+  err.textContent='';
+  kontoBusy('konto-reg-ok', true, 'Wird angelegt …');
+  try{
+    const r=await Konto.register(pend.user, pend.pw);
+    kontoRegClose();
+    kontoAfterLogin(r && r.existed ? 'Konto gab es schon – du bist angemeldet.' : 'Konto angelegt – du bist angemeldet.');
+  }catch(e){ err.textContent=kontoErrText(e); }
+  finally{ kontoBusy('konto-reg-ok', false, 'Konto anlegen'); }
+}
+function kontoAfterLogin(msg){
+  document.getElementById('konto-pass').value='';
+  document.getElementById('konto-login-err').textContent='';
+  notify(msg || 'Angemeldet als '+Konto.user()+'.');
+  show('scr-konto');
+  kontoBgSync();
+}
+async function kontoPkLogin(){
+  const err=document.getElementById('konto-login-err');
+  err.textContent='';
+  kontoBusy('konto-pk-btn', true, 'Face ID …');
+  try{ await Konto.loginWithPasskey(); kontoAfterLogin(); }
+  catch(e){ err.textContent=kontoErrText(e); }
+  finally{ kontoBusy('konto-pk-btn', false, 'Mit Face ID anmelden'); }
+}
+async function kontoPasskey(){
+  if(kontoPkActive()){ notify('Face ID ist auf diesem Gerät bereits eingerichtet.'); return; }
+  try{ await Konto.enablePasskey(); notify('Face ID ist eingerichtet.'); }
+  catch(e){ notify(kontoErrText(e)); }
+  kontoRender();
+}
+function kontoSyncNow(){
+  if(kontoSyncing) return;
+  kontoSyncing=true; kontoRender();
+  Konto.sync().then(()=>notify('Abgeglichen.')).catch(e=>notify(kontoErrText(e)))
+    .then(()=>{ kontoSyncing=false; kontoRender(); });
+}
+function kontoOpenBrief(id){
+  const p=letterProfiles.find(x=>x.id===id);
+  if(!p){ show('scr-lt-profiles'); notify('Dieses Profil gibt es auf diesem Gerät nicht.'); return; }
+  ltActive=null; ltSessionPass=null;
+  ltOpenUnlock(id);
+}
+function kontoPwOpen(){
+  ['konto-pw-old','konto-pw-new','konto-pw-new2'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('konto-pw-username').value=Konto.user();
+  document.getElementById('konto-pw-err').textContent='';
+  document.getElementById('konto-pw-modal').classList.add('open');
+}
+function kontoPwClose(){
+  ['konto-pw-old','konto-pw-new','konto-pw-new2'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('konto-pw-modal').classList.remove('open');
+}
+async function kontoPwSave(){
+  const o=document.getElementById('konto-pw-old').value, n=document.getElementById('konto-pw-new').value, n2=document.getElementById('konto-pw-new2').value;
+  const err=document.getElementById('konto-pw-err');
+  if(document.getElementById('konto-pw-ok').disabled) return;
+  if(!o){ err.textContent='Bitte das bisherige Passwort eingeben.'; return; }
+  if(n.length<8){ err.textContent='Das neue Passwort braucht mindestens 8 Zeichen.'; return; }
+  if(n!==n2){ err.textContent='Die neuen Passwörter stimmen nicht überein.'; return; }
+  err.textContent='';
+  kontoBusy('konto-pw-ok', true, 'Wird geändert …');
+  try{ await Konto.changePassword(o, n); kontoPwClose(); notify('Passwort geändert.'); }
+  catch(e){ err.textContent=kontoErrText(e); }
+  finally{ kontoBusy('konto-pw-ok', false, 'Ändern'); kontoRender(); }
+}
+function kontoLogoutAsk(){
+  ask('Auf diesem Gerät abmelden?', ()=>{
+    Konto.logout();
+    show('scr-menu');
+    notify('Abgemeldet.');
+  }, 'Abmelden', null, {detail:'Deine Daten bleiben auf dem Gerät und im Konto.', noLabel:'Abbrechen'});
+}
+function kontoHash(){
+  if(location.hash!=='#konto') return;
+  try{ history.replaceState(null, '', location.pathname+location.search); }catch(e){}
+  kontoOpen();
+}
+Konto.onChange(kontoRender);
+window.addEventListener('hashchange', kontoHash);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ kontoRender(); kontoBgSync(); } });
+Konto.passkeySupported().then(v=>{ kontoPkOk=!!v; kontoRender(); }).catch(()=>{});
+
 /* ---------- Start ---------- */
-loadState().then(()=>{ renderSetup(); });
-trLoad();
-pkLoad();
 ltLoad();
 ltLoadDraft();
 ltLoadAB();
-unoLoad();
+kontoRenderMenu();
+kontoHash();
+kontoBgSync();
 </script>
 </body>
 </html>

@@ -17,6 +17,8 @@
     --yellow:#FFD447; --gold-text:#FFD447;
     --coral:#FF6B7A; --mint:#43DFA0; --blue:#5B8DEF; --violet:#A78BFA;
     --radius:20px;
+    --sep:color-mix(in srgb,var(--line) 75%,transparent);
+    --card-shadow:none;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
@@ -24,65 +26,88 @@
     background:var(--bg); color:var(--text);
     font-family:ui-rounded,-apple-system,"SF Pro Rounded","Segoe UI",Roboto,sans-serif;
     padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
-    overscroll-behavior:none;
+    overscroll-behavior:none; overflow-x:hidden;
   }
-  .screen{display:none;max-width:520px;margin:0 auto;padding:20px 18px 40px;min-height:100dvh}
+  .screen{display:none;max-width:520px;margin:0 auto;padding:20px 16px 40px;min-height:100dvh}
   .screen.active{display:block}
-  header{display:flex;align-items:center;gap:12px;margin-bottom:22px}
-  .back{background:var(--surface);border:1px solid var(--line);color:var(--text);
-    width:42px;height:42px;border-radius:14px;font-size:20px;display:flex;align-items:center;justify-content:center}
-  h1{font-size:26px;font-weight:800;letter-spacing:-.3px}
+  /* Platz für die schwebende Glas-Leiste, damit nichts dauerhaft verdeckt wird */
+  .screen.has-bar{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .back{background:var(--surface);border:1px solid var(--line);color:var(--text);text-decoration:none;flex-shrink:0;
+    width:44px;height:44px;border-radius:14px;font-size:22px;display:flex;align-items:center;justify-content:center}
+  .back:active{background:var(--surface2)}
+  h1{font-size:28px;font-weight:800;letter-spacing:-.3px}
   .sub{color:var(--muted);font-size:14px;margin-top:2px}
-  button{font-family:inherit;border:none;cursor:pointer;font-size:16px}
+  button{font-family:inherit;border:none;cursor:pointer;font-size:16px;color:inherit;background:none}
+  button:disabled{cursor:default}
 
   .primary{
     width:100%;background:var(--yellow);color:#12152B;font-weight:800;font-size:18px;
-    padding:17px;border-radius:18px;transition:opacity .15s;
+    min-height:52px;padding:14px 17px;border-radius:22px;transition:opacity .15s,transform .1s;
   }
+  .primary:active{transform:scale(.985)}
   .primary:disabled{opacity:.35}
-  .ghost{width:100%;background:var(--surface);border:1px solid var(--line);color:var(--muted);
-    font-weight:600;padding:14px;border-radius:16px;margin-top:10px}
   .empty{color:var(--muted);text-align:center;padding:30px 10px;font-size:15px}
+  .danger{color:var(--coral)}
 
-  .field{margin-bottom:18px}
-  .field > label{display:block;font-size:14px;font-weight:700;color:var(--muted);margin-bottom:8px}
-  .stepper{display:flex;align-items:center;justify-content:space-between;
-    background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px}
-  .stepper .val{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
-  .stepper button.tapval{width:auto;min-width:88px;height:42px;background:none;border:1px dashed var(--line);
-    border-radius:12px;padding:0 14px;color:var(--text);font-weight:800;font-size:22px}
-  .stepper button.tapval:active{background:var(--surface2)}
-  .tap-hint{font-weight:600;font-size:12px;opacity:.75}
-  .stepper .val small{font-size:14px;color:var(--muted);font-weight:600;margin-left:3px}
-  .stepper button{width:42px;height:42px;border-radius:12px;background:var(--surface2);
-    border:1px solid var(--line);color:var(--text);font-size:24px;font-weight:700}
-  .stepper button:active{background:var(--line)}
-  .area-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .area-chip{background:var(--surface);border:2px solid var(--line);border-radius:16px;
-    padding:14px;color:var(--text);text-align:left;display:flex;align-items:center;gap:10px}
-  .area-chip .em{font-size:22px}
-  .area-chip b{font-size:15px;font-weight:700}
-  .area-chip.on{border-color:var(--mint);background:var(--surface2)}
-  .area-chip .check{margin-left:auto;color:var(--mint);font-weight:800;opacity:0}
-  .area-chip.on .check{opacity:1}
-  .est{background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:14px 16px;text-align:center;color:var(--muted);font-size:14px;margin-bottom:18px}
-  .est b{color:var(--gold-text);font-size:18px}
+  /* ---------- Einstellungen im iOS-Listenstil ---------- */
+  .ghead{margin:22px 0 6px 16px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+  .glist{background:var(--surface);border-radius:18px;overflow:hidden;box-shadow:var(--card-shadow)}
+  .gfoot{margin:6px 16px 0;font-size:13px;line-height:1.4;color:var(--muted)}
+  .gi{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:0 0 0 14px;min-height:52px;
+    color:var(--text);text-decoration:none;font:inherit;cursor:pointer}
+  div.gi{cursor:default}
+  .gi:active:not(div){background:var(--surface2)}
+  .gic{width:30px;height:30px;border-radius:8px;flex-shrink:0;display:grid;place-items:center;background:var(--c);color:#fff;
+    font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+  .gic svg{width:19px;height:19px}
+  .gbody{flex:1;min-width:0;display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px 8px 0}
+  .gi+.gi .gbody{border-top:1px solid var(--sep)}
+  .glbl{flex:1;min-width:0;font-size:16px;font-weight:600;line-height:1.3}
+  .glbl small{display:block;font-size:13px;color:var(--muted);font-weight:500;margin-top:1px}
+  .glbl small .pause{color:var(--gold-text)}
+  .glbl b{color:var(--gold-text)}
+  .glbl.add{color:var(--mint)}
+  .gval{color:var(--muted);font-size:16px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .gchev{width:15px;height:15px;color:var(--muted);opacity:.6;flex-shrink:0}
+  /* Schalter (ganze Zeile ist Tippfläche) */
+  .switch{position:relative;width:52px;height:32px;flex-shrink:0}
+  .switch input{opacity:0;position:absolute;inset:0;margin:0;cursor:pointer;z-index:1}
+  .switch i{position:absolute;inset:0;border-radius:99px;background:var(--line);transition:background .15s}
+  .switch i:after{content:'';position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;
+    box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+  .switch input:checked+i{background:var(--mint)}
+  .switch input:checked+i:after{transform:translateX(20px)}
+  .switch input:focus-visible+i{outline:2px solid var(--blue);outline-offset:2px}
+  /* Auswahlfeld in einer Zeile */
+  .gsel{flex:1;min-width:0;min-height:44px;background:none;border:none;color:var(--text);font:inherit;font-size:16px;font-weight:600;
+    -webkit-appearance:none;appearance:none;padding:0;text-overflow:ellipsis}
+  .gsel:focus{outline:none}
+
+  /* ---------- Liquid Glass: schwebende untere Leiste ---------- */
+  .gbar{position:fixed;left:10px;right:10px;bottom:max(6px,calc(env(safe-area-inset-bottom) - 20px));z-index:30;
+    max-width:500px;margin:0 auto;padding:6px;border-radius:28px;display:flex;gap:6px;
+    background:color-mix(in srgb,var(--surface) 45%,transparent);
+    border:1px solid rgba(255,255,255,.12);border-top-color:rgba(255,255,255,.22);
+    -webkit-backdrop-filter:blur(14px) saturate(200%) brightness(1.04);backdrop-filter:blur(14px) saturate(200%) brightness(1.04);
+    box-shadow:0 10px 30px rgba(0,0,0,.38),0 1px 3px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.14)}
+  .screen:not(.active) .gbar{display:none}
 
   /* ---------- Workout: Run ---------- */
   #scr-wk-run{display:none}
   #scr-wk-run.active{display:flex;flex-direction:column;min-height:100dvh}
-  .wk-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-  .wk-top .wk-quit{background:var(--surface);border:1px solid var(--line);color:var(--coral);
-    min-width:64px;height:40px;border-radius:12px;font-size:14px;font-weight:800;padding:0 12px}
-  .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
+  .wk-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+  .wk-top .wk-quit{background:color-mix(in srgb,var(--coral) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--coral) 30%,var(--line));
+    color:var(--coral);min-width:64px;height:44px;border-radius:22px;font-size:15px;font-weight:800;padding:0 16px}
+  .toast{position:fixed;left:50%;bottom:calc(84px + max(6px,calc(env(safe-area-inset-bottom) - 20px)));transform:translate(-50%,20px);
     background:var(--surface2);border:1px solid var(--line);color:var(--text);
-    padding:13px 18px;border-radius:14px;font-size:15px;font-weight:600;max-width:86%;text-align:center;
+    padding:13px 18px;border-radius:16px;font-size:15px;font-weight:600;max-width:86%;text-align:center;
     opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:80}
   .toast.show{opacity:1;transform:translate(-50%,0)}
-  .wk-progress{color:var(--muted);font-size:14px;font-weight:700}
+  .wk-progress{color:var(--muted);font-size:14px;font-weight:700;background:var(--surface);border:1px solid var(--line);
+    border-radius:99px;padding:7px 14px;font-variant-numeric:tabular-nums}
   .wk-phase{text-align:center;letter-spacing:.16em;text-transform:uppercase;
-    font-size:14px;font-weight:800;margin:4px 0 2px}
+    font-size:14px;font-weight:800;margin:10px 0 2px}
   .wk-phase.exercise{color:var(--mint)}
   .wk-phase.pause{color:var(--gold-text)}
   .wk-phase.ready{color:var(--blue)}
@@ -92,70 +117,67 @@
   .ring-fg{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1s linear, stroke .3s}
   .ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     font-size:68px;font-weight:800;font-variant-numeric:tabular-nums}
-  .wk-name{text-align:center;font-size:24px;font-weight:800;margin-top:6px;padding:0 10px}
-  .wk-name-en{text-align:center;font-size:14px;font-weight:600;color:var(--muted);margin-top:2px;padding:0 10px}
-  .wk-next-label{text-align:center;color:var(--muted);font-size:14px;margin-top:10px}
+  .wk-card{background:var(--surface);border-radius:18px;padding:14px 16px 16px;margin-top:10px;box-shadow:var(--card-shadow)}
+  .wk-name{text-align:center;font-size:24px;font-weight:800;padding:0 4px}
+  .wk-name-en{text-align:center;font-size:14px;font-weight:600;color:var(--muted);margin-top:2px;padding:0 4px}
   .wk-spacer{flex:1}
-  .wk-controls{display:flex;gap:10px;margin-top:14px}
-  .wk-controls button{flex:1;padding:15px;border-radius:16px;font-weight:800;font-size:16px;
-    background:var(--surface);border:1px solid var(--line);color:var(--text)}
-  .wk-controls .main{flex:1.4;background:var(--mint);border-color:var(--mint);color:#08251A}
+  .wk-controls button{flex:1;min-height:52px;padding:12px;border-radius:22px;font-weight:800;font-size:16px;color:var(--text);
+    background:color-mix(in srgb,var(--surface2) 55%,transparent)}
+  .wk-controls button:active{transform:scale(.985)}
+  .wk-controls .main{flex:1.4;background:var(--mint);color:#08251A}
 
   /* ---------- Workout: Vorschau/Plan ---------- */
-  .plan-total{background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:12px 16px;text-align:center;color:var(--muted);font-size:14px;margin-bottom:16px}
+  .plan-total{background:var(--surface);border-radius:18px;box-shadow:var(--card-shadow);
+    padding:13px 16px;text-align:center;color:var(--muted);font-size:14px;margin-top:14px}
   .plan-total b{color:var(--gold-text);font-size:18px}
-  .plan-row{background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:12px 12px 12px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
-  .plan-num{width:26px;height:26px;border-radius:8px;background:var(--surface2);border:1px solid var(--line);
-    color:var(--muted);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .plan-info{min-width:0;flex:1}
-  .plan-info .pn{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .plan-info .pd{color:var(--muted);font-size:13px;margin-top:2px}
-  .plan-info .pd .pause{color:var(--gold-text)}
-  .plan-move{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
-  .plan-move button{width:32px;height:24px;border-radius:7px;background:var(--surface2);
-    border:1px solid var(--line);color:var(--text);font-size:13px;display:flex;align-items:center;justify-content:center}
-  .plan-move button:disabled{opacity:.3}
-  .plan-edit{width:40px;height:40px;border-radius:11px;background:var(--surface2);border:1px solid var(--line);
-    color:var(--text);font-size:17px;flex-shrink:0}
-  .plan-add{width:100%;background:var(--surface);border:1px dashed var(--line);color:var(--muted);
-    font-weight:700;padding:14px;border-radius:16px;margin-bottom:16px}
-  .set-divider{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--mint);margin:14px 2px 8px}
+  .pname{flex:1;min-width:0;text-align:left;min-height:44px;padding:4px 0;color:var(--text)}
+  .pname .glbl{display:block}
+  .pmv{display:flex;gap:4px;flex-shrink:0}
+  .pmv button{width:44px;height:44px;border-radius:12px;background:var(--surface2);color:var(--text);display:grid;place-items:center}
+  .pmv button svg{width:18px;height:18px}
+  .pmv button:disabled{opacity:.3}
+  .pmv button:active:not(:disabled){background:var(--line)}
 
-  .edit-field{margin-bottom:14px}
-  .edit-field > label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:6px}
-  .edit-select{width:100%;background:var(--surface2);border:1px solid var(--line);border-radius:14px;
-    color:var(--text);padding:14px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
-  .sheet .stepper{background:var(--surface2)}
-
-  .center-stage{min-height:60dvh;display:flex;flex-direction:column;align-items:center;
+  .center-stage{min-height:52dvh;display:flex;flex-direction:column;align-items:center;
     justify-content:center;text-align:center;gap:14px;padding:20px 0}
   .center-stage .big-name{font-size:38px;font-weight:800;letter-spacing:-.5px}
-  .center-stage .hint{color:var(--muted);font-size:16px;max-width:280px}
+  .center-stage .hint{color:var(--muted);font-size:16px;max-width:300px;line-height:1.4}
 
-  /* ---------- Nummernpad ---------- */
-  .modal{position:fixed;inset:0;background:rgba(10,12,26,.75);display:none;
+  /* ---------- Blätter / Dialoge ---------- */
+  .modal{position:fixed;inset:0;background:rgba(6,8,20,.6);display:none;
     align-items:flex-end;justify-content:center;z-index:50}
   .modal.open{display:flex}
-  .sheet{background:var(--surface);border-radius:26px 26px 0 0;width:100%;max-width:520px;
-    padding:22px 20px calc(24px + env(safe-area-inset-bottom))}
+  .sheet{background:var(--bg);border-radius:26px 26px 0 0;width:100%;max-width:520px;max-height:92dvh;overflow:auto;
+    overscroll-behavior:contain;padding:10px 16px calc(20px + env(safe-area-inset-bottom));
+    box-shadow:0 -10px 30px rgba(0,0,0,.25)}
+  .sheet::before{content:'';display:block;width:40px;height:5px;border-radius:99px;background:var(--muted);opacity:.45;margin:0 auto 14px}
   .sheet h3{font-size:17px;color:var(--muted);font-weight:600;text-align:center}
-  .pad-display{font-size:52px;font-weight:800;text-align:center;margin:10px 0 16px;
+  .sheet h3.strong{color:var(--text);font-size:19px;font-weight:800}
+  .sheet .sdetail{color:var(--muted);font-size:14px;line-height:1.45;margin-top:8px;text-align:center;padding:0 6px}
+  .opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:56px;padding:9px 14px;border-radius:16px;
+    background:var(--surface);border:1px solid var(--line);margin-top:8px;font-weight:700;font-size:16px;color:var(--text)}
+  .opt .grow{flex:1;min-width:0}
+  .opt .oic{flex-shrink:0;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:var(--tc);
+    background:color-mix(in srgb,var(--tc) 16%,transparent)}
+  .opt .oic svg{width:21px;height:21px}
+  .opt:active{transform:scale(.985);background:var(--surface2)}
+  .tone-mint{--tc:var(--mint)} .tone-coral{--tc:var(--coral)} .tone-blue{--tc:var(--blue)} .tone-muted{--tc:var(--muted)}
+  .opt.tone-coral .grow{color:var(--coral)} .opt.tone-mint .grow{color:var(--mint)}
+  .opt.danger{border-color:color-mix(in srgb,var(--coral) 35%,var(--line))}
+  .optlist{margin-top:14px}
+  .pad-display{font-size:52px;font-weight:800;text-align:center;margin:8px 0 14px;
     font-variant-numeric:tabular-nums;min-height:64px}
-  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .pad button{background:var(--surface2);border:1px solid var(--line);color:var(--text);
-    padding:16px;border-radius:16px;font-size:24px;font-weight:700}
-  .pad button:active{background:var(--line)}
-  .pad .fn{font-size:17px;color:var(--muted)}
-  .sheet-actions{display:flex;gap:10px;margin-top:14px}
-  .sheet-actions .cancel{flex:1;background:var(--surface2);border:1px solid var(--line);
-    color:var(--muted);padding:15px;border-radius:16px;font-weight:700}
-  .sheet-actions .ok{flex:2;background:var(--mint);color:#12152B;padding:15px;border-radius:16px;font-weight:800;font-size:17px}
+  .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .pad button{background:var(--surface);color:var(--text);min-height:56px;padding:12px;border-radius:16px;font-size:24px;font-weight:700;
+    box-shadow:var(--card-shadow)}
+  .pad button:active{background:var(--surface2)}
+  .pad .fn{font-size:18px;color:var(--muted);background:var(--surface2)}
+  .sheet-actions{display:flex;gap:8px;margin-top:14px}
+  .sheet-actions button{min-height:52px;border-radius:22px;font-size:17px}
+  .sheet-actions .cancel{flex:1;background:var(--surface2);color:var(--text);padding:14px;font-weight:700}
+  .sheet-actions .ok{flex:2;background:var(--mint);color:#08251A;padding:14px;font-weight:800}
+  .sheet .glist + .opt{margin-top:14px}
 
-  .footer-actions{margin-top:20px}
-  .danger{color:var(--coral)}
   /* ---------- Helles Farbschema (automatisch je nach System-Einstellung) ---------- */
   @media (prefers-color-scheme: light){
     :root{
@@ -163,17 +185,28 @@
       --text:#13152B; --muted:#3E4468;
       --yellow:#FFC933; --gold-text:#7E5C00;
       --coral:#C52B41; --mint:#067A52; --blue:#2451B8; --violet:#5E32C4;
+      --sep:#DCDFEE;
+      --card-shadow:0 1px 2px rgba(19,21,43,.06);
     }
-    .modal{background:rgba(19,21,43,.45)}
-    .primary, .sheet-actions .ok{color:#13152B}
+    .modal{background:rgba(19,21,43,.4)}
+    .primary{color:#13152B}
+    .sheet-actions .ok,.wk-controls .main{color:#fff}
+    .gbar{background:color-mix(in srgb,var(--surface) 32%,transparent);
+      border-color:color-mix(in srgb,#fff 55%,transparent);border-top-color:color-mix(in srgb,#fff 80%,transparent);
+      box-shadow:0 10px 30px rgba(15,25,45,.16),0 1px 3px rgba(15,25,45,.08),inset 0 1px 0 rgba(255,255,255,.55)}
+    .wk-controls button{background:color-mix(in srgb,#fff 55%,transparent)}
+    .wk-controls .main{background:var(--mint)}
+    .sheet{box-shadow:0 -10px 30px rgba(19,21,43,.12)}
   }
-  .back{text-decoration:none}
+  /* Rückfälle: kein backdrop-filter bzw. „Transparenz reduzieren“ */
+  @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){ .gbar{background:var(--surface)} }
+  @media (prefers-reduced-transparency: reduce){ .gbar{background:var(--surface);-webkit-backdrop-filter:none;backdrop-filter:none} }
 </style>
 </head>
 <body>
 
 <!-- ========== WORKOUT: SETUP ========== -->
-<div class="screen active" id="scr-wk-setup">
+<div class="screen active has-bar" id="scr-wk-setup">
   <header>
     <a class="back" href="index.html" aria-label="Zur Anwendungssammlung">‹</a>
     <div>
@@ -182,55 +215,31 @@
     </div>
   </header>
 
-  <div class="field">
-    <label>Übungsdauer</label>
-    <div class="stepper">
-      <button onclick="wkAdjust('exDur',-5)">−</button>
-      <button class="val tapval" onclick="wkOpenCfgPad('exDur')"><span id="wk-exDur">30</span><small>Sek.</small></button>
-      <button onclick="wkAdjust('exDur',5)">+</button>
-    </div>
+  <h3 class="ghead">Zeiten</h3>
+  <div class="glist">
+    <button class="gi" onclick="wkOpenCfgPad('exDur')"><span class="gic" style="--c:#0A84FF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7"/><path d="M12 13.5V10M10 3h4M18.3 6.7l1.4-1.4"/></svg></span><span class="gbody"><span class="glbl">Übungsdauer</span><span class="gval"><span id="wk-exDur">30</span>&nbsp;s</span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+    <button class="gi" onclick="wkOpenCfgPad('pauseDur')"><span class="gic" style="--c:#FF9500"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h11v4.5A5.5 5.5 0 0 1 10.5 19h0A5.5 5.5 0 0 1 5 13.5z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8.5 3.5c0 1.2 1 1.3 1 2.5M12.5 3.5c0 1.2 1 1.3 1 2.5"/></svg></span><span class="gbody"><span class="glbl">Pausendauer</span><span class="gval"><span id="wk-pauseDur">15</span>&nbsp;s</span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+    <button class="gi" onclick="wkOpenCfgPad('target')"><span class="gic" style="--c:#34C759"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 21V4M5.5 4h11.5l-2.2 4 2.2 4H5.5"/></svg></span><span class="gbody"><span class="glbl">Zielzeit gesamt</span><span class="gval"><span id="wk-target">15</span>&nbsp;min</span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+    <button class="gi" onclick="wkOpenCfgPad('sets')"><span class="gic" style="--c:#AF52DE"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3l3 3-3 3"/><path d="M4 11.5V10a4 4 0 0 1 4-4h12M7 21l-3-3 3-3"/><path d="M20 12.5V14a4 4 0 0 1-4 4H4"/></svg></span><span class="gbody"><span class="glbl">Sätze</span><span class="gval"><span id="wk-sets">1</span>&nbsp;×</span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+  </div>
+  <p class="gfoot">Tippe auf einen Wert, um ihn einzugeben. Bei mehreren Sätzen wird dieselbe Übungsfolge wiederholt.</p>
+
+  <h3 class="ghead">Bereiche</h3>
+  <div class="glist" id="wk-areas"></div>
+  <p class="gfoot">Bauch &amp; unterer Rücken werden automatisch gemeinsam ausgeglichen trainiert.</p>
+
+  <h3 class="ghead">Dein Training</h3>
+  <div class="glist">
+    <div class="gi"><span class="gic" style="--c:#5856D6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg></span><span class="gbody"><span class="glbl" id="wk-est"></span></span></div>
   </div>
 
-  <div class="field">
-    <label>Pausendauer</label>
-    <div class="stepper">
-      <button onclick="wkAdjust('pauseDur',-5)">−</button>
-      <button class="val tapval" onclick="wkOpenCfgPad('pauseDur')"><span id="wk-pauseDur">15</span><small>Sek.</small></button>
-      <button onclick="wkAdjust('pauseDur',5)">+</button>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Zielzeit gesamt</label>
-    <div class="stepper">
-      <button onclick="wkAdjust('target',-5)">−</button>
-      <button class="val tapval" onclick="wkOpenCfgPad('target')"><span id="wk-target">15</span><small>Min.</small></button>
-      <button onclick="wkAdjust('target',5)">+</button>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Sätze (Übungen werden wiederholt)</label>
-    <div class="stepper">
-      <button onclick="wkAdjust('sets',-1)">−</button>
-      <button class="val tapval" onclick="wkOpenCfgPad('sets')"><span id="wk-sets">1</span><small>×</small></button>
-      <button onclick="wkAdjust('sets',1)">+</button>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Welche Bereiche? <span class="tap-hint">– Bauch &amp; unterer Rücken werden automatisch gemeinsam ausgeglichen trainiert</span></label>
-    <div class="area-grid" id="wk-areas"></div>
-  </div>
-
-  <div class="est" id="wk-est"></div>
-  <button class="primary" id="wk-start-btn" onclick="wkStart()">Weiter zur Vorschau</button>
+  <div class="gbar"><button class="primary" id="wk-start-btn" onclick="wkStart()">Weiter zur Vorschau</button></div>
 </div>
 
 <!-- ========== WORKOUT: VORSCHAU/PLAN ========== -->
-<div class="screen" id="scr-wk-plan">
+<div class="screen has-bar" id="scr-wk-plan">
   <header>
-    <button class="back" onclick="show('scr-wk-setup')">‹</button>
+    <button class="back" onclick="show('scr-wk-setup')" aria-label="Zu den Einstellungen">‹</button>
     <a class="back" href="index.html" aria-label="Zur Anwendungssammlung">⌂</a>
     <div>
       <h1>Dein Plan</h1>
@@ -239,12 +248,15 @@
   </header>
   <div class="plan-total" id="wk-plan-total"></div>
   <div id="wk-plan-list"></div>
-  <button class="plan-add" onclick="wkPlanAdd()">＋ Übung hinzufügen</button>
-  <button class="primary" id="wk-begin-btn" onclick="wkBegin()">Los geht's</button>
+  <div class="glist" style="margin-top:22px">
+    <button class="gi" onclick="wkPlanAdd()"><span class="gic" style="--c:#34C759"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span class="gbody"><span class="glbl add">Übung hinzufügen</span></span></button>
+  </div>
+  <p class="gfoot">Tippe auf eine Übung, um sie zu tauschen, die Dauer zu ändern oder sie zu löschen.</p>
+  <div class="gbar"><button class="primary" id="wk-begin-btn" onclick="wkBegin()">Los geht's</button></div>
 </div>
 
 <!-- ========== WORKOUT: RUN ========== -->
-<div class="screen" id="scr-wk-run">
+<div class="screen has-bar" id="scr-wk-run">
   <div class="wk-top">
     <button class="wk-quit" onclick="wkQuit()">✕ Ende</button>
     <span class="wk-progress" id="wk-count"></span>
@@ -257,17 +269,19 @@
     </svg>
     <div class="ring-num" id="wk-time">0</div>
   </div>
-  <div class="wk-name" id="wk-name"></div>
-  <div class="wk-name-en" id="wk-name-en"></div>
+  <div class="wk-card">
+    <div class="wk-name" id="wk-name"></div>
+    <div class="wk-name-en" id="wk-name-en"></div>
+  </div>
   <div class="wk-spacer"></div>
-  <div class="wk-controls">
+  <div class="wk-controls gbar">
     <button onclick="wkSkip()">Überspringen ›</button>
     <button class="main" id="wk-pause-btn" onclick="wkTogglePause()">Pause</button>
   </div>
 </div>
 
 <!-- ========== WORKOUT: FERTIG ========== -->
-<div class="screen" id="scr-wk-done">
+<div class="screen has-bar" id="scr-wk-done">
   <header>
     <button class="back" onclick="show('scr-wk-setup')" aria-label="Zu den Einstellungen">‹</button>
     <div>
@@ -279,37 +293,24 @@
     <div class="big-name" style="color:var(--mint)" id="wk-done-summary"></div>
     <div class="hint" id="wk-done-detail"></div>
   </div>
-  <button class="primary" onclick="wkStart()">Nochmal (gleiche Einstellung)</button>
-  <button class="ghost" onclick="show('scr-wk-setup')">Einstellungen ändern</button>
-  <a class="ghost" href="index.html" style="display:block;text-align:center;text-decoration:none">Zurück zur Sammlung</a>
+  <div class="glist">
+    <button class="gi" onclick="show('scr-wk-setup')"><span class="gic" style="--c:#8E8E93"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span><span class="gbody"><span class="glbl">Einstellungen ändern</span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+    <a class="gi" href="index.html"><span class="gic" style="--c:#0A84FF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg></span><span class="gbody"><span class="glbl">Zurück zur Sammlung</span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></a>
+  </div>
+  <div class="gbar"><button class="primary" onclick="wkStart()">Nochmal (gleiche Einstellung)</button></div>
 </div>
 
 <!-- ========== WORKOUT: ÜBUNG BEARBEITEN ========== -->
 <div class="modal" id="wk-edit-modal" onclick="if(event.target===this)wkEditClose()">
-  <div class="sheet">
-    <h3 style="margin-bottom:16px">Übung bearbeiten</h3>
-    <div class="edit-field">
-      <label>Übung</label>
-      <select class="edit-select" id="wk-edit-select" onchange="wkEditChangeExercise(this.value)"></select>
+  <div class="sheet" role="dialog" aria-label="Übung bearbeiten">
+    <h3 style="margin-bottom:14px">Übung bearbeiten</h3>
+    <div class="glist">
+      <label class="gi"><span class="gic" style="--c:#0A84FF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></span><span class="gbody"><select class="gsel" id="wk-edit-select" aria-label="Übung" onchange="wkEditChangeExercise(this.value)"></select><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></span></label>
+      <button class="gi" onclick="wkOpenEditPad('dur')"><span class="gic" style="--c:#34C759"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13.5" r="7"/><path d="M12 13.5V10M10 3h4M18.3 6.7l1.4-1.4"/></svg></span><span class="gbody"><span class="glbl">Übungsdauer</span><span class="gval"><span id="wk-edit-dur">30</span>&nbsp;s</span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
+      <button class="gi" onclick="wkOpenEditPad('pause')" id="wk-edit-pause-wrap"><span class="gic" style="--c:#FF9500"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h11v4.5A5.5 5.5 0 0 1 10.5 19h0A5.5 5.5 0 0 1 5 13.5z"/><path d="M16 10.5h1.5a2.5 2.5 0 0 1 0 5H16M8.5 3.5c0 1.2 1 1.3 1 2.5M12.5 3.5c0 1.2 1 1.3 1 2.5"/></svg></span><span class="gbody"><span class="glbl">Pause danach</span><span class="gval"><span id="wk-edit-pause">15</span>&nbsp;s</span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span></button>
     </div>
-    <div class="edit-field">
-      <label>Übungsdauer</label>
-      <div class="stepper">
-        <button onclick="wkEditAdjust('dur',-5)">−</button>
-        <button class="val tapval" onclick="wkOpenEditPad('dur')"><span id="wk-edit-dur">30</span><small>Sek.</small></button>
-        <button onclick="wkEditAdjust('dur',5)">+</button>
-      </div>
-    </div>
-    <div class="edit-field" id="wk-edit-pause-wrap">
-      <label>Pause danach</label>
-      <div class="stepper">
-        <button onclick="wkEditAdjust('pause',-5)">−</button>
-        <button class="val tapval" onclick="wkOpenEditPad('pause')"><span id="wk-edit-pause">15</span><small>Sek.</small></button>
-        <button onclick="wkEditAdjust('pause',5)">+</button>
-      </div>
-    </div>
+    <button class="opt tone-coral danger" onclick="wkEditDelete()"><span class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></span><span class="grow">Übung löschen</span></button>
     <div class="sheet-actions">
-      <button class="cancel danger" onclick="wkEditDelete()">Löschen</button>
       <button class="ok" onclick="wkEditClose()">Fertig</button>
     </div>
   </div>
@@ -317,27 +318,27 @@
 
 <!-- ========== BESTÄTIGUNG ========== -->
 <div class="modal" id="ask-modal" onclick="if(event.target===this)askClose()">
-  <div class="sheet">
-    <h3 id="ask-text" style="color:var(--text);font-size:18px;font-weight:800;margin-bottom:6px">Sicher?</h3>
-    <p id="ask-detail" style="color:var(--muted);font-size:14px;line-height:1.45;margin-top:8px;display:none"></p>
-    <div class="sheet-actions" style="margin-top:18px">
-      <button class="cancel" id="ask-no" onclick="askClose()">Zurück</button>
-      <button class="ok" id="ask-ok" onclick="askConfirmYes()">Ja</button>
+  <div class="sheet" role="dialog" aria-labelledby="ask-text">
+    <h3 id="ask-text" class="strong">Sicher?</h3>
+    <p id="ask-detail" class="sdetail" style="display:none"></p>
+    <div class="optlist">
+      <button class="opt tone-coral danger" onclick="askConfirmYes()"><span class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg></span><span class="grow" id="ask-ok">Ja</span></button>
+      <button class="opt tone-mint" onclick="askClose()"><span class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg></span><span class="grow" id="ask-no">Zurück</span></button>
     </div>
   </div>
 </div>
 
 <!-- ========== NUMMERNPAD ========== -->
 <div class="modal" id="pad-modal" onclick="if(event.target===this)closePad()">
-  <div class="sheet">
+  <div class="sheet" role="dialog" aria-labelledby="pad-title">
     <h3 id="pad-title">Punkte für …</h3>
     <div class="pad-display" id="pad-display">0</div>
     <div class="pad">
       <button onclick="padKey(1)">1</button><button onclick="padKey(2)">2</button><button onclick="padKey(3)">3</button>
       <button onclick="padKey(4)">4</button><button onclick="padKey(5)">5</button><button onclick="padKey(6)">6</button>
       <button onclick="padKey(7)">7</button><button onclick="padKey(8)">8</button><button onclick="padKey(9)">9</button>
-      <button class="fn" onclick="padClear()">C</button><button onclick="padKey(0)">0</button><button class="fn" onclick="padBack()">⌫</button>
-          </div>
+      <button class="fn" onclick="padClear()" aria-label="Löschen">C</button><button onclick="padKey(0)">0</button><button class="fn" onclick="padBack()" aria-label="Zurück">⌫</button>
+    </div>
     <div class="sheet-actions">
       <button class="cancel" onclick="closePad()">Abbrechen</button>
       <button class="ok" id="pad-ok" onclick="padConfirm()">Hinzufügen</button>
@@ -531,6 +532,9 @@ const WK_AREAS = [
   {key:'cardio',  em:'❤️‍🔥', label:'Cardio'},
 ];
 
+// Optik: Symbolkachel je Bereich (Farbe + Linien-Symbol)
+const WK_AREA_LOOK = {beine:{c:'#30B0C7',i:"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M9.5 3v8c0 1 .3 1.9.8 2.7l1.2 2V21h7.5v-1.3c0-1-.7-1.8-1.7-2l-2.8-.6-1.5-4.1V3\"/></svg>"},core:{c:'#FF9500',i:"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"8.5\"/><circle cx=\"12\" cy=\"12\" r=\"4.5\"/><circle cx=\"12\" cy=\"12\" r=\"1\"/></svg>"},arme:{c:'#5856D6',i:"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11\"/></svg>"},ruecken:{c:'#34C759',i:"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 2.5v19\"/><path d=\"M8.5 6h7M8 10h8M8.5 14h7M9.5 18h5\"/></svg>"},cardio:{c:'#FF2D55',i:"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 20s-7.5-4.6-7.5-10.2A4.2 4.2 0 0 1 12 7.2a4.2 4.2 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z\"/></svg>"}};
+const WK_ICO = {up:"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 15l6-6 6 6\"/></svg>",down:"<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 9l6 6 6-6\"/></svg>"};
 let wkSettings = { exDur:30, pauseDur:15, target:15, sets:1, areas:['beine','core','arme','ruecken','cardio'] };
 let wk = { queue:[], idx:0, phase:'idle', remaining:0, phaseTotal:0, timer:null, paused:false, audio:null, wakelock:null };
 const RING_CIRC = 2 * Math.PI * 52;
@@ -576,10 +580,11 @@ function wkRenderSetup(){
   document.getElementById('wk-pauseDur').textContent=wkSettings.pauseDur;
   document.getElementById('wk-target').textContent=wkSettings.target;
   document.getElementById('wk-sets').textContent=wkSettings.sets;
-  document.getElementById('wk-areas').innerHTML=WK_AREAS.map(a=>`
-    <button class="area-chip ${wkSettings.areas.includes(a.key)?'on':''}" onclick="wkToggleArea('${a.key}')">
-      <span class="em">${a.em}</span><b>${a.label}</b><span class="check">✓</span>
-    </button>`).join('');
+  document.getElementById('wk-areas').innerHTML=WK_AREAS.map(a=>{
+    const on=wkSettings.areas.includes(a.key), lk=WK_AREA_LOOK[a.key];
+    return `<label class="gi area-row"><span class="gic" style="--c:${lk.c}">${lk.i}</span><span class="gbody"><span class="glbl">${a.label}</span>
+      <span class="switch"><input type="checkbox" data-area="${a.key}" ${on?'checked':''} onchange="wkToggleArea('${a.key}')" aria-label="${a.label}"><i></i></span></span></label>`;
+  }).join('');
   const perBlock=wkSettings.exDur+wkSettings.pauseDur;
   const totalCount=Math.max(1,Math.round(wkSettings.target*60/perBlock));
   const unique=Math.max(1,Math.round(totalCount/wkSettings.sets));
@@ -800,25 +805,27 @@ function wkPlanTotal(){
 }
 function wkRenderPlan(){
   const list=document.getElementById('wk-plan-list');
-  let lastSet=null;
-  list.innerHTML=wk.plan.map((it,i)=>{
+  let lastSet=null, html='', open=false;
+  wk.plan.forEach((it,i)=>{
     const isLast=i===wk.plan.length-1;
-    let header='';
-    if(it.set && it.set!==lastSet){ header=`<div class="set-divider">Satz ${it.set}</div>`; lastSet=it.set; }
-    return header + `
-    <div class="plan-row">
-      <div class="plan-num">${i+1}</div>
-      <div class="plan-info">
-        <div class="pn">${esc(it.name)}</div>
-        <div class="pd">${it.dur} Sek.${isLast?'' : ` · <span class="pause">Pause ${it.pause} Sek.</span>`}</div>
-      </div>
-      <div class="plan-move">
-        <button onclick="wkMove(${i},-1)" ${i===0?'disabled':''}>▲</button>
-        <button onclick="wkMove(${i},1)" ${isLast?'disabled':''}>▼</button>
-      </div>
-      <button class="plan-edit" onclick="wkEditOpen(${i})">✎</button>
+    if(!open || (it.set && it.set!==lastSet)){
+      if(open) html+='</div>';
+      if(it.set && it.set!==lastSet){ html+=`<h3 class="ghead">Satz ${it.set}</h3>`; lastSet=it.set; }
+      html+='<div class="glist">'; open=true;
+    }
+    const lk=WK_AREA_LOOK[(it.tags&&it.tags[0])]||{c:'#8E8E93'};
+    html+=`
+    <div class="gi prow"><span class="gic" style="--c:${lk.c}">${i+1}</span><span class="gbody">
+      <button class="pname" onclick="wkEditOpen(${i})" aria-label="${esc(it.name)} bearbeiten"><span class="glbl">${esc(it.name)}
+        <small>${it.dur} s${isLast?'' : ` · <span class="pause">Pause ${it.pause} s</span>`}</small></span></button>
+      <span class="pmv">
+        <button onclick="wkMove(${i},-1)" ${i===0?'disabled':''} aria-label="Nach oben">${WK_ICO.up}</button>
+        <button onclick="wkMove(${i},1)" ${isLast?'disabled':''} aria-label="Nach unten">${WK_ICO.down}</button>
+      </span></span>
     </div>`;
-  }).join('') || '<div class="empty">Keine Übungen. Füge welche hinzu.</div>';
+  });
+  if(open) html+='</div>';
+  list.innerHTML = html || '<div class="empty">Keine Übungen. Füge welche hinzu.</div>';
   const t=wkPlanTotal(), m=Math.floor(t/60), s=t%60;
   document.getElementById('wk-plan-total').innerHTML=
     `<b>${wk.plan.length}</b> Übungen · Gesamtzeit ca. <b>${m}:${String(s).padStart(2,'0')}</b> Min`;

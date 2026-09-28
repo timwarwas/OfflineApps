@@ -227,6 +227,15 @@ dialog::backdrop{background:rgba(30,32,28,.55)}
 .livebox{border:1px solid var(--rule);padding:12px;margin-bottom:16px;background:var(--panel)}
 .livebox h3,.snaph{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em}
 .sharebadge{font-size:12px;white-space:nowrap}
+.leftcol{display:flex;flex-direction:column;gap:14px;min-width:0}
+.kontorow{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;color:var(--ink);text-decoration:none;-webkit-tap-highlight-color:transparent}
+.kontorow:active{background:#F0F0EA}
+.kontorow .kicon{width:32px;height:32px;flex:none;border-radius:7px;background:var(--signal);display:flex;align-items:center;justify-content:center}
+.kontorow .ktxt{flex:1;min-width:0}
+.kontorow .ktxt b{display:block;font-size:14px}
+.kontorow .ktxt small{display:block;font-size:12px;color:var(--ink-3)}
+.kontorow .kval{flex:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);font-size:14px}
+.kontorow .kchev{flex:none;color:var(--ink-3);font-size:22px;line-height:1}
 </style>
 <style id="pagestyle">@page{size:594mm 420mm;margin:0}</style>
 </head>
@@ -240,6 +249,288 @@ dialog::backdrop{background:rgba(30,32,28,.55)}
 <dialog id="dlg3" aria-live="polite"></dialog>
 <input type="file" id="fileimp" accept=".json,application/json" style="display:none">
 <noscript><p style="padding:20px">Diese Anwendung braucht JavaScript. Sie läuft vollständig im Browser; es werden keine Daten an einen Server gesendet.</p></noscript>
+<script>
+/* ==== Zentrales Konto der Anwendungssammlung (gleicher Code in allen Apps) ====
+   Ein Konto = ein verschlüsselter „Schlüsselbund“ auf dem Pi (Collection trips).
+   Aus Benutzername + Passwort wird per PBKDF2 ein Hauptschlüssel abgeleitet, daraus per HKDF
+   die Datensatz-ID, der Zugangsnachweis (X-Trip-Auth) und der AES-GCM-Schlüssel.
+   Der Server sieht nur verschlüsselte Daten und kennt weder Namen noch Passwort.
+   Im Schlüsselbund liegen die Verbindungslinks (Reisen, Haushalt, Spielgruppe, Projekte)
+   und – falls gewünscht – Passwörter der Brief-Profile.
+   Angemeldet bleibt man bis zum Abmelden (localStorage „konto“, gilt für alle Apps derselben Adresse).
+   Face ID: optional über einen Passkey mit PRF-Erweiterung (iOS 18+). */
+const Konto = (() => {
+  const DEFAULT = 'https://kostenpi.tail281e3e.ts.net';
+  const ITER = 310000;
+  const te = t => new TextEncoder().encode(t);
+  const b64e = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const b64d = str => { str = String(str).replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const b = atob(str), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+  const ls = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  };
+  const server = () => { try { return localStorage.getItem('konto-server') || DEFAULT; } catch (e) { return DEFAULT; } };
+  const normUser = u => String(u || '').trim().toLowerCase();
+  const nowIso = () => new Date().toISOString();
+
+  /* ---------- Schlüssel ---------- */
+  async function masterFrom(user, pw) {
+    const base = await crypto.subtle.importKey('raw', te(pw), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: te('anwendungssammlung-konto-v1|' + normUser(user)), iterations: ITER }, base, 256);
+    return b64e(new Uint8Array(bits));
+  }
+  const keyCache = new Map();
+  function keys(master, salt) {
+    const ck = salt + '|' + master;
+    if (!keyCache.has(ck)) keyCache.set(ck, (async () => {
+      const s = te(salt);
+      const base = await crypto.subtle.importKey('raw', b64d(master), 'HKDF', false, ['deriveKey', 'deriveBits']);
+      const enc = await crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: s, info: te('enc') }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+      const auth = b64e(new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: s, info: te('auth') }, base, 256)));
+      const idb = new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: s, info: te('id') }, base, 256));
+      const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let id = '';
+      for (let i = 0; i < 15; i++) id += a[idb[i] % 36];
+      return { id, auth, enc };
+    })());
+    return keyCache.get(ck);
+  }
+  const vaultKeys = master => keys(master, 'konto-v1');
+  const pkKeys = secret => keys(secret, 'konto-passkey-v1');
+  async function encrypt(key, obj) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te(JSON.stringify(obj)));
+    return 'v1.' + b64e(iv) + '.' + b64e(new Uint8Array(ct));
+  }
+  async function decrypt(key, str) {
+    const p = String(str || '').split('.');
+    if (p.length !== 3 || p[0] !== 'v1') throw new Error('Unbekanntes Datenformat');
+    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(p[1]) }, key, b64d(p[2]))));
+  }
+
+  /* ---------- Server ---------- */
+  async function api(method, path, auth, body) {
+    const h = {}; if (auth) h['X-Trip-Auth'] = auth; if (body) h['Content-Type'] = 'application/json';
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 15000);
+    try {
+      const r = await fetch(server() + '/api/collections/trips/records' + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', signal: ctl.signal });
+      let j = null; try { j = await r.json(); } catch (e) {}
+      return { status: r.status, json: j };
+    } catch (e) {
+      const err = new Error('Server nicht erreichbar'); err.offline = true; throw err;
+    } finally { clearTimeout(to); }
+  }
+  const fail = r => { const e = new Error('Server antwortet mit ' + r.status); e.status = r.status; return e; };
+
+  /* ---------- Schlüsselbund zusammenführen ---------- */
+  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {} }; }
+  function clean(v, user) {
+    v = v && typeof v === 'object' ? v : {};
+    return { v: 1, user: v.user || user || '', items: v.items && typeof v.items === 'object' ? v.items : {},
+      deleted: v.deleted && typeof v.deleted === 'object' ? v.deleted : {}, passkeys: v.passkeys && typeof v.passkeys === 'object' ? v.passkeys : {} };
+  }
+  function merge(a, b) {
+    a = clean(a); b = clean(b);
+    const out = emptyVault(a.user || b.user);
+    const cut = new Date(Date.now() - 365 * 864e5).toISOString();
+    for (const d of [a.deleted, b.deleted]) for (const k in d) if (d[k] >= cut && (!out.deleted[k] || d[k] > out.deleted[k])) out.deleted[k] = d[k];
+    for (const src of [a.items, b.items]) for (const k in src) {
+      const x = src[k], o = out.items[k];
+      if (!o || (x.updatedAt || '') > (o.updatedAt || '') || ((x.updatedAt || '') === (o.updatedAt || '') && JSON.stringify(x) > JSON.stringify(o))) out.items[k] = x;
+    }
+    for (const k in out.items) if (out.deleted[k] && out.deleted[k] >= (out.items[k].updatedAt || '')) delete out.items[k];
+    for (const src of [a.passkeys, b.passkeys]) for (const k in src) if (!out.passkeys[k] || (src[k].createdAt || '') > (out.passkeys[k].createdAt || '')) out.passkeys[k] = src[k];
+    for (const k in out.passkeys) if (out.deleted['pk:' + k]) delete out.passkeys[k];
+    return out;
+  }
+  const canon = v => { const s = x => Array.isArray(x) ? '[' + x.map(s).join(',') + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map(k => JSON.stringify(k) + ':' + s(x[k])).join(',') + '}' : JSON.stringify(x); return s(v); };
+
+  /* ---------- Sitzung ---------- */
+  const session = () => { const s = ls.get('konto'); return s && s.master && s.user ? s : null; };
+  const cache = () => clean(ls.get('konto-cache'), (session() || {}).user);
+  const listeners = new Set();
+  const emit = () => listeners.forEach(fn => { try { fn(); } catch (e) {} });
+
+  async function fetchVault(master) {
+    const k = await vaultKeys(master);
+    const r = await api('GET', '/' + k.id, k.auth);
+    if (r.status === 404) return null;
+    if (r.status !== 200 || !r.json) throw fail(r);
+    return { vault: clean(await decrypt(k.enc, r.json.data)), rev: +r.json.rev || 0 };
+  }
+  async function createVault(master, vault) {
+    const k = await vaultKeys(master);
+    const r = await api('POST', '', null, { id: k.id, auth: k.auth, data: await encrypt(k.enc, vault), rev: 1 });
+    if (r.status !== 200) throw fail(r);
+  }
+
+  let busy = null, again = false;
+  /* Abgleich: holen, zusammenführen, bei Bedarf zurückschreiben */
+  async function sync() {
+    const s = session(); if (!s) return null;
+    if (busy) { again = true; return busy; }
+    busy = (async () => {
+      try {
+        const k = await vaultKeys(s.master);
+        for (let round = 0; round < 4; round++) {
+          const r = await api('GET', '/' + k.id, k.auth);
+          if (r.status === 404) { const e = new Error('Konto nicht mehr vorhanden'); e.gone = true; throw e; }
+          if (r.status !== 200 || !r.json) throw fail(r);
+          const remote = clean(await decrypt(k.enc, r.json.data), s.user);
+          const local = ls.get('konto-cache') ? cache() : remote;
+          const merged = merge(local, remote);
+          ls.set('konto-cache', merged);
+          if (canon(merged) === canon(remote)) { ls.set('konto-state', { at: nowIso(), err: '' }); break; }
+          const u = await api('PATCH', '/' + k.id, k.auth, { data: await encrypt(k.enc, merged), rev: (+r.json.rev || 0) + 1 });
+          if (u.status === 200) { ls.set('konto-state', { at: nowIso(), err: '' }); break; }
+          if (u.status !== 400 && u.status !== 409) throw fail(u);
+        }
+        emit();
+        return cache();
+      } catch (e) {
+        ls.set('konto-state', { at: (ls.get('konto-state') || {}).at || null, err: e.message || 'Fehler' });
+        if (e.gone) { logout(); emit(); }
+        throw e;
+      } finally {
+        busy = null;
+        if (again) { again = false; setTimeout(() => sync().catch(() => {}), 50); }
+      }
+    })();
+    return busy;
+  }
+
+  async function login(user, pw) {
+    user = String(user || '').trim();
+    if (!user || !pw) throw new Error('Bitte Benutzername und Passwort eingeben.');
+    const master = await masterFrom(user, pw);
+    const f = await fetchVault(master);
+    if (!f) return { notFound: true };
+    ls.set('konto', { user: f.vault.user || user, master, at: nowIso() });
+    ls.set('konto-cache', f.vault);
+    emit();
+    return { ok: true };
+  }
+  async function register(user, pw) {
+    user = String(user || '').trim();
+    if (user.length < 2) throw new Error('Der Benutzername braucht mindestens 2 Zeichen.');
+    if (String(pw || '').length < 8) throw new Error('Das Passwort braucht mindestens 8 Zeichen.');
+    const master = await masterFrom(user, pw);
+    const f = await fetchVault(master);
+    if (f) { ls.set('konto', { user: f.vault.user || user, master, at: nowIso() }); ls.set('konto-cache', f.vault); emit(); return { existed: true }; }
+    await createVault(master, emptyVault(user));
+    ls.set('konto', { user, master, at: nowIso() });
+    ls.set('konto-cache', emptyVault(user));
+    emit();
+    return { ok: true };
+  }
+  function logout() { ['konto', 'konto-cache', 'konto-state'].forEach(ls.del); keyCache.clear(); emit(); }
+  async function changePassword(oldPw, newPw) {
+    const s = session(); if (!s) throw new Error('Nicht angemeldet.');
+    if (String(newPw || '').length < 8) throw new Error('Das neue Passwort braucht mindestens 8 Zeichen.');
+    if ((await masterFrom(s.user, oldPw)) !== s.master) throw new Error('Das bisherige Passwort stimmt nicht.');
+    const v = await sync();
+    const nm = await masterFrom(s.user, newPw);
+    await createVault(nm, v);
+    for (const cid in v.passkeys) {   // Face-ID-Zugänge auf den neuen Schlüssel umstellen
+      const p = v.passkeys[cid], pk = await pkKeys(p.secret);
+      await api('PATCH', '/' + pk.id, pk.auth, { data: await encrypt(pk.enc, { user: s.user, master: nm }), rev: 2 });
+    }
+    const ok = await vaultKeys(s.master);
+    await api('DELETE', '/' + ok.id, ok.auth);
+    ls.set('konto', { user: s.user, master: nm, at: nowIso() });
+    emit();
+  }
+
+  /* ---------- Einträge ---------- */
+  function items(app) {
+    const v = cache();
+    return Object.keys(v.items).filter(k => !app || v.items[k].app === app).map(k => Object.assign({ key: k }, v.items[k]));
+  }
+  function put(key, item) {
+    if (!session()) return false;
+    const v = cache();
+    const old = v.items[key];
+    const nx = Object.assign({}, item, { updatedAt: nowIso() });
+    if (old) { const a = Object.assign({}, old), b = Object.assign({}, nx); delete a.updatedAt; delete b.updatedAt; if (canon(a) === canon(b)) return false; }
+    v.items[key] = nx; delete v.deleted[key];
+    ls.set('konto-cache', v);
+    sync().catch(() => {});
+    return true;
+  }
+  function remove(key) {
+    if (!session()) return false;
+    const v = cache();
+    if (!v.items[key]) return false;
+    delete v.items[key]; v.deleted[key] = nowIso();
+    ls.set('konto-cache', v);
+    sync().catch(() => {});
+    return true;
+  }
+
+  /* ---------- Face ID (Passkey mit PRF) ---------- */
+  const PRF_SALT = te('anwendungssammlung-konto-prf-v1');
+  const rpId = () => location.hostname;
+  async function passkeySupported() {
+    try {
+      if (!window.PublicKeyCredential || !navigator.credentials || location.protocol !== 'https:') return false;
+      if (PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable && !(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())) return false;
+      if (PublicKeyCredential.getClientCapabilities) { const c = await PublicKeyCredential.getClientCapabilities(); if (c && c['extension:prf'] === false) return false; }
+      return true;
+    } catch (e) { return false; }
+  }
+  const prfOut = cred => { const x = cred.getClientExtensionResults && cred.getClientExtensionResults(); return x && x.prf && x.prf.results && x.prf.results.first ? new Uint8Array(x.prf.results.first) : null; };
+  async function enablePasskey() {
+    const s = session(); if (!s) throw new Error('Nicht angemeldet.');
+    const cred = await navigator.credentials.create({ publicKey: {
+      rp: { name: 'Anwendungssammlung', id: rpId() },
+      user: { id: crypto.getRandomValues(new Uint8Array(16)), name: s.user, displayName: s.user },
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: { residentKey: 'required', userVerification: 'required', authenticatorAttachment: 'platform' },
+      extensions: { prf: { eval: { first: PRF_SALT } } },
+    } });
+    let out = prfOut(cred);
+    if (!out) {   // manche Geräte liefern das Ergebnis erst bei der ersten Anmeldung
+      const a = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: rpId(), userVerification: 'required',
+        allowCredentials: [{ type: 'public-key', id: cred.rawId }], extensions: { prf: { eval: { first: PRF_SALT } } } } });
+      out = prfOut(a);
+    }
+    if (!out) throw new Error('Dieses Gerät unterstützt die Anmeldung per Face ID für Web-Apps noch nicht (nötig: iOS 18 oder neuer).');
+    const secret = b64e(out), pk = await pkKeys(secret);
+    const r = await api('POST', '', null, { id: pk.id, auth: pk.auth, data: await encrypt(pk.enc, { user: s.user, master: s.master }), rev: 1 });
+    if (r.status !== 200 && r.status !== 400) throw fail(r);
+    const v = cache(); const cid = b64e(new Uint8Array(cred.rawId));
+    v.passkeys[cid] = { secret, createdAt: nowIso(), device: (navigator.platform || 'Gerät') };
+    ls.set('konto-cache', v); await sync();
+    ls.set('konto-passkey', true);
+    return true;
+  }
+  async function loginWithPasskey() {
+    const a = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: rpId(), userVerification: 'required',
+      extensions: { prf: { eval: { first: PRF_SALT } } } }, mediation: 'optional' });
+    const out = prfOut(a);
+    if (!out) throw new Error('Face ID hat keinen Schlüssel geliefert. Bitte mit Passwort anmelden.');
+    const pk = await pkKeys(b64e(out));
+    const r = await api('GET', '/' + pk.id, pk.auth);
+    if (r.status === 404) throw new Error('Für diesen Passkey ist kein Konto hinterlegt. Bitte mit Passwort anmelden und Face ID neu einrichten.');
+    if (r.status !== 200 || !r.json) throw fail(r);
+    const d = await decrypt(pk.enc, r.json.data);
+    const f = await fetchVault(d.master);
+    if (!f) throw new Error('Konto nicht gefunden.');
+    ls.set('konto', { user: d.user, master: d.master, at: nowIso() });
+    ls.set('konto-cache', f.vault);
+    emit();
+    return { ok: true };
+  }
+
+  return {
+    session, user: () => (session() || {}).user || '', loggedIn: () => !!session(), state: () => ls.get('konto-state') || {},
+    login, register, logout, changePassword, sync, items, put, remove, onChange: fn => listeners.add(fn),
+    passkeySupported, enablePasskey, loginWithPasskey, hasPasskey: () => Object.keys(cache().passkeys).length > 0,
+    _merge: merge,
+  };
+})();
+</script>
 <script>'use strict';
 
 /* ===== 01_glasses.js ===== */
@@ -4127,7 +4418,8 @@ function renderProject(root) {
       }, text:'Alle entfernen' })
     ]));
   }
-  root.appendChild(el('div', { class:'split' }, [left, right]));
+  var kbox = el('div', { class:'panel kontobox' }, [el('h2', {}, ['Konto']), kontoRow()]);
+  root.appendChild(el('div', { class:'split' }, [el('div', { class:'leftcol' }, [left, kbox]), right]));
 }
 
 var saveTimer = null;
@@ -4832,6 +5124,121 @@ function liveShareSection(body) {
   body.appendChild(el('h3', { class:'snaph', text:'Momentaufnahme als Link' }));
 }
 
+
+/* ---------- Zentrales Konto (siehe Konto-Modul oben) ----------
+   Nur wenn angemeldet: geteilte Projekte landen als „cocktails:<id>“ im Schlüsselbund und werden
+   auf anderen Geräten still beigetreten; noch nicht geteilte Projekte werden automatisch geteilt.
+   Ohne Anmeldung passiert hier nichts. */
+var KontoCk = {
+  APP: 'cocktails',
+  MKEY: 'cocktailuebersicht.konto',          // { shared:{<shareId>:1}, optout:{<projektId>:1} } – nur dieses Gerät
+  joining: {}, starting: {}, failedAt: {}, timer: null,
+  key: function (id) { return 'cocktails:' + id; },
+  marks: function () { var m; try { m = JSON.parse(localStorage.getItem(this.MKEY) || 'null'); } catch (e) { m = null; } m = m || {}; m.shared = m.shared || {}; m.optout = m.optout || {}; return m; },
+  setMarks: function (m) { try { localStorage.setItem(this.MKEY, JSON.stringify(m)); } catch (e) {} },
+  on: function () { return typeof Konto !== 'undefined' && Konto.loggedIn(); },
+  deleted: function (key) { try { var c = JSON.parse(localStorage.getItem('konto-cache') || 'null'); return !!(c && c.deleted && c.deleted[key]); } catch (e) { return false; } },
+  inKonto: function (id) { var k = this.key(id); return Konto.items(this.APP).some(function (it) { return it.key === k; }); },
+  put: function (pid) {
+    var s = Share.get(pid), p = Share.proj(pid); if (!s || !p) return;
+    Konto.put(this.key(s.id), { app:this.APP, id:s.id, secret:s.secret, label:p.name || 'Projekt' });
+    var m = this.marks(); if (!m.shared[s.id]) { m.shared[s.id] = 1; this.setMarks(m); }
+  },
+  /* Aufruf aus Share.set: neu geteilt/beigetreten → eintragen, Teilen beendet/gelöscht/404 → austragen */
+  shareSet: function (pid, prev, next) {
+    if (!this.on()) return;
+    if (next && (!prev || prev.id !== next.id)) {
+      if (prev) Konto.remove(this.key(prev.id));
+      var m = this.marks(); delete m.optout[pid]; this.setMarks(m);
+      this.put(pid);
+    } else if (!next && prev) {
+      Konto.remove(this.key(prev.id));
+      var m2 = this.marks(); delete m2.shared[prev.id];
+      if (Share.proj(pid)) m2.optout[pid] = 1;     // bewusst nicht mehr geteilt → nicht automatisch neu teilen
+      this.setMarks(m2);
+    }
+  },
+  /* unberührtes Startprojekt nicht hochladen, sonst sammelt jedes Gerät ein leeres Projekt im Konto */
+  pristine: function (p) { return !(p.cocktails || []).length && /^(Mein erstes Projekt|Neues Projekt)$/.test(p.name || ''); },
+  /* Schlüsselbund anwenden: fehlende Projekte still beitreten, lokale eintragen bzw. automatisch teilen */
+  apply: function () {
+    if (!this.on() || !Store.state) return;
+    var self = this, all = Share.all(), known = {}, m = this.marks();
+    Object.keys(all).forEach(function (pid) { if (all[pid] && Share.proj(pid)) known[all[pid].id] = pid; });
+    Konto.items(this.APP).forEach(function (it) {
+      if (it.id && it.secret && !known[it.id]) self.silentJoin(it.id, it.secret);
+    });
+    Store.state.projects.forEach(function (p) {
+      var s = Share.get(p.id);
+      if (s) {
+        if (self.inKonto(s.id)) self.put(p.id);                               // Name aktuell halten
+        else if (!m.shared[s.id] && !self.deleted(self.key(s.id))) self.put(p.id);   // lokal geteilt, noch nicht im Konto
+        return;                                                                // sonst: anderswo entfernt → nicht wiederbeleben
+      }
+      if (m.optout[p.id] || self.pristine(p) || self.starting[p.id]) return;
+      if (self.failedAt[p.id] && Date.now() - self.failedAt[p.id] < 60000) return;
+      self.starting[p.id] = true;
+      Share.start(p).then(function () { delete self.failedAt[p.id]; renderBarSoft(); },
+        function () { self.failedAt[p.id] = Date.now(); })
+        .then(function () { delete self.starting[p.id]; });
+    });
+  },
+  silentJoin: async function (id, secret) {
+    if (this.joining[id]) return;
+    this.joining[id] = true;
+    try {
+      var k = await Share.keysFor(secret), r = await Share.api('GET', '/' + id, k.auth);
+      if (r.status === 404) { Konto.remove(this.key(id)); return; }
+      if (r.status !== 200 || !r.json) return;
+      var remote = await Share.dec(k.enc, r.json.data);
+      if (!remote || validateImport(remote.data)) return;
+      var pid = remote.data.project.id, cur = Share.get(pid);
+      if (cur && cur.id !== id) return;                 // lokal schon unter anderem Link geteilt
+      if (cur && Share.proj(pid)) return;               // inzwischen vorhanden
+      var p = Share.proj(pid);
+      if (!p) { p = normalizeImportedProject(remote.data.project); p.id = pid; Store.state.projects.push(p); }
+      Share.apply(p, remote.data);
+      Share.set(pid, { id:id, secret:secret, seen:r.json.updated, stamp:remote.stamp, hash:Share.contentKey(p), dirty:false, at:new Date().toISOString(), err:'' });
+      Store.save(); render();
+    } catch (e) { /* still, beim nächsten Abgleich erneut */ }
+    finally { delete this.joining[id]; }
+  },
+  schedule: function (ms) { var self = this; if (!this.on()) return; clearTimeout(this.timer); this.timer = setTimeout(function () { self.apply(); }, ms == null ? 1500 : ms); },
+  refresh: function () {
+    var self = this;
+    if (!this.on()) return;
+    this.apply();
+    Konto.sync().then(function () { self.apply(); }).catch(function () {});
+  },
+  paintRow: function () { var r = document.getElementById('kontoRow'); if (r && r.parentNode) r.parentNode.replaceChild(kontoRow(), r); },
+  init: function () {
+    var self = this, orig = Share.set;
+    Share.set = function (pid, v) { var prev = this.get(pid); orig.call(this, pid, v); try { self.shareSet(pid, prev, v); } catch (e) {} };
+    Konto.onChange(function () {
+      if (!self.on()) { try { localStorage.removeItem(self.MKEY); } catch (e) {} }
+      self.paintRow(); self.schedule(300);
+    });
+    this.refresh();
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') self.refresh(); });
+  }
+};
+function renderBarSoft() {   // nicht mitten in eine Eingabe hinein neu zeichnen
+  var a = document.activeElement; if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
+  if (document.querySelector('dialog[open]')) renderBar(); else render();
+}
+function kontoRow() {
+  var on = KontoCk.on();
+  return el('a', { class:'kontorow', id:'kontoRow', href:'index.html#konto' }, [
+    el('span', { class:'kicon', html:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="8.5" r="4" fill="none" stroke="#fff" stroke-width="2"/><path d="M4.5 20c1.2-4 4-6 7.5-6s6.3 2 7.5 6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>' }),
+    el('span', { class:'ktxt' }, [
+      el('b', { text:'Konto' }),
+      el('small', { text: on ? 'Projekte werden mit deinem Konto verknüpft' : 'Im Hauptmenü anmelden' })
+    ]),
+    el('span', { class:'kval', text: on ? Konto.user() : 'Nicht angemeldet' }),
+    el('span', { class:'kchev', text:'›' })
+  ]);
+}
+
 /* ---------- Deeplink ---------- */
 function checkDeepLink() {
   var h = location.hash || '';
@@ -4880,7 +5287,7 @@ function render() {
 }
 function boot() {
   var origSave = Store.save;
-  Store.save = function () { var r = origSave.apply(this, arguments); Share.changed(); return r; };
+  Store.save = function () { var r = origSave.apply(this, arguments); Share.changed(); KontoCk.schedule(); return r; };
   Store.load();
   checkDeepLink();
   render();
@@ -4888,6 +5295,7 @@ function boot() {
   setInterval(function () { if (document.visibilityState === 'visible') Share.syncAll(); }, 30000);
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') Share.syncAll(); });
   window.addEventListener('online', function () { Share.syncAll(); });
+  KontoCk.init();
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(function () {});
   $('#fileimp').addEventListener('change', function (e) {
     if (e.target.files && e.target.files[0]) importJsonFile(e.target.files[0]);

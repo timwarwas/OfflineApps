@@ -18,6 +18,8 @@
   --petrol:#0E6B63; --petrol-ink:#0E6B63; --petrol-soft:#DCEEEA;
   --orange:#B4480F; --orange-ink:#8A3408; --orange-soft:#FBE3D2;
   --field:#FBF8F2; --shadow:0 1px 2px rgba(30,26,21,.05);
+  --blue:#0A6ED1; --red:#C8321E;
+  --barb:max(6px,calc(env(safe-area-inset-bottom,0px) - 20px));
   --head:"Bricolage Grotesque","Avenir Next Condensed","Avenir Next","Segoe UI",system-ui,sans-serif;
   --body:"Figtree",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
   color-scheme:light dark;
@@ -28,6 +30,7 @@
     --petrol:#12877D; --petrol-ink:#5CC7BB; --petrol-soft:#163330;
     --orange:#D9661F; --orange-ink:#F3A06B; --orange-soft:#3B2215;
     --field:#1A1712; --shadow:none;
+    --blue:#5AA9FF; --red:#FF7A66;
   }
 }
 *{box-sizing:border-box}
@@ -36,7 +39,7 @@ body{padding-top:env(safe-area-inset-top,0px)}
 body.lock{overflow:hidden}
 button,a,input,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button{cursor:pointer;font-family:var(--body)}
-.wrap{max-width:560px;margin:0 auto;padding:4px 16px calc(120px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:560px;margin:0 auto;padding:4px 16px calc(144px + env(safe-area-inset-bottom,0px))}
 .wrap.exp{padding-bottom:calc(160px + env(safe-area-inset-bottom,0px))}
 .top{display:flex;align-items:center;gap:4px;min-height:56px;margin:0 -8px 4px}
 .top .ttl{flex:1;min-width:0}
@@ -127,13 +130,25 @@ select.in{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50
 .entry .r span{font-size:13px;color:var(--muted)}
 .empty{text-align:center;padding:22px 16px}
 .empty p{margin:0 0 12px}
-.fab{position:fixed;right:max(16px,calc(50vw - 264px));bottom:calc(72px + env(safe-area-inset-bottom,0px));min-height:56px;padding:0 22px;border-radius:28px;background:var(--petrol);color:#fff;border:0;font:700 17px var(--body);box-shadow:0 6px 18px rgba(14,107,99,.35);z-index:11}
-.tabbar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);z-index:10}
-.tabbar .in2{display:flex;max-width:560px;margin:0 auto}
-.tab{flex:1;min-height:58px;border:0;background:none;color:var(--muted);font:600 12px var(--body);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.tab .ti{font-size:20px;filter:grayscale(1);opacity:.7}
-.tab.on{color:var(--petrol-ink)}
-.tab.on .ti{filter:none;opacity:1}
+.fab{position:fixed;right:max(16px,calc(50vw - 264px));bottom:calc(72px + var(--barb));min-height:56px;padding:0 22px;border-radius:28px;background:var(--petrol);color:#fff;border:0;font:700 17px var(--body);box-shadow:0 6px 18px rgba(14,107,99,.35);z-index:11}
+/* Untere Navigation: schwebende Glas-Leiste („Liquid Glass“) */
+.tabbar{position:fixed;left:12px;right:12px;bottom:var(--barb);max-width:520px;margin:0 auto;border-radius:28px;padding:4px;z-index:10;
+  background:color-mix(in srgb,var(--card) 32%,transparent);
+  border:1px solid color-mix(in srgb,#fff 55%,transparent);border-top-color:color-mix(in srgb,#fff 80%,transparent);
+  -webkit-backdrop-filter:blur(14px) saturate(200%) brightness(1.04);backdrop-filter:blur(14px) saturate(200%) brightness(1.04);
+  box-shadow:0 10px 30px rgba(15,25,45,.16),0 1px 3px rgba(15,25,45,.08),inset 0 1px 0 rgba(255,255,255,.55)}
+.tabbar .in2{display:flex;gap:2px}
+.tab{flex:1;min-width:0;min-height:50px;border:0;border-radius:24px;background:none;color:var(--muted);font:600 12px var(--body);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 2px 4px;transition:background .2s,color .2s}
+.tab .ti{display:block;width:24px;height:24px}
+.tab .ti svg{display:block;width:24px;height:24px}
+.tab.on{color:var(--petrol-ink);background:color-mix(in srgb,var(--petrol) 13%,transparent)}
+@media (prefers-color-scheme: dark){
+  .tabbar{background:color-mix(in srgb,var(--card) 45%,transparent);border-color:rgba(255,255,255,.12);border-top-color:rgba(255,255,255,.22);
+    box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08)}
+  .tab.on{background:color-mix(in srgb,var(--petrol) 24%,transparent)}
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.tabbar{background:var(--card)}}
+@media (prefers-reduced-transparency: reduce){.tabbar{background:var(--card);-webkit-backdrop-filter:none;backdrop-filter:none}}
 
 /* Reisen */
 .grow{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:10px;text-align:left;color:inherit;font:inherit;min-height:72px}
@@ -202,8 +217,11 @@ details.arch summary{min-height:44px;display:flex;align-items:center;font-weight
 textarea.in{min-height:220px;padding:10px 12px;font:16px/1.4 ui-monospace,Menlo,monospace}
 @keyframes up{from{transform:translateY(40px);opacity:.5}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion: reduce){.sheet{animation:none}}
-#toast{position:fixed;left:50%;bottom:calc(140px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;max-width:calc(100% - 32px);opacity:0;pointer-events:none;transition:opacity .2s;z-index:70;text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(140px + var(--barb));transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;max-width:calc(100% - 32px);opacity:0;pointer-events:none;transition:opacity .2s;z-index:70;text-align:center}
 #toast.show{opacity:1}
+#toast.act{pointer-events:auto;display:flex;align-items:center;gap:14px;padding:6px 6px 6px 16px;text-align:left;width:max-content}
+#toast .undo{flex:none;min-height:44px;padding:0 14px;border:0;border-radius:10px;font:700 15px var(--body);color:inherit;background:color-mix(in srgb,var(--bg) 18%,transparent)}
+#toast .undo:active{background:color-mix(in srgb,var(--bg) 30%,transparent)}
 .tres{padding:8px 0;border-top:1px solid var(--line)}
 .tres b{display:block}
 
@@ -237,6 +255,55 @@ textarea.in.note{min-height:96px;padding:10px 12px;font:16px/1.4 var(--body);res
 .sync.busy{color:var(--muted)}
 .sync.err{color:var(--orange-ink)}
 #shareLink{font-size:16px}
+/* Menüs: Zeilen mit getönter Symbolkachel */
+.mopt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:56px;padding:9px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);margin-top:8px;color:var(--text);font:600 16px var(--body)}
+.mopt:first-child{margin-top:0}
+.mopt .oic{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:var(--tc);background:color-mix(in srgb,var(--tc) 14%,transparent)}
+.mopt .oic svg{width:21px;height:21px}
+.mopt .olbl{flex:1;min-width:0}
+.mopt small{display:block;font-weight:400;color:var(--muted);font-size:13px;margin-top:1px}
+.mopt:active{transform:scale(.985);background:var(--field)}
+.tone-petrol{--tc:var(--petrol-ink)}.tone-blue{--tc:var(--blue)}.tone-red{--tc:var(--red)}.tone-grey{--tc:var(--muted)}
+.mopt.tone-petrol .olbl{color:var(--petrol-ink)}
+.mopt.tone-red .olbl{color:var(--red)}
+.mopt.tone-red{border-color:color-mix(in srgb,var(--red) 35%,var(--line))}
+.optgap{height:10px}
+.sheet .msub{margin:-4px 0 12px;color:var(--muted);font-size:14px}
+.sheetfoot{margin-top:14px}
+/* Verwaltung im iOS-Listenstil */
+.ihead{margin:22px 0 6px 16px;font:600 13px var(--body);text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
+.ihead:first-child{margin-top:6px}
+.ilist{background:var(--card);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line)}
+.ifoot{margin:6px 16px 0;font-size:13px;color:var(--muted)}
+.gi{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:0 0 0 14px;min-height:52px;color:var(--text);background:none;border:0;font:inherit}
+button.gi:active{background:var(--field)}
+.gic{width:30px;height:30px;border-radius:8px;flex:none;display:grid;place-items:center;background:var(--c);color:#fff;font:700 15px var(--body)}
+.gic svg{width:19px;height:19px}
+.gbody{flex:1;min-width:0;display:flex;align-items:center;gap:10px;min-height:52px;padding:8px 14px 8px 0}
+.gi+.gi .gbody,.gi+.gperson .gbody,.gperson+.gi .gbody,.gperson+.gperson .gbody{border-top:1px solid var(--line)}
+.glbl{flex:1;min-width:0;font-size:16px;font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.glbl small{display:block;font-size:13px;color:var(--muted);font-weight:400;margin-top:1px}
+.glbl.danger{color:var(--red)}
+.gval{color:var(--muted);font-size:15px;text-align:right;white-space:nowrap;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+.gchev{width:15px;height:15px;color:var(--muted);opacity:.6;flex:none}
+.gi .in{background:var(--field)}
+.gform{padding:12px 14px}
+.gperson{display:flex;align-items:flex-start;gap:14px;padding:0 0 0 14px}
+.gperson .gic{margin-top:11px}
+.gperson .gbody{display:block;padding:4px 8px 12px 0}
+.gperson .h{display:flex;align-items:center;gap:6px;min-height:44px}
+.gperson .nmb{font-size:17px}
+.gperson .ctl{gap:12px 16px}
+.gperson .iconbtn{color:var(--muted)}
+.ilist .linkrow{padding:12px 14px 4px}
+.ilist .statusrow{padding:0 14px 12px}
+.ilist .statusrow .checkline{margin-top:6px}
+.linkrow+.gi .gbody{border-top:1px solid var(--line)}
+.statusrow:has(#shareStatus:empty){display:none}
+.ifoot+.ilist,.ilist+.ilist{margin-top:22px}
+.more{margin-top:8px}
+.more .ihead:first-child{margin-top:22px}
+.iconbtn svg{width:22px;height:22px}
 @media (min-width:800px){
   .wrap{max-width:1180px;padding:12px 28px 48px}
   .wrap.exp{padding-bottom:0}
@@ -248,6 +315,7 @@ textarea.in.note{min-height:96px;padding:10px 12px;font:16px/1.4 var(--body);res
   .glist{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-bottom:12px}
   .glist .grow{margin:0}
   .btnrow{max-width:640px}
+  .more,.ilist,.ihead,.ifoot{max-width:640px}
   .cols2{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:24px;align-items:start}
   .colR{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow-y:auto;padding:0 4px 12px 0;scrollbar-width:thin}
   .seg{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:12px}
@@ -845,6 +913,289 @@ if(typeof module!=='undefined') module.exports={sharedPayload,sanitizePayload,me
 </script>
 
 <script>
+/* ==== Zentrales Konto der Anwendungssammlung (gleicher Code in allen Apps) ====
+   Ein Konto = ein verschlüsselter „Schlüsselbund“ auf dem Pi (Collection trips).
+   Aus Benutzername + Passwort wird per PBKDF2 ein Hauptschlüssel abgeleitet, daraus per HKDF
+   die Datensatz-ID, der Zugangsnachweis (X-Trip-Auth) und der AES-GCM-Schlüssel.
+   Der Server sieht nur verschlüsselte Daten und kennt weder Namen noch Passwort.
+   Im Schlüsselbund liegen die Verbindungslinks (Reisen, Haushalt, Spielgruppe, Projekte)
+   und – falls gewünscht – Passwörter der Brief-Profile.
+   Angemeldet bleibt man bis zum Abmelden (localStorage „konto“, gilt für alle Apps derselben Adresse).
+   Face ID: optional über einen Passkey mit PRF-Erweiterung (iOS 18+). */
+const Konto = (() => {
+  const DEFAULT = 'https://kostenpi.tail281e3e.ts.net';
+  const ITER = 310000;
+  const te = t => new TextEncoder().encode(t);
+  const b64e = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const b64d = str => { str = String(str).replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const b = atob(str), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+  const ls = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  };
+  const server = () => { try { return localStorage.getItem('konto-server') || DEFAULT; } catch (e) { return DEFAULT; } };
+  const normUser = u => String(u || '').trim().toLowerCase();
+  const nowIso = () => new Date().toISOString();
+
+  /* ---------- Schlüssel ---------- */
+  async function masterFrom(user, pw) {
+    const base = await crypto.subtle.importKey('raw', te(pw), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: te('anwendungssammlung-konto-v1|' + normUser(user)), iterations: ITER }, base, 256);
+    return b64e(new Uint8Array(bits));
+  }
+  const keyCache = new Map();
+  function keys(master, salt) {
+    const ck = salt + '|' + master;
+    if (!keyCache.has(ck)) keyCache.set(ck, (async () => {
+      const s = te(salt);
+      const base = await crypto.subtle.importKey('raw', b64d(master), 'HKDF', false, ['deriveKey', 'deriveBits']);
+      const enc = await crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: s, info: te('enc') }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+      const auth = b64e(new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: s, info: te('auth') }, base, 256)));
+      const idb = new Uint8Array(await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: s, info: te('id') }, base, 256));
+      const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let id = '';
+      for (let i = 0; i < 15; i++) id += a[idb[i] % 36];
+      return { id, auth, enc };
+    })());
+    return keyCache.get(ck);
+  }
+  const vaultKeys = master => keys(master, 'konto-v1');
+  const pkKeys = secret => keys(secret, 'konto-passkey-v1');
+  async function encrypt(key, obj) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te(JSON.stringify(obj)));
+    return 'v1.' + b64e(iv) + '.' + b64e(new Uint8Array(ct));
+  }
+  async function decrypt(key, str) {
+    const p = String(str || '').split('.');
+    if (p.length !== 3 || p[0] !== 'v1') throw new Error('Unbekanntes Datenformat');
+    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(p[1]) }, key, b64d(p[2]))));
+  }
+
+  /* ---------- Server ---------- */
+  async function api(method, path, auth, body) {
+    const h = {}; if (auth) h['X-Trip-Auth'] = auth; if (body) h['Content-Type'] = 'application/json';
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 15000);
+    try {
+      const r = await fetch(server() + '/api/collections/trips/records' + path, { method, headers: h, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', signal: ctl.signal });
+      let j = null; try { j = await r.json(); } catch (e) {}
+      return { status: r.status, json: j };
+    } catch (e) {
+      const err = new Error('Server nicht erreichbar'); err.offline = true; throw err;
+    } finally { clearTimeout(to); }
+  }
+  const fail = r => { const e = new Error('Server antwortet mit ' + r.status); e.status = r.status; return e; };
+
+  /* ---------- Schlüsselbund zusammenführen ---------- */
+  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {} }; }
+  function clean(v, user) {
+    v = v && typeof v === 'object' ? v : {};
+    return { v: 1, user: v.user || user || '', items: v.items && typeof v.items === 'object' ? v.items : {},
+      deleted: v.deleted && typeof v.deleted === 'object' ? v.deleted : {}, passkeys: v.passkeys && typeof v.passkeys === 'object' ? v.passkeys : {} };
+  }
+  function merge(a, b) {
+    a = clean(a); b = clean(b);
+    const out = emptyVault(a.user || b.user);
+    const cut = new Date(Date.now() - 365 * 864e5).toISOString();
+    for (const d of [a.deleted, b.deleted]) for (const k in d) if (d[k] >= cut && (!out.deleted[k] || d[k] > out.deleted[k])) out.deleted[k] = d[k];
+    for (const src of [a.items, b.items]) for (const k in src) {
+      const x = src[k], o = out.items[k];
+      if (!o || (x.updatedAt || '') > (o.updatedAt || '') || ((x.updatedAt || '') === (o.updatedAt || '') && JSON.stringify(x) > JSON.stringify(o))) out.items[k] = x;
+    }
+    for (const k in out.items) if (out.deleted[k] && out.deleted[k] >= (out.items[k].updatedAt || '')) delete out.items[k];
+    for (const src of [a.passkeys, b.passkeys]) for (const k in src) if (!out.passkeys[k] || (src[k].createdAt || '') > (out.passkeys[k].createdAt || '')) out.passkeys[k] = src[k];
+    for (const k in out.passkeys) if (out.deleted['pk:' + k]) delete out.passkeys[k];
+    return out;
+  }
+  const canon = v => { const s = x => Array.isArray(x) ? '[' + x.map(s).join(',') + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map(k => JSON.stringify(k) + ':' + s(x[k])).join(',') + '}' : JSON.stringify(x); return s(v); };
+
+  /* ---------- Sitzung ---------- */
+  const session = () => { const s = ls.get('konto'); return s && s.master && s.user ? s : null; };
+  const cache = () => clean(ls.get('konto-cache'), (session() || {}).user);
+  const listeners = new Set();
+  const emit = () => listeners.forEach(fn => { try { fn(); } catch (e) {} });
+
+  async function fetchVault(master) {
+    const k = await vaultKeys(master);
+    const r = await api('GET', '/' + k.id, k.auth);
+    if (r.status === 404) return null;
+    if (r.status !== 200 || !r.json) throw fail(r);
+    return { vault: clean(await decrypt(k.enc, r.json.data)), rev: +r.json.rev || 0 };
+  }
+  async function createVault(master, vault) {
+    const k = await vaultKeys(master);
+    const r = await api('POST', '', null, { id: k.id, auth: k.auth, data: await encrypt(k.enc, vault), rev: 1 });
+    if (r.status !== 200) throw fail(r);
+  }
+
+  let busy = null, again = false;
+  /* Abgleich: holen, zusammenführen, bei Bedarf zurückschreiben */
+  async function sync() {
+    const s = session(); if (!s) return null;
+    if (busy) { again = true; return busy; }
+    busy = (async () => {
+      try {
+        const k = await vaultKeys(s.master);
+        for (let round = 0; round < 4; round++) {
+          const r = await api('GET', '/' + k.id, k.auth);
+          if (r.status === 404) { const e = new Error('Konto nicht mehr vorhanden'); e.gone = true; throw e; }
+          if (r.status !== 200 || !r.json) throw fail(r);
+          const remote = clean(await decrypt(k.enc, r.json.data), s.user);
+          const local = ls.get('konto-cache') ? cache() : remote;
+          const merged = merge(local, remote);
+          ls.set('konto-cache', merged);
+          if (canon(merged) === canon(remote)) { ls.set('konto-state', { at: nowIso(), err: '' }); break; }
+          const u = await api('PATCH', '/' + k.id, k.auth, { data: await encrypt(k.enc, merged), rev: (+r.json.rev || 0) + 1 });
+          if (u.status === 200) { ls.set('konto-state', { at: nowIso(), err: '' }); break; }
+          if (u.status !== 400 && u.status !== 409) throw fail(u);
+        }
+        emit();
+        return cache();
+      } catch (e) {
+        ls.set('konto-state', { at: (ls.get('konto-state') || {}).at || null, err: e.message || 'Fehler' });
+        if (e.gone) { logout(); emit(); }
+        throw e;
+      } finally {
+        busy = null;
+        if (again) { again = false; setTimeout(() => sync().catch(() => {}), 50); }
+      }
+    })();
+    return busy;
+  }
+
+  async function login(user, pw) {
+    user = String(user || '').trim();
+    if (!user || !pw) throw new Error('Bitte Benutzername und Passwort eingeben.');
+    const master = await masterFrom(user, pw);
+    const f = await fetchVault(master);
+    if (!f) return { notFound: true };
+    ls.set('konto', { user: f.vault.user || user, master, at: nowIso() });
+    ls.set('konto-cache', f.vault);
+    emit();
+    return { ok: true };
+  }
+  async function register(user, pw) {
+    user = String(user || '').trim();
+    if (user.length < 2) throw new Error('Der Benutzername braucht mindestens 2 Zeichen.');
+    if (String(pw || '').length < 8) throw new Error('Das Passwort braucht mindestens 8 Zeichen.');
+    const master = await masterFrom(user, pw);
+    const f = await fetchVault(master);
+    if (f) { ls.set('konto', { user: f.vault.user || user, master, at: nowIso() }); ls.set('konto-cache', f.vault); emit(); return { existed: true }; }
+    await createVault(master, emptyVault(user));
+    ls.set('konto', { user, master, at: nowIso() });
+    ls.set('konto-cache', emptyVault(user));
+    emit();
+    return { ok: true };
+  }
+  function logout() { ['konto', 'konto-cache', 'konto-state'].forEach(ls.del); keyCache.clear(); emit(); }
+  async function changePassword(oldPw, newPw) {
+    const s = session(); if (!s) throw new Error('Nicht angemeldet.');
+    if (String(newPw || '').length < 8) throw new Error('Das neue Passwort braucht mindestens 8 Zeichen.');
+    if ((await masterFrom(s.user, oldPw)) !== s.master) throw new Error('Das bisherige Passwort stimmt nicht.');
+    const v = await sync();
+    const nm = await masterFrom(s.user, newPw);
+    await createVault(nm, v);
+    for (const cid in v.passkeys) {   // Face-ID-Zugänge auf den neuen Schlüssel umstellen
+      const p = v.passkeys[cid], pk = await pkKeys(p.secret);
+      await api('PATCH', '/' + pk.id, pk.auth, { data: await encrypt(pk.enc, { user: s.user, master: nm }), rev: 2 });
+    }
+    const ok = await vaultKeys(s.master);
+    await api('DELETE', '/' + ok.id, ok.auth);
+    ls.set('konto', { user: s.user, master: nm, at: nowIso() });
+    emit();
+  }
+
+  /* ---------- Einträge ---------- */
+  function items(app) {
+    const v = cache();
+    return Object.keys(v.items).filter(k => !app || v.items[k].app === app).map(k => Object.assign({ key: k }, v.items[k]));
+  }
+  function put(key, item) {
+    if (!session()) return false;
+    const v = cache();
+    const old = v.items[key];
+    const nx = Object.assign({}, item, { updatedAt: nowIso() });
+    if (old) { const a = Object.assign({}, old), b = Object.assign({}, nx); delete a.updatedAt; delete b.updatedAt; if (canon(a) === canon(b)) return false; }
+    v.items[key] = nx; delete v.deleted[key];
+    ls.set('konto-cache', v);
+    sync().catch(() => {});
+    return true;
+  }
+  function remove(key) {
+    if (!session()) return false;
+    const v = cache();
+    if (!v.items[key]) return false;
+    delete v.items[key]; v.deleted[key] = nowIso();
+    ls.set('konto-cache', v);
+    sync().catch(() => {});
+    return true;
+  }
+
+  /* ---------- Face ID (Passkey mit PRF) ---------- */
+  const PRF_SALT = te('anwendungssammlung-konto-prf-v1');
+  const rpId = () => location.hostname;
+  async function passkeySupported() {
+    try {
+      if (!window.PublicKeyCredential || !navigator.credentials || location.protocol !== 'https:') return false;
+      if (PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable && !(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())) return false;
+      if (PublicKeyCredential.getClientCapabilities) { const c = await PublicKeyCredential.getClientCapabilities(); if (c && c['extension:prf'] === false) return false; }
+      return true;
+    } catch (e) { return false; }
+  }
+  const prfOut = cred => { const x = cred.getClientExtensionResults && cred.getClientExtensionResults(); return x && x.prf && x.prf.results && x.prf.results.first ? new Uint8Array(x.prf.results.first) : null; };
+  async function enablePasskey() {
+    const s = session(); if (!s) throw new Error('Nicht angemeldet.');
+    const cred = await navigator.credentials.create({ publicKey: {
+      rp: { name: 'Anwendungssammlung', id: rpId() },
+      user: { id: crypto.getRandomValues(new Uint8Array(16)), name: s.user, displayName: s.user },
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: { residentKey: 'required', userVerification: 'required', authenticatorAttachment: 'platform' },
+      extensions: { prf: { eval: { first: PRF_SALT } } },
+    } });
+    let out = prfOut(cred);
+    if (!out) {   // manche Geräte liefern das Ergebnis erst bei der ersten Anmeldung
+      const a = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: rpId(), userVerification: 'required',
+        allowCredentials: [{ type: 'public-key', id: cred.rawId }], extensions: { prf: { eval: { first: PRF_SALT } } } } });
+      out = prfOut(a);
+    }
+    if (!out) throw new Error('Dieses Gerät unterstützt die Anmeldung per Face ID für Web-Apps noch nicht (nötig: iOS 18 oder neuer).');
+    const secret = b64e(out), pk = await pkKeys(secret);
+    const r = await api('POST', '', null, { id: pk.id, auth: pk.auth, data: await encrypt(pk.enc, { user: s.user, master: s.master }), rev: 1 });
+    if (r.status !== 200 && r.status !== 400) throw fail(r);
+    const v = cache(); const cid = b64e(new Uint8Array(cred.rawId));
+    v.passkeys[cid] = { secret, createdAt: nowIso(), device: (navigator.platform || 'Gerät') };
+    ls.set('konto-cache', v); await sync();
+    ls.set('konto-passkey', true);
+    return true;
+  }
+  async function loginWithPasskey() {
+    const a = await navigator.credentials.get({ publicKey: { challenge: crypto.getRandomValues(new Uint8Array(32)), rpId: rpId(), userVerification: 'required',
+      extensions: { prf: { eval: { first: PRF_SALT } } } }, mediation: 'optional' });
+    const out = prfOut(a);
+    if (!out) throw new Error('Face ID hat keinen Schlüssel geliefert. Bitte mit Passwort anmelden.');
+    const pk = await pkKeys(b64e(out));
+    const r = await api('GET', '/' + pk.id, pk.auth);
+    if (r.status === 404) throw new Error('Für diesen Passkey ist kein Konto hinterlegt. Bitte mit Passwort anmelden und Face ID neu einrichten.');
+    if (r.status !== 200 || !r.json) throw fail(r);
+    const d = await decrypt(pk.enc, r.json.data);
+    const f = await fetchVault(d.master);
+    if (!f) throw new Error('Konto nicht gefunden.');
+    ls.set('konto', { user: d.user, master: d.master, at: nowIso() });
+    ls.set('konto-cache', f.vault);
+    emit();
+    return { ok: true };
+  }
+
+  return {
+    session, user: () => (session() || {}).user || '', loggedIn: () => !!session(), state: () => ls.get('konto-state') || {},
+    login, register, logout, changePassword, sync, items, put, remove, onChange: fn => listeners.add(fn),
+    passkeySupported, enablePasskey, loginWithPasskey, hasPasskey: () => Object.keys(cache().passkeys).length > 0,
+    _merge: merge,
+  };
+})();
+</script>
+
+<script>
 /* ===== Oberfläche ===== */
 const KEY='kostenaufteilung-v1';
 const CATS=[['unterkunft','Unterkunft','🏠'],['essen','Essen','🍽️'],['einkauf','Einkauf','🛒'],['transport','Transport','🚗'],['aktivitaet','Aktivität','🎟️'],['sonstiges','Sonstiges','📦']];
@@ -898,6 +1249,7 @@ function save(){
   const g=grp();
   if(g&&g.share){g.share.dirty=true;scheduleSync(g.id);}
   persist();
+  kontoApply();
 }
 const nowISO=()=>new Date().toISOString();
 function tomb(g,id){(g.deleted=g.deleted||{})[id]=nowISO();}
@@ -933,7 +1285,13 @@ function runRecurring(){
 
 /* Hinweise, Blätter, Rückfragen */
 let toastT=null;
-function notify(txt){const t=byId('toast');t.textContent=txt;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
+function notify(txt,undo){
+  const t=byId('toast');
+  t.innerHTML=`<span>${esc(txt)}</span>${undo?'<button class="undo" type="button">Rückgängig</button>':''}`;
+  t.classList.toggle('act',!!undo); t.classList.add('show'); clearTimeout(toastT);
+  if(undo) t.querySelector('.undo').onclick=e=>{e.stopPropagation();clearTimeout(toastT);t.classList.remove('show','act');undo();};
+  toastT=setTimeout(()=>t.classList.remove('show','act'),undo?6000:2600);
+}
 function openSheet(html){
   const r=byId('sheet-root');
   r.innerHTML=`<div class="scrim" data-act="closeSheet"></div><div class="sheet" role="dialog" aria-modal="true"><div class="grip"></div>${html}</div>`;
@@ -950,6 +1308,86 @@ function ask(o){
   });
 }
 const info=(title,text)=>ask({title,text,buttons:[{label:'Verstanden',value:true,style:'primary'}]});
+
+/* Linien-Symbole für Menüs, Listen und Navigation */
+const SVG=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const IC={
+  receipt:SVG('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
+  chart:SVG('<path d="M4 20h16"/><path d="M7 16v-5M12 16V6M17 16v-8"/>'),
+  scale:SVG('<path d="M12 4v16M8 20h8M5 7h14"/><path d="M5 7l-2.5 6a2.5 2.5 0 0 0 5 0zM19 7l-2.5 6a2.5 2.5 0 0 0 5 0z"/>'),
+  people:SVG('<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M16 14.2c2.4-.2 4 1.4 4.5 4.3"/>'),
+  user:SVG('<circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1-3.8 3.9-5.5 7.5-5.5s6.5 1.7 7.5 5.5"/>'),
+  link:SVG('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'),
+  pencil:SVG('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>'),
+  down:SVG('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>'),
+  up:SVG('<path d="M12 15V4M7 9l5-5 5 5M5 20h14"/>'),
+  archive:SVG('<rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/>'),
+  trash:SVG('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>'),
+  info:SVG('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'),
+  plus:SVG('<path d="M12 5v14M5 12h14"/>'),
+  sync:SVG('<path d="M20 12a8 8 0 0 1-14 5.3M4 12a8 8 0 0 1 14-5.3"/><path d="M18 3v4h-4M6 21v-4h4"/>'),
+  copy:SVG('<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
+  send:SVG('<path d="M21 3L10 14M21 3l-7 18-4-7-7-4z"/>'),
+  out:SVG('<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l-4-4 4-4M6 12h10"/>'),
+  moon:SVG('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'),
+  check:SVG('<path d="M5 12.5l4.5 4.5L19 7"/>'),
+  calendar:SVG('<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>'),
+  dots:SVG('<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>')
+};
+const CHEV='<svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';
+const IOS=['#0A84FF','#FF9500','#34C759','#AF52DE','#FF3B30','#8E8E93','#5856D6','#30B0C7','#FF2D55'];
+/* Menü als Blatt: Zeilen mit getönter Symbolkachel. Farbe nach Bedeutung (petrol = hinzufügen/teilen, blue = ändern, red = löschen, grey = Info).
+   Einträge: {label, hint, icon, tone, act, id, group}; Löschen (tone red) landet immer ganz unten. */
+function optSheet(title,sub,opts){
+  const list=opts.filter(Boolean).map((o,i)=>Object.assign({i,group:o.tone==='red'?9:1},o)).sort((a,b)=>a.group-b.group||a.i-b.i);
+  const rows=list.map((o,k)=>`${k&&o.group!==list[k-1].group?'<div class="optgap"></div>':''}<button class="mopt tone-${o.tone||'blue'}" data-act="${o.act}"${o.id!=null?` data-id="${esc(o.id)}"`:''}><span class="oic">${IC[o.icon]||IC.info}</span><span class="olbl">${esc(o.label)}${o.hint?`<small>${esc(o.hint)}</small>`:''}</span></button>`).join('');
+  openSheet(`<h2>${esc(title)}</h2>${sub?`<p class="msub">${esc(sub)}</p>`:''}<div class="optlist">${rows}</div><button class="btn block sheetfoot" data-act="closeSheet">Schließen</button>`);
+}
+/* Zeile im iOS-Listenstil: farbige Kachel, Beschriftung, rechts Wert/Bedienelement + Pfeil */
+function gRow(o){
+  const inner=`<span class="gic" style="--c:${o.color}">${o.text!=null?esc(o.text):IC[o.icon]}</span><span class="gbody"><span class="glbl${o.danger?' danger':''}">${esc(o.label)}${o.sub?`<small>${esc(o.sub)}</small>`:''}</span>${o.value!=null?`<span class="gval">${esc(o.value)}</span>`:''}${o.right||''}${o.act&&o.chevron!==false?CHEV:''}</span>`;
+  return o.act?`<button class="gi" data-act="${o.act}"${o.id!=null?` data-id="${esc(o.id)}"`:''}${o.aria?` aria-label="${esc(o.aria)}"`:''}>${inner}</button>`:`<div class="gi">${inner}</div>`;
+}
+const gGroup=(title,rows,foot,cls)=>`${title?`<h3 class="ihead">${esc(title)}</h3>`:''}<div class="ilist${cls?' '+cls:''}">${rows.filter(Boolean).join('')}</div>${foot?`<p class="ifoot">${foot}</p>`:''}`;
+
+/* Rückgängig nach dem Löschen: Stand einer Reise merken und Fehlendes wiederherstellen.
+   Wiederhergestellte Einträge/Personen bekommen einen neuen Zeitstempel (später als der Grabstein),
+   damit der Abgleich sie auf allen Geräten wieder aufnimmt statt sie erneut zu löschen. */
+function snapGroup(g,touched){return {gid:g.id,idx:S.groups.indexOf(g),g:JSON.parse(JSON.stringify(g)),me:S.ui.meByGroup[g.id]||null,touched:new Set(touched||[])};}
+function laterThan(prev){let t=nowISO();if(prev&&t<=prev)t=new Date(Date.parse(prev)+1).toISOString();return t;}
+function restoreSnap(sn){
+  let g=byGid(sn.gid);
+  if(!g){
+    g=JSON.parse(JSON.stringify(sn.g));
+    if(g.share) delete g.share.konto;   // wieder ins Konto eintragen
+    S.groups.splice(Math.min(Math.max(0,sn.idx),S.groups.length),0,g);
+  }else{
+    for(const key of ['members','entries']){
+      const cur=new Map(g[key].map(x=>[x.id,x])), out=[];
+      for(const o of sn.g[key]){
+        const c=cur.get(o.id); cur.delete(o.id);
+        if(c&&!sn.touched.has(o.id)){out.push(c);continue;}
+        if(c&&stable(c)===stable(o)){out.push(c);continue;}
+        const n=JSON.parse(JSON.stringify(o)); n.updatedAt=laterThan(g.deleted&&g.deleted[o.id]);
+        if(g.deleted) delete g.deleted[o.id];
+        out.push(n);
+      }
+      cur.forEach(x=>out.push(x));
+      g[key]=out;
+    }
+    if(stable(g.defaultSplit||null)!==stable(sn.g.defaultSplit||null)){
+      if(sn.g.defaultSplit) g.defaultSplit=JSON.parse(JSON.stringify(sn.g.defaultSplit)); else delete g.defaultSplit;
+      g.metaUpdatedAt=laterThan(g.metaUpdatedAt);
+    }
+  }
+  if(sn.me&&!meId(g)&&g.members.some(m=>m.id===sn.me)) S.ui.meByGroup[g.id]=sn.me;
+  if(g.share){g.share.dirty=true;scheduleSync(g.id,300);}
+  persist();
+  return g;
+}
+function undoNotice(txt,sn,after){
+  notify(txt,()=>{const g=restoreSnap(sn);if(after)after(g);else render(true);notify('Wiederhergestellt');});
+}
 
 /* ===== Ansichten ===== */
 /* Breite Bildschirme (Tablet quer, PC): zweispaltig, Ausgabe als Fenster */
@@ -977,10 +1415,13 @@ function vGroups(){
   <h1 class="title">Kosten&shy;aufteilung</h1>
   <p class="lead">Ausgaben einer Reise erfassen, fair aufteilen und am Ende mit möglichst wenigen Überweisungen ausgleichen.</p>
   ${act.length?`<div class="glist">${act.map(row).join('')}</div>`:`<div class="card empty"><p>Noch keine Reise angelegt. Leg eine neue an oder probier die Beispielreise aus.</p><button class="btn block" data-act="loadExample">Beispielreise „Hütte Tirol“ laden</button></div>`}
-  <div class="btnrow"><button class="btn primary" data-act="newGroup">+ Neue Reise</button><button class="btn" data-act="openJoin">Geteilte Reise öffnen</button></div>
-  <div class="btnrow"><button class="btn" data-act="importPick">Datei importieren</button></div>
+  <div class="btnrow"><button class="btn primary" data-act="newGroup">+ Neue Reise</button></div>
   ${arc.length?`<details class="arch"><summary>Archiviert (${arc.length})</summary><div class="glist">${arc.map(row).join('')}</div></details>`:''}
-  <p class="foot">Die Daten bleiben nur auf diesem Gerät. Zum Weitergeben die Reise exportieren.<br><button class="linkbtn" data-act="showTests">Selbsttest</button></p>
+  <div class="more">${gGroup('',[kontoRow()])}${gGroup('Weitere',[
+    gRow({icon:'link',color:'#0A84FF',label:'Geteilte Reise öffnen',sub:'Mit einem Link von Mitreisenden',act:'openJoin'}),
+    gRow({icon:'up',color:'#8E8E93',label:'Datei importieren',sub:'Reise aus einer JSON-Datei',act:'importPick'}),
+    gRow({icon:'check',color:'#34C759',label:'Selbsttest',sub:'Rechenregeln und Abgleich prüfen',act:'showTests'})
+  ],(Konto.loggedIn()?'Angemeldet werden Reisen automatisch verschlüsselt geteilt und erscheinen auf deinen anderen Geräten.':'Die Daten bleiben auf diesem Gerät, außer du teilst eine Reise.')+' Zum Sichern eine Reise exportieren (•••-Menü der Reise).')}</div>
   </div>`;
 }
 
@@ -997,14 +1438,14 @@ function vGroup(tabArg){
     </div>`;
   }
   const body=tab==='settle'?vSettle(g):tab==='members'?vMembers(g):tab==='stats'?vStats(g):vOverview(g);
-  const tabs=[['overview','Ausgaben','🧾'],['stats','Auswertung','📊'],['settle','Abrechnung','⚖️']];
+  const tabs=[['overview','Ausgaben','receipt'],['stats','Auswertung','chart'],['settle','Abrechnung','scale']];
   return `<div class="wrap">
   <div class="top">${tab==='members'?'<button class="iconbtn" data-act="tab" data-tab="overview">‹ Zurück</button>':'<button class="iconbtn" data-act="goGroups">‹ Reisen</button>'}<div class="ttl"><h1>${tab==='members'?'Personen':esc(g.name)}</h1>${tab==='members'?`<span class="sub">${esc(g.name)}</span>`:(fmtRange(g)||g.share)?`<span class="sub">${fmtRange(g)}${fmtRange(g)&&g.share?' · ':''}<span id="syncBadge">${badgeHtml(g)}</span></span>`:''}</div><button class="iconbtn" data-act="groupMenu" aria-label="Reise bearbeiten, exportieren oder löschen">•••</button></div>
   ${g.archived?'<div class="note">Diese Reise ist archiviert. Wiederkehrende Ausgaben werden nicht mehr ergänzt.</div>':''}
   ${body}
   </div>
   ${tab==='overview'?'<button class="fab" data-act="newExpense">+ Ausgabe</button>':''}
-  <nav class="tabbar"><div class="in2">${tabs.map(([k,l,i])=>`<button class="tab ${tab===k?'on':''}" data-act="tab" data-tab="${k}" aria-current="${tab===k?'page':'false'}"><span class="ti" aria-hidden="true">${i}</span>${l}</button>`).join('')}</div></nav>`;
+  <nav class="tabbar"><div class="in2">${tabs.map(([k,l,i])=>`<button class="tab ${tab===k?'on':''}" data-act="tab" data-tab="${k}" aria-current="${tab===k?'page':'false'}"><span class="ti" aria-hidden="true">${IC[i]}</span>${l}</button>`).join('')}</div></nav>`;
 }
 
 function vOverview(g){
@@ -1139,14 +1580,15 @@ function paySheet(g,o){
 function stepper(kind,id,val,label){
   return `<div class="stepper"><button data-act="step" data-k="${kind}" data-id="${id}" data-d="-1" aria-label="${esc(label)} verringern">−</button><span class="v" id="${kind}-${id}">${val}</span><button data-act="step" data-k="${kind}" data-id="${id}" data-d="1" aria-label="${esc(label)} erhöhen">+</button></div>`;
 }
+const PCOL=['#0A84FF','#FF9500','#34C759','#AF52DE','#5856D6','#30B0C7','#FF2D55'];
 function vMembers(g){
   const me=meId(g), tn=tripNights(g), n=g.members.length;
-  const rows=g.members.map(m=>`<div class="mrow"><div class="h"><button class="nmb" data-act="renameMember" data-id="${m.id}" aria-label="${esc(m.name)} umbenennen">${esc(m.name)}</button>${m.id===me?'<span class="badge">Ich</span>':''}<button class="iconbtn del" data-act="delMember" data-id="${m.id}" aria-label="${esc(m.name)} entfernen">✕</button></div>
-    <div class="ctl"><div><div class="lab">Standardanteil</div>${stepper('mw',m.id,fmtNum(m.defaultWeight),'Standardanteil von '+m.name)}</div><div><div class="lab">Nächte</div>${stepper('mn',m.id,m.nights??'–','Nächte von '+m.name)}</div></div></div>`).join('');
-  return `<div class="card"><h2>Person hinzufügen</h2><div class="addrow"><input id="newMember" class="in" placeholder="Name" autocomplete="off" enterkeyhint="done" maxlength="40" aria-label="Name der Person"><button class="btn primary" data-act="addMember">Hinzufügen</button></div></div>
-  <div class="card"><h2>Personen (${n})</h2>${rows||'<p class="muted" style="margin:0">Noch niemand dabei.</p>'}
-  <p class="small muted">Standardanteil: wird bei „Anteile“ vorausgefüllt, z. B. 2 für jemanden, der dauerhaft für den Partner mitzahlt, oder 0,5 für ein Kind. Nächte: für „Nach Nächten“. Tippe auf einen Namen, um ihn zu ändern.</p>
-  ${tn!=null&&n?`<button class="btn block" data-act="nightsFromTrip">Nächte aus Zeitraum übernehmen (${tn})</button>`:''}</div>`;
+  const rows=g.members.map((m,i)=>`<div class="gperson"><span class="gic" style="--c:${PCOL[i%PCOL.length]}" aria-hidden="true">${esc((m.name.trim()[0]||'?').toUpperCase())}</span><div class="gbody"><div class="h"><button class="nmb" data-act="memberMenu" data-id="${m.id}">${esc(m.name)}</button>${m.id===me?'<span class="badge">Ich</span>':''}<button class="iconbtn" data-act="memberMenu" data-id="${m.id}" aria-label="Aktionen für ${esc(m.name)}">${IC.dots}</button></div>
+    <div class="ctl"><div><div class="lab">Standardanteil</div>${stepper('mw',m.id,fmtNum(m.defaultWeight),'Standardanteil von '+m.name)}</div><div><div class="lab">Nächte</div>${stepper('mn',m.id,m.nights??'–','Nächte von '+m.name)}</div></div></div></div>`);
+  return gGroup('Person hinzufügen',[`<div class="gform"><div class="addrow"><input id="newMember" class="in" placeholder="Name" autocomplete="off" enterkeyhint="done" maxlength="40" aria-label="Name der Person"><button class="btn primary" data-act="addMember">Hinzufügen</button></div></div>`])
+  +gGroup(`Personen (${n})`,rows.length?rows:['<div class="gform muted">Noch niemand dabei.</div>'],
+    'Standardanteil: wird bei „Anteile“ vorausgefüllt, z. B. 2 für jemanden, der dauerhaft für den Partner mitzahlt, oder 0,5 für ein Kind. Nächte: für „Nach Nächten“. Tippe auf einen Namen, um ihn zu ändern, als „Ich“ festzulegen oder zu entfernen.')
+  +(tn!=null&&n?gGroup('',[gRow({icon:'moon',color:'#5856D6',label:'Nächte aus Zeitraum übernehmen',sub:`Alle auf ${tn} ${tn===1?'Nacht':'Nächte'} setzen`,act:'nightsFromTrip'})]):'');
 }
 
 /* Ausgabe erfassen */
@@ -1418,6 +1860,7 @@ function scheduleSync(id,ms){
 function syncAll(){ S.groups.forEach(g=>{ if(g.share&&!g.archived&&!syncing.has(g.id)) syncGroup(g.id); }); }
 const byGid=id=>S.groups.find(x=>x.id===id);
 function shareEnded(g,msg){
+  kontoRemove(g.share&&g.share.id); g.noAutoShare=true;
   delete g.share; persist(); setBadge(g.id); render(true);
   info('Teilen beendet',msg||`„${g.name}“ wird nicht mehr geteilt, zum Beispiel weil jemand das Teilen für alle beendet hat. Deine Kopie bleibt auf diesem Gerät erhalten.`);
 }
@@ -1452,7 +1895,7 @@ async function syncGroup(id){
       if(u.status!==200||!u.json) throw new Error('Server antwortet mit '+u.status);
       g.share.seen=u.json.updated; persist();
     }
-    g=byGid(id); if(g&&g.share){g.share.at=nowISO();g.share.err='';persist();}
+    g=byGid(id); if(g&&g.share){g.share.at=nowISO();g.share.err='';persist();kontoApply();}
   }catch(e){
     const g2=byGid(id); if(g2&&g2.share){g2.share.dirty=true;g2.share.err=e&&e.name==='AbortError'?'Zeitüberschreitung':(e&&e.message)||'Keine Verbindung';persist();}
   }finally{
@@ -1478,14 +1921,18 @@ function shareStatusText(g){
 function updateShareStatus(){const el=byId('shareStatus'),g=grp();if(el&&g&&g.share){el.textContent=shareStatusText(g);el.className='checkline'+(g.share.err?' bad':'');}}
 function shareSheet(g){
   openSheet(`<h2>Reise teilen</h2>
-  <p class="small muted" style="margin:0 0 8px">Jeder mit diesem Link kann die Reise sehen und Ausgaben eintragen. Teile ihn nur mit Mitreisenden.</p>
-  <input id="shareLink" class="in" readonly value="${esc(shareLink(g))}" aria-label="Teilen-Link">
-  <div class="btnrow"><button class="btn primary" data-act="copyShare">Link kopieren</button>${navigator.share?'<button class="btn" data-act="sendShare">Senden …</button>':''}</div>
-  <p class="small muted">Nutzt jemand die App vom Home-Bildschirm, dort in der Reiseliste „Geteilte Reise öffnen“ tippen und den Link einfügen.</p>
-  <div id="shareStatus" class="checkline${g.share.err?' bad':''}">${esc(shareStatusText(g))}</div>
-  <button class="btn block" data-act="syncNow" style="margin-top:10px">Jetzt abgleichen</button>
-  <button class="btn danger block" data-act="stopShare">Teilen beenden</button>
-  <button class="btn block" data-act="closeSheet">Schließen</button>`);
+  <p class="msub">Jeder mit diesem Link kann die Reise sehen und Ausgaben eintragen. Teile ihn nur mit Mitreisenden.</p>
+  ${gGroup('Link',[
+    `<div class="linkrow"><input id="shareLink" class="in" readonly value="${esc(shareLink(g))}" aria-label="Teilen-Link"></div>`,
+    gRow({icon:'copy',color:'#0A84FF',label:'Link kopieren',act:'copyShare',chevron:false}),
+    navigator.share?gRow({icon:'send',color:'#34C759',label:'Senden …',sub:'Per Nachricht, Mail usw.',act:'sendShare',chevron:false}):''
+  ],'Nutzt jemand die App vom Home-Bildschirm, dort in der Reiseliste „Geteilte Reise öffnen“ tippen und den Link einfügen.')}
+  ${gGroup('Abgleich',[
+    gRow({icon:'sync',color:'#30B0C7',label:'Jetzt abgleichen',sub:'Passiert sonst automatisch',act:'syncNow',chevron:false}),
+    `<div class="statusrow"><div id="shareStatus" class="checkline${g.share.err?' bad':''}">${esc(shareStatusText(g))}</div></div>`
+  ])}
+  ${gGroup('',[gRow({icon:'out',color:'#FF3B30',label:'Teilen beenden',sub:'Nur dieses Gerät trennen oder für alle',act:'stopShare',danger:true,chevron:false})])}
+  <button class="btn block sheetfoot" data-act="closeSheet">Schließen</button>`);
 }
 function parseJoin(str){
   const m=/(?:#join=)?([a-z0-9]{15})\.([A-Za-z0-9_-]{43})\s*$/.exec(String(str||'').trim());
@@ -1513,6 +1960,7 @@ async function joinTrip(id,secret){
     F={q:'',cat:'',person:''}; V={name:'group',tab:'overview'}; render();
     if(i>=0) syncGroup(g.id);
     if(!meId(g)&&g.members.length) whoAmI(g);
+    kontoApply();
   }catch(e){
     await info('Beitreten nicht möglich','Keine Verbindung zum Server oder der Link ist fehlerhaft. Bitte später erneut versuchen.');
   }
@@ -1527,6 +1975,84 @@ function joinSheet(){
   <input id="joinIn" class="in" placeholder="https://…/kosten.html#join=…" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Teilen-Link">
   ${navigator.clipboard&&navigator.clipboard.readText?'<button class="btn block" data-act="pasteJoin" style="margin-top:8px">Aus Zwischenablage einfügen</button>':''}
   <div class="btnrow"><button class="btn" data-act="closeSheet">Abbrechen</button><button class="btn primary" data-act="joinGo">Beitreten</button></div>`);
+}
+
+/* ===== Zentrales Konto: Reisen automatisch mit dem Konto verknüpfen =====
+   Nur wenn angemeldet. Schlüssel „kosten:<shareId>“ → {app,id,secret,label}.
+   g.share.konto = Benutzer, für den die Reise schon eingetragen wurde (lokal; fehlt der Eintrag danach im Konto,
+   wurde er auf einem anderen Gerät entfernt und wird hier nicht erneut eingetragen). Archiv-Status wird nicht geteilt. */
+const kontoKey=id=>'kosten:'+id;
+const kontoJoining=new Set(), kontoSharing=new Set();
+function kontoItem(g){return {app:'kosten',id:g.share.id,secret:g.share.secret,label:g.name};}
+function kontoRemove(shareId){try{if(shareId&&Konto.loggedIn())Konto.remove(kontoKey(shareId));}catch(e){}}
+function kontoApply(){
+  if(!Konto.loggedIn()) return;
+  const user=Konto.user(), items=Konto.items('kosten'), have=new Map(items.map(i=>[i.key,i]));
+  let changed=false;
+  for(const it of items){
+    if(!it.id||!it.secret||S.groups.some(g=>g.share&&g.share.id===it.id)) continue;
+    joinSilent(it);
+  }
+  for(const g of S.groups){
+    if(g.share){
+      const it=have.get(kontoKey(g.share.id));
+      if(it){
+        if(it.label!==g.name||it.secret!==g.share.secret) Konto.put(kontoKey(g.share.id),kontoItem(g));
+        if(g.share.konto!==user){g.share.konto=user;changed=true;}
+      }else if(g.share.konto!==user){
+        Konto.put(kontoKey(g.share.id),kontoItem(g)); g.share.konto=user; changed=true;
+      }
+    }else if(!g.archived&&!g.noAutoShare&&g.members.length>=1) autoShare(g.id);
+  }
+  if(changed) persist();
+}
+function kontoRefresh(){
+  if(!Konto.loggedIn()) return;
+  kontoApply();
+  Konto.sync().then(kontoApply).catch(()=>{});
+}
+/* Wie „Reise teilen“, nur still: verschlüsselten Datensatz anlegen und ins Konto eintragen */
+async function autoShare(gid){
+  if(kontoSharing.has(gid)) return;
+  kontoSharing.add(gid);
+  try{
+    const g=byGid(gid); if(!g||g.share||g.archived||g.noAutoShare||!Konto.loggedIn()) return;
+    const secret=b64e(crypto.getRandomValues(new Uint8Array(32))), k=await keysFor(secret);
+    const p=sanitizePayload(sharedPayload(g)); if(!p) return;
+    const r=await api('POST','',null,{auth:k.auth,data:await encryptPayload(k.enc,p),rev:1});
+    if(r.status!==200||!r.json||!r.json.id) return;
+    const cur=byGid(gid); if(!cur||cur.share) return;
+    cur.share={id:r.json.id,secret,seen:r.json.updated,at:nowISO(),err:'',dirty:true};
+    persist(); setBadge(gid); remoteChanged(gid);
+    if(Konto.loggedIn()){Konto.put(kontoKey(cur.share.id),kontoItem(cur));cur.share.konto=Konto.user();persist();}
+    syncGroup(gid);   // Änderungen während des Hochladens nachziehen
+  }catch(e){}finally{kontoSharing.delete(gid);}
+}
+/* Wie joinTrip, nur ohne Navigation und Hinweise; „Wer bist du?“ erst beim Öffnen der Reise */
+async function joinSilent(it){
+  if(kontoJoining.has(it.id)) return;
+  kontoJoining.add(it.id);
+  try{
+    const k=await keysFor(it.secret), r=await api('GET','/'+it.id,k.auth);
+    if(r.status===404){kontoRemove(it.id);return;}
+    if(r.status!==200||!r.json) return;
+    const p=sanitizePayload(await decryptPayload(k.enc,r.json.data)); if(!p) return;
+    if(!Konto.loggedIn()||S.groups.some(x=>x.share&&x.share.id===it.id)) return;
+    const i=S.groups.findIndex(x=>x.id===p.gid);
+    const base=i>=0?S.groups[i]:{id:p.gid,archived:false,members:[],entries:[],createdAt:nowISO()};
+    const merged=i>=0?mergePayloads(sanitizePayload(sharedPayload(base)),p):p;
+    const g=applyPayload(base,merged);
+    g.share={id:it.id,secret:it.secret,seen:r.json.updated,at:nowISO(),err:'',dirty:i>=0,konto:Konto.user()};
+    if(i>=0) S.groups[i]=g; else S.groups.push(g);
+    if(!meId(g)){S.ui.askMe=S.ui.askMe||{};S.ui.askMe[g.id]=true;}
+    persist(); remoteChanged(g.id);
+    if(i>=0) syncGroup(g.id);
+  }catch(e){}finally{kontoJoining.delete(it.id);}
+}
+function kontoRow(){
+  return Konto.loggedIn()
+    ?gRow({icon:'user',color:'#5856D6',label:'Konto',sub:Konto.user()+' · Reisen werden mit deinem Konto verknüpft',act:'openKonto'})
+    :gRow({icon:'user',color:'#8E8E93',label:'Konto',sub:'Nicht angemeldet – im Hauptmenü anmelden',act:'openKonto'});
 }
 
 /* ===== Datumsauswahl (eigener Kalender: schließt nach dem Antippen eines Tages) ===== */
@@ -1642,7 +2168,14 @@ const ACT={
   },
   showTests:()=>{V={name:'tests'};render();},
   goGroups:()=>{S.ui.activeGroupId=null;persist();F={q:'',cat:'',person:''};V={name:'groups'};render();},
-  openGroup:el=>{S.ui.activeGroupId=el.dataset.id;persist();F={q:'',cat:'',person:''};V={name:'group',tab:'overview'};render();const g=grp();if(g&&g.share)syncGroup(g.id);},
+  openGroup:el=>{
+    S.ui.activeGroupId=el.dataset.id;
+    const g=grp(), askMe=!!(g&&S.ui.askMe&&S.ui.askMe[g.id]);
+    if(askMe) delete S.ui.askMe[g.id];
+    persist();F={q:'',cat:'',person:''};V={name:'group',tab:'overview'};render();if(g&&g.share)syncGroup(g.id);
+    if(askMe&&!meId(g)&&g.members.length) whoAmI(g);
+  },
+  openKonto:()=>{location.href='./index.html#konto';},
   newGroup:()=>groupSheet(null),
   editGroup:()=>groupSheet(grp()),
   saveGroup:async el=>{
@@ -1665,15 +2198,30 @@ const ACT={
   },
   importPick:()=>byId('importFile').click(),
   groupMenu:()=>{
-    const g=grp();
-    openSheet(`<h2>${esc(g.name)}</h2>
-    <button class="btn block" data-act="menuMembers">👥 Personen verwalten (${g.members.length})</button>
-    <button class="btn block" data-act="menuShare">${g.share?'🔗 Teilen-Link und Abgleich':'🔗 Reise teilen'}</button>
-    <button class="btn block" data-act="editGroup">Name und Zeitraum ändern</button>
-    <button class="btn block" data-act="exportGroup">Reise exportieren (JSON)</button>
-    <button class="btn block" data-act="archiveGroup">${g.archived?'Aus dem Archiv holen':'Archivieren'}</button>
-    <button class="btn danger block" data-act="deleteGroup">Reise löschen</button>
-    <button class="btn block" data-act="closeSheet">Schließen</button>`);
+    const g=grp(), n=g.members.length;
+    optSheet(g.name,[fmtRange(g),n+(n===1?' Person':' Personen'),fmtEuro(totalExpenses(g))].filter(Boolean).join(' · ').replace(/ /g,' '),[
+      {label:'Personen verwalten',hint:`${n} ${n===1?'Person':'Personen'} · Anteile und Nächte`,icon:'people',tone:'blue',act:'menuMembers',group:0},
+      {label:g.share?'Teilen-Link und Abgleich':'Reise teilen',hint:g.share?(shareStatusText(g)||'Wird mit anderen geteilt'):'Mitreisende tragen selbst Ausgaben ein',icon:'link',tone:'petrol',act:'menuShare',group:0},
+      {label:'Name und Zeitraum ändern',hint:fmtRange(g)||'Noch kein Zeitraum',icon:'pencil',tone:'blue',act:'editGroup',group:1},
+      {label:'Reise exportieren',hint:'Als JSON-Datei sichern oder weitergeben',icon:'down',tone:'petrol',act:'exportGroup',group:1},
+      {label:g.archived?'Aus dem Archiv holen':'Archivieren',hint:g.archived?'Wieder zu den aktiven Reisen':'Aus der Liste nehmen, bleibt erhalten',icon:'archive',tone:'blue',act:'archiveGroup',group:1},
+      {label:'Reise löschen',hint:g.share?'Nur auf diesem Gerät, die anderen behalten sie':'Von diesem Gerät entfernen',icon:'trash',tone:'red',act:'deleteGroup'}
+    ]);
+  },
+  memberMenu:el=>{
+    const g=grp(), m=g.members.find(x=>x.id===el.dataset.id); if(!m) return;
+    const isMe=meId(g)===m.id, used=usedIds(g).has(m.id);
+    optSheet(m.name,`Standardanteil ${fmtNum(m.defaultWeight)} · ${m.nights??'–'} ${m.nights===1?'Nacht':'Nächte'}`,[
+      {label:isMe?'Nicht mehr „Ich“':'Das bin ich',hint:isMe?'Zuordnung auf diesem Gerät aufheben':'Saldo und Anteil dieser Person zeigen',icon:'user',tone:'petrol',act:'setMe',id:m.id},
+      {label:'Umbenennen',hint:'Name ändern',icon:'pencil',tone:'blue',act:'renameMember',id:m.id},
+      used?{label:'Entfernen nicht möglich',hint:'Kommt in Ausgaben oder Zahlungen vor',icon:'info',tone:'grey',act:'delMember',id:m.id,group:5}
+          :{label:'Aus der Reise entfernen',hint:'Kommt in keiner Ausgabe vor',icon:'trash',tone:'red',act:'delMember',id:m.id}
+    ]);
+  },
+  setMe:el=>{
+    const g=grp(), id=el.dataset.id; closeSheet();
+    if(meId(g)===id) delete S.ui.meByGroup[g.id]; else S.ui.meByGroup[g.id]=id;
+    persist(); render(true);
   },
   menuMembers:()=>{closeSheet();V={name:'group',tab:'members'};render();},
   menuShare:async()=>{
@@ -1689,8 +2237,8 @@ const ACT={
       const p=sanitizePayload(sharedPayload(g)); if(!p) throw new Error('Daten ungültig');
       const r=await api('POST','',null,{auth:k.auth,data:await encryptPayload(k.enc,p),rev:1});
       if(r.status!==200||!r.json||!r.json.id) throw new Error('Server antwortet mit '+r.status);
-      const cur=byGid(g.id); cur.share={id:r.json.id,secret,seen:r.json.updated,at:nowISO(),err:'',dirty:false};
-      persist(); render(true); shareSheet(cur);
+      const cur=byGid(g.id); cur.share={id:r.json.id,secret,seen:r.json.updated,at:nowISO(),err:'',dirty:false}; delete cur.noAutoShare;
+      persist(); kontoApply(); render(true); shareSheet(cur);
     }catch(e){
       await info('Teilen nicht möglich',`Der Server ist gerade nicht erreichbar (${e&&e.message||'keine Verbindung'}). Prüfe, ob der Pi läuft, und versuche es erneut.`);
     }
@@ -1713,6 +2261,7 @@ const ACT={
         if(r.status!==204&&r.status!==404) throw new Error('Server antwortet mit '+r.status);
       }catch(e){await info('Beenden nicht möglich','Der Server ist gerade nicht erreichbar. Bitte später erneut versuchen.');return;}
     }
+    kontoRemove(cur.share.id); cur.noAutoShare=true;
     delete cur.share; persist(); render(true); notify(c==='all'?'Teilen für alle beendet':'Gerät getrennt, deine Kopie bleibt');
   },
   openJoin:()=>joinSheet(),
@@ -1733,11 +2282,13 @@ const ACT={
   deleteGroup:async()=>{
     const g=grp(); closeSheet();
     const n=g.entries.filter(e=>e.type==='expense').length;
-    const ok=await ask({title:'Reise löschen?',text:`„${g.name}“ mit ${n} ${n===1?'Ausgabe':'Ausgaben'} wird von diesem Gerät gelöscht. Das lässt sich nicht rückgängig machen.${g.share?' Für die anderen bleibt die geteilte Reise bestehen. Um sie für alle zu beenden, nutze „Teilen beenden“.':' Exportiere die Reise vorher, wenn du sie behalten willst.'}`,
-      buttons:[{label:'Endgültig löschen',value:true,style:'danger'},{label:'Behalten',value:false}]});
+    const ok=await ask({title:'Reise löschen?',text:`„${g.name}“ mit ${n} ${n===1?'Ausgabe':'Ausgaben'} wird von diesem Gerät gelöscht.${g.share?' Für die anderen bleibt die geteilte Reise bestehen. Um sie für alle zu beenden, nutze „Teilen beenden“.':' Exportiere die Reise vorher, wenn du sie behalten willst.'}`,
+      buttons:[{label:'Reise löschen',value:true,style:'danger'},{label:'Behalten',value:false}]});
     if(!ok) return;
+    const cur=byGid(g.id)||g, sn=snapGroup(cur);
+    if(cur.share) kontoRemove(cur.share.id);
     S.groups=S.groups.filter(x=>x.id!==g.id); delete S.ui.meByGroup[g.id]; S.ui.activeGroupId=null;
-    save(); V={name:'groups'}; render(); notify('Reise gelöscht');
+    save(); V={name:'groups'}; render(); undoNotice('Reise gelöscht',sn,()=>render(true));
   },
   tab:el=>{V={name:'group',tab:el.dataset.tab};render();},
   side:el=>{SIDE=el.dataset.side;V={name:'group',tab:'overview'};render(true);},
@@ -1764,14 +2315,18 @@ const ACT={
     m.name=name; m.updatedAt=nowISO(); save(); closeSheet(); render(true);
   },
   delMember:async el=>{
-    const g=grp(), m=g.members.find(x=>x.id===el.dataset.id);
+    closeSheet();
+    const g0=grp(), m=g0.members.find(x=>x.id===el.dataset.id); if(!m) return;
+    const g=g0;
     if(usedIds(g).has(m.id)){await info('Entfernen nicht möglich',`${m.name} kommt in Ausgaben oder Zahlungen vor und kann nur umbenannt werden.`);return;}
     const ok=await ask({title:`${m.name} entfernen?`,text:'Die Person kommt in keiner Ausgabe vor und wird aus dieser Reise entfernt.',buttons:[{label:'Entfernen',value:true,style:'danger'},{label:'Behalten',value:false}]});
     if(!ok) return;
-    g.members=g.members.filter(x=>x.id!==m.id); tomb(g,m.id);
-    if(S.ui.meByGroup[g.id]===m.id) delete S.ui.meByGroup[g.id];
-    if(g.defaultSplit&&g.defaultSplit.weights) delete g.defaultSplit.weights[m.id];
-    save(); render(true);
+    const cur=grp(); if(!cur||!cur.members.some(x=>x.id===m.id)) return;
+    const sn=snapGroup(cur);
+    cur.members=cur.members.filter(x=>x.id!==m.id); tomb(cur,m.id);
+    if(S.ui.meByGroup[cur.id]===m.id) delete S.ui.meByGroup[cur.id];
+    if(cur.defaultSplit&&cur.defaultSplit.weights) delete cur.defaultSplit.weights[m.id];
+    save(); render(true); undoNotice(`${m.name} entfernt`,sn);
   },
   nightsFromTrip:async()=>{
     const g=grp(), tn=tripNights(g);
@@ -1883,10 +2438,11 @@ const ACT={
         buttons:[{label:'Löschen',value:'one',style:'danger'},{label:'Behalten',value:null}]});
     }
     if(!choice) return;
+    const sn=snapGroup(g,[e.seriesId].filter(Boolean));
     if(e.seriesId){const src=g.entries.find(x=>x.id===e.seriesId);if(src&&src.repeat){src.repeat.skipped=(src.repeat.skipped||[]).concat(e.date);src.updatedAt=nowISO();}}
     g.entries.filter(x=>x.id===e.id||(choice==='all'&&x.seriesId===e.id)).forEach(x=>tomb(g,x.id));
     g.entries=g.entries.filter(x=>x.id!==e.id&&!(choice==='all'&&x.seriesId===e.id));
-    D=null; save(); V={name:'group',tab:'overview'}; render(); notify(choice==='all'?'Serie gelöscht':'Ausgabe gelöscht');
+    D=null; save(); V={name:'group',tab:'overview'}; render(); undoNotice(choice==='all'?'Serie gelöscht':'Ausgabe gelöscht',sn);
   },
 
   markPaid:el=>{
@@ -1914,7 +2470,8 @@ const ACT={
     const ok=await ask({title:'Zahlung löschen?',text:`${nameOf(g,e.paidBy)} → ${nameOf(g,e.paidTo)} ${fmtEuro(e.amountCents)} gilt dann wieder als offen.`,
       buttons:[{label:'Zahlung löschen',value:true,style:'danger'},{label:'Behalten',value:false}]});
     if(!ok) return;
-    g.entries=g.entries.filter(x=>x.id!==e.id); tomb(g,e.id); save(); closeSheet(); render(true); notify('Zahlung gelöscht');
+    const sn=snapGroup(g);
+    g.entries=g.entries.filter(x=>x.id!==e.id); tomb(g,e.id); save(); closeSheet(); render(true); undoNotice('Zahlung gelöscht',sn);
   },
   copyText:async()=>{
     const txt=settlementText(grp());
@@ -1992,9 +2549,11 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState!=='visible') return;
   if(V.name==='group'&&runRecurring()) render(true);
   syncAll();
+  kontoRefresh();
 });
 window.addEventListener('online',syncAll);
-setInterval(()=>{ if(document.visibilityState==='visible') syncAll(); },20000);
+setInterval(()=>{ if(document.visibilityState==='visible'){ syncAll(); kontoApply(); } },20000);
+Konto.onChange(()=>{ kontoApply(); remoteChanged(null); });
 document.addEventListener('focusout',()=>{ if(pendingRender) setTimeout(()=>{const a=document.activeElement;if(pendingRender&&!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))){pendingRender=false;render(true);}},50); });
 window.addEventListener('hashchange',()=>{if(location.hash==='#tests'){V={name:'tests'};render();}});
 
@@ -2006,6 +2565,7 @@ else if(grp()) V={name:'group',tab:'overview'};
 render();
 if(J){ try{history.replaceState(null,'',location.pathname+location.search);}catch(e){} joinTrip(J.id,J.secret); }
 syncAll();
+kontoRefresh();
 </script>
 </body>
 </html>
