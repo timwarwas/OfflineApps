@@ -269,6 +269,17 @@
     .primary{color:#13152B}
     .sheet-actions .ok{color:#fff}
   }
+
+/* ---------- App-Kacheln im Hauptmenü ---------- */
+.appgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px 12px;padding:14px 4px 6px}
+.apptile{display:flex;flex-direction:column;align-items:center;gap:9px;min-height:44px;padding:6px 2px;border-radius:20px;text-decoration:none;color:var(--text);background:none;border:0;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.apptile:active .appic{transform:scale(.93)}
+.appic{width:72px;height:72px;border-radius:20px;display:grid;place-items:center;color:#fff;
+  background:linear-gradient(160deg,color-mix(in srgb,var(--c) 78%,#fff) 0%,var(--c) 55%,color-mix(in srgb,var(--c) 82%,#000) 100%);
+  box-shadow:0 6px 16px color-mix(in srgb,var(--c) 35%,transparent),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .12s}
+.appic svg{width:36px;height:36px}
+.appname{font-size:14px;font-weight:600;text-align:center;line-height:1.2;hyphens:auto}
+@media (max-width:340px){.appic{width:62px;height:62px}.appic svg{width:30px;height:30px}}
 </style>
 </head>
 <body>
@@ -291,40 +302,22 @@
   <div class="glist big" id="menu-konto">
     <a class="gi" href="#konto" id="konto-row">
       <span class="gic" style="--c:#8E8E93" id="konto-row-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg></span>
-      <span class="gbody"><span class="glbl" id="konto-row-lbl">Anmelden<small>Einmal anmelden – Reisen, Haushalt, Spielgruppe und Projekte auf allen Geräten</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+      <span class="gbody"><span class="glbl" id="konto-row-lbl">Anmelden<small>Alles auf allen Geräten</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
     </a>
   </div>
 
   <h3 class="ghead">Alltag</h3>
-  <div class="glist big" id="menu-alltag">
-    <a class="gi" href="essensplanung.html">
-      <span class="gic" style="--c:#FF9500"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a2 2 0 0 0 2 2v9M10 3v7a2 2 0 0 1-2 2M8 3v6"/><path d="M17 21V3c-2.2 1.2-3 3.6-3 6.5V13h3"/></svg></span>
-      <span class="gbody"><span class="glbl">Essensplanung<small>Rotation · Wochenplan · Einkaufsliste</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
-    </a>
-    <a class="gi" href="kosten.html">
-      <span class="gic" style="--c:#5856D6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6.5A7 7 0 1 0 18 17.5"/><path d="M4 10h9M4 14h9"/></svg></span>
-      <span class="gbody"><span class="glbl">Kostenaufteilung<small>Reise-Ausgaben · fair teilen · abrechnen</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
-    </a>
-    <button class="gi" onclick="openLetter()">
-      <span class="gic" style="--c:#0A84FF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg></span>
-      <span class="gbody"><span class="glbl">Briefe<small>Profile · Briefkopf · KI-Textentwurf</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
-    </button>
+  <div class="appgrid" id="menu-alltag">
+    <a class="apptile" href="essensplanung.html"><span class="appic" style="--c:#FF9500"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a2 2 0 0 0 2 2v9M10 3v7a2 2 0 0 1-2 2M8 3v6"/><path d="M17 21V3c-2.2 1.2-3 3.6-3 6.5V13h3"/></svg></span><span class="appname">Essensplanung</span></a>
+    <a class="apptile" href="kosten.html"><span class="appic" style="--c:#5856D6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6.5A7 7 0 1 0 18 17.5"/><path d="M4 10h9M4 14h9"/></svg></span><span class="appname">Kosten</span></a>
+    <button class="apptile" onclick="openLetter()"><span class="appic" style="--c:#0A84FF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg></span><span class="appname">Briefe</span></button>
   </div>
 
   <h3 class="ghead">Freizeit</h3>
-  <div class="glist big" id="menu-freizeit">
-    <a class="gi" href="spiele.html">
-      <span class="gic" style="--c:#FF2D55"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/></svg></span>
-      <span class="gbody"><span class="glbl">Spiele<small>Flip7 · Imposter · Uno · Poker &amp; mehr</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
-    </a>
-    <a class="gi" href="workout.html">
-      <span class="gic" style="--c:#34C759"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></span>
-      <span class="gbody"><span class="glbl">Workout<small>Intervall-Training · Timer &amp; Übungen</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
-    </a>
-    <a class="gi" href="cocktails.html">
-      <span class="gic" style="--c:#AF52DE"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-8 9z"/><path d="M12 13v7M8 20h8M16.5 4l2-2"/></svg></span>
-      <span class="gbody"><span class="glbl">Cocktails<small>Rezepte als Zeichnung · PDF-Export</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
-    </a>
+  <div class="appgrid" id="menu-freizeit">
+    <a class="apptile" href="spiele.html"><span class="appic" style="--c:#FF2D55"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/></svg></span><span class="appname">Spiele</span></a>
+    <a class="apptile" href="workout.html"><span class="appic" style="--c:#34C759"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></span><span class="appname">Workout</span></a>
+    <a class="apptile" href="cocktails.html"><span class="appic" style="--c:#AF52DE"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-8 9z"/><path d="M12 13v7M8 20h8M16.5 4l2-2"/></svg></span><span class="appname">Cocktails</span></a>
   </div>
 </div>
 
@@ -1987,7 +1980,7 @@ function kontoRenderMenu(){
     lbl.innerHTML=esc(Konto.user())+'<small>'+esc(kontoCountText(Konto.items().length)+' · '+kontoStatusText())+'</small>';
     ic.style.setProperty('--c','#0A84FF');
   }else{
-    lbl.innerHTML='Anmelden<small>Einmal anmelden – Reisen, Haushalt, Spielgruppe und Projekte auf allen Geräten</small>';
+    lbl.innerHTML='Anmelden<small>Alles auf allen Geräten</small>';
     ic.style.setProperty('--c','#8E8E93');
   }
 }
