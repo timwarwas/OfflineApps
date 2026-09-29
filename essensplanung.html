@@ -474,6 +474,7 @@ main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 .toast.act{gap:6px;padding:3px 3px 3px 14px;border-radius:14px}
 .toast.act span{overflow:hidden;text-overflow:ellipsis}
 .toast .undo{font-size:14px;padding:0 12px;flex-shrink:0}
+.shopclean{margin-top:10px}
 
 </style>
 </head>
@@ -1320,13 +1321,13 @@ const EP = (function () {
       });
     });
     const st = db.shopping && db.shopping.from === from && db.shopping.to === to ? db.shopping : { checkedKeys: [], extraItems: [] };
-    const checked = new Set(st.checkedKeys || []);
+    const checked = new Set(st.checkedKeys || []), removed = new Set(st.removedKeys || []);
     const rows = [...per.entries()].map(([id, items]) => {
       const ing = ings.get(id);
       const sum = sumAmounts(items);
       const key = id + '|' + sum.dims.join('+');
       return { key, name: ing.name, amount: sum.text, category: ing.category, source: sourceOf(ing, db.settings), checked: checked.has(key) };
-    });
+    }).filter(r => !removed.has(r.key));
     const market = rows.filter(r => r.source === 'MARKT').sort((a, b) => cmpDe(a.name, b.name));
     const supermarket = CATEGORIES.map(c => ({
       category: c.key, label: c.label,
@@ -1337,43 +1338,16 @@ const EP = (function () {
     if (misc.length) supermarket.push({ category: 'SONSTIGES', label: 'Sonstiges', items: misc.sort((a, b) => cmpDe(a.name, b.name)) });
     const pantry = rows.filter(r => r.source === 'VORRAT').sort((a, b) => cmpDe(a.name, b.name))
       .map(r => ({ key: r.key, name: r.name, checked: r.checked }));
-    return { from, to, recipes: names, market, supermarket, pantry, extraItems: st.extraItems || [], warnings };
+    return { from, to, recipes: names, market, supermarket, pantry, extraItems: st.extraItems || [], warnings, removedCount: removed.size };
   }
-  /* Text zum Teilen/Kopieren – nur noch offene (nicht abgehakte) Punkte */
+  /* Text zum Teilen/Kopieren: nur die offenen Zutaten, eine pro Zeile – ohne Überschrift, Gerichte oder Kategorien
+     (so lässt es sich z. B. direkt in die Erinnerungen einfügen). Vorrat und Hinweise bleiben weg. */
   function shoppingText(list, settings) {
     const open = r => !r.checked;
-    list = Object.assign({}, list, { market: list.market.filter(open), pantry: list.pantry.filter(open),
-      supermarket: list.supermarket.map(g => Object.assign({}, g, { items: g.items.filter(open) })).filter(g => g.items.length),
-      extraItems: (list.extraItems || []).filter(open) });
-    const kwA = isoWeek(list.from), kwB = isoWeek(list.to);
-    const kw = kwA === kwB ? 'KW ' + kwA : 'KW ' + kwA + '–' + kwB;
     const L = [];
-    L.push(`Einkaufsliste ${fmtRange(list.from, list.to)} (${kw})`);
-    L.push('Gerichte: ' + (list.recipes.length ? list.recipes.join(', ') : '–'));
-    if (list.market.length) {
-      L.push('', 'MARKT');
-      list.market.forEach(r => L.push('- ' + r.name + (settings.marketListShowQuantities && r.amount ? ` (${r.amount})` : '')));
-    }
-    const groups = list.supermarket.map(g => ({ label: g.label, lines: g.items.map(r => '- ' + r.name + (r.amount ? ': ' + r.amount : '')) }));
-    const extras = (list.extraItems || []).filter(x => x.text && x.text.trim());
-    if (extras.length) {
-      let g = groups.find(x => x.label === 'Sonstiges');
-      if (!g) { g = { label: 'Sonstiges', lines: [] }; groups.push(g); }
-      extras.forEach(x => g.lines.push('- ' + x.text.trim()));
-    }
-    if (groups.length) {
-      L.push('', 'SUPERMARKT');
-      groups.forEach(g => { L.push(g.label); g.lines.forEach(l => L.push(l)); });
-    }
-    if (list.pantry.length) {
-      L.push('', 'VORRAT PRÜFEN');
-      L.push(list.pantry.map(p => p.name).join(', '));
-    }
-    if (!list.market.length && !groups.length && !list.pantry.length) L.push('', 'Alles erledigt ✓');
-    if (list.warnings.length) {
-      L.push('', 'HINWEISE');
-      list.warnings.forEach(w => L.push('- ' + w));
-    }
+    list.market.filter(open).forEach(r => L.push(r.name + (settings && settings.marketListShowQuantities && r.amount ? ` (${r.amount})` : '')));
+    list.supermarket.forEach(g => g.items.filter(open).forEach(r => L.push(r.name + (r.amount ? ` (${r.amount})` : ''))));
+    (list.extraItems || []).filter(x => open(x) && x.text && x.text.trim()).forEach(x => L.push(x.text.trim()));
     return L.join('\n');
   }
 
@@ -3443,6 +3417,7 @@ function vShop() {
   const item = (r, withAmt) => `<label class="item ${r.checked ? 'checked' : ''}"><input type="checkbox" data-check="${esc(r.key)}" ${r.checked ? 'checked' : ''}>
     <span class="nm">${esc(r.name)}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}</label>`;
   const empty = !list.recipes.length;
+  const nChecked = list.market.concat(...list.supermarket.map(g => g.items), list.pantry, list.extraItems).filter(r => r.checked).length;
   return `<div class="weekhead noprint">
       <button class="iconbtn" data-act="shopwk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
       <div class="kw"><b>${isWeek ? 'KW ' + EP.isoWeek(from) : 'Eigener Zeitraum'}</b><span>${EP.fmtRange(from, to)}</span></div>
@@ -3465,8 +3440,11 @@ function vShop() {
       <div class="quick noprint" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. Spülmittel" enterkeyhint="done"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
     </section>
     ${list.pantry.length ? `<details class="shopsec box"><summary>Vorrat prüfen (${list.pantry.length})</summary>${list.pantry.map(r => item(r, false)).join('')}</details>` : ''}
+    <div class="btns two noprint shopclean ${nChecked || list.removedCount ? '' : 'hidden'}">
+      <button class="btn ${nChecked ? '' : 'hidden'}" data-act="clearchecked">Abgehakte entfernen (${nChecked})</button>
+      ${list.removedCount ? `<button class="btn quiet" data-act="showremoved">Entfernte zeigen (${list.removedCount})</button>` : ''}</div>
     <div class="btns noprint">
-      <button class="btn primary" data-act="copyshop">Als Text kopieren</button>
+      <button class="btn primary" data-act="copyshop">Offene Zutaten kopieren</button>
       <div class="btns two" style="margin-top:0">
         ${navigator.share ? '<button class="btn" data-act="shareshop">Teilen</button>' : ''}
         <button class="btn" data-act="printshop" ${navigator.share ? '' : 'style="grid-column:1/-1"'}>Drucken</button>
@@ -4517,6 +4495,18 @@ const ACT = {
     shopState(shopRange.from, shopRange.to).extraItems.push({ text: t, checked: false }); EP.touch(db.shopping);
     change().then(() => { const i = $('#extra'); if (i) i.focus(); });
   },
+  clearchecked: () => {   // abgehakte Einträge ausblenden, zusätzliche Artikel löschen – mit Rückgängig
+    const st = shopState(shopRange.from, shopRange.to), before = deep(st);
+    const list = EP.buildShoppingList(db, shopRange.from, shopRange.to);
+    const keys = list.market.concat(...list.supermarket.map(g => g.items), list.pantry).filter(r => r.checked).map(r => r.key);
+    const n = keys.length + st.extraItems.filter(x => x.checked).length;
+    st.removedKeys = [...new Set((st.removedKeys || []).concat(keys))];
+    st.checkedKeys = (st.checkedKeys || []).filter(k => !keys.includes(k));
+    st.extraItems = st.extraItems.filter(x => !x.checked);
+    EP.touch(st);
+    persist().then(() => { rerender(); notify(`${n} entfernt`, () => { db.shopping = EP.touch(Object.assign(before, { updatedAt: 0 })); change('Wiederhergestellt'); }); });
+  },
+  showremoved: () => { const st = shopState(shopRange.from, shopRange.to); st.removedKeys = []; EP.touch(st); change('Wieder eingeblendet'); },
   delextra: i => { const st = shopState(shopRange.from, shopRange.to); st.extraItems.splice(+i, 1); EP.touch(st); change(); },
   copyshop: () => {
     const t = shopText();
@@ -4644,14 +4634,19 @@ const BIND = {
       if (f && t && f <= t) { shopRange = { from: f, to: t }; rerender(); }
     };
     $('#sf', m).onchange = setRange; $('#st', m).onchange = setRange;
+    const updClean = () => {   // Knopf „Abgehakte entfernen“ ohne Neuaufbau (Scrollposition bleibt)
+      const n = $$('[data-check]:checked, [data-extra]:checked', m).length, b = $('[data-act=clearchecked]', m), w = $('.shopclean', m);
+      b.textContent = `Abgehakte entfernen (${n})`; b.classList.toggle('hidden', !n);
+      w.classList.toggle('hidden', !n && !$('[data-act=showremoved]', m));
+    };
     $$('[data-check]', m).forEach(c => c.onchange = () => {
       const st = shopState(shopRange.from, shopRange.to), k = c.dataset.check;
       st.checkedKeys = c.checked ? [...new Set(st.checkedKeys.concat(k))] : st.checkedKeys.filter(x => x !== k);
-      EP.touch(st); persist(); c.closest('.item').classList.toggle('checked', c.checked);
+      EP.touch(st); persist(); c.closest('.item').classList.toggle('checked', c.checked); updClean();
     });
     $$('[data-extra]', m).forEach(c => c.onchange = () => {
       const st = shopState(shopRange.from, shopRange.to);
-      st.extraItems[+c.dataset.extra].checked = c.checked; EP.touch(st); persist(); c.closest('.item').classList.toggle('checked', c.checked);
+      st.extraItems[+c.dataset.extra].checked = c.checked; EP.touch(st); persist(); c.closest('.item').classList.toggle('checked', c.checked); updClean(); updClean();
     });
     const ex = $('#extra', m); if (ex) ex.onkeydown = e => { if (e.key === 'Enter') ACT.addextra(); };
   },
