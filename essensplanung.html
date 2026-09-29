@@ -475,6 +475,12 @@ main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 .toast.act span{overflow:hidden;text-overflow:ellipsis}
 .toast .undo{font-size:14px;padding:0 12px;flex-shrink:0}
 .shopclean{margin-top:10px}
+/* Zusatzartikel in den Gruppen */
+.xitem .xname{flex:1;min-width:0;text-align:left;min-height:44px;display:flex;flex-direction:column;justify-content:center;font:inherit;color:inherit}
+.xitem .xname small{font-size:11px;color:var(--speckle);font-weight:600}
+.xitem .xdel{min-width:44px;min-height:44px}
+.recentx{margin-top:10px}
+.recentx .chip{min-height:44px}
 
 </style>
 </head>
@@ -1252,6 +1258,9 @@ const EP = (function () {
     ['MILCHPRODUKTE', 'Milchprodukte', 'SUPERMARKT'], ['KAESE', 'Käse', 'SUPERMARKT'],
     ['TROCKENWAREN', 'Nudeln, Reis & Hülsenfrüchte', 'SUPERMARKT'],
     ['KONSERVEN', 'Konserven & Gläser', 'SUPERMARKT'], ['TIEFKUEHL', 'Tiefkühl', 'SUPERMARKT'],
+    ['SUESSES', 'Süßes & Snacks', 'SUPERMARKT'], ['GETRAENKE', 'Getränke', 'SUPERMARKT'],
+    ['HAUSHALT', 'Haushalt & Reinigung', 'SUPERMARKT'], ['TIER', 'Tierbedarf', 'SUPERMARKT'],
+    ['DROGERIE', 'Drogerie & Pflege', 'DROGERIE'],
     ['SONSTIGES', 'Sonstiges', 'SUPERMARKT'], ['GEWUERZE', 'Gewürze', 'VORRAT'], ['OELE_ESSIG', 'Öl & Essig', 'VORRAT'],
   ].map(([key, label, source]) => ({ key, label, source }));
   const CAT = Object.fromEntries(CATEGORIES.map(c => [c.key, c]));
@@ -1263,7 +1272,7 @@ const EP = (function () {
   /* Kategorie aus dem Zutatennamen erraten (längster Treffer gewinnt) */
   const GUESS = {
     GEMUESE: 'tomate tomaten gurke zwiebel knoblauch karotte möhre paprika zucchini aubergine kartoffel spinat blattspinat salat kopfsalat rucola feldsalat kohl weißkohl rotkohl wirsing grünkohl brokkoli blumenkohl lauch porree sellerie staudensellerie kürbis pilz pilze champignon spargel radieschen rettich rote bete fenchel mangold frühlingszwiebel schalotte ingwer chili peperoni mais kolben erbsenschoten zuckerschoten grüne bohnen avocado okra pastinake kohlrabi rosenkohl süßkartoffel',
-    OBST: 'apfel äpfel birne banane zitrone limette orange mandarine clementine beere beeren erdbeere erdbeeren himbeere himbeeren heidelbeere heidelbeeren blaubeere johannisbeere kirsche kirschen pflaume pflaumen zwetschge zwetschgen rhabarber traube trauben mango ananas aprikose pfirsich nektarine melone kiwi granatapfel feige',
+    OBST: 'wassermelone apfel äpfel birne banane zitrone limette orange mandarine clementine beere beeren erdbeere erdbeeren himbeere himbeeren heidelbeere heidelbeeren blaubeere johannisbeere kirsche kirschen pflaume pflaumen zwetschge zwetschgen rhabarber traube trauben mango ananas aprikose pfirsich nektarine melone kiwi granatapfel feige',
     KRAEUTER: 'basilikum petersilie koriander schnittlauch dill minze rosmarin thymian salbei estragon kerbel liebstöckel frische kräuter',
     EIER: 'ei eier eigelb eiweiß',
     BACKWAREN: 'brot brötchen toast toastbrot vollkornbrot tortilla tortillas weizentortillas wrap baguette fladenbrot pita ciabatta knäckebrot semmel',
@@ -1273,9 +1282,14 @@ const EP = (function () {
     KAESE: 'käse parmesan mozzarella feta gouda emmentaler ricotta halloumi frischkäse bergkäse reibekäse mascarpone pecorino',
     TROCKENWAREN: 'nudel nudeln suppennudeln spaghetti pasta penne fusilli lasagneplatten reis basmatireis risottoreis linsen rote linsen mehl weizenmehl zucker puderzucker vanillezucker haferflocken couscous bulgur quinoa grieß backpulver speisestärke stärke polenta nüsse mandeln haselnüsse walnüsse kakao schokolade trockenhefe hefe paniermehl semmelbrösel',
     KONSERVEN: 'gehackte tomaten passierte tomaten tomatenmark kokosmilch kidneybohnen bohnen kichererbsen dosenmais oliven pesto senf ketchup marmelade honig kapern essiggurken thunfisch dose',
-    TIEFKUEHL: 'tk tiefkühl erbsen tiefkühlerbsen blätterteig',
+    TIEFKUEHL: 'tk tiefkühl erbsen tiefkühlerbsen blätterteig eis eiscreme tiefkühlpizza tk-pizza pommes fischstäbchen rahmspinat',
+    SUESSES: 'schokolade schoki chips kekse keks gummibärchen süßigkeiten riegel müsliriegel nüsse erdnüsse cashews mandeln popcorn salzstangen cracker pralinen bonbons kaugummi nutella',
+    GETRAENKE: 'wasser mineralwasser sprudel saft apfelsaft orangensaft cola limo limonade schorle bier radler wein rotwein weißwein rosé sekt prosecco tee kaffee kaffeebohnen espresso kaffeepads kapseln kakao eistee energydrink sirup',
+    HAUSHALT: 'spülmittel geschirrspültabs spültabs spülmaschinentabs tabs klarspüler spülmaschinensalz regeneriersalz waschmittel weichspüler küchenrolle küchenpapier müllbeutel müllsäcke alufolie frischhaltefolie backpapier gefrierbeutel schwamm schwämme spülschwamm putzmittel allzweckreiniger glasreiniger wc-reiniger badreiniger entkalker batterien glühbirne kerzen servietten teelichter streichhölzer',
+    TIER: 'katzenfutter hundefutter katzenstreu leckerli futter vogelfutter',
+    DROGERIE: 'zahnpasta zahnbürste zahnseide mundspülung shampoo spülung duschgel seife flüssigseife deo deodorant rasierer rasierklingen rasierschaum sonnencreme bodylotion handcreme gesichtscreme taschentücher toilettenpapier klopapier watte wattepads wattestäbchen pflaster tampons binden slipeinlagen windeln feuchttücher haargel haarspray lippenpflege labello nagellack kosmetiktücher abschminktücher kontaktlinsen kopfschmerztabletten ibuprofen paracetamol vitamine',
     GEWUERZE: 'salz pfeffer paprikapulver currypulver curry kurkuma zimt muskat muskatnuss kreuzkümmel kümmel oregano getrocknet lorbeer lorbeerblatt nelke nelken vanille chiliflocken chilipulver knoblauchpulver gemüsebrühe brühe gewürz gewürze sojasauce sojasoße',
-    OELE_ESSIG: 'öl olivenöl rapsöl sonnenblumenöl sesamöl essig balsamico weißweinessig apfelessig',
+    OELE_ESSIG: 'rotweinessig weißweinessig öl olivenöl rapsöl sonnenblumenöl sesamöl essig balsamico weißweinessig apfelessig',
   };
   const GUESS_LIST = Object.entries(GUESS).flatMap(([cat, words]) => {
     // Mehrwort-Begriffe stehen hintereinander: bekannte Paare zusammenfassen
@@ -1287,6 +1301,13 @@ const EP = (function () {
     }
     return out;
   });
+  const normExtra = t => String(t || '').toLowerCase().trim().replace(/\s+/g, ' ').replace(/^\d+\s*(x|stk\.?|stück|pack|packung|flaschen?|dosen?|l|kg|g)?\s+/, '');
+  /* Kategorie für einen frei eingetragenen Artikel: gelernte Zuordnung, sonst erraten */
+  function extraCategory(text, learned) {
+    const n = normExtra(text);
+    if (learned && learned[n]) return learned[n];
+    return guessCategory(n);
+  }
   function guessCategory(name) {
     const n = ' ' + String(name || '').toLowerCase().trim().replace(/\s+/g, ' ') + ' ';
     let best = null;
@@ -1321,6 +1342,7 @@ const EP = (function () {
       });
     });
     const st = db.shopping && db.shopping.from === from && db.shopping.to === to ? db.shopping : { checkedKeys: [], extraItems: [] };
+    const learned = (db.settings && db.settings.extraCats) || {};
     const checked = new Set(st.checkedKeys || []), removed = new Set(st.removedKeys || []);
     const rows = [...per.entries()].map(([id, items]) => {
       const ing = ings.get(id);
@@ -1328,17 +1350,28 @@ const EP = (function () {
       const key = id + '|' + sum.dims.join('+');
       return { key, name: ing.name, amount: sum.text, category: ing.category, source: sourceOf(ing, db.settings), checked: checked.has(key) };
     }).filter(r => !removed.has(r.key));
+    /* zusätzliche Artikel („Spülmittel“) wie Zutaten einsortieren; Vorrat zählt hier nicht – die will man ja kaufen */
+    (st.extraItems || []).forEach((x, i) => {
+      if (!x || !x.text || !x.text.trim()) return;
+      const category = x.category || extraCategory(x.text, learned);
+      let source = categorySource(category, db.settings);
+      if (source === 'VORRAT') source = 'SUPERMARKT';
+      rows.push({ key: 'extra:' + i, extra: i, name: x.text.trim(), amount: '', category, source, checked: !!x.checked });
+    });
     const market = rows.filter(r => r.source === 'MARKT').sort((a, b) => cmpDe(a.name, b.name));
-    const supermarket = CATEGORIES.map(c => ({
-      category: c.key, label: c.label,
-      items: rows.filter(r => r.source === 'SUPERMARKT' && r.category === c.key).sort((a, b) => cmpDe(a.name, b.name)),
-    })).filter(g => g.items.length);
-    // Supermarkt-Zutaten mit Kategorie, die standardmäßig woanders liegt (z. B. Gemüse auf Supermarkt umgestellt)
-    const misc = rows.filter(r => r.source === 'SUPERMARKT' && !CATEGORIES.some(c => c.key === r.category));
-    if (misc.length) supermarket.push({ category: 'SONSTIGES', label: 'Sonstiges', items: misc.sort((a, b) => cmpDe(a.name, b.name)) });
+    const groupsOf = src => {
+      const g = CATEGORIES.map(c => ({
+        category: c.key, label: c.label,
+        items: rows.filter(r => r.source === src && r.category === c.key).sort((a, b) => cmpDe(a.name, b.name)),
+      })).filter(x => x.items.length);
+      const misc = rows.filter(r => r.source === src && !CATEGORIES.some(c => c.key === r.category));
+      if (misc.length) g.push({ category: 'SONSTIGES', label: 'Sonstiges', items: misc.sort((a, b) => cmpDe(a.name, b.name)) });
+      return g;
+    };
+    const supermarket = groupsOf('SUPERMARKT'), drogerie = groupsOf('DROGERIE');
     const pantry = rows.filter(r => r.source === 'VORRAT').sort((a, b) => cmpDe(a.name, b.name))
       .map(r => ({ key: r.key, name: r.name, checked: r.checked }));
-    return { from, to, recipes: names, market, supermarket, pantry, extraItems: st.extraItems || [], warnings, removedCount: removed.size };
+    return { from, to, recipes: names, market, supermarket, drogerie, pantry, extraItems: st.extraItems || [], warnings, removedCount: removed.size };
   }
   /* Text zum Teilen/Kopieren: nur die offenen Zutaten, eine pro Zeile – ohne Überschrift, Gerichte oder Kategorien
      (so lässt es sich z. B. direkt in die Erinnerungen einfügen). Vorrat und Hinweise bleiben weg. */
@@ -1346,8 +1379,10 @@ const EP = (function () {
     const open = r => !r.checked;
     const L = [];
     list.market.filter(open).forEach(r => L.push(r.name + (settings && settings.marketListShowQuantities && r.amount ? ` (${r.amount})` : '')));
-    list.supermarket.forEach(g => g.items.filter(open).forEach(r => L.push(r.name + (r.amount ? ` (${r.amount})` : ''))));
-    (list.extraItems || []).filter(x => open(x) && x.text && x.text.trim()).forEach(x => L.push(x.text.trim()));
+    list.supermarket.concat(list.drogerie || []).forEach(g => g.items.filter(open).forEach(r => L.push(r.name + (r.amount ? ` (${r.amount})` : ''))));
+    // ältere Listenform ohne einsortierte Zusatzartikel
+    if (!list.supermarket.concat(list.market, list.drogerie || []).some(g => (g.items || [g]).some(r => r.extra != null)))
+      (list.extraItems || []).filter(x => open(x) && x.text && x.text.trim()).forEach(x => L.push(x.text.trim()));
     return L.join('\n');
   }
 
@@ -1606,7 +1641,7 @@ const EP = (function () {
     manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
     nextFreeDates, layoutDraft, fillWeek,
     UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
-    CATEGORIES, CAT, categorySource, sourceOf, guessCategory, buildShoppingList, shoppingText,
+    CATEGORIES, CAT, categorySource, extraCategory, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText,
     mergeDb, normalizePlan, pruneTombstones, buildRecipeExport,
     parseAmount, parseRecipeImport, parseTimers, fmtClock, nameSimilar, similarRecipes,
   };
@@ -3414,10 +3449,17 @@ function vShop() {
   const isWeek = EP.weekStart(from) === from && EP.addDays(from, 6) === to;
   const list = EP.buildShoppingList(db, from, to);
   const showQ = db.settings.marketListShowQuantities;
-  const item = (r, withAmt) => `<label class="item ${r.checked ? 'checked' : ''}"><input type="checkbox" data-check="${esc(r.key)}" ${r.checked ? 'checked' : ''}>
+  const item = (r, withAmt) => r.extra != null
+    ? `<div class="item xitem ${r.checked ? 'checked' : ''}"><input type="checkbox" data-extra="${r.extra}" ${r.checked ? 'checked' : ''} aria-label="${esc(r.name)} abhaken">
+      <button class="nm xname" data-act="xcat" data-arg="${r.extra}" aria-label="${esc(r.name)}: Kategorie ändern">${esc(r.name)}<small>zusätzlich</small></button>
+      <button class="btn quiet small noprint xdel" data-act="delextra" data-arg="${r.extra}" aria-label="${esc(r.name)} entfernen">✕</button></div>`
+    : `<label class="item ${r.checked ? 'checked' : ''}"><input type="checkbox" data-check="${esc(r.key)}" ${r.checked ? 'checked' : ''}>
     <span class="nm">${esc(r.name)}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}</label>`;
-  const empty = !list.recipes.length;
-  const nChecked = list.market.concat(...list.supermarket.map(g => g.items), list.pantry, list.extraItems).filter(r => r.checked).length;
+  const groups = gs => gs.map(g => `<p class="cat">${esc(g.label)}</p>${g.items.map(r => item(r, true)).join('')}`).join('');
+  const onList = new Set(list.extraItems.map(x => EP.normExtra(x.text)));
+  const recent = (db.settings.recentExtras || []).filter(t => !onList.has(EP.normExtra(t))).slice(0, 8);
+  const empty = !list.recipes.length && !list.extraItems.length;
+  const nChecked = list.market.concat(...list.supermarket.map(g => g.items), ...list.drogerie.map(g => g.items), list.pantry).filter(r => r.checked).length;
   return `<div class="weekhead noprint">
       <button class="iconbtn" data-act="shopwk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
       <div class="kw"><b>${isWeek ? 'KW ' + EP.isoWeek(from) : 'Eigener Zeitraum'}</b><span>${EP.fmtRange(from, to)}</span></div>
@@ -3429,15 +3471,15 @@ function vShop() {
         <label><span class="hint">Bis</span><input class="in" type="date" id="st" value="${to}"></label>
       </div></details>
     <h2 style="margin-top:18px" class="printonly-h">Einkauf ${EP.fmtRange(from, to)}</h2>
-    <p class="sub">${empty ? 'In diesem Zeitraum ist nichts gekocht geplant.' : 'Für: ' + esc(list.recipes.join(', '))}</p>
+    <p class="sub">${!list.recipes.length ? 'In diesem Zeitraum ist nichts gekocht geplant.' : 'Für: ' + esc(list.recipes.join(', '))}</p>
     ${list.warnings.length ? `<ul class="box warnbox" style="margin-top:12px">${list.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
     ${list.market.length ? `<section class="shopsec box"><h3>Markt <small>${list.market.length}</small></h3>${list.market.map(r => item(r, showQ)).join('')}</section>` : ''}
-    ${list.supermarket.length ? `<section class="shopsec box"><h3>Supermarkt</h3>${list.supermarket.map(g =>
-      `<p class="cat">${esc(g.label)}</p>${g.items.map(r => item(r, true)).join('')}`).join('')}</section>` : ''}
-    <section class="shopsec box"><h3>Zusätzlich</h3>
-      ${list.extraItems.map((x, i) => `<div class="item ${x.checked ? 'checked' : ''}"><input type="checkbox" data-extra="${i}" ${x.checked ? 'checked' : ''} aria-label="Abhaken">
-        <span class="nm">${esc(x.text)}</span><button class="btn quiet small noprint" data-act="delextra" data-arg="${i}" aria-label="Entfernen">✕</button></div>`).join('')}
-      <div class="quick noprint" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. Spülmittel" enterkeyhint="done"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
+    ${list.supermarket.length ? `<section class="shopsec box"><h3>Supermarkt</h3>${groups(list.supermarket)}</section>` : ''}
+    ${list.drogerie.length ? `<section class="shopsec box"><h3>Drogerie</h3>${groups(list.drogerie)}</section>` : ''}
+    <section class="shopsec box noprint"><h3>Weitere Artikel</h3>
+      <p class="hint" style="margin-top:0">Werden automatisch einsortiert, z. B. Spülmittel → Haushalt, Zahnpasta → Drogerie. Antippen zum Umsortieren.</p>
+      <div class="quick" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. Spülmittel" enterkeyhint="done" autocomplete="off"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
+      ${recent.length ? `<div class="chips recentx">${recent.map(t => `<button class="chip" data-act="recentx" data-arg="${esc(t)}">+ ${esc(t)}</button>`).join('')}</div>` : ''}
     </section>
     ${list.pantry.length ? `<details class="shopsec box"><summary>Vorrat prüfen (${list.pantry.length})</summary>${list.pantry.map(r => item(r, false)).join('')}</details>` : ''}
     <div class="btns two noprint shopclean ${nChecked || list.removedCount ? '' : 'hidden'}">
@@ -4133,7 +4175,7 @@ function closeCook() {
 let ingQuery = '';
 function vIngredients() {
   const all = EP.live(db.ingredients).filter(i => !ingQuery || i.name.toLowerCase().includes(ingQuery.toLowerCase()));
-  const srcLabel = { MARKT: 'Markt', SUPERMARKT: 'Supermarkt', VORRAT: 'Vorrat' };
+  const srcLabel = { MARKT: 'Markt', SUPERMARKT: 'Supermarkt', DROGERIE: 'Drogerie', VORRAT: 'Vorrat' };
   return `<input class="in" id="iq" placeholder="Zutat suchen" value="${esc(ingQuery)}">
     <button class="btn" data-act="ingnew" style="margin-top:10px">Neue Zutat</button>
     ${EP.CATEGORIES.map(c => {
@@ -4154,6 +4196,7 @@ function ingredientSheet(id) {
       <option value="" ${!i.shoppingSource ? 'selected' : ''}>Wie Kategorie</option>
       <option value="MARKT" ${i.shoppingSource === 'MARKT' ? 'selected' : ''}>Markt</option>
       <option value="SUPERMARKT" ${i.shoppingSource === 'SUPERMARKT' ? 'selected' : ''}>Supermarkt</option>
+      <option value="DROGERIE" ${i.shoppingSource === 'DROGERIE' ? 'selected' : ''}>Drogerie</option>
       <option value="VORRAT" ${i.shoppingSource === 'VORRAT' ? 'selected' : ''}>Vorrat</option></select></label>
     <label class="field"><span>Standardeinheit</span><select class="in" id="in-u">${EP.UNIT_ORDER.map(u => `<option value="${u}" ${u === i.defaultUnit ? 'selected' : ''}>${EP.UNITS[u].s}</option>`).join('')}</select></label>
     ${id ? `<p class="hint">In ${used} ${used === 1 ? 'Rezept' : 'Rezepten'} verwendet.</p>` : ''}
@@ -4285,9 +4328,28 @@ function laneDaysSheet(l) {
 }
 
 /* ---------- Einkaufsorte ---------- */
-const SRC = [['MARKT', 'Markt'], ['SUPERMARKT', 'Supermarkt'], ['VORRAT', 'Vorrat']];
+const SRC = [['MARKT', 'Markt'], ['SUPERMARKT', 'Supermarkt'], ['DROGERIE', 'Drogerie'], ['VORRAT', 'Vorrat']];
 function srcSeg(act, id, cur, extraCls) {
   return `<div class="seg srcseg ${extraCls || ''}">${SRC.map(([k, l]) => `<button data-act="${act}" data-arg="${id}|${k}" aria-pressed="${cur === k}">${l}</button>`).join('')}</div>`;
+}
+/* ---------- Zusätzliche Artikel auf der Einkaufsliste ---------- */
+function addExtraItem(t) {
+  shopState(shopRange.from, shopRange.to).extraItems.push({ text: t, checked: false }); EP.touch(db.shopping);
+  const n = EP.normExtra(t), rec = (db.settings.recentExtras || []).filter(x => EP.normExtra(x) !== n);
+  db.settings.recentExtras = [t].concat(rec).slice(0, 12); EP.touch(db.settings);
+}
+/* Kategorie eines Zusatzartikels ändern – wird für diesen Begriff gemerkt */
+function extraCatSheet(i) {
+  const st = shopState(shopRange.from, shopRange.to), x = st.extraItems[i]; if (!x) return;
+  const cur = x.category || EP.extraCategory(x.text, db.settings.extraCats);
+  optionsSheet(`„${x.text}“ einsortieren`, 'Die Zuordnung wird für diesen Begriff gemerkt.', EP.CATEGORIES.map(c => ({
+    label: c.label, hint: { MARKT: 'Markt', SUPERMARKT: 'Supermarkt', DROGERIE: 'Drogerie', VORRAT: 'Vorrat' }[EP.categorySource(c.key, db.settings)],
+    icon: c.key === cur ? 'check' : 'bowl', tone: c.key === cur ? 'basil' : 'speckle', group: 0,
+    run: () => {
+      x.category = c.key; EP.touch(st);
+      db.settings.extraCats = Object.assign({}, db.settings.extraCats, { [EP.normExtra(x.text)]: c.key }); EP.touch(db.settings);
+      change(`${x.text} → ${c.label}`);
+    } })).concat([{ label: 'Entfernen', danger: true, run: () => ACT.delextra(i) }]));
 }
 const srcOpen = new Set();   // aufgeklappte Kategorien bleiben beim Ändern offen
 function vSources() {
@@ -4451,7 +4513,7 @@ const ACT = {
     const [cat, v] = a.split('|');
     db.settings.categorySources = Object.assign({}, db.settings.categorySources, { [cat]: v }); EP.touch(db.settings);
     EP.live(db.ingredients).filter(i => i.category === cat).forEach(i => { if (i.shoppingSource || i.reviewed === false) { i.shoppingSource = null; i.reviewed = true; EP.touch(i); } });
-    change(`Alle ${(EP.CAT[cat] || {}).label || ''}: ${{ MARKT: 'Markt', SUPERMARKT: 'Supermarkt', VORRAT: 'Vorrat' }[v]}.`);
+    change(`Alle ${(EP.CAT[cat] || {}).label || ''}: ${{ MARKT: 'Markt', SUPERMARKT: 'Supermarkt', DROGERIE: 'Drogerie', VORRAT: 'Vorrat' }[v]}.`);
   },
   srcok: () => { EP.live(db.ingredients).filter(i => i.reviewed === false).forEach(i => { i.reviewed = true; EP.touch(i); }); change('Einkaufsorte übernommen.'); },
   to: a => go(a),
@@ -4492,13 +4554,16 @@ const ACT = {
   /* Einkauf */
   addextra: () => {
     const inp = $('#extra'); const t = inp.value.trim(); if (!t) return;
-    shopState(shopRange.from, shopRange.to).extraItems.push({ text: t, checked: false }); EP.touch(db.shopping);
-    change().then(() => { const i = $('#extra'); if (i) i.focus(); });
+    addExtraItem(t);
+    const cat = EP.extraCategory(t, db.settings.extraCats), lbl = (EP.CAT[cat] || EP.CAT.SONSTIGES).label;
+    change(`${t} → ${lbl}`).then(() => { const i = $('#extra'); if (i) i.focus(); });
   },
+  recentx: t => { addExtraItem(t); change(`${t} hinzugefügt`); },
+  xcat: i => extraCatSheet(+i),
   clearchecked: () => {   // abgehakte Einträge ausblenden, zusätzliche Artikel löschen – mit Rückgängig
     const st = shopState(shopRange.from, shopRange.to), before = deep(st);
     const list = EP.buildShoppingList(db, shopRange.from, shopRange.to);
-    const keys = list.market.concat(...list.supermarket.map(g => g.items), list.pantry).filter(r => r.checked).map(r => r.key);
+    const keys = list.market.concat(...list.supermarket.map(g => g.items), ...list.drogerie.map(g => g.items), list.pantry).filter(r => r.checked && r.extra == null).map(r => r.key);
     const n = keys.length + st.extraItems.filter(x => x.checked).length;
     st.removedKeys = [...new Set((st.removedKeys || []).concat(keys))];
     st.checkedKeys = (st.checkedKeys || []).filter(k => !keys.includes(k));
