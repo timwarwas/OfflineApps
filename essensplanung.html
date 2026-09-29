@@ -1339,7 +1339,12 @@ const EP = (function () {
       .map(r => ({ key: r.key, name: r.name, checked: r.checked }));
     return { from, to, recipes: names, market, supermarket, pantry, extraItems: st.extraItems || [], warnings };
   }
+  /* Text zum Teilen/Kopieren – nur noch offene (nicht abgehakte) Punkte */
   function shoppingText(list, settings) {
+    const open = r => !r.checked;
+    list = Object.assign({}, list, { market: list.market.filter(open), pantry: list.pantry.filter(open),
+      supermarket: list.supermarket.map(g => Object.assign({}, g, { items: g.items.filter(open) })).filter(g => g.items.length),
+      extraItems: (list.extraItems || []).filter(open) });
     const kwA = isoWeek(list.from), kwB = isoWeek(list.to);
     const kw = kwA === kwB ? 'KW ' + kwA : 'KW ' + kwA + '–' + kwB;
     const L = [];
@@ -1364,6 +1369,7 @@ const EP = (function () {
       L.push('', 'VORRAT PRÜFEN');
       L.push(list.pantry.map(p => p.name).join(', '));
     }
+    if (!list.market.length && !groups.length && !list.pantry.length) L.push('', 'Alles erledigt ✓');
     if (list.warnings.length) {
       L.push('', 'HINWEISE');
       list.warnings.forEach(w => L.push('- ' + w));
