@@ -203,9 +203,9 @@
   .push-card button:disabled{opacity:.5}
   .push-err{color:var(--coral);font-size:14px;font-weight:700;margin-top:10px;line-height:1.4}
   .push-err:empty{display:none}
-  .gi input.push-time{flex-shrink:0;width:auto;min-width:104px;max-width:150px;min-height:44px;padding:8px 10px;border-radius:12px;border:1px solid var(--line);
+  .gi input.push-time,.gi select.push-time{flex-shrink:0;width:auto;min-width:104px;max-width:150px;min-height:44px;padding:8px 10px;border-radius:12px;border:1px solid var(--line);
     background:var(--surface2);color:var(--text);font:inherit;font-size:16px;font-weight:700;text-align:center;-webkit-appearance:none;appearance:none}
-  .gi input.push-time:focus{outline:2px solid var(--blue);outline-offset:1px}
+  .gi input.push-time:focus,.gi select.push-time:focus{outline:2px solid var(--blue);outline-offset:1px}
   .gic.blank{background:none}
   .push-konto .konto-link-btn{margin:6px 0 0;padding:10px 0}
   /* ---------- Hinweis-Toast ---------- */
@@ -442,7 +442,7 @@
   <h3 class="ghead">Was soll dich benachrichtigen?</h3>
   <div class="glist" id="push-kinds"></div>
   <div id="push-konto"></div>
-  <p class="gfoot">Kochtimer und Kocherinnerung funktionieren auch ohne Konto. Deine Auswahl wird gespeichert, auch wenn Mitteilungen gerade aus sind.</p>
+  <p class="gfoot">Kochtimer und Kocherinnerung funktionieren auch ohne Konto. Deine Auswahl wird gespeichert, auch wenn Mitteilungen gerade aus sind. Die Sammel-Wartezeit gilt für Artikel, die auf diesem Gerät hinzugefügt werden – schließt du die App vorher, geht die Mitteilung sofort raus.</p>
   <div id="push-test-wrap" style="display:none">
     <div class="glist" style="margin-top:22px">
       <button class="gi" id="push-test-btn" onclick="pushTest()">
@@ -3116,7 +3116,7 @@ function pushRender(){
   // Arten
   const p=Push.prefs(), konto=Konto.loggedIn();
   const list=document.getElementById('push-kinds');
-  const focused=document.activeElement && document.activeElement.id==='push-remind-time';
+  const focused=document.activeElement && (document.activeElement.id==='push-remind-time' || document.activeElement.id==='push-einkauf-wait');
   if(!focused){
     list.innerHTML=Push.KINDS.map(k=>{
       const row=`<label class="gi push-kind" for="push-k-${k.key}" data-kind="${k.key}">
@@ -3124,6 +3124,14 @@ function pushRender(){
         <span class="gbody"><span class="glbl">${esc(k.label)}<small>${esc(k.sub)}${!konto && PUSH_KONTO_KINDS.includes(k.key)?' · braucht Konto':''}</small></span>
           <span class="switch"><input type="checkbox" id="push-k-${k.key}" data-kind="${k.key}" onchange="pushSetKind(this.dataset.kind, this.checked)"${p[k.key]?' checked':''} aria-label="${esc(k.label)}"><i></i></span></span>
       </label>`;
+      if(k.key==='einkauf' && p.einkauf){
+        const w=+p.einkaufWait||15;
+        return row+`<label class="gi" for="push-einkauf-wait" id="push-einkauf-row">
+        <span class="gic blank"></span>
+        <span class="gbody"><span class="glbl">Sammeln<small>Wartezeit nach dem letzten Artikel, dann eine Mitteilung</small></span>
+          <select class="push-time" id="push-einkauf-wait" onchange="pushSetWait(this.value)">${PUSH_WAITS.map(([v,l])=>`<option value="${v}"${v===w?' selected':''}>${l}</option>`).join('')}</select></span>
+      </label>`;
+      }
       if(k.key!=='remind' || !p.remind) return row;
       return row+`<label class="gi" for="push-remind-time" id="push-remind-row">
         <span class="gic blank"></span>
@@ -3138,6 +3146,9 @@ function pushRender(){
   document.getElementById('push-test-wrap').style.display = on ? '' : 'none';
   document.getElementById('push-test-lbl').firstChild.textContent = pushBusy==='test' ? 'Wird gesendet …' : 'Testmitteilung senden';
 }
+const PUSH_WAITS=[[15,'15 Sek.'],[30,'30 Sek.'],[60,'1 Min.'],[120,'2 Min.'],[300,'5 Min.']];
+const PUSH_WAIT_TXT={15:'15 Sekunden',30:'30 Sekunden',60:'1 Minute',120:'2 Minuten',300:'5 Minuten'};
+function pushSetWait(v){ v=+v; if(!PUSH_WAIT_TXT[v]) return; Push.setPrefs({einkaufWait:v}); notify('Einkaufsliste: eine Mitteilung '+PUSH_WAIT_TXT[v]+' nach dem letzten Artikel.'); }
 function pushSetKind(key, val){ Push.setPrefs({[key]:!!val}); pushRender(); }
 function pushSetTime(v){
   if(!/^\d{2}:\d{2}$/.test(v||'')) return;

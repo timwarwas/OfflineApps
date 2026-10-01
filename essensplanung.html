@@ -479,8 +479,28 @@ main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 .xitem .xname{flex:1;min-width:0;text-align:left;min-height:44px;display:flex;flex-direction:column;justify-content:center;font:inherit;color:inherit}
 .xitem .xname small{font-size:11px;color:var(--speckle);font-weight:600}
 .xitem .xdel{min-width:44px;min-height:44px}
-.recentx{margin-top:10px}
+.recentx{margin-top:6px}
+.recenthead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
+.recenthead .hint{margin:0;min-width:0}
+.recenthead .btn{flex-shrink:0;min-height:44px}
+.recentx.editing .chip{color:var(--tomato);border-color:currentColor}
 .recentx .chip{min-height:44px}
+
+/* Geschäfte */
+.shophead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.shophead h3{margin:0}
+.storechip{min-height:44px;padding:0 14px;border-radius:99px;border:1px solid var(--line);background:transparent;color:inherit;font:inherit;font-size:15px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+.ordrow{display:flex;align-items:center;gap:8px;min-height:52px;padding-right:12px}
+.ordnr{width:24px;flex-shrink:0;text-align:center;font-weight:700;color:var(--speckle);font-variant-numeric:tabular-nums}
+.ordlbl{flex:1;min-width:0;text-align:left;background:none;border:0;padding:6px 0;color:inherit;font:inherit;font-size:16px;min-height:44px;display:flex;flex-direction:column;justify-content:center}
+button.ordlbl{cursor:pointer;font-weight:600}
+.ordlbl small{display:block;color:var(--speckle);font-size:13px;font-weight:400;margin-top:2px}
+.ordbtn{width:44px;height:44px;flex-shrink:0;border-radius:12px;border:1px solid var(--line);background:transparent;color:inherit;font-size:15px;cursor:pointer}
+.ordbtn:disabled{opacity:.3}
+.secitems{margin-top:12px}
+.secitem{display:flex;align-items:center;gap:8px;min-height:48px;border-bottom:1px solid var(--line)}
+.secitem .btn{min-height:44px;min-width:44px}
+@media print{.storechip{display:none}}
 
 </style>
 </head>
@@ -1677,6 +1697,34 @@ const EP = (function () {
   }
   const cmpDe = (a, b) => a.localeCompare(b, 'de');
 
+  /* ---------- Geschäfte mit Regal-Reihenfolge ----------
+     settings.stores = [{ id, name, kind: 'SUPERMARKT'|'MARKT'|'DROGERIE', order: [Kategorie | 'S:<Bereich-ID>'],
+                          sections: [{ id, name }], assign: { <normierter Artikelname>: <Bereich-ID> } }]
+     settings.storeDefault = { SUPERMARKT: id, … }; je Einkaufsliste shopping.stores = { SUPERMARKT: id | 'none' } */
+  const STORE_KINDS = [['SUPERMARKT', 'Supermarkt'], ['MARKT', 'Markt'], ['DROGERIE', 'Drogerie']];
+  const liveStores = settings => ((settings && settings.stores) || []).filter(x => x && !x.deleted);
+  function storeById(settings, id) { return liveStores(settings).find(x => x.id === id) || null; }
+  /* gewähltes Geschäft für einen Einkaufsort: Auswahl der Liste, sonst Standard */
+  function storeFor(settings, src, shopping) {
+    const pick = shopping && shopping.stores && shopping.stores[src];
+    if (pick === 'none') return null;
+    const s = pick && storeById(settings, pick);
+    if (s && s.kind === src) return s;
+    const d = settings && settings.storeDefault && storeById(settings, settings.storeDefault[src]);
+    return d && d.kind === src ? d : null;
+  }
+  /* vollständige Reihenfolge eines Geschäfts: gespeicherte Reihenfolge, dann fehlende Kategorien und Bereiche */
+  function storeOrder(store, settings) {
+    const secs = new Map((store.sections || []).map(x => [x.id, x]));
+    const cats = CATEGORIES.filter(c => { const src = categorySource(c.key, settings); return src === store.kind || (c.key === 'SONSTIGES' && store.kind !== 'MARKT'); }).map(c => c.key);
+    const ok = k => k.startsWith('S:') ? secs.has(k.slice(2)) : cats.includes(k);
+    const out = [];
+    (store.order || []).forEach(k => { if (ok(k) && !out.includes(k)) out.push(k); });
+    cats.forEach(k => { if (!out.includes(k)) out.push(k); });
+    secs.forEach((x, id) => { if (!out.includes('S:' + id)) out.push('S:' + id); });
+    return out.map(k => k.startsWith('S:') ? { key: k, label: secs.get(k.slice(2)).name, section: true, id: k.slice(2) } : { key: k, label: CAT[k].label, section: false });
+  }
+
   function buildShoppingList(db, from, to) {
     const recipes = new Map(live(db.recipes).map(r => [r.id, r]));
     const ings = new Map(live(db.ingredients).map(i => [i.id, i]));
@@ -1715,8 +1763,24 @@ const EP = (function () {
       if (source === 'VORRAT') source = 'SUPERMARKT';
       rows.push({ key: 'extra:' + i, extra: i, name: x.text.trim(), amount: '', category, source, checked: !!x.checked });
     });
-    const market = rows.filter(r => r.source === 'MARKT').sort((a, b) => cmpDe(a.name, b.name));
+    const stores = {}; STORE_KINDS.forEach(([k]) => { stores[k] = storeFor(db.settings, k, st); });
+    /* Gruppen nach der Reihenfolge des Geschäfts; eigene Bereiche ziehen ihre Artikel aus den Kategorien */
+    const storeGroups = (src, store) => {
+      const own = rows.filter(r => r.source === src);
+      const secOf = r => { const id = store.assign && store.assign[normExtra(r.name)]; return id && (store.sections || []).some(x => x.id === id) ? 'S:' + id : null; };
+      const order = storeOrder(store, db.settings), used = new Set();
+      const g = order.map(o => ({ category: o.key, label: o.label, section: o.section,
+        items: own.filter(r => { const k = secOf(r) || r.category; if (k !== o.key) return false; used.add(r); return true; }).sort((a, b) => cmpDe(a.name, b.name)) }));
+      const rest = own.filter(r => !used.has(r));   // Kategorien, die (noch) nicht zu diesem Geschäft gehören
+      CATEGORIES.forEach(c => { const it = rest.filter(r => r.category === c.key); if (it.length) g.push({ category: c.key, label: c.label, items: it.sort((a, b) => cmpDe(a.name, b.name)) }); });
+      const misc = rest.filter(r => !CAT[r.category]);
+      if (misc.length) g.push({ category: 'SONSTIGES', label: 'Sonstiges', items: misc.sort((a, b) => cmpDe(a.name, b.name)) });
+      return g.filter(x => x.items.length);
+    };
+    let market = rows.filter(r => r.source === 'MARKT').sort((a, b) => cmpDe(a.name, b.name)), marketGroups = null;
+    if (stores.MARKT) { marketGroups = storeGroups('MARKT', stores.MARKT); market = [].concat(...marketGroups.map(x => x.items)); }
     const groupsOf = src => {
+      if (stores[src]) return storeGroups(src, stores[src]);
       const g = CATEGORIES.map(c => ({
         category: c.key, label: c.label,
         items: rows.filter(r => r.source === src && r.category === c.key).sort((a, b) => cmpDe(a.name, b.name)),
@@ -1728,7 +1792,7 @@ const EP = (function () {
     const supermarket = groupsOf('SUPERMARKT'), drogerie = groupsOf('DROGERIE');
     const pantry = rows.filter(r => r.source === 'VORRAT').sort((a, b) => cmpDe(a.name, b.name))
       .map(r => ({ key: r.key, name: r.name, checked: r.checked }));
-    return { from, to, recipes: names, market, supermarket, drogerie, pantry, extraItems: st.extraItems || [], warnings, removedCount: removed.size };
+    return { from, to, recipes: names, market, marketGroups, supermarket, drogerie, pantry, extraItems: st.extraItems || [], warnings, removedCount: removed.size, stores };
   }
   /* Text zum Teilen/Kopieren: nur die offenen Zutaten, eine pro Zeile – ohne Überschrift, Gerichte oder Kategorien
      (so lässt es sich z. B. direkt in die Erinnerungen einfügen). Vorrat und Hinweise bleiben weg. */
@@ -1998,7 +2062,7 @@ const EP = (function () {
     manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
     nextFreeDates, layoutDraft, fillWeek,
     UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
-    CATEGORIES, CAT, categorySource, extraCategory, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText,
+    CATEGORIES, CAT, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText,
     mergeDb, normalizePlan, pruneTombstones, buildRecipeExport,
     parseAmount, parseRecipeImport, parseTimers, fmtClock, nameSimilar, similarRecipes,
   };
@@ -3135,12 +3199,14 @@ const ICON = {
 };
 const TABS = [['week', 'Woche', ICON.week], ['suggest', 'Vorschlag', ICON.plate], ['shop', 'Einkauf', ICON.cart], ['recipes', 'Rezepte', ICON.book]];
 const TITLES = { suggest: 'Als Nächstes', week: 'Wochenplan', shop: 'Einkaufsliste', recipes: 'Rezepte',
-  edit: 'Rezept', ingredients: 'Zutaten', rotation: 'Rotation', settings: 'Einstellungen', sync: 'Geräteabgleich', sources: 'Einkaufsorte' };
+  edit: 'Rezept', ingredients: 'Zutaten', rotation: 'Rotation', settings: 'Einstellungen', sync: 'Geräteabgleich', sources: 'Einkaufsorte',
+  stores: 'Geschäfte', store: 'Geschäft' };
 const LANE_LABEL = { MAIN: 'Hauptgerichte', LUNCH: 'Mittag', CAKE: 'Kuchen', SIDE: 'Beilagen' };
 const DISH_LABEL = { MAIN: 'Hauptgericht', LUNCH: 'Mittag', CAKE: 'Kuchen', SIDE: 'Beilage' };
 let suggestLane = 'MAIN';
 
 let route = { name: 'week' }, stack = [];
+let recentEdit = false;   // Vorschläge „Zuletzt verwendet“ bearbeiten
 let weekStartISO = EP.weekStart(EP.todayISO());
 let shopRange = null;
 let recipeFilter = { q: '', status: 'all', tag: '', kind: 'MAIN' };
@@ -3418,6 +3484,23 @@ function optStyle(o) {
   const m = OPT_STYLE.find(([re]) => re.test(o.label)) || [null, 'bowl', 'rim', 1];
   return { icon: ICON['o' + (o.icon || m[1])] || ICON[o.icon || m[1]] || ICON.obowl, tone: o.tone || (o.danger ? 'tomato' : m[2]), group: o.group != null ? o.group : (o.danger ? 4 : m[3]), more: o.more != null ? o.more : !!m[4] };
 }
+/* Eingabe eines Namens (statt prompt): onOk(wert, auswahl) läuft nach dem Schließen */
+function textSheet(title, sub, value, ok, onOk, choices) {
+  openSheet(`<h2>${esc(title)}</h2>${sub ? `<p class="sub" style="margin-top:6px">${esc(sub)}</p>` : ''}
+    <input class="in" id="ts-in" value="${esc(value || '')}" style="margin-top:12px" autocomplete="off" enterkeyhint="done">
+    ${choices ? `<div class="seg" style="margin-top:12px">${choices.list.map(([k, l]) => `<button type="button" data-k="${k}" aria-pressed="${k === choices.cur}">${esc(l)}</button>`).join('')}</div>` : ''}
+    <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">${esc(ok)}</button></div>`, el => {
+    const inp = $('#ts-in', el);
+    $$('[data-k]', el).forEach(b => b.onclick = () => $$('[data-k]', el).forEach(x => x.setAttribute('aria-pressed', String(x === b))));
+    const done = () => {
+      const v = inp.value.trim(); if (!v) { inp.focus(); return; }
+      const c = $('[data-k][aria-pressed=true]', el);
+      closeSheet(); onOk(v, c && c.dataset.k);
+    };
+    $('[data-x=no]', el).onclick = closeSheet; $('[data-x=yes]', el).onclick = done;
+    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); done(); } };
+  });
+}
 function optionsSheet(title, sub, opts, chip) {
   let list = opts.map((o, i) => Object.assign({ i }, o, optStyle(o))).sort((a, b) => a.group - b.group || a.i - b.i);
   // Selten Gebrauchtes unter „Mehr …“, sobald das Menü lang wird (mindestens zwei Einträge dahinter)
@@ -3502,7 +3585,7 @@ function rerender() {
     ? `<a class="iconbtn" href="index.html" aria-label="Zur Übersicht der Apps">${ICON.back}</a>`
     : `<button class="iconbtn" data-act="back" aria-label="Zurück">${ICON.back}</button>`;
   $('#tabs').innerHTML = TABS.map(([k, l, ic]) => `<button data-tab="${k}" ${route.name === k || (!isTab && stack[0] && stack[0].name === k) ? 'aria-current="page"' : ''}>${ic}${l}</button>`).join('');
-  const views = { suggest: vSuggest, week: vWeek, shop: vShop, recipes: vRecipes, edit: vEdit, ingredients: vIngredients, rotation: vRotation, settings: vSettings, sync: vSync, sources: vSources };
+  const views = { suggest: vSuggest, week: vWeek, shop: vShop, recipes: vRecipes, edit: vEdit, ingredients: vIngredients, rotation: vRotation, settings: vSettings, sync: vSync, sources: vSources, stores: vStores, store: vStore };
   const main = $('#main');
   main.innerHTML = (views[route.name] || vSuggest)();
   const binder = BIND[route.name]; if (binder) binder(main);
@@ -3817,6 +3900,12 @@ function vShop() {
   const onList = new Set(list.extraItems.map(x => EP.normExtra(x.text)));
   const recent = (db.settings.recentExtras || []).filter(t => !onList.has(EP.normExtra(t))).slice(0, 8);
   const empty = !list.recipes.length && !list.extraItems.length;
+  const anyStore = k => EP.liveStores(db.settings).some(x => x.kind === k);
+  const storeChip = (k, lbl) => `<button class="storechip noprint" data-act="storepick" data-arg="${k}" aria-label="Geschäft für ${lbl} wählen">${list.stores[k] ? esc(list.stores[k].name) : anyStore(k) ? 'Ohne Geschäft' : 'Geschäft wählen'} ▾</button>`;
+  const head = (k, lbl, n) => `<div class="shophead"><h3>${lbl}${n != null ? ` <small>${n}</small>` : ''}</h3>${storeChip(k, lbl)}</div>`;
+  const marketHtml = list.marketGroups
+    ? list.marketGroups.map(g => `<p class="cat">${esc(g.label)}</p>${g.items.map(r => item(r, showQ)).join('')}`).join('')
+    : list.market.map(r => item(r, showQ)).join('');
   const nChecked = list.market.concat(...list.supermarket.map(g => g.items), ...list.drogerie.map(g => g.items), list.pantry).filter(r => r.checked).length;
   return `<div class="weekhead noprint">
       <button class="iconbtn" data-act="shopwk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
@@ -3831,13 +3920,17 @@ function vShop() {
     <h2 style="margin-top:18px" class="printonly-h">Einkauf ${EP.fmtRange(from, to)}</h2>
     <p class="sub">${!list.recipes.length ? 'In diesem Zeitraum ist nichts gekocht geplant.' : 'Für: ' + esc(list.recipes.join(', '))}</p>
     ${list.warnings.length ? `<ul class="box warnbox" style="margin-top:12px">${list.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
-    ${list.market.length ? `<section class="shopsec box"><h3>Markt <small>${list.market.length}</small></h3>${list.market.map(r => item(r, showQ)).join('')}</section>` : ''}
-    ${list.supermarket.length ? `<section class="shopsec box"><h3>Supermarkt</h3>${groups(list.supermarket)}</section>` : ''}
-    ${list.drogerie.length ? `<section class="shopsec box"><h3>Drogerie</h3>${groups(list.drogerie)}</section>` : ''}
+    ${list.market.length ? `<section class="shopsec box">${head('MARKT', 'Markt', list.market.length)}${marketHtml}</section>` : ''}
+    ${list.supermarket.length ? `<section class="shopsec box">${head('SUPERMARKT', 'Supermarkt')}${groups(list.supermarket)}</section>` : ''}
+    ${list.drogerie.length ? `<section class="shopsec box">${head('DROGERIE', 'Drogerie')}${groups(list.drogerie)}</section>` : ''}
     <section class="shopsec box noprint"><h3>Weitere Artikel</h3>
       <p class="hint" style="margin-top:0">Werden automatisch einsortiert, z. B. Spülmittel → Haushalt, Zahnpasta → Drogerie. Antippen zum Umsortieren.</p>
       <div class="quick" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. Spülmittel" enterkeyhint="done" autocomplete="off"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
-      ${recent.length ? `<div class="chips recentx">${recent.map(t => `<button class="chip" data-act="recentx" data-arg="${esc(t)}">+ ${esc(t)}</button>`).join('')}</div>` : ''}
+      ${recent.length ? `<div class="recenthead"><span class="hint">${recentEdit ? 'Antippen zum Entfernen aus den Vorschlägen' : 'Zuletzt verwendet – antippen zum erneut Hinzufügen'}</span>
+        <button class="btn quiet small" data-act="recentedit">${recentEdit ? 'Fertig' : 'Bearbeiten'}</button></div>
+      <div class="chips recentx${recentEdit ? ' editing' : ''}">${recent.map(t => recentEdit
+        ? `<button class="chip" data-act="recentdel" data-arg="${esc(t)}" aria-label="${esc(t)} aus den Vorschlägen entfernen">✕ ${esc(t)}</button>`
+        : `<button class="chip" data-act="recentx" data-arg="${esc(t)}">+ ${esc(t)}</button>`).join('')}</div>` : ''}
     </section>
     ${list.pantry.length ? `<details class="shopsec box"><summary>Vorrat prüfen (${list.pantry.length})</summary>${list.pantry.map(r => item(r, false)).join('')}</details>` : ''}
     <div class="btns two noprint shopclean ${nChecked || list.removedCount ? '' : 'hidden'}">
@@ -4391,7 +4484,8 @@ const Notes = {
   extraAdded(t) {
     if (typeof Push === 'undefined' || !this.item()) return;
     this.extras.push(t); clearTimeout(this.exTimer);
-    this.exTimer = setTimeout(() => this.flushExtras(), 15000);
+    const wait = Math.min(Math.max(+(Push.prefs().einkaufWait) || 15, 5), 600);   // Einstellung im Hauptmenü → Mitteilungen
+    this.exTimer = setTimeout(() => this.flushExtras(), wait * 1000);
   },
   flushExtras() {
     clearTimeout(this.exTimer); this.exTimer = null;
@@ -4741,6 +4835,10 @@ const SI = {
   book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h11a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg>',
   key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l2 2M14 9l2 2"/></svg>',
   bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+  shop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v11h16V9"/><path d="M3 9h18"/><path d="M9 20v-6h6v6"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>',
   out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l-4-4 4-4M6 12h10"/></svg>',
 };
 const CHEV = '<svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
@@ -4772,6 +4870,7 @@ function vSettings() {
     ], 'Kommen zusätzlich zum Hauptgericht dazu und haben jeweils eine eigene Rotation.')
     + gGroup('Verwalten', [
       gRow({ icon: 'cart', color: '#30B0C7', label: 'Einkaufsorte', sub: 'Markt, Supermarkt oder Vorrat', right: nNew ? `<span class="countbadge">${nNew}</span>` : '', act: 'to', arg: 'sources' }),
+      gRow({ icon: 'shop', color: '#FF9500', label: 'Geschäfte', sub: 'Regal-Reihenfolge für die Einkaufsliste', value: EP.liveStores(db.settings).length || 'Keine', act: 'to', arg: 'stores' }),
       gRow({ icon: 'leaf', color: '#34C759', label: 'Zutaten', value: EP.live(db.ingredients).length, act: 'to', arg: 'ingredients' }),
       gRow({ icon: 'cycle', color: '#5856D6', label: 'Rotation ansehen', act: 'to', arg: 'rotation' }),
       gRow({ icon: 'sync', color: '#0A84FF', label: 'Geräteabgleich', value: syncVal, act: 'to', arg: 'sync' }),
@@ -4816,15 +4915,109 @@ function addExtraItem(t) {
 function extraCatSheet(i) {
   const st = shopState(shopRange.from, shopRange.to), x = st.extraItems[i]; if (!x) return;
   const cur = x.category || EP.extraCategory(x.text, db.settings.extraCats);
-  optionsSheet(`„${x.text}“ einsortieren`, 'Die Zuordnung wird für diesen Begriff gemerkt.', EP.CATEGORIES.map(c => ({
+  let src = EP.categorySource(cur, db.settings); if (src === 'VORRAT') src = 'SUPERMARKT';
+  const store = EP.storeFor(db.settings, src, st), nx = EP.normExtra(x.text), inSec = store && store.assign && store.assign[nx];
+  const unSec = () => { if (inSec) { const a = Object.assign({}, store.assign); delete a[nx]; store.assign = a; EP.touch(db.settings); } };
+  const secOpts = store ? (store.sections || []).map(sec => ({ label: sec.name, hint: `Bereich in „${store.name}“`, icon: inSec === sec.id ? 'check' : 'bowl', tone: inSec === sec.id ? 'basil' : 'speckle', group: 0,
+    run: () => { store.assign = Object.assign({}, store.assign, { [nx]: sec.id }); EP.touch(db.settings); change(`${x.text} → ${sec.name}`); } })) : [];
+  optionsSheet(`„${x.text}“ einsortieren`, 'Die Zuordnung wird für diesen Begriff gemerkt.', secOpts.concat(EP.CATEGORIES.map(c => ({
     label: c.label, hint: { MARKT: 'Markt', SUPERMARKT: 'Supermarkt', DROGERIE: 'Drogerie', VORRAT: 'Vorrat' }[EP.categorySource(c.key, db.settings)],
     icon: c.key === cur ? 'check' : 'bowl', tone: c.key === cur ? 'basil' : 'speckle', group: 0,
     run: () => {
-      x.category = c.key; EP.touch(st);
+      x.category = c.key; EP.touch(st); unSec();
       db.settings.extraCats = Object.assign({}, db.settings.extraCats, { [EP.normExtra(x.text)]: c.key }); EP.touch(db.settings);
       change(`${x.text} → ${c.label}`);
-    } })).concat([{ label: 'Entfernen', danger: true, run: () => ACT.delextra(i) }]));
+    } }))).concat([{ label: 'Entfernen', danger: true, run: () => ACT.delextra(i) }]));
 }
+/* ---------- Geschäfte (Regal-Reihenfolge) ---------- */
+const KIND_LABEL = Object.fromEntries(EP.STORE_KINDS);
+const KIND_COLOR = { SUPERMARKT: '#30B0C7', MARKT: '#34C759', DROGERIE: '#AF52DE' };
+const curStore = () => EP.storeById(db.settings, route.params && route.params.id);
+function storesSave(msg) { EP.touch(db.settings); return change(msg); }
+function vStores() {
+  const all = EP.liveStores(db.settings), def = db.settings.storeDefault || {};
+  return `<p class="sub">Lege deine Geschäfte an und sortiere Kategorien und eigene Bereiche so, wie du durch den Laden gehst. Die Einkaufsliste folgt dann dieser Reihenfolge – für alle im Haushalt.</p>`
+    + EP.STORE_KINDS.map(([k, l]) => gGroup(l, all.filter(x => x.kind === k).map(x => gRow({ icon: 'shop', color: KIND_COLOR[k], label: esc(x.name),
+        sub: def[k] === x.id ? 'Standard' : '', act: 'storeopen', arg: x.id }))
+      .concat([gRow({ icon: 'plus', color: '#8E8E93', label: `${l} hinzufügen`, act: 'storeadd', arg: k })]))).join('');
+}
+function vStore() {
+  const s = curStore();
+  if (!s) return `<p class="sub">Dieses Geschäft gibt es nicht mehr.</p>`;
+  const kl = KIND_LABEL[s.kind], isDef = (db.settings.storeDefault || {})[s.kind] === s.id;
+  const order = EP.storeOrder(s, db.settings);
+  const nAssigned = id => Object.values(s.assign || {}).filter(x => x === id).length;
+  const rows = order.map((o, i) => `<div class="gi ordrow"><span class="ordnr">${i + 1}</span>
+      ${o.section ? `<button class="ordlbl" data-act="secopen" data-arg="${o.id}">${esc(o.label)}<small>Eigener Bereich · ${nAssigned(o.id)} Artikel</small></button>` : `<span class="ordlbl">${esc(o.label)}</span>`}
+      <button class="ordbtn" data-act="storemv" data-arg="${o.key}|-1" ${i ? '' : 'disabled'} aria-label="${esc(o.label)} nach oben">▲</button>
+      <button class="ordbtn" data-act="storemv" data-arg="${o.key}|1" ${i < order.length - 1 ? '' : 'disabled'} aria-label="${esc(o.label)} nach unten">▼</button></div>`).join('');
+  return gGroup('', [
+      gRow({ icon: 'shop', color: KIND_COLOR[s.kind], label: 'Name', value: esc(s.name), act: 'storename' }),
+      gRow({ icon: 'cart', color: '#8E8E93', label: 'Einkaufsort', value: kl, act: 'storekind' }),
+      gRow({ icon: 'star', color: '#FFCC00', label: `Standard für ${kl}`, sub: 'Wird in der Einkaufsliste automatisch gewählt',
+        right: `<label class="switch"><input type="checkbox" id="st-def" ${isDef ? 'checked' : ''} aria-label="Standard für ${kl}"><i></i></label>` }),
+    ])
+    + `<h3 class="ghead">Reihenfolge im Laden</h3><div class="glist ordlist">${rows}</div>
+      <p class="gfoot">Von oben nach unten so, wie du durch den Laden gehst. Eigene Bereiche (z. B. „Bio-Regal“) holen einzelne Artikel aus ihrer Kategorie – antippen zum Bearbeiten.</p>`
+    + gGroup('', [gRow({ icon: 'plus', color: '#34C759', label: 'Bereich hinzufügen', sub: 'z. B. Bio-Regal, Asia-Ecke, Kassenbereich', act: 'secadd' })])
+    + gGroup('', [gRow({ icon: 'trash', color: '#FF3B30', label: 'Geschäft löschen', act: 'storedel', danger: true, chevron: false })]);
+}
+function storeAddSheet(kind) {
+  textSheet('Neues Geschäft', 'Name, z. B. „Rewe Hauptstraße“ oder „dm“.', '', 'Anlegen', (name, k) => {
+    const st = { id: EP.uuid(), name, kind: k || kind || 'SUPERMARKT', order: [], sections: [], assign: {} };
+    db.settings.stores = (db.settings.stores || []).concat([st]);
+    const d = Object.assign({}, db.settings.storeDefault);
+    if (!EP.storeById(db.settings, d[st.kind])) d[st.kind] = st.id;   // erstes Geschäft dieser Art wird Standard
+    db.settings.storeDefault = d;
+    EP.touch(db.settings); persist();
+    go('store', { id: st.id });
+  }, { list: EP.STORE_KINDS, cur: kind || 'SUPERMARKT' });
+}
+/* eigener Bereich: Artikel zuordnen, umbenennen, löschen */
+function sectionSheet(secId) {
+  const s = curStore(), sec = s && (s.sections || []).find(x => x.id === secId); if (!sec) return;
+  const ingNames = EP.live(db.ingredients).map(i => i.name).concat(db.settings.recentExtras || []);
+  const nice = new Map(ingNames.map(n => [EP.normExtra(n), n]));
+  const items = Object.entries(s.assign || {}).filter(([, v]) => v === secId).map(([k]) => k).sort((a, b) => a.localeCompare(b, 'de'));
+  openSheet(`<h2>${esc(sec.name)}</h2><p class="sub" style="margin-top:6px">Bereich in „${esc(s.name)}“. Diese Artikel stehen in der Einkaufsliste hier statt in ihrer Kategorie.</p>
+    <div class="quick" style="margin-top:12px"><input class="in" id="sec-in" list="sec-dl" placeholder="Artikel, z. B. Hafermilch" autocomplete="off" enterkeyhint="done"><button class="btn primary" data-x="add" aria-label="Artikel zuordnen">+</button></div>
+    <datalist id="sec-dl">${[...new Set(ingNames)].sort((a, b) => a.localeCompare(b, 'de')).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
+    <div class="secitems">${items.length ? items.map(k => `<div class="secitem"><span class="grow">${esc(nice.get(k) || k)}</span><button class="btn quiet small" data-del="${esc(k)}" aria-label="${esc(nice.get(k) || k)} entfernen">✕</button></div>`).join('') : '<p class="hint">Noch keine Artikel zugeordnet.</p>'}</div>
+    <div class="btns two"><button class="btn" data-x="ren">Umbenennen</button><button class="btn danger" data-x="del">Bereich löschen</button></div>
+    <div class="btns"><button class="btn primary" data-x="no">Fertig</button></div>`, el => {
+    const inp = $('#sec-in', el);
+    const add = () => {
+      const v = inp.value.trim(); if (!v) return inp.focus();
+      s.assign = Object.assign({}, s.assign, { [EP.normExtra(v)]: secId });
+      storesSave(); sectionSheet(secId);
+    };
+    $('[data-x=add]', el).onclick = add;
+    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); add(); } };
+    $$('[data-del]', el).forEach(b => b.onclick = () => { const a = Object.assign({}, s.assign); delete a[b.dataset.del]; s.assign = a; storesSave(); sectionSheet(secId); });
+    $('[data-x=ren]', el).onclick = () => textSheet('Bereich umbenennen', '', sec.name, 'Speichern', v => { sec.name = v; storesSave(); });
+    $('[data-x=del]', el).onclick = () => confirmSheet(`Bereich „${sec.name}“ löschen?`, 'Die zugeordneten Artikel stehen dann wieder in ihrer Kategorie.', 'Löschen', 'Abbrechen', () => {
+      s.sections = s.sections.filter(x => x.id !== secId);
+      s.order = (s.order || []).filter(k => k !== 'S:' + secId);
+      s.assign = Object.fromEntries(Object.entries(s.assign || {}).filter(([, v]) => v !== secId));
+      storesSave(`Bereich „${sec.name}“ gelöscht`);
+    }, true);
+    $('[data-x=no]', el).onclick = closeSheet;
+  });
+}
+/* Geschäft für einen Einkaufsort in dieser Einkaufsliste wählen */
+function storePickSheet(kind) {
+  const st = shopState(shopRange.from, shopRange.to), cur = EP.storeFor(db.settings, kind, st);
+  const def = (db.settings.storeDefault || {})[kind];
+  const set = v => { st.stores = Object.assign({}, st.stores, { [kind]: v }); EP.touch(st); change(); };
+  const opts = EP.liveStores(db.settings).filter(x => x.kind === kind).map(x => ({ label: x.name, hint: x.id === def ? 'Standard' : '',
+    icon: cur && cur.id === x.id ? 'check' : 'bowl', tone: cur && cur.id === x.id ? 'basil' : 'speckle', group: 0, run: () => set(x.id) }));
+  const has = opts.length > 0;
+  opts.push({ label: 'Ohne Geschäft', hint: 'Kategorien in der üblichen Reihenfolge', icon: !cur ? 'check' : 'bowl', tone: !cur ? 'basil' : 'speckle', group: 1, run: () => set('none') });
+  opts.push(has ? { label: 'Geschäfte verwalten', hint: 'Reihenfolge der Regale, eigene Bereiche', group: 2, run: () => go('stores') }
+    : { label: 'Geschäft anlegen', hint: `z. B. Rewe, Aldi, dm`, group: 2, run: () => storeAddSheet(kind) });
+  optionsSheet(`${KIND_LABEL[kind]}: Geschäft`, 'Gilt für diese Einkaufsliste. Die Reihenfolge der Regale stellst du beim Geschäft ein.', opts);
+}
+
 const srcOpen = new Set();   // aufgeklappte Kategorien bleiben beim Ändern offen
 function vSources() {
   const s = db.settings;
@@ -5050,6 +5243,53 @@ const ACT = {
     change(`${t} → ${lbl}`).then(() => { const i = $('#extra'); if (i) i.focus(); });
   },
   recentx: t => { addExtraItem(t); change(`${t} hinzugefügt`); },
+  recentedit: () => { recentEdit = !recentEdit; rerender(); },
+  storepick: k => storePickSheet(k),
+  storeadd: k => storeAddSheet(k),
+  storeopen: id => go('store', { id }),
+  storename: () => { const s = curStore(); if (s) textSheet('Geschäft umbenennen', '', s.name, 'Speichern', v => { s.name = v; storesSave(); }); },
+  storekind: () => {
+    const s = curStore(); if (!s) return;
+    optionsSheet('Einkaufsort', `Wofür nutzt du „${s.name}“?`, EP.STORE_KINDS.map(([k, l]) => ({ label: l, icon: k === s.kind ? 'check' : 'bowl', tone: k === s.kind ? 'basil' : 'speckle', group: 0,
+      run: () => {
+        if (k === s.kind) return;
+        const d = Object.assign({}, db.settings.storeDefault);
+        if (d[s.kind] === s.id) delete d[s.kind];
+        if (!EP.storeById(db.settings, d[k])) d[k] = s.id;
+        db.settings.storeDefault = d; s.kind = k; s.order = (s.order || []).filter(x => x.startsWith('S:'));
+        storesSave(`${s.name}: ${l}`);
+      } })));
+  },
+  storemv: a => {
+    const s = curStore(); if (!s) return;
+    const [key, dir] = a.split('|'), keys = EP.storeOrder(s, db.settings).map(o => o.key), i = keys.indexOf(key), j = i + +dir;
+    if (i < 0 || j < 0 || j >= keys.length) return;
+    [keys[i], keys[j]] = [keys[j], keys[i]]; s.order = keys; storesSave();
+  },
+  secadd: () => {
+    const s = curStore(); if (!s) return;
+    textSheet('Neuer Bereich', `Eigener Bereich in „${s.name}“, z. B. „Bio-Regal“. Danach Artikel zuordnen und an die richtige Stelle schieben.`, '', 'Anlegen', v => {
+      const sec = { id: EP.uuid().slice(0, 8), name: v };
+      s.sections = (s.sections || []).concat([sec]); storesSave(); sectionSheet(sec.id);
+    });
+  },
+  secopen: id => sectionSheet(id),
+  storedel: () => {
+    const s = curStore(); if (!s) return;
+    confirmSheet(`„${s.name}“ löschen?`, 'Die Reihenfolge und die eigenen Bereiche dieses Geschäfts gehen verloren.', 'Löschen', 'Abbrechen', () => {
+      s.deleted = true;
+      const d = Object.assign({}, db.settings.storeDefault);
+      if (d[s.kind] === s.id) { const other = EP.liveStores(db.settings).find(x => x.kind === s.kind); if (other) d[s.kind] = other.id; else delete d[s.kind]; }
+      db.settings.storeDefault = d; EP.touch(db.settings); persist();
+      back(); notify(`${s.name} gelöscht`);
+    }, true);
+  },
+  recentdel: t => {
+    const n = EP.normExtra(t);
+    db.settings.recentExtras = (db.settings.recentExtras || []).filter(x => EP.normExtra(x) !== n); EP.touch(db.settings);
+    if (!db.settings.recentExtras.length) recentEdit = false;
+    change(`${t} aus den Vorschlägen entfernt`);
+  },
   xcat: i => extraCatSheet(+i),
   clearchecked: () => {   // abgehakte Einträge ausblenden, zusätzliche Artikel löschen – mit Rückgängig
     const st = shopState(shopRange.from, shopRange.to), before = deep(st);
@@ -5216,6 +5456,14 @@ const BIND = {
       }, 500);
     };
     inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); ACT.invsend(); } };
+  },
+  store: m => {
+    const c = $('#st-def', m), s = curStore(); if (!c || !s) return;
+    c.onchange = () => {
+      const d = Object.assign({}, db.settings.storeDefault);
+      if (c.checked) d[s.kind] = s.id; else if (d[s.kind] === s.id) delete d[s.kind];
+      db.settings.storeDefault = d; storesSave(c.checked ? `${s.name} ist Standard` : '');
+    };
   },
   sources: m => { $$('details[data-cat]', m).forEach(d => d.addEventListener('toggle', () => { d.open ? srcOpen.add(d.dataset.cat) : srcOpen.delete(d.dataset.cat); })); },
   shop: m => {
