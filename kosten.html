@@ -1628,7 +1628,12 @@ const Push = (() => {
     Konto.invite._push = true;
   }
   if (typeof Konto !== 'undefined' && Konto.onChange) Konto.onChange(() => { sync().catch(() => {}); });
-  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sync().catch(() => {}); });
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { emit(); sync().catch(() => {}); } });
+  /* Zurück aus dem Hauptmenü: iOS zeigt die Seite aus dem Zwischenspeicher – Anzeigen („An/Aus“) auffrischen */
+  if (typeof window !== 'undefined') {
+    window.addEventListener('pageshow', e => { if (e.persisted) emit(); });
+    window.addEventListener('storage', e => { if (!e.key || /^push-(state|prefs)$/.test(e.key)) emit(); });
+  }
 
   return { KINDS, supported, standalone, status, enable, disable, sync, prefs, setPrefs, notify, notifyUser, schedule, cancel, test, onChange: f => listeners.add(f),
     enabled: () => !!(ls.get('push-state') || {}).on && supported() && Notification.permission === 'granted', _chan: chan, _channels: channels };
