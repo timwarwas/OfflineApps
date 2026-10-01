@@ -23,10 +23,11 @@ install -d -o push -g push -m 700 "$DATA"
 
 echo "== Programm laden"
 for f in push-dienst.js webpush.js; do
-  curl -fsSL "$BASE/$f?$(date +%s)" -o "$DIR/$f.neu"
-  node --check "$DIR/$f.neu"
-  mv "$DIR/$f.neu" "$DIR/$f"
+  curl -fsSL "$BASE/$f?$(date +%s)" -o "$DIR/neu-$f"   # Endung .js behalten, sonst lehnt node --check ab
+  node --check "$DIR/neu-$f"
+  mv "$DIR/neu-$f" "$DIR/$f"
 done
+rm -f "$DIR"/*.neu   # Reste einer älteren Skriptfassung
 chmod 644 "$DIR"/*.js
 
 echo "== Dienst einrichten"
