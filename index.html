@@ -165,7 +165,49 @@
   .konto-q small{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
   .konto-link-btn{display:block;margin:6px auto 0;min-height:44px;padding:10px 16px;background:none;color:var(--blue);font-weight:700;font-size:16px}
   .sheet .ghost.danger{color:var(--coral)}
+  .sheet-actions .ok.red{background:var(--coral);color:#fff}
 
+  /* ---------- Konto: Einladungen ---------- */
+  .konto-badge{min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:#FF3B30;color:#fff;font-size:14px;font-weight:800;
+    display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-variant-numeric:tabular-nums}
+  .kinv{padding:14px}
+  .kinv+.kinv{border-top:1px solid var(--line)}
+  .kinv-head{display:flex;align-items:center;gap:14px}
+  .kinv-head .glbl small{margin-top:3px}
+  .kinv-btns{display:flex;gap:10px;margin-top:12px}
+  .kinv-btns button{flex:1;min-height:44px;padding:10px;border-radius:14px;font-weight:800;font-size:16px}
+  .kinv-btns button:disabled{opacity:.5}
+  .kinv-yes{background:var(--mint);color:#12152B}
+  .kinv-no{background:color-mix(in srgb,var(--coral) 12%,var(--surface));color:var(--coral);border:1px solid color-mix(in srgb,var(--coral) 40%,var(--line))!important}
+  .kinv-act{flex-shrink:0;min-height:44px;min-width:44px;padding:8px 12px;border-radius:12px;background:var(--surface2);border:1px solid var(--line)!important;
+    font-weight:700;font-size:15px;color:var(--blue)}
+  .kinv-act.red{color:var(--coral)}
+  .kinv-act:disabled{opacity:.5}
+  .kinv-done{background:color-mix(in srgb,var(--mint) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--mint) 45%,var(--line));
+    border-radius:18px;padding:14px;margin:0 0 4px;font-size:16px;line-height:1.4;overflow-wrap:anywhere}
+  .kinv-done .kinv-btns a,.kinv-done .kinv-btns button{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;
+    padding:10px;border-radius:14px;font-weight:800;font-size:16px;text-decoration:none}
+  .kinv-done .kinv-open{background:var(--mint);color:#12152B}
+  .kinv-done .kinv-ok{background:var(--surface2);color:var(--text);border:1px solid var(--line)}
+
+  /* ---------- Mitteilungen ---------- */
+  .push-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:16px}
+  .push-card-head{display:flex;align-items:center;gap:14px}
+  .push-card-head .gic{width:40px;height:40px;border-radius:10px}
+  .push-card-head .gic svg{width:23px;height:23px}
+  .push-state{flex:1;min-width:0;font-size:17px;font-weight:800;overflow-wrap:anywhere}
+  .push-state small{display:block;font-size:14px;font-weight:500;color:var(--muted);margin-top:3px;line-height:1.4}
+  .push-card .primary{margin-top:14px}
+  .push-card .ghost{margin-top:14px}
+  .push-card .ghost.danger{color:var(--coral);border-color:color-mix(in srgb,var(--coral) 40%,var(--line))}
+  .push-card button:disabled{opacity:.5}
+  .push-err{color:var(--coral);font-size:14px;font-weight:700;margin-top:10px;line-height:1.4}
+  .push-err:empty{display:none}
+  .gi input.push-time{flex-shrink:0;width:auto;min-width:104px;max-width:150px;min-height:44px;padding:8px 10px;border-radius:12px;border:1px solid var(--line);
+    background:var(--surface2);color:var(--text);font:inherit;font-size:16px;font-weight:700;text-align:center;-webkit-appearance:none;appearance:none}
+  .gi input.push-time:focus{outline:2px solid var(--blue);outline-offset:1px}
+  .gic.blank{background:none}
+  .push-konto .konto-link-btn{margin:6px 0 0;padding:10px 0}
   /* ---------- Hinweis-Toast ---------- */
   .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translate(-50%,20px);
     background:var(--surface2);border:1px solid var(--line);color:var(--text);
@@ -274,6 +316,7 @@
     .modal{background:rgba(19,21,43,.45)}
     .primary{color:#13152B}
     .sheet-actions .ok{color:#fff}
+    .kinv-yes,.kinv-done .kinv-open{color:#fff}
   }
 
 /* ---------- App-Kacheln im Hauptmenü ---------- */
@@ -308,7 +351,11 @@
   <div class="glist big" id="menu-konto">
     <a class="gi" href="#konto" id="konto-row">
       <span class="gic" style="--c:#8E8E93" id="konto-row-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.2-4 4.3-6 8-6s6.8 2 8 6"/></svg></span>
-      <span class="gbody"><span class="glbl" id="konto-row-lbl">Anmelden<small>Alles auf allen Geräten</small></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+      <span class="gbody"><span class="glbl" id="konto-row-lbl">Anmelden<small>Alles auf allen Geräten</small></span><span class="konto-badge" id="konto-row-badge" style="display:none"></span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
+    </a>
+    <a class="gi" href="#mitteilungen" id="push-row">
+      <span class="gic" style="--c:#FF3B30"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg></span>
+      <span class="gbody"><span class="glbl">Mitteilungen<small id="push-row-sub">Kochtimer, Einladungen &amp; Co.</small></span><span class="gval" id="push-row-val">Aus</span><svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span>
     </a>
   </div>
 
@@ -361,7 +408,9 @@
       <div class="sub" id="konto-status"></div>
     </div>
   </header>
+  <div id="konto-inv"></div>
   <div id="konto-links"></div>
+  <div id="konto-sent"></div>
   <h3 class="ghead">Einstellungen</h3>
   <div class="glist" id="konto-actions"></div>
   <div class="glist" style="margin-top:22px">
@@ -369,7 +418,41 @@
       <span class="gbody"><span class="glbl danger">Abmelden</span></span>
     </button>
   </div>
-  <p class="gfoot">Im Konto liegen nur verschlüsselte Verknüpfungen. Neue Reisen, Haushalte, Spielgruppen und Projekte werden automatisch verknüpft, sobald du sie in der jeweiligen App öffnest.</p>
+  <p class="gfoot">Im Konto liegen nur verschlüsselte Verknüpfungen. Neue Reisen, Haushalte, Spielgruppen und Projekte werden automatisch verknüpft, sobald du sie in der jeweiligen App öffnest. Andere lädst du im Teilen-Bereich der jeweiligen App per Benutzername ein.</p>
+</div>
+
+<!-- ========== MITTEILUNGEN ========== -->
+<div class="screen" id="scr-push">
+  <header>
+    <button class="back" onclick="pushBack()" aria-label="Zurück">‹</button>
+    <div>
+      <h1>Mitteilungen</h1>
+      <div class="sub">Für alle Apps auf diesem Gerät</div>
+    </div>
+  </header>
+  <div class="push-card" id="push-card">
+    <div class="push-card-head">
+      <span class="gic" style="--c:#FF3B30" id="push-card-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg></span>
+      <div class="push-state" id="push-state" role="status"></div>
+    </div>
+    <button class="primary" id="push-on-btn" onclick="pushEnable()" style="display:none">Mitteilungen einschalten</button>
+    <button class="ghost danger" id="push-off-btn" onclick="pushDisableAsk()" style="display:none">Ausschalten</button>
+    <div class="push-err" id="push-err" role="alert"></div>
+  </div>
+  <h3 class="ghead">Was soll dich benachrichtigen?</h3>
+  <div class="glist" id="push-kinds"></div>
+  <div id="push-konto"></div>
+  <p class="gfoot">Kochtimer und Kocherinnerung funktionieren auch ohne Konto. Deine Auswahl wird gespeichert, auch wenn Mitteilungen gerade aus sind.</p>
+  <div id="push-test-wrap" style="display:none">
+    <div class="glist" style="margin-top:22px">
+      <button class="gi" id="push-test-btn" onclick="pushTest()">
+        <span class="gic" style="--c:#34C759"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3L10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg></span>
+        <span class="gbody"><span class="glbl" id="push-test-lbl">Testmitteilung senden<small>Kommt in wenigen Sekunden auf diesem Gerät an</small></span></span>
+      </button>
+    </div>
+  </div>
+  <h3 class="ghead">Gut zu wissen</h3>
+  <p class="gfoot" id="push-notes">Mitteilungen gibt es auf dem iPhone nur in der App vom Home-Bildschirm (ab iOS 16.4): in Safari Teilen → „Zum Home-Bildschirm“, dann die App von dort öffnen.<br><br>Abgelehnt oder versehentlich ausgeschaltet? Erlauben unter iPhone-Einstellungen → Mitteilungen → diese App.<br><br>🔒 Texte werden auf dem Gerät verschlüsselt; der Server sieht weder Namen noch Inhalte.</p>
 </div>
 
 <!-- ========== BRIEFE: PROFILE ========== -->
@@ -818,7 +901,10 @@
    Face ID: optional über einen Passkey mit PRF-Erweiterung (iOS 18+).
    Passwort vergessen: optional Sicherheitsfrage. Aus Benutzername + Antwort wird (PBKDF2) ein zweiter
    Schlüssel abgeleitet, der einen Datensatz mit dem Hauptschlüssel öffnet. Die Frage selbst liegt
-   in einem Datensatz, der nur mit dem Benutzernamen lesbar ist. */
+   in einem Datensatz, der nur mit dem Benutzernamen lesbar ist.
+   Einladungen: Jedes Konto veröffentlicht ein Profil (öffentliche Schlüssel ECDH + ECDSA) und hat ein Postfach,
+   beide auffindbar über den Benutzernamen. Eine Einladung (Verbindungslink einer Reise/eines Haushalts …) wird für
+   den Empfänger verschlüsselt, vom Absender signiert, ins Postfach gelegt und läuft nach einigen Tagen ab. */
 const Konto = (() => {
   const DEFAULT = 'https://kostenpi.tail281e3e.ts.net';
   const ITER = 310000;
@@ -904,12 +990,13 @@ const Konto = (() => {
   const fail = r => { const e = new Error('Server antwortet mit ' + r.status); e.status = r.status; return e; };
 
   /* ---------- Schlüsselbund zusammenführen ---------- */
-  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {}, recovery: null }; }
+  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {}, recovery: null, keys: null, sent: {} }; }
   function clean(v, user) {
     v = v && typeof v === 'object' ? v : {};
     return { v: 1, user: v.user || user || '', items: v.items && typeof v.items === 'object' ? v.items : {},
       deleted: v.deleted && typeof v.deleted === 'object' ? v.deleted : {}, passkeys: v.passkeys && typeof v.passkeys === 'object' ? v.passkeys : {},
-      recovery: v.recovery && typeof v.recovery === 'object' ? v.recovery : null };
+      recovery: v.recovery && typeof v.recovery === 'object' ? v.recovery : null,
+      keys: v.keys && typeof v.keys === 'object' ? v.keys : null, sent: v.sent && typeof v.sent === 'object' ? v.sent : {} };
   }
   function merge(a, b) {
     a = clean(a); b = clean(b);
@@ -925,6 +1012,8 @@ const Konto = (() => {
     for (const k in out.passkeys) if (out.deleted['pk:' + k]) delete out.passkeys[k];
     out.recovery = [a.recovery, b.recovery].filter(Boolean).sort((x, y) => (y.createdAt || '').localeCompare(x.createdAt || ''))[0] || null;
     if (out.recovery && out.deleted.recovery && out.deleted.recovery >= out.recovery.createdAt) out.recovery = null;
+    out.keys = [a.keys, b.keys].filter(Boolean).sort((x, y) => (x.createdAt || '').localeCompare(y.createdAt || '') || (x.encPub > y.encPub ? 1 : -1))[0] || null;   // älteste gewinnt
+    for (const src of [a.sent, b.sent]) for (const k in src) if (!out.deleted['sent:' + k]) out.sent[k] = src[k];
     return out;
   }
   const canon = v => { const s = x => Array.isArray(x) ? '[' + x.map(s).join(',') + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map(k => JSON.stringify(k) + ':' + s(x[k])).join(',') + '}' : JSON.stringify(x); return s(v); };
@@ -992,6 +1081,7 @@ const Konto = (() => {
     ls.set('konto', { user: f.vault.user || user, master, at: nowIso() });
     ls.set('konto-cache', f.vault);
     emit();
+    ensureProfile().catch(() => {});
     return { ok: true };
   }
   async function register(user, pw) {
@@ -1005,9 +1095,10 @@ const Konto = (() => {
     ls.set('konto', { user, master, at: nowIso() });
     ls.set('konto-cache', emptyVault(user));
     emit();
+    await ensureProfile().catch(() => {});
     return { ok: true };
   }
-  function logout() { ['konto', 'konto-cache', 'konto-state'].forEach(ls.del); keyCache.clear(); emit(); }
+  function logout() { ['konto', 'konto-cache', 'konto-state', 'konto-inbox'].forEach(ls.del); keyCache.clear(); emit(); }
   let recovered = false;   // gerade über die Sicherheitsfrage angemeldet → neues Passwort ohne altes erlaubt
   async function changePassword(oldPw, newPw) {
     const s = session(); if (!s) throw new Error('Nicht angemeldet.');
@@ -1158,15 +1249,358 @@ const Konto = (() => {
     return { ok: true };
   }
 
+  /* ---------- Profil, Postfach, Einladungen ---------- */
+  const INVITE_DAYS = 7;
+  async function nameKeys(user, salt) {
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', te(salt + '|' + normUser(user))));
+    return keys(b64e(h), salt);
+  }
+  const profileKeys = user => nameKeys(user, 'konto-profil-v1');
+  const inboxKeys = user => nameKeys(user, 'konto-postfach-v1');
+  const ECDH = { name: 'ECDH', namedCurve: 'P-256' }, ECDSA = { name: 'ECDSA', namedCurve: 'P-256' };
+  async function readRec(k) {
+    const r = await api('GET', '/' + k.id, k.auth);
+    if (r.status === 404) return null;
+    if (r.status !== 200 || !r.json) throw fail(r);
+    return { data: await decrypt(k.enc, r.json.data), rev: +r.json.rev || 0 };
+  }
+  /* Schlüsselpaare anlegen (einmal pro Konto) und Profil + Postfach veröffentlichen */
+  async function ensureProfile() {
+    const s = session(); if (!s) return null;
+    let v = cache();
+    if (!v.keys) {
+      const e = await crypto.subtle.generateKey(ECDH, true, ['deriveBits']);
+      const g = await crypto.subtle.generateKey(ECDSA, true, ['sign', 'verify']);
+      v.keys = { createdAt: nowIso(), encPub: await crypto.subtle.exportKey('jwk', e.publicKey), encPriv: await crypto.subtle.exportKey('jwk', e.privateKey),
+        sigPub: await crypto.subtle.exportKey('jwk', g.publicKey), sigPriv: await crypto.subtle.exportKey('jwk', g.privateKey) };
+      ls.set('konto-cache', v);
+      v = await sync();
+    }
+    const pk = await profileKeys(s.user), cur = await readRec(pk);
+    const prof = { user: s.user, encPub: v.keys.encPub, sigPub: v.keys.sigPub };
+    if (!cur || canon(cur.data) !== canon(prof)) await upsert(pk, prof);
+    const ik = await inboxKeys(s.user);
+    if (!(await readRec(ik))) await upsert(ik, { entries: {} });
+    return prof;
+  }
+  /* Gibt es ein Konto mit genau diesem Namen? → Profil (mit richtiger Schreibweise) oder null */
+  async function findUser(name) { const p = await readRec(await profileKeys(String(name || '').trim())); return p ? p.data : null; }
+  async function sealFor(prof, payload) {
+    const eph = await crypto.subtle.generateKey(ECDH, true, ['deriveBits']);
+    const pub = await crypto.subtle.importKey('jwk', prof.encPub, ECDH, false, []);
+    const bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, eph.privateKey, 256);
+    const key = (await keys(b64e(new Uint8Array(bits)), 'konto-einladung-v1')).enc;
+    return { epk: await crypto.subtle.exportKey('jwk', eph.publicKey), box: await encrypt(key, payload) };
+  }
+  async function openSealed(sealed, encPriv) {
+    const priv = await crypto.subtle.importKey('jwk', encPriv, ECDH, false, ['deriveBits']);
+    const pub = await crypto.subtle.importKey('jwk', sealed.epk, ECDH, false, []);
+    const bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, priv, 256);
+    return decrypt((await keys(b64e(new Uint8Array(bits)), 'konto-einladung-v1')).enc, sealed.box);
+  }
+  async function signBody(body, sigPriv) {
+    const k = await crypto.subtle.importKey('jwk', sigPriv, ECDSA, false, ['sign']);
+    return b64e(new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, k, te(canon(body)))));
+  }
+  async function verifyBody(body, sig, sigPub) {
+    try { const k = await crypto.subtle.importKey('jwk', sigPub, ECDSA, false, ['verify']); return await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, k, b64d(sig), te(canon(body))); }
+    catch (e) { return false; }
+  }
+  async function editInbox(user, fn) {
+    const ik = await inboxKeys(user);
+    for (let i = 0; i < 3; i++) {
+      const cur = await readRec(ik);
+      if (!cur) throw new Error('Postfach nicht gefunden');
+      const entries = Object.assign({}, cur.data.entries || {});
+      const now = nowIso();
+      for (const k in entries) if ((entries[k].expiresAt || '') < now) delete entries[k];   // Abgelaufenes aufräumen
+      if (fn(entries) === false) return;
+      const u = await api('PATCH', '/' + ik.id, ik.auth, { data: await encrypt(ik.enc, { entries }), rev: cur.rev + 1 });
+      if (u.status === 200) return;
+    }
+    throw new Error('Postfach gerade nicht beschreibbar');
+  }
+  /* Einladung senden: item = {app, id, secret, label} (wie im Schlüsselbund) */
+  async function invite(toName, key, item, days) {
+    const s = session(); if (!s) throw new Error('Bitte zuerst anmelden.');
+    await ensureProfile();
+    const prof = await findUser(toName);
+    if (!prof) { const e = new Error(`Kein Konto „${String(toName).trim()}“ gefunden. Stimmt die Schreibweise?`); e.notFound = true; throw e; }
+    if (normUser(prof.user) === normUser(s.user)) throw new Error('Du kannst dich nicht selbst einladen.');
+    const iid = b64e(crypto.getRandomValues(new Uint8Array(12)));
+    const createdAt = nowIso(), expiresAt = new Date(Date.now() + (days || INVITE_DAYS) * 864e5).toISOString();
+    const body = { iid, from: s.user, to: prof.user, key, item, createdAt, expiresAt };
+    const sig = await signBody(body, cache().keys.sigPriv);
+    const sealed = await sealFor(prof, { body, sig });
+    await editInbox(prof.user, e => { e[iid] = { sealed, expiresAt }; });
+    const v = cache(); v.sent[iid] = { to: prof.user, app: item.app, label: item.label || '', key, createdAt, expiresAt };
+    ls.set('konto-cache', v); sync().catch(() => {});
+    return { iid, to: prof.user, expiresAt };
+  }
+  async function withdraw(iid) {
+    const v = cache(), x = v.sent[iid]; if (!x) return false;
+    try { await editInbox(x.to, e => { if (!e[iid]) return false; delete e[iid]; }); } catch (e) { if (!/Postfach nicht gefunden/.test(e.message)) throw e; }
+    delete v.sent[iid]; v.deleted['sent:' + iid] = nowIso(); ls.set('konto-cache', v); sync().catch(() => {});
+    return true;
+  }
+  /* gesendete Einladungen mit Stand: offen | abgelaufen | erledigt (angenommen/abgelehnt) */
+  async function sentList(app) {
+    const v = cache(), now = nowIso(), out = [];
+    const byUser = {};
+    for (const iid in v.sent) { const x = v.sent[iid]; if (app && x.app !== app) continue; (byUser[x.to] = byUser[x.to] || []).push(Object.assign({ iid }, x)); }
+    for (const u in byUser) {
+      let entries = null;
+      try { const r = await readRec(await inboxKeys(u)); entries = r ? r.data.entries || {} : {}; } catch (e) { entries = null; }
+      byUser[u].forEach(x => out.push(Object.assign(x, { status: x.expiresAt < now ? 'abgelaufen' : entries === null ? 'unbekannt' : entries[x.iid] ? 'offen' : 'erledigt' })));
+    }
+    return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  function forget(iid) { const v = cache(); if (!v.sent[iid]) return; delete v.sent[iid]; v.deleted['sent:' + iid] = nowIso(); ls.set('konto-cache', v); sync().catch(() => {}); }
+  /* eigene Einladungen lesen (geprüft: Signatur des Absenders, nicht abgelaufen) */
+  async function inbox() {
+    const s = session(); if (!s) return [];
+    await ensureProfile();
+    const r = await readRec(await inboxKeys(s.user)); if (!r) return [];
+    const now = nowIso(), keysV = cache().keys, out = [];
+    for (const iid in r.data.entries || {}) {
+      const e = r.data.entries[iid]; if ((e.expiresAt || '') < now) continue;
+      try {
+        const { body, sig } = await openSealed(e.sealed, keysV.encPriv);
+        if (body.iid !== iid || normUser(body.to) !== normUser(s.user) || body.expiresAt < now) continue;
+        const sender = await findUser(body.from);
+        if (!sender || !(await verifyBody(body, sig, sender.sigPub))) continue;
+        out.push(Object.assign({}, body, { from: sender.user }));
+      } catch (err) { /* nicht für uns / beschädigt */ }
+    }
+    ls.set('konto-inbox', out.map(x => ({ iid: x.iid, from: x.from, app: x.item.app, label: x.item.label, expiresAt: x.expiresAt })));
+    emit();
+    return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  async function accept(inv) {
+    put(inv.key, Object.assign({}, inv.item, { invitedBy: inv.from }));
+    await editInbox(user(), e => { if (!e[inv.iid]) return false; delete e[inv.iid]; });
+    await sync().catch(() => {});
+    inbox().catch(() => {});
+  }
+  async function decline(inv) { await editInbox(user(), e => { if (!e[inv.iid]) return false; delete e[inv.iid]; }); inbox().catch(() => {}); }
+  const user = () => (session() || {}).user || '';
+
   return {
-    session, user: () => (session() || {}).user || '', loggedIn: () => !!session(), state: () => ls.get('konto-state') || {},
+    session, user, loggedIn: () => !!session(), state: () => ls.get('konto-state') || {},
     login, register, logout, changePassword, sync, items, put, remove, onChange: fn => listeners.add(fn),
     passkeySupported, enablePasskey, loginWithPasskey, hasPasskey: () => Object.keys(cache().passkeys).length > 0,
-    setRecovery, removeRecovery, getQuestion, recover, hasRecovery: () => !!cache().recovery, recoveryQuestion: () => (cache().recovery || {}).question || '',
+    setRecovery, removeRecovery, getQuestion, recover,
+    ensureProfile, findUser, invite, withdraw, sentList, forget, inbox, accept, decline, inviteDays: INVITE_DAYS,
+    inboxCount: () => (ls.get('konto-inbox') || []).filter(x => x.expiresAt >= nowIso()).length, hasRecovery: () => !!cache().recovery, recoveryQuestion: () => (cache().recovery || {}).question || '',
     _merge: merge,
+    _forge: async (prof, body, sig) => { const sealed = await sealFor(prof, { body, sig }); await editInbox(prof.user, e => { e[body.iid] = { sealed, expiresAt: body.expiresAt }; }); },
   };
 })();
 
+</script>
+<script>
+/* ==== Mitteilungen der Anwendungssammlung (gleicher Code in allen Apps) ====
+   Web-Push über den Push-Dienst auf dem Pi (…/push). Funktioniert auf dem iPhone nur in einer App
+   vom Home-Bildschirm (ab iOS 16.4). Kanäle werden aus den Geheimnissen der Apps abgeleitet, Texte
+   sind mit einem Kanalschlüssel verschlüsselt – der Pi sieht weder Namen noch Inhalte. Der Service
+   Worker (sw.js) entschlüsselt sie mit den Schlüsseln aus IndexedDB „push-keys“ und zeigt sie an.
+   Welche Arten ein Gerät bekommt, steht in localStorage „push-prefs“ und wird beim Pi hinterlegt. */
+const Push = (() => {
+  const DEFAULT = 'https://kostenpi.tail281e3e.ts.net/push';
+  const KINDS = [
+    { key: 'timer', label: 'Kochtimer', sub: 'Wenn ein Timer der Kochansicht abläuft', def: true },
+    { key: 'remind', label: 'Kocherinnerung', sub: 'Am Kochtag: „Heute: Spaghetti Bolognese“', def: false },
+    { key: 'einkauf', label: 'Einkaufsliste', sub: 'Jemand im Haushalt ergänzt die Einkaufsliste', def: true },
+    { key: 'plan', label: 'Wochenplan', sub: 'Jemand im Haushalt übernimmt einen neuen Wochenplan', def: false },
+    { key: 'invite', label: 'Einladungen', sub: 'Jemand lädt dich per Benutzername ein', def: true },
+    { key: 'kosten', label: 'Neue Ausgaben', sub: 'Jemand trägt in einer geteilten Reise etwas ein', def: true },
+    { key: 'spiele', label: 'Spiele', sub: 'Neue Partie im Verlauf der Spielgruppe', def: false },
+    { key: 'cocktails', label: 'Cocktails', sub: 'Änderungen an geteilten Cocktail-Projekten', def: false },
+  ];
+  const APP_KINDS = { essen: ['einkauf', 'plan'], kosten: ['kosten'], spiele: ['spiele'], cocktails: ['cocktails'] };
+  const te = t => new TextEncoder().encode(t);
+  const b64e = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const b64d = str => { str = String(str).replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const b = atob(str), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+  const ls = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  };
+  const server = () => { try { return localStorage.getItem('push-server') || DEFAULT; } catch (e) { return DEFAULT; } };
+  const rnd = n => b64e(crypto.getRandomValues(new Uint8Array(n)));
+  function device() {
+    let d = ls.get('push-device');
+    if (!d || !d.id) { d = { id: rnd(18), secret: rnd(24), ch: rnd(32) }; ls.set('push-device', d); }
+    return d;
+  }
+  function prefs() {
+    const p = Object.assign({ remindTime: '16:30' }, ls.get('push-prefs') || {});
+    KINDS.forEach(k => { if (typeof p[k.key] !== 'boolean') p[k.key] = k.def; });
+    return p;
+  }
+  const listeners = new Set(); const emit = () => listeners.forEach(f => { try { f(); } catch (e) {} });
+
+  /* ---------- Kanäle ---------- */
+  const chanCache = new Map();
+  function chan(secret, label) {
+    const ck = label + '|' + secret;
+    if (!chanCache.has(ck)) chanCache.set(ck, (async () => {
+      const base = await crypto.subtle.importKey('raw', te(secret), 'HKDF', false, ['deriveBits']);
+      const bits = n => crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: te('push-v1'), info: te(label + '|' + n) }, base, 256);
+      return { id: b64e(new Uint8Array(await bits('id')).subarray(0, 24)), key: b64e(new Uint8Array(await bits('key'))) };
+    })());
+    return chanCache.get(ck);
+  }
+  const normUser = u => String(u || '').trim().toLowerCase();
+  const itemChan = it => chan(it.secret, it.app + ':' + it.id);
+  const userChan = name => chan('konto-postfach|' + normUser(name), 'inbox');
+  const devChan = () => chan(device().ch, 'device');
+  async function encrypt(keyB64, obj) {
+    const key = await crypto.subtle.importKey('raw', b64d(keyB64), 'AES-GCM', false, ['encrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    return 'v1.' + b64e(iv) + '.' + b64e(new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te(JSON.stringify(obj)))));
+  }
+  /* Kanalschlüssel für den Service Worker ablegen */
+  function idb() {
+    return new Promise((res, rej) => { const r = indexedDB.open('push-keys', 1); r.onupgradeneeded = () => r.result.createObjectStore('k'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  }
+  async function storeKeys(map) {
+    const db = await idb();
+    await new Promise((res, rej) => { const tx = db.transaction('k', 'readwrite'), st = tx.objectStore('k'); st.clear(); Object.entries(map).forEach(([k, v]) => st.put(v, k)); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    db.close();
+  }
+  async function channels() {
+    const p = prefs(), out = {}, keys = {};
+    const add = (c, kinds) => { if (!kinds.length) return; out[c.id] = (out[c.id] || []).concat(kinds); keys[c.id] = c.key; };
+    add(await devChan(), ['test'].concat(['timer', 'remind'].filter(k => p[k])));   // „test“ immer, damit die Testmitteilung ankommt
+    const K = typeof Konto !== 'undefined' && Konto.loggedIn() ? Konto : null;
+    if (K) {
+      if (p.invite) add(await userChan(K.user()), ['invite']);
+      for (const it of K.items()) { const kinds = (APP_KINDS[it.app] || []).filter(k => p[k]); if (kinds.length && it.secret) add(await itemChan(it), kinds); }
+    }
+    return { out, keys };
+  }
+
+  /* ---------- Server ---------- */
+  async function api(path, body) {
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 15000);
+    try {
+      const r = await fetch(server() + path, { method: body ? 'POST' : 'GET', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', signal: ctl.signal });
+      let j = null; try { j = await r.json(); } catch (e) {}
+      if (!r.ok) { const e = new Error((j && j.error) || ('Push-Dienst antwortet mit ' + r.status)); e.status = r.status; throw e; }
+      return j;
+    } catch (e) { if (e.status) throw e; const err = new Error('Push-Dienst nicht erreichbar'); err.offline = true; throw err; }
+    finally { clearTimeout(to); }
+  }
+
+  /* ---------- Abo ---------- */
+  const standalone = () => { try { return window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } };
+  const supported = () => typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  function status() {
+    if (!supported()) return { state: standalone() ? 'unsupported' : 'notInstalled', text: standalone() ? 'Dieses Gerät unterstützt keine Mitteilungen für Web-Apps (iOS 16.4 oder neuer nötig).' : 'Mitteilungen gehen nur in der App vom Home-Bildschirm (Teilen → „Zum Home-Bildschirm“).' };
+    if (Notification.permission === 'denied') return { state: 'denied', text: 'Mitteilungen sind abgelehnt. Erlauben unter iPhone-Einstellungen → Mitteilungen → diese App.' };
+    const s = ls.get('push-state') || {};
+    if (Notification.permission === 'granted' && s.on) return { state: 'on', text: s.err ? 'Aktiv – letzter Abgleich fehlgeschlagen: ' + s.err : 'Aktiv auf diesem Gerät' };
+    return { state: 'off', text: 'Aus' };
+  }
+  async function swReg() {
+    const reg = (await navigator.serviceWorker.getRegistration()) || (await navigator.serviceWorker.register('sw.js'));
+    return navigator.serviceWorker.ready.then(() => reg);
+  }
+  /* Einschalten – muss aus einem Tipp heraus aufgerufen werden (iOS fragt dann nach der Erlaubnis) */
+  async function enable() {
+    if (!supported()) throw new Error(status().text);
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') throw new Error('Ohne Erlaubnis keine Mitteilungen.');
+    const { publicKey } = await api('/vapid');
+    const reg = await swReg();
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64d(publicKey) });
+    ls.set('push-state', { on: true, err: '' });
+    await sync(true);
+    emit();
+    return true;
+  }
+  async function disable() {
+    try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch (e) {}
+    const d = device();
+    try { await api('/unsubscribe', { device: d.id, secret: d.secret }); } catch (e) {}
+    ls.set('push-state', { on: false }); ls.del('push-sig'); emit();
+  }
+  let syncing = null;
+  /* Kanäle und Arten beim Pi aktualisieren (nur wenn sich etwas geändert hat) */
+  async function sync(force) {
+    const st = ls.get('push-state') || {};
+    if (!st.on || !supported() || Notification.permission !== 'granted') return false;
+    if (syncing) return syncing;
+    syncing = (async () => {
+      try {
+        const reg = await swReg();
+        const sub = await reg.pushManager.getSubscription();
+        if (!sub) { ls.set('push-state', { on: false }); emit(); return false; }
+        const { out, keys } = await channels();
+        await storeKeys(keys);
+        const sj = sub.toJSON(), sig = JSON.stringify([sj.endpoint, out]);
+        if (!force && ls.get('push-sig') === sig) return true;
+        const d = device();
+        await api('/subscribe', { device: d.id, secret: d.secret, sub: { endpoint: sj.endpoint, keys: sj.keys }, channels: out });
+        ls.set('push-sig', sig); ls.set('push-state', { on: true, err: '' });
+        return true;
+      } catch (e) { ls.set('push-state', { on: true, err: e.message }); throw e; }
+      finally { syncing = null; emit(); }
+    })();
+    return syncing;
+  }
+  function setPrefs(p) { ls.set('push-prefs', Object.assign(prefs(), p)); emit(); return sync().catch(() => {}); }
+
+  /* ---------- Senden ---------- */
+  /* an alle Geräte eines geteilten Dings (außer diesem): item = {app, id, secret} */
+  async function notify(item, kind, title, body, url) {
+    if (!item || !item.secret || !item.id) return false;
+    try {
+      const c = await itemChan(item);
+      await api('/send', { channels: [c.id], kind, boxes: { '*': await encrypt(c.key, { title, body, url: url || null, tag: kind + ':' + item.id }) }, exclude: device().id });
+      return true;
+    } catch (e) { return false; }
+  }
+  async function notifyUser(name, kind, title, body, url) {
+    try { const c = await userChan(name); await api('/send', { channels: [c.id], kind, boxes: { '*': await encrypt(c.key, { title, body, url: url || null }) } }); return true; }
+    catch (e) { return false; }
+  }
+  /* an dieses Gerät zu einem Zeitpunkt (Kochtimer, Kocherinnerung); gleicher tag ersetzt */
+  async function schedule(tag, at, kind, title, body, url) {
+    if (!(ls.get('push-state') || {}).on) return false;
+    try {
+      const c = await devChan();
+      await api('/send', { channels: [c.id], kind, tag, at: new Date(at).toISOString(), ttl: 3600, boxes: { '*': await encrypt(c.key, { title, body, url: url || null, tag }) } });
+      return true;
+    } catch (e) { return false; }
+  }
+  async function cancel(tag) {
+    if (!(ls.get('push-state') || {}).on) return false;
+    try { const c = await devChan(); await api('/cancel', { channels: [c.id], tag }); return true; } catch (e) { return false; }
+  }
+  async function test() {
+    const c = await devChan();
+    await api('/send', { channels: [c.id], kind: 'test', boxes: { '*': await encrypt(c.key, { title: 'Testmitteilung', body: 'Mitteilungen funktionieren 👍', url: 'index.html#mitteilungen' }) } });
+  }
+
+  /* Einladungen automatisch ankündigen */
+  if (typeof Konto !== 'undefined' && Konto.invite && !Konto.invite._push) {
+    const orig = Konto.invite;
+    Konto.invite = async function (name, key, item, days) {
+      const r = await orig.apply(this, arguments);
+      notifyUser(r.to, 'invite', 'Neue Einladung', `${Konto.user()} lädt dich zu „${(item && item.label) || 'etwas'}“ ein`, 'index.html#konto');
+      return r;
+    };
+    Konto.invite._push = true;
+  }
+  if (typeof Konto !== 'undefined' && Konto.onChange) Konto.onChange(() => { sync().catch(() => {}); });
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sync().catch(() => {}); });
+
+  return { KINDS, supported, standalone, status, enable, disable, sync, prefs, setPrefs, notify, notifyUser, schedule, cancel, test, onChange: f => listeners.add(f),
+    enabled: () => !!(ls.get('push-state') || {}).on && supported() && Notification.permission === 'granted', _chan: chan, _channels: channels };
+})();
 </script>
 <script>
 /* ---------- Symbole (weiße bzw. getönte Linien-SVGs) ---------- */
@@ -1186,6 +1620,7 @@ function show(id){
   if(id==='scr-lt-profiles') ltRenderProfiles();
   if(id==='scr-konto') kontoRenderPage();
   if(id==='scr-konto-login') kontoRenderLogin();
+  if(id==='scr-push') pushRender();
   window.scrollTo(0,0);
   if(id==='scr-lt-editor') ltRenderEditor();
   if(id==='scr-lt-ai') ltSetTone(ltTone);
@@ -2014,6 +2449,7 @@ function ask(text, onYes, okLabel, onNo, opts){
   det.textContent = opts.detail || '';
   det.style.display = opts.detail ? '' : 'none';
   document.getElementById('ask-ok').textContent=okLabel||'Ja';
+  document.getElementById('ask-ok').classList.toggle('red', !!opts.danger);
   document.getElementById('ask-no').textContent=opts.noLabel||'Zurück';
   document.getElementById('ask-modal').classList.add('open');
 }
@@ -2144,12 +2580,19 @@ function kontoRenderMenu(){
     lbl.innerHTML='Anmelden<small>Alles auf allen Geräten</small>';
     ic.style.setProperty('--c','#8E8E93');
   }
+  const badge=document.getElementById('konto-row-badge'), n=kontoInvCount();
+  if(badge){
+    badge.textContent=n>99?'99+':String(n);
+    badge.style.display=n?'':'none';
+    badge.setAttribute('aria-label', n===1?'1 offene Einladung':n+' offene Einladungen');
+  }
 }
 function kontoPkActive(){ try{ return localStorage.getItem('konto-passkey')==='true'; }catch(e){ return false; } }
 function kontoRenderPage(){
   if(!Konto.loggedIn()){ if(document.getElementById('scr-konto').classList.contains('active')) show('scr-konto-login'); return; }
   document.getElementById('konto-name').textContent=Konto.user();
   document.getElementById('konto-status').textContent=kontoStatusText();
+  kontoRenderInv();
   const all=Konto.items();
   let html='';
   KONTO_APPS.forEach(a=>{
@@ -2174,7 +2617,11 @@ function kontoRenderPage(){
       <span class="gic" style="--c:#FF3B30">${KONTO_IC.key}</span>
       <span class="gbody"><span class="glbl danger">Bitte neues Passwort festlegen<small>Du hast dich über die Sicherheitsfrage angemeldet</small></span>${LT_IC.chev}</span>
     </button>` : '')+
-    `<button class="gi" id="konto-rec-row" onclick="kontoRecOpen()">
+    `<button class="gi" id="konto-push-row" onclick="pushOpen('scr-konto')">
+      <span class="gic" style="--c:#FF3B30">${PUSH_IC.bell}</span>
+      <span class="gbody"><span class="glbl">Mitteilungen</span><span class="gval" id="konto-push-val">${pushOnText()}</span>${LT_IC.chev}</span>
+    </button>
+    <button class="gi" id="konto-rec-row" onclick="kontoRecOpen()">
       <span class="gic" style="--c:#5856D6">${KONTO_IC.shield}</span>
       <span class="gbody"><span class="glbl">Sicherheitsfrage</span><span class="gval" id="konto-rec-val">${Konto.hasRecovery()?'Ein':'Aus'}</span>${LT_IC.chev}</span>
     </button>
@@ -2197,7 +2644,7 @@ function kontoRender(){
   if(document.getElementById('scr-lt-profiles').classList.contains('active')) ltRenderProfiles();
 }
 function kontoOpen(){
-  if(Konto.loggedIn()){ show('scr-konto'); kontoBgSync(); }
+  if(Konto.loggedIn()){ show('scr-konto'); kontoBgSync(); kontoInvRefresh(); kontoSentRefresh(); }
   else{
     document.getElementById('konto-login-err').textContent='';
     show('scr-konto-login');
@@ -2268,6 +2715,7 @@ function kontoAfterLogin(msg){
   notify(msg || 'Angemeldet als '+Konto.user()+'.');
   show('scr-konto');
   kontoBgSync();
+  kontoInvRefresh(); kontoSentRefresh();
 }
 async function kontoPkLogin(){
   const err=document.getElementById('konto-login-err');
@@ -2468,10 +2916,255 @@ function kontoRecRemoveAsk(){
     kontoRender();
   }, 'Entfernen', null, {detail:'Wenn du dein Passwort vergisst, kommst du dann nicht mehr an dein Konto.', noLabel:'Behalten'});
 }
-Konto.onChange(()=>{ if(!Konto.loggedIn()) kontoMustSetPw=false; ltKontoImport(); kontoRender(); });
+Konto.onChange(()=>{ if(!Konto.loggedIn()){ kontoMustSetPw=false; kontoInvReset(); } ltKontoImport(); kontoRender(); });
 window.addEventListener('hashchange', kontoHash);
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ kontoRender(); kontoBgSync(); } });
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ kontoRender(); kontoBgSync(); kontoInvRefresh(); } });
 Konto.passkeySupported().then(v=>{ kontoPkOk=!!v; kontoRender(); }).catch(()=>{});
+
+/* ---------- Konto: Einladungen (empfangen und gesendet) ---------- */
+const KONTO_ART={kosten:'Reise', essen:'Haushalt', spiele:'Spielgruppe', cocktails:'Projekt', brief:'Briefe-Profil'};
+const KONTO_APPNAME={kosten:'Kosten', essen:'Essensplanung', spiele:'Spiele', cocktails:'Cocktails', brief:'Briefe'};
+let kontoInvList=null;     // letzte Liste aus Konto.inbox() (volle Einladungen)
+let kontoInvLoading=null;
+let kontoInvBusy={};       // iid → true, solange Annehmen/Ablehnen läuft
+let kontoInvDone=null;     // {label, app} nach dem Annehmen
+let kontoSentList=null;    // letzte Liste aus Konto.sentList()
+let kontoSentLoading=null;
+function kontoInvReset(){ kontoInvList=null; kontoSentList=null; kontoInvDone=null; kontoInvBusy={}; }
+function kontoApp(app){ return KONTO_APPS.find(a=>a.app===app) || {app, title:app, sub:app, href:null, c:'#8E8E93', ic:'<circle cx="12" cy="12" r="8"/>'}; }
+function kontoDay(iso){
+  const d=new Date(iso); if(isNaN(d)) return '';
+  return ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.';
+}
+function kontoInvValid(){
+  const now=new Date().toISOString();
+  return (kontoInvList||[]).filter(x=>(x.expiresAt||'')>=now);
+}
+function kontoInvCount(){
+  if(!Konto.loggedIn()) return 0;
+  return kontoInvList ? kontoInvValid().length : Konto.inboxCount();
+}
+function kontoInvRefresh(){
+  if(!Konto.loggedIn()) return Promise.resolve();
+  if(kontoInvLoading) return kontoInvLoading;
+  kontoInvLoading=Konto.inbox().then(l=>{ if(Konto.loggedIn()) kontoInvList=l||[]; }).catch(()=>{})
+    .then(()=>{ kontoInvLoading=null; kontoRender(); });
+  return kontoInvLoading;
+}
+function kontoSentRefresh(){
+  if(!Konto.loggedIn()) return Promise.resolve();
+  if(kontoSentLoading) return kontoSentLoading;
+  kontoSentLoading=Konto.sentList().then(l=>{ if(Konto.loggedIn()) kontoSentList=l||[]; }).catch(()=>{})
+    .then(()=>{ kontoSentLoading=null; kontoRender(); });
+  return kontoSentLoading;
+}
+function kontoRenderInv(){
+  const box=document.getElementById('konto-inv'), sbox=document.getElementById('konto-sent');
+  if(!box || !sbox) return;
+  let html='';
+  if(kontoInvDone){
+    const a=kontoApp(kontoInvDone.app), nm=KONTO_APPNAME[kontoInvDone.app]||a.sub;
+    html+=`<h3 class="ghead">Einladungen</h3><div class="kinv-done" id="konto-inv-done" role="status">Du bist jetzt in „${esc(String(kontoInvDone.label||'Ohne Namen'))}“ – öffne ${esc(nm)}.
+      <div class="kinv-btns">${a.href?`<a class="kinv-open" id="konto-inv-open" href="${a.href}">${esc(nm)} öffnen</a>`:''}<button class="kinv-ok" onclick="kontoInvDoneClose()">OK</button></div></div>`;
+  }
+  const list=kontoInvValid();
+  if(list.length){
+    if(!kontoInvDone) html+='<h3 class="ghead">Einladungen</h3>';
+    else html+='<div style="height:12px"></div>';
+    html+='<div class="glist" id="konto-inv-list">'+list.map(inv=>{
+      const it=inv.item||{}, a=kontoApp(it.app), busy=!!kontoInvBusy[inv.iid];
+      return `<div class="kinv" data-iid="${esc(inv.iid)}">
+        <div class="kinv-head"><span class="gic" style="--c:${a.c}">${KONTO_SVG(a.ic)}</span>
+          <span class="glbl">${esc(String(it.label||'Ohne Namen'))}<small>${esc(KONTO_ART[it.app]||a.title)} · ${esc(a.sub)} · von ${esc(String(inv.from))}<br>gültig bis ${esc(kontoDay(inv.expiresAt))}</small></span></div>
+        <div class="kinv-btns">
+          <button class="kinv-no" data-iid="${esc(inv.iid)}" onclick="kontoInvDeclineAsk(this.dataset.iid)"${busy?' disabled':''}>Ablehnen</button>
+          <button class="kinv-yes" data-iid="${esc(inv.iid)}" onclick="kontoInvAccept(this.dataset.iid)"${busy?' disabled':''}>${busy?'Einen Moment …':'Annehmen'}</button>
+        </div></div>`;
+    }).join('')+'</div>';
+  }
+  box.innerHTML=html;
+  // Gesendete Einladungen (alle Apps)
+  const sent=kontoSentList||[];
+  if(!sent.length){ sbox.innerHTML=''; return; }
+  const stText=x=> x.status==='offen' ? 'offen bis '+kontoDay(x.expiresAt)
+    : x.status==='abgelaufen' ? 'abgelaufen'
+    : x.status==='erledigt' ? 'angenommen oder abgelehnt' : 'Stand unbekannt (offline?)';
+  sbox.innerHTML='<h3 class="ghead">Gesendete Einladungen</h3><div class="glist" id="konto-sent-list">'+sent.map(x=>{
+    const a=kontoApp(x.app), open=x.status==='offen'||x.status==='unbekannt', busy=!!kontoInvBusy[x.iid];
+    return `<div class="gi kinv-sent" data-iid="${esc(x.iid)}" data-status="${esc(x.status)}">
+      <span class="gic" style="--c:${a.c}">${KONTO_SVG(a.ic)}</span>
+      <span class="gbody"><span class="glbl">${esc(String(x.label||KONTO_ART[x.app]||'Ohne Namen'))}<small>${esc(KONTO_ART[x.app]||a.title)} · an ${esc(String(x.to))}<br>${esc(stText(x))}</small></span>
+        ${open ? `<button class="kinv-act red" data-iid="${esc(x.iid)}" onclick="kontoSentWithdrawAsk(this.dataset.iid)"${busy?' disabled':''}>Zurückziehen</button>`
+               : `<button class="kinv-act" data-iid="${esc(x.iid)}" onclick="kontoSentForget(this.dataset.iid)">Entfernen</button>`}</span>
+    </div>`;
+  }).join('')+'</div>';
+}
+function kontoInvDoneClose(){ kontoInvDone=null; kontoRender(); }
+function kontoInvFind(iid){ return (kontoInvList||[]).find(x=>x.iid===iid); }
+function kontoInvAccept(iid){
+  const inv=kontoInvFind(iid); if(!inv || kontoInvBusy[iid]) return;
+  const it=inv.item||{};
+  if(it.app==='essen'){
+    const old=Konto.items('essen').filter(x=>x.key!==inv.key);
+    if(old.length){
+      const oldName=old.map(x=>'„'+String(x.label||'Ohne Namen')+'“').join(', ');
+      ask('Du bist schon im Haushalt '+oldName+'. Zum Haushalt „'+String(it.label||'Ohne Namen')+'“ wechseln?', ()=>{
+        old.forEach(x=>{ try{ Konto.remove(x.key); }catch(e){} });
+        kontoInvDoAccept(inv);
+      }, 'Wechseln', null, {detail:'Deine Rezepte werden in den neuen Haushalt übernommen.', noLabel:'Abbrechen'});
+      return;
+    }
+  }
+  kontoInvDoAccept(inv);
+}
+async function kontoInvDoAccept(inv){
+  kontoInvBusy[inv.iid]=true; kontoRender();
+  try{
+    await Konto.accept(inv);
+    kontoInvList=(kontoInvList||[]).filter(x=>x.iid!==inv.iid);
+    kontoInvDone={label:(inv.item||{}).label, app:(inv.item||{}).app};
+    try{ window.scrollTo(0,0); }catch(e){}
+  }catch(e){ notify(kontoErrText(e)); }
+  delete kontoInvBusy[inv.iid];
+  kontoRender();
+}
+function kontoInvDeclineAsk(iid){
+  const inv=kontoInvFind(iid); if(!inv || kontoInvBusy[iid]) return;
+  const it=inv.item||{};
+  ask('Einladung von '+inv.from+' ablehnen?', async ()=>{
+    kontoInvBusy[iid]=true; kontoRender();
+    try{
+      await Konto.decline(inv);
+      kontoInvList=(kontoInvList||[]).filter(x=>x.iid!==iid);
+      notify('Einladung abgelehnt.');
+    }catch(e){ notify(kontoErrText(e)); }
+    delete kontoInvBusy[iid];
+    kontoRender();
+  }, 'Ablehnen', null, {detail:'„'+String(it.label||'Ohne Namen')+'“ wird nicht in dein Konto übernommen. '+inv.from+' kann dich später erneut einladen.', noLabel:'Zurück', danger:true});
+}
+function kontoSentWithdrawAsk(iid){
+  const x=(kontoSentList||[]).find(y=>y.iid===iid); if(!x || kontoInvBusy[iid]) return;
+  ask('Einladung an '+x.to+' zurückziehen?', async ()=>{
+    kontoInvBusy[iid]=true; kontoRender();
+    try{
+      await Konto.withdraw(iid);
+      kontoSentList=(kontoSentList||[]).filter(y=>y.iid!==iid);
+      notify('Einladung zurückgezogen.');
+    }catch(e){ notify(kontoErrText(e)); }
+    delete kontoInvBusy[iid];
+    kontoRender();
+  }, 'Zurückziehen', null, {detail:x.to+' kann „'+String(x.label||KONTO_ART[x.app]||'')+'“ dann nicht mehr annehmen.', noLabel:'Behalten', danger:true});
+}
+function kontoSentForget(iid){
+  try{ Konto.forget(iid); }catch(e){}
+  kontoSentList=(kontoSentList||[]).filter(y=>y.iid!==iid);
+  kontoRender();
+}
+
+/* ---------- Mitteilungen (Web-Push, Modul „Push“) ---------- */
+const PUSH_IC = {
+  bell:  KONTO_SVG('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/>'),
+  timer: KONTO_SVG('<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9.5 2.5h5"/>'),
+  remind:KONTO_SVG('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M12 13.5v3"/>'),
+  einkauf:KONTO_SVG('<path d="M3 4h2.5l2.2 11h10.6l2-8H7"/><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/>'),
+  plan:  KONTO_SVG('<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h3M8 17h6"/>'),
+  invite:KONTO_SVG('<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/>'),
+  kosten:KONTO_SVG('<path d="M18 6.5A7 7 0 1 0 18 17.5"/><path d="M4 10h9M4 14h9"/>'),
+  spiele:KONTO_SVG('<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>'),
+  cocktails:KONTO_SVG('<path d="M4 4h16l-8 9z"/><path d="M12 13v7M8 20h8"/>'),
+  clock: KONTO_SVG('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>'),
+};
+const PUSH_COL = {timer:'#FF9500', remind:'#FF3B30', einkauf:'#34C759', plan:'#30B0C7', invite:'#0A84FF', kosten:'#5856D6', spiele:'#FF2D55', cocktails:'#AF52DE'};
+const PUSH_KONTO_KINDS = ['einkauf','plan','invite','kosten','spiele','cocktails'];
+let pushFrom='scr-menu', pushBusy='', pushErr='';
+function pushOnText(){ try{ return Push.enabled() ? 'An' : 'Aus'; }catch(e){ return 'Aus'; } }
+function pushOpen(from){
+  pushFrom = from || 'scr-menu'; pushErr='';
+  show('scr-push');
+  Push.sync().catch(()=>{}).then(pushRender);
+}
+function pushBack(){ show(pushFrom==='scr-konto' && Konto.loggedIn() ? 'scr-konto' : 'scr-menu'); }
+function pushHash(){
+  if(location.hash!=='#mitteilungen') return;
+  try{ history.replaceState(null, '', location.pathname+location.search); }catch(e){}
+  pushOpen(document.getElementById('scr-konto').classList.contains('active') ? 'scr-konto' : 'scr-menu');
+}
+function pushRenderMenu(){
+  const v=document.getElementById('push-row-val'); if(v) v.textContent=pushOnText();
+  const k=document.getElementById('konto-push-val'); if(k) k.textContent=pushOnText();
+}
+function pushRender(){
+  pushRenderMenu();
+  const scr=document.getElementById('scr-push');
+  if(!scr || !scr.classList.contains('active')) return;
+  const st=Push.status(), on=st.state==='on';
+  const title={on:'Mitteilungen sind an', off:'Mitteilungen sind aus', denied:'Mitteilungen sind abgelehnt', notInstalled:'Nur in der App vom Home-Bildschirm', unsupported:'Auf diesem Gerät nicht möglich'}[st.state]||'Mitteilungen';
+  const text = st.state==='off' ? 'Schalte sie ein, damit dich Kochtimer, Einladungen & Co. erreichen.' : st.text;
+  document.getElementById('push-state').innerHTML=esc(title)+'<small id="push-state-text">'+esc(String(text))+'</small>';
+  document.getElementById('push-card-ic').style.setProperty('--c', on ? '#34C759' : st.state==='off' ? '#FF3B30' : '#8E8E93');
+  const onBtn=document.getElementById('push-on-btn'), offBtn=document.getElementById('push-off-btn');
+  onBtn.style.display = st.state==='off' ? '' : 'none';
+  offBtn.style.display = on ? '' : 'none';
+  onBtn.disabled = pushBusy==='on'; onBtn.textContent = pushBusy==='on' ? 'Wird eingeschaltet …' : 'Mitteilungen einschalten';
+  offBtn.disabled = pushBusy==='off'; offBtn.textContent = pushBusy==='off' ? 'Wird ausgeschaltet …' : 'Ausschalten';
+  document.getElementById('push-err').textContent=pushErr;
+  // Arten
+  const p=Push.prefs(), konto=Konto.loggedIn();
+  const list=document.getElementById('push-kinds');
+  const focused=document.activeElement && document.activeElement.id==='push-remind-time';
+  if(!focused){
+    list.innerHTML=Push.KINDS.map(k=>{
+      const row=`<label class="gi push-kind" for="push-k-${k.key}" data-kind="${k.key}">
+        <span class="gic" style="--c:${PUSH_COL[k.key]||'#8E8E93'}">${PUSH_IC[k.key]||PUSH_IC.bell}</span>
+        <span class="gbody"><span class="glbl">${esc(k.label)}<small>${esc(k.sub)}${!konto && PUSH_KONTO_KINDS.includes(k.key)?' · braucht Konto':''}</small></span>
+          <span class="switch"><input type="checkbox" id="push-k-${k.key}" data-kind="${k.key}" onchange="pushSetKind(this.dataset.kind, this.checked)"${p[k.key]?' checked':''} aria-label="${esc(k.label)}"><i></i></span></span>
+      </label>`;
+      if(k.key!=='remind' || !p.remind) return row;
+      return row+`<label class="gi" for="push-remind-time" id="push-remind-row">
+        <span class="gic blank"></span>
+        <span class="gbody"><span class="glbl">Uhrzeit<small>Erinnerung am Kochtag</small></span>
+          <input type="time" class="push-time" id="push-remind-time" value="${esc(String(p.remindTime||'16:30'))}" onchange="pushSetTime(this.value)"></span>
+      </label>`;
+    }).join('');
+  }
+  document.getElementById('push-konto').innerHTML = konto ? '' :
+    `<div class="konto-warn push-konto" id="push-konto-hint"><b>Ohne Konto nur Kochtimer und Kocherinnerung</b>Mitteilungen zu geteilten Reisen, Haushalt, Spielgruppe und Projekten brauchen ein Konto – darüber weiß das Gerät, wozu du gehörst.
+      <button class="konto-link-btn" id="push-konto-btn" onclick="kontoOpen()">Anmelden oder Konto anlegen ›</button></div>`;
+  document.getElementById('push-test-wrap').style.display = on ? '' : 'none';
+  document.getElementById('push-test-lbl').firstChild.textContent = pushBusy==='test' ? 'Wird gesendet …' : 'Testmitteilung senden';
+}
+function pushSetKind(key, val){ Push.setPrefs({[key]:!!val}); pushRender(); }
+function pushSetTime(v){
+  if(!/^\d{2}:\d{2}$/.test(v||'')) return;
+  Push.setPrefs({remindTime:v}); notify('Kocherinnerung um '+v+' Uhr.');
+}
+/* Einschalten: Push.enable() direkt im Tipp aufrufen, damit iOS nach der Erlaubnis fragen darf */
+function pushEnable(){
+  if(pushBusy) return;
+  pushErr='';
+  const job=Push.enable();
+  pushBusy='on'; pushRender();
+  job.then(()=>{ notify('Mitteilungen sind an.'); })
+    .catch(e=>{ pushErr=(e && e.message) || 'Einschalten hat nicht geklappt.'; })
+    .then(()=>{ pushBusy=''; pushRender(); });
+}
+function pushDisableAsk(){
+  ask('Mitteilungen ausschalten?', ()=>{
+    pushBusy='off'; pushErr=''; pushRender();
+    Push.disable().catch(()=>{}).then(()=>{ pushBusy=''; pushRender(); notify('Mitteilungen sind aus.'); });
+  }, 'Ausschalten', null, {detail:'Dieses Gerät bekommt dann keine Mitteilungen mehr. Deine Auswahl bleibt gespeichert.', noLabel:'Abbrechen', danger:true});
+}
+function pushTest(){
+  if(pushBusy) return;
+  pushBusy='test'; pushErr=''; pushRender();
+  Push.test().then(()=>notify('Testmitteilung gesendet.'))
+    .catch(e=>{ pushErr='Testmitteilung nicht gesendet: '+((e && e.message) || 'Fehler'); })
+    .then(()=>{ pushBusy=''; pushRender(); });
+}
+Push.onChange(pushRender);
+Konto.onChange(pushRender);
+window.addEventListener('hashchange', pushHash);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') pushRender(); });
 
 /* ---------- Start ---------- */
 ltLoad().then(()=>{ ltKontoImport(); });
@@ -2480,6 +3173,11 @@ ltLoadAB();
 kontoRenderMenu();
 kontoHash();
 kontoBgSync();
+kontoInvRefresh();
+pushRender();
+pushHash();
+Push.sync().catch(()=>{});
+if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
 </html>

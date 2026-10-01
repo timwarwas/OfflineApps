@@ -511,7 +511,10 @@ main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
    Face ID: optional über einen Passkey mit PRF-Erweiterung (iOS 18+).
    Passwort vergessen: optional Sicherheitsfrage. Aus Benutzername + Antwort wird (PBKDF2) ein zweiter
    Schlüssel abgeleitet, der einen Datensatz mit dem Hauptschlüssel öffnet. Die Frage selbst liegt
-   in einem Datensatz, der nur mit dem Benutzernamen lesbar ist. */
+   in einem Datensatz, der nur mit dem Benutzernamen lesbar ist.
+   Einladungen: Jedes Konto veröffentlicht ein Profil (öffentliche Schlüssel ECDH + ECDSA) und hat ein Postfach,
+   beide auffindbar über den Benutzernamen. Eine Einladung (Verbindungslink einer Reise/eines Haushalts …) wird für
+   den Empfänger verschlüsselt, vom Absender signiert, ins Postfach gelegt und läuft nach einigen Tagen ab. */
 const Konto = (() => {
   const DEFAULT = 'https://kostenpi.tail281e3e.ts.net';
   const ITER = 310000;
@@ -597,12 +600,13 @@ const Konto = (() => {
   const fail = r => { const e = new Error('Server antwortet mit ' + r.status); e.status = r.status; return e; };
 
   /* ---------- Schlüsselbund zusammenführen ---------- */
-  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {}, recovery: null }; }
+  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {}, recovery: null, keys: null, sent: {} }; }
   function clean(v, user) {
     v = v && typeof v === 'object' ? v : {};
     return { v: 1, user: v.user || user || '', items: v.items && typeof v.items === 'object' ? v.items : {},
       deleted: v.deleted && typeof v.deleted === 'object' ? v.deleted : {}, passkeys: v.passkeys && typeof v.passkeys === 'object' ? v.passkeys : {},
-      recovery: v.recovery && typeof v.recovery === 'object' ? v.recovery : null };
+      recovery: v.recovery && typeof v.recovery === 'object' ? v.recovery : null,
+      keys: v.keys && typeof v.keys === 'object' ? v.keys : null, sent: v.sent && typeof v.sent === 'object' ? v.sent : {} };
   }
   function merge(a, b) {
     a = clean(a); b = clean(b);
@@ -618,6 +622,8 @@ const Konto = (() => {
     for (const k in out.passkeys) if (out.deleted['pk:' + k]) delete out.passkeys[k];
     out.recovery = [a.recovery, b.recovery].filter(Boolean).sort((x, y) => (y.createdAt || '').localeCompare(x.createdAt || ''))[0] || null;
     if (out.recovery && out.deleted.recovery && out.deleted.recovery >= out.recovery.createdAt) out.recovery = null;
+    out.keys = [a.keys, b.keys].filter(Boolean).sort((x, y) => (x.createdAt || '').localeCompare(y.createdAt || '') || (x.encPub > y.encPub ? 1 : -1))[0] || null;   // älteste gewinnt
+    for (const src of [a.sent, b.sent]) for (const k in src) if (!out.deleted['sent:' + k]) out.sent[k] = src[k];
     return out;
   }
   const canon = v => { const s = x => Array.isArray(x) ? '[' + x.map(s).join(',') + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map(k => JSON.stringify(k) + ':' + s(x[k])).join(',') + '}' : JSON.stringify(x); return s(v); };
@@ -685,6 +691,7 @@ const Konto = (() => {
     ls.set('konto', { user: f.vault.user || user, master, at: nowIso() });
     ls.set('konto-cache', f.vault);
     emit();
+    ensureProfile().catch(() => {});
     return { ok: true };
   }
   async function register(user, pw) {
@@ -698,9 +705,10 @@ const Konto = (() => {
     ls.set('konto', { user, master, at: nowIso() });
     ls.set('konto-cache', emptyVault(user));
     emit();
+    await ensureProfile().catch(() => {});
     return { ok: true };
   }
-  function logout() { ['konto', 'konto-cache', 'konto-state'].forEach(ls.del); keyCache.clear(); emit(); }
+  function logout() { ['konto', 'konto-cache', 'konto-state', 'konto-inbox'].forEach(ls.del); keyCache.clear(); emit(); }
   let recovered = false;   // gerade über die Sicherheitsfrage angemeldet → neues Passwort ohne altes erlaubt
   async function changePassword(oldPw, newPw) {
     const s = session(); if (!s) throw new Error('Nicht angemeldet.');
@@ -851,13 +859,357 @@ const Konto = (() => {
     return { ok: true };
   }
 
+  /* ---------- Profil, Postfach, Einladungen ---------- */
+  const INVITE_DAYS = 7;
+  async function nameKeys(user, salt) {
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', te(salt + '|' + normUser(user))));
+    return keys(b64e(h), salt);
+  }
+  const profileKeys = user => nameKeys(user, 'konto-profil-v1');
+  const inboxKeys = user => nameKeys(user, 'konto-postfach-v1');
+  const ECDH = { name: 'ECDH', namedCurve: 'P-256' }, ECDSA = { name: 'ECDSA', namedCurve: 'P-256' };
+  async function readRec(k) {
+    const r = await api('GET', '/' + k.id, k.auth);
+    if (r.status === 404) return null;
+    if (r.status !== 200 || !r.json) throw fail(r);
+    return { data: await decrypt(k.enc, r.json.data), rev: +r.json.rev || 0 };
+  }
+  /* Schlüsselpaare anlegen (einmal pro Konto) und Profil + Postfach veröffentlichen */
+  async function ensureProfile() {
+    const s = session(); if (!s) return null;
+    let v = cache();
+    if (!v.keys) {
+      const e = await crypto.subtle.generateKey(ECDH, true, ['deriveBits']);
+      const g = await crypto.subtle.generateKey(ECDSA, true, ['sign', 'verify']);
+      v.keys = { createdAt: nowIso(), encPub: await crypto.subtle.exportKey('jwk', e.publicKey), encPriv: await crypto.subtle.exportKey('jwk', e.privateKey),
+        sigPub: await crypto.subtle.exportKey('jwk', g.publicKey), sigPriv: await crypto.subtle.exportKey('jwk', g.privateKey) };
+      ls.set('konto-cache', v);
+      v = await sync();
+    }
+    const pk = await profileKeys(s.user), cur = await readRec(pk);
+    const prof = { user: s.user, encPub: v.keys.encPub, sigPub: v.keys.sigPub };
+    if (!cur || canon(cur.data) !== canon(prof)) await upsert(pk, prof);
+    const ik = await inboxKeys(s.user);
+    if (!(await readRec(ik))) await upsert(ik, { entries: {} });
+    return prof;
+  }
+  /* Gibt es ein Konto mit genau diesem Namen? → Profil (mit richtiger Schreibweise) oder null */
+  async function findUser(name) { const p = await readRec(await profileKeys(String(name || '').trim())); return p ? p.data : null; }
+  async function sealFor(prof, payload) {
+    const eph = await crypto.subtle.generateKey(ECDH, true, ['deriveBits']);
+    const pub = await crypto.subtle.importKey('jwk', prof.encPub, ECDH, false, []);
+    const bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, eph.privateKey, 256);
+    const key = (await keys(b64e(new Uint8Array(bits)), 'konto-einladung-v1')).enc;
+    return { epk: await crypto.subtle.exportKey('jwk', eph.publicKey), box: await encrypt(key, payload) };
+  }
+  async function openSealed(sealed, encPriv) {
+    const priv = await crypto.subtle.importKey('jwk', encPriv, ECDH, false, ['deriveBits']);
+    const pub = await crypto.subtle.importKey('jwk', sealed.epk, ECDH, false, []);
+    const bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, priv, 256);
+    return decrypt((await keys(b64e(new Uint8Array(bits)), 'konto-einladung-v1')).enc, sealed.box);
+  }
+  async function signBody(body, sigPriv) {
+    const k = await crypto.subtle.importKey('jwk', sigPriv, ECDSA, false, ['sign']);
+    return b64e(new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, k, te(canon(body)))));
+  }
+  async function verifyBody(body, sig, sigPub) {
+    try { const k = await crypto.subtle.importKey('jwk', sigPub, ECDSA, false, ['verify']); return await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, k, b64d(sig), te(canon(body))); }
+    catch (e) { return false; }
+  }
+  async function editInbox(user, fn) {
+    const ik = await inboxKeys(user);
+    for (let i = 0; i < 3; i++) {
+      const cur = await readRec(ik);
+      if (!cur) throw new Error('Postfach nicht gefunden');
+      const entries = Object.assign({}, cur.data.entries || {});
+      const now = nowIso();
+      for (const k in entries) if ((entries[k].expiresAt || '') < now) delete entries[k];   // Abgelaufenes aufräumen
+      if (fn(entries) === false) return;
+      const u = await api('PATCH', '/' + ik.id, ik.auth, { data: await encrypt(ik.enc, { entries }), rev: cur.rev + 1 });
+      if (u.status === 200) return;
+    }
+    throw new Error('Postfach gerade nicht beschreibbar');
+  }
+  /* Einladung senden: item = {app, id, secret, label} (wie im Schlüsselbund) */
+  async function invite(toName, key, item, days) {
+    const s = session(); if (!s) throw new Error('Bitte zuerst anmelden.');
+    await ensureProfile();
+    const prof = await findUser(toName);
+    if (!prof) { const e = new Error(`Kein Konto „${String(toName).trim()}“ gefunden. Stimmt die Schreibweise?`); e.notFound = true; throw e; }
+    if (normUser(prof.user) === normUser(s.user)) throw new Error('Du kannst dich nicht selbst einladen.');
+    const iid = b64e(crypto.getRandomValues(new Uint8Array(12)));
+    const createdAt = nowIso(), expiresAt = new Date(Date.now() + (days || INVITE_DAYS) * 864e5).toISOString();
+    const body = { iid, from: s.user, to: prof.user, key, item, createdAt, expiresAt };
+    const sig = await signBody(body, cache().keys.sigPriv);
+    const sealed = await sealFor(prof, { body, sig });
+    await editInbox(prof.user, e => { e[iid] = { sealed, expiresAt }; });
+    const v = cache(); v.sent[iid] = { to: prof.user, app: item.app, label: item.label || '', key, createdAt, expiresAt };
+    ls.set('konto-cache', v); sync().catch(() => {});
+    return { iid, to: prof.user, expiresAt };
+  }
+  async function withdraw(iid) {
+    const v = cache(), x = v.sent[iid]; if (!x) return false;
+    try { await editInbox(x.to, e => { if (!e[iid]) return false; delete e[iid]; }); } catch (e) { if (!/Postfach nicht gefunden/.test(e.message)) throw e; }
+    delete v.sent[iid]; v.deleted['sent:' + iid] = nowIso(); ls.set('konto-cache', v); sync().catch(() => {});
+    return true;
+  }
+  /* gesendete Einladungen mit Stand: offen | abgelaufen | erledigt (angenommen/abgelehnt) */
+  async function sentList(app) {
+    const v = cache(), now = nowIso(), out = [];
+    const byUser = {};
+    for (const iid in v.sent) { const x = v.sent[iid]; if (app && x.app !== app) continue; (byUser[x.to] = byUser[x.to] || []).push(Object.assign({ iid }, x)); }
+    for (const u in byUser) {
+      let entries = null;
+      try { const r = await readRec(await inboxKeys(u)); entries = r ? r.data.entries || {} : {}; } catch (e) { entries = null; }
+      byUser[u].forEach(x => out.push(Object.assign(x, { status: x.expiresAt < now ? 'abgelaufen' : entries === null ? 'unbekannt' : entries[x.iid] ? 'offen' : 'erledigt' })));
+    }
+    return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  function forget(iid) { const v = cache(); if (!v.sent[iid]) return; delete v.sent[iid]; v.deleted['sent:' + iid] = nowIso(); ls.set('konto-cache', v); sync().catch(() => {}); }
+  /* eigene Einladungen lesen (geprüft: Signatur des Absenders, nicht abgelaufen) */
+  async function inbox() {
+    const s = session(); if (!s) return [];
+    await ensureProfile();
+    const r = await readRec(await inboxKeys(s.user)); if (!r) return [];
+    const now = nowIso(), keysV = cache().keys, out = [];
+    for (const iid in r.data.entries || {}) {
+      const e = r.data.entries[iid]; if ((e.expiresAt || '') < now) continue;
+      try {
+        const { body, sig } = await openSealed(e.sealed, keysV.encPriv);
+        if (body.iid !== iid || normUser(body.to) !== normUser(s.user) || body.expiresAt < now) continue;
+        const sender = await findUser(body.from);
+        if (!sender || !(await verifyBody(body, sig, sender.sigPub))) continue;
+        out.push(Object.assign({}, body, { from: sender.user }));
+      } catch (err) { /* nicht für uns / beschädigt */ }
+    }
+    ls.set('konto-inbox', out.map(x => ({ iid: x.iid, from: x.from, app: x.item.app, label: x.item.label, expiresAt: x.expiresAt })));
+    emit();
+    return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  async function accept(inv) {
+    put(inv.key, Object.assign({}, inv.item, { invitedBy: inv.from }));
+    await editInbox(user(), e => { if (!e[inv.iid]) return false; delete e[inv.iid]; });
+    await sync().catch(() => {});
+    inbox().catch(() => {});
+  }
+  async function decline(inv) { await editInbox(user(), e => { if (!e[inv.iid]) return false; delete e[inv.iid]; }); inbox().catch(() => {}); }
+  const user = () => (session() || {}).user || '';
+
   return {
-    session, user: () => (session() || {}).user || '', loggedIn: () => !!session(), state: () => ls.get('konto-state') || {},
+    session, user, loggedIn: () => !!session(), state: () => ls.get('konto-state') || {},
     login, register, logout, changePassword, sync, items, put, remove, onChange: fn => listeners.add(fn),
     passkeySupported, enablePasskey, loginWithPasskey, hasPasskey: () => Object.keys(cache().passkeys).length > 0,
-    setRecovery, removeRecovery, getQuestion, recover, hasRecovery: () => !!cache().recovery, recoveryQuestion: () => (cache().recovery || {}).question || '',
+    setRecovery, removeRecovery, getQuestion, recover,
+    ensureProfile, findUser, invite, withdraw, sentList, forget, inbox, accept, decline, inviteDays: INVITE_DAYS,
+    inboxCount: () => (ls.get('konto-inbox') || []).filter(x => x.expiresAt >= nowIso()).length, hasRecovery: () => !!cache().recovery, recoveryQuestion: () => (cache().recovery || {}).question || '',
     _merge: merge,
+    _forge: async (prof, body, sig) => { const sealed = await sealFor(prof, { body, sig }); await editInbox(prof.user, e => { e[body.iid] = { sealed, expiresAt: body.expiresAt }; }); },
   };
+})();
+
+</script>
+<script>
+/* ==== Mitteilungen der Anwendungssammlung (gleicher Code in allen Apps) ====
+   Web-Push über den Push-Dienst auf dem Pi (…/push). Funktioniert auf dem iPhone nur in einer App
+   vom Home-Bildschirm (ab iOS 16.4). Kanäle werden aus den Geheimnissen der Apps abgeleitet, Texte
+   sind mit einem Kanalschlüssel verschlüsselt – der Pi sieht weder Namen noch Inhalte. Der Service
+   Worker (sw.js) entschlüsselt sie mit den Schlüsseln aus IndexedDB „push-keys“ und zeigt sie an.
+   Welche Arten ein Gerät bekommt, steht in localStorage „push-prefs“ und wird beim Pi hinterlegt. */
+const Push = (() => {
+  const DEFAULT = 'https://kostenpi.tail281e3e.ts.net/push';
+  const KINDS = [
+    { key: 'timer', label: 'Kochtimer', sub: 'Wenn ein Timer der Kochansicht abläuft', def: true },
+    { key: 'remind', label: 'Kocherinnerung', sub: 'Am Kochtag: „Heute: Spaghetti Bolognese“', def: false },
+    { key: 'einkauf', label: 'Einkaufsliste', sub: 'Jemand im Haushalt ergänzt die Einkaufsliste', def: true },
+    { key: 'plan', label: 'Wochenplan', sub: 'Jemand im Haushalt übernimmt einen neuen Wochenplan', def: false },
+    { key: 'invite', label: 'Einladungen', sub: 'Jemand lädt dich per Benutzername ein', def: true },
+    { key: 'kosten', label: 'Neue Ausgaben', sub: 'Jemand trägt in einer geteilten Reise etwas ein', def: true },
+    { key: 'spiele', label: 'Spiele', sub: 'Neue Partie im Verlauf der Spielgruppe', def: false },
+    { key: 'cocktails', label: 'Cocktails', sub: 'Änderungen an geteilten Cocktail-Projekten', def: false },
+  ];
+  const APP_KINDS = { essen: ['einkauf', 'plan'], kosten: ['kosten'], spiele: ['spiele'], cocktails: ['cocktails'] };
+  const te = t => new TextEncoder().encode(t);
+  const b64e = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const b64d = str => { str = String(str).replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const b = atob(str), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+  const ls = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  };
+  const server = () => { try { return localStorage.getItem('push-server') || DEFAULT; } catch (e) { return DEFAULT; } };
+  const rnd = n => b64e(crypto.getRandomValues(new Uint8Array(n)));
+  function device() {
+    let d = ls.get('push-device');
+    if (!d || !d.id) { d = { id: rnd(18), secret: rnd(24), ch: rnd(32) }; ls.set('push-device', d); }
+    return d;
+  }
+  function prefs() {
+    const p = Object.assign({ remindTime: '16:30' }, ls.get('push-prefs') || {});
+    KINDS.forEach(k => { if (typeof p[k.key] !== 'boolean') p[k.key] = k.def; });
+    return p;
+  }
+  const listeners = new Set(); const emit = () => listeners.forEach(f => { try { f(); } catch (e) {} });
+
+  /* ---------- Kanäle ---------- */
+  const chanCache = new Map();
+  function chan(secret, label) {
+    const ck = label + '|' + secret;
+    if (!chanCache.has(ck)) chanCache.set(ck, (async () => {
+      const base = await crypto.subtle.importKey('raw', te(secret), 'HKDF', false, ['deriveBits']);
+      const bits = n => crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: te('push-v1'), info: te(label + '|' + n) }, base, 256);
+      return { id: b64e(new Uint8Array(await bits('id')).subarray(0, 24)), key: b64e(new Uint8Array(await bits('key'))) };
+    })());
+    return chanCache.get(ck);
+  }
+  const normUser = u => String(u || '').trim().toLowerCase();
+  const itemChan = it => chan(it.secret, it.app + ':' + it.id);
+  const userChan = name => chan('konto-postfach|' + normUser(name), 'inbox');
+  const devChan = () => chan(device().ch, 'device');
+  async function encrypt(keyB64, obj) {
+    const key = await crypto.subtle.importKey('raw', b64d(keyB64), 'AES-GCM', false, ['encrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    return 'v1.' + b64e(iv) + '.' + b64e(new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te(JSON.stringify(obj)))));
+  }
+  /* Kanalschlüssel für den Service Worker ablegen */
+  function idb() {
+    return new Promise((res, rej) => { const r = indexedDB.open('push-keys', 1); r.onupgradeneeded = () => r.result.createObjectStore('k'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  }
+  async function storeKeys(map) {
+    const db = await idb();
+    await new Promise((res, rej) => { const tx = db.transaction('k', 'readwrite'), st = tx.objectStore('k'); st.clear(); Object.entries(map).forEach(([k, v]) => st.put(v, k)); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    db.close();
+  }
+  async function channels() {
+    const p = prefs(), out = {}, keys = {};
+    const add = (c, kinds) => { if (!kinds.length) return; out[c.id] = (out[c.id] || []).concat(kinds); keys[c.id] = c.key; };
+    add(await devChan(), ['test'].concat(['timer', 'remind'].filter(k => p[k])));   // „test“ immer, damit die Testmitteilung ankommt
+    const K = typeof Konto !== 'undefined' && Konto.loggedIn() ? Konto : null;
+    if (K) {
+      if (p.invite) add(await userChan(K.user()), ['invite']);
+      for (const it of K.items()) { const kinds = (APP_KINDS[it.app] || []).filter(k => p[k]); if (kinds.length && it.secret) add(await itemChan(it), kinds); }
+    }
+    return { out, keys };
+  }
+
+  /* ---------- Server ---------- */
+  async function api(path, body) {
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 15000);
+    try {
+      const r = await fetch(server() + path, { method: body ? 'POST' : 'GET', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', signal: ctl.signal });
+      let j = null; try { j = await r.json(); } catch (e) {}
+      if (!r.ok) { const e = new Error((j && j.error) || ('Push-Dienst antwortet mit ' + r.status)); e.status = r.status; throw e; }
+      return j;
+    } catch (e) { if (e.status) throw e; const err = new Error('Push-Dienst nicht erreichbar'); err.offline = true; throw err; }
+    finally { clearTimeout(to); }
+  }
+
+  /* ---------- Abo ---------- */
+  const standalone = () => { try { return window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } };
+  const supported = () => typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  function status() {
+    if (!supported()) return { state: standalone() ? 'unsupported' : 'notInstalled', text: standalone() ? 'Dieses Gerät unterstützt keine Mitteilungen für Web-Apps (iOS 16.4 oder neuer nötig).' : 'Mitteilungen gehen nur in der App vom Home-Bildschirm (Teilen → „Zum Home-Bildschirm“).' };
+    if (Notification.permission === 'denied') return { state: 'denied', text: 'Mitteilungen sind abgelehnt. Erlauben unter iPhone-Einstellungen → Mitteilungen → diese App.' };
+    const s = ls.get('push-state') || {};
+    if (Notification.permission === 'granted' && s.on) return { state: 'on', text: s.err ? 'Aktiv – letzter Abgleich fehlgeschlagen: ' + s.err : 'Aktiv auf diesem Gerät' };
+    return { state: 'off', text: 'Aus' };
+  }
+  async function swReg() {
+    const reg = (await navigator.serviceWorker.getRegistration()) || (await navigator.serviceWorker.register('sw.js'));
+    return navigator.serviceWorker.ready.then(() => reg);
+  }
+  /* Einschalten – muss aus einem Tipp heraus aufgerufen werden (iOS fragt dann nach der Erlaubnis) */
+  async function enable() {
+    if (!supported()) throw new Error(status().text);
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') throw new Error('Ohne Erlaubnis keine Mitteilungen.');
+    const { publicKey } = await api('/vapid');
+    const reg = await swReg();
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64d(publicKey) });
+    ls.set('push-state', { on: true, err: '' });
+    await sync(true);
+    emit();
+    return true;
+  }
+  async function disable() {
+    try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch (e) {}
+    const d = device();
+    try { await api('/unsubscribe', { device: d.id, secret: d.secret }); } catch (e) {}
+    ls.set('push-state', { on: false }); ls.del('push-sig'); emit();
+  }
+  let syncing = null;
+  /* Kanäle und Arten beim Pi aktualisieren (nur wenn sich etwas geändert hat) */
+  async function sync(force) {
+    const st = ls.get('push-state') || {};
+    if (!st.on || !supported() || Notification.permission !== 'granted') return false;
+    if (syncing) return syncing;
+    syncing = (async () => {
+      try {
+        const reg = await swReg();
+        const sub = await reg.pushManager.getSubscription();
+        if (!sub) { ls.set('push-state', { on: false }); emit(); return false; }
+        const { out, keys } = await channels();
+        await storeKeys(keys);
+        const sj = sub.toJSON(), sig = JSON.stringify([sj.endpoint, out]);
+        if (!force && ls.get('push-sig') === sig) return true;
+        const d = device();
+        await api('/subscribe', { device: d.id, secret: d.secret, sub: { endpoint: sj.endpoint, keys: sj.keys }, channels: out });
+        ls.set('push-sig', sig); ls.set('push-state', { on: true, err: '' });
+        return true;
+      } catch (e) { ls.set('push-state', { on: true, err: e.message }); throw e; }
+      finally { syncing = null; emit(); }
+    })();
+    return syncing;
+  }
+  function setPrefs(p) { ls.set('push-prefs', Object.assign(prefs(), p)); emit(); return sync().catch(() => {}); }
+
+  /* ---------- Senden ---------- */
+  /* an alle Geräte eines geteilten Dings (außer diesem): item = {app, id, secret} */
+  async function notify(item, kind, title, body, url) {
+    if (!item || !item.secret || !item.id) return false;
+    try {
+      const c = await itemChan(item);
+      await api('/send', { channels: [c.id], kind, boxes: { '*': await encrypt(c.key, { title, body, url: url || null, tag: kind + ':' + item.id }) }, exclude: device().id });
+      return true;
+    } catch (e) { return false; }
+  }
+  async function notifyUser(name, kind, title, body, url) {
+    try { const c = await userChan(name); await api('/send', { channels: [c.id], kind, boxes: { '*': await encrypt(c.key, { title, body, url: url || null }) } }); return true; }
+    catch (e) { return false; }
+  }
+  /* an dieses Gerät zu einem Zeitpunkt (Kochtimer, Kocherinnerung); gleicher tag ersetzt */
+  async function schedule(tag, at, kind, title, body, url) {
+    if (!(ls.get('push-state') || {}).on) return false;
+    try {
+      const c = await devChan();
+      await api('/send', { channels: [c.id], kind, tag, at: new Date(at).toISOString(), ttl: 3600, boxes: { '*': await encrypt(c.key, { title, body, url: url || null, tag }) } });
+      return true;
+    } catch (e) { return false; }
+  }
+  async function cancel(tag) {
+    if (!(ls.get('push-state') || {}).on) return false;
+    try { const c = await devChan(); await api('/cancel', { channels: [c.id], tag }); return true; } catch (e) { return false; }
+  }
+  async function test() {
+    const c = await devChan();
+    await api('/send', { channels: [c.id], kind: 'test', boxes: { '*': await encrypt(c.key, { title: 'Testmitteilung', body: 'Mitteilungen funktionieren 👍', url: 'index.html#mitteilungen' }) } });
+  }
+
+  /* Einladungen automatisch ankündigen */
+  if (typeof Konto !== 'undefined' && Konto.invite && !Konto.invite._push) {
+    const orig = Konto.invite;
+    Konto.invite = async function (name, key, item, days) {
+      const r = await orig.apply(this, arguments);
+      notifyUser(r.to, 'invite', 'Neue Einladung', `${Konto.user()} lädt dich zu „${(item && item.label) || 'etwas'}“ ein`, 'index.html#konto');
+      return r;
+    };
+    Konto.invite._push = true;
+  }
+  if (typeof Konto !== 'undefined' && Konto.onChange) Konto.onChange(() => { sync().catch(() => {}); });
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sync().catch(() => {}); });
+
+  return { KINDS, supported, standalone, status, enable, disable, sync, prefs, setPrefs, notify, notifyUser, schedule, cancel, test, onChange: f => listeners.add(f),
+    enabled: () => !!(ls.get('push-state') || {}).on && supported() && Notification.permission === 'granted', _chan: chan, _channels: channels };
 })();
 
 </script>
@@ -1832,6 +2184,7 @@ async function persist(opts) {
   opts = opts || {};
   await Store.set('db', db);
   if (!opts.noSync) Sync.markDirty();
+  if (typeof Notes !== 'undefined') Notes.later();   // Kocherinnerungen nachziehen
 }
 
 /* ---------- Anmeldung & Sitzung ---------- */
@@ -3908,15 +4261,49 @@ document.addEventListener('visibilitychange', () => {   // iOS gibt die Sperre b
 
 /* ---------- Küchen-Timer (laufen weiter, auch wenn die Kochansicht zu ist) ---------- */
 const Timers = {
-  list: [], iv: null, ctx: null,
+  list: [], iv: null, ctx: null, el: null,
+  /* Klingelton als WAV (drei Pieptöne). Ein <audio>-Element spielt auf dem iPhone auch bei
+     Stummschalter, Web Audio dagegen nicht – deshalb beides, das Element zuerst. */
+  wav() {
+    const rate = 22050, n = Math.round(rate * 0.8), b = new DataView(new ArrayBuffer(44 + n * 2));
+    const str = (o, t) => [...t].forEach((ch, i) => b.setUint8(o + i, ch.charCodeAt(0)));
+    str(0, 'RIFF'); b.setUint32(4, 36 + n * 2, true); str(8, 'WAVEfmt '); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true);
+    b.setUint32(24, rate, true); b.setUint32(28, rate * 2, true); b.setUint16(32, 2, true); b.setUint16(34, 16, true); str(36, 'data'); b.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++) {
+      const t = i / rate, k = t % 0.28, on = k < 0.22;
+      const env = on ? Math.min(1, k / 0.01, (0.22 - k) / 0.03) : 0;
+      b.setInt16(44 + i * 2, Math.round(Math.sin(2 * Math.PI * 880 * t) * env * 0.6 * 32767), true);
+    }
+    return URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
+  },
   audio() {   // muss aus einem Tipp heraus entsperrt werden (iOS)
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // Ton auch bei Stummschalter (Safari 17+)
+    try {
+      if (!this.el) { this.el = new Audio(this.wav()); this.el.preload = 'auto'; this.el.setAttribute('playsinline', ''); }
+      if (!this._unlocked) {
+        const a = this.el; a.muted = true;
+        const p = a.play(); if (p && p.then) p.then(() => { a.pause(); a.currentTime = 0; a.muted = false; this._unlocked = true; }).catch(() => { a.muted = false; });
+        else { a.muted = false; }
+      }
+    } catch (e) {}
     try {
       if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (this.ctx.state === 'suspended') this.ctx.resume();
+      if (this.ctx.state !== 'running') this.ctx.resume();
+      const buf = this.ctx.createBuffer(1, 1, 22050), src = this.ctx.createBufferSource();   // stiller Ton entsperrt Web Audio
+      src.buffer = buf; src.connect(this.ctx.destination); src.start(0);
     } catch (e) {}
   },
   beep() {
+    try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
+    const a = this.el;
+    if (a) {
+      try { a.muted = false; a.currentTime = 0; const p = a.play(); if (p && p.catch) p.catch(() => this.webBeep()); return; } catch (e) {}
+    }
+    this.webBeep();
+  },
+  webBeep() {
     const c = this.ctx; if (!c) return;
+    try { if (c.state !== 'running') c.resume(); } catch (e) {}
     try {
       [0, 0.28, 0.56].forEach(t => {
         const o = c.createOscillator(), g = c.createGain();
@@ -3926,22 +4313,30 @@ const Timers = {
         o.start(s); o.stop(s + 0.24);
       });
     } catch (e) {}
-    try { navigator.vibrate && navigator.vibrate([200, 100, 200]); } catch (e) {}
+  },
+  /* Mitteilung vom Pi, falls die App im Hintergrund oder das Display aus ist */
+  push(t) {
+    if (typeof Push === 'undefined') return;
+    const tag = 'timer-' + t.id;
+    if (t.done || t.left != null) { Push.cancel(tag); return; }
+    const r = recipeById(t.recipeId);
+    Push.schedule(tag, t.end, 'timer', 'Timer abgelaufen', (r ? r.name + ' · ' : '') + 'Schritt ' + (t.step + 1) + (t.label ? ' · ' + String(t.label).split('|')[0] : ''), 'essensplanung.html');
   },
   start(recipeId, step, sec, label) {
     this.audio();
     if (this.list.some(t => t.recipeId === recipeId && t.step === step && t.sec === sec && !t.done)) return notify('Dieser Timer läuft schon.');
-    this.list.push({ id: EP.uuid(), recipeId, step, sec, label, end: Date.now() + sec * 1000, left: null, done: false, rang: 0 });
-    this.run();
+    const t = { id: EP.uuid(), recipeId, step, sec, label, end: Date.now() + sec * 1000, left: null, done: false, rang: 0 };
+    this.list.push(t);
+    this.run(); this.push(t);
   },
   toggle(id) {
     const t = this.list.find(x => x.id === id); if (!t || t.done) return;
     this.audio();
     if (t.left != null) { t.end = Date.now() + t.left; t.left = null; } else { t.left = t.end - Date.now(); }
-    this.render();
+    this.render(); this.push(t);
   },
-  plus(id) { const t = this.list.find(x => x.id === id); if (!t) return; if (t.done) { t.done = false; t.rang = 0; t.end = Date.now(); } if (t.left != null) t.left += 60000; else t.end += 60000; this.run(); },
-  stop(id) { this.list = this.list.filter(x => x.id !== id); this.run(); },
+  plus(id) { const t = this.list.find(x => x.id === id); if (!t) return; this.audio(); if (t.done) { t.done = false; t.rang = 0; t.end = Date.now(); } if (t.left != null) t.left += 60000; else t.end += 60000; this.run(); this.push(t); },
+  stop(id) { const t = this.list.find(x => x.id === id); this.list = this.list.filter(x => x.id !== id); this.run(); if (t && !t.done && typeof Push !== 'undefined') Push.cancel('timer-' + t.id); },
   run() { if (!this.iv && this.list.length) this.iv = setInterval(() => this.tick(), 500); if (!this.list.length && this.iv) { clearInterval(this.iv); this.iv = null; } this.render(); },
   tick() {
     const now = Date.now();
@@ -3980,6 +4375,77 @@ const Timers = {
     });
   },
 };
+
+/* ---------- Mitteilungen (Web-Push über den Pi) ---------- */
+const Notes = {
+  /* geteilter Haushalt als Konto-Ding – nur mit Pi-Abgleich */
+  item() { return Sync.isPB && Auth.token ? { app: 'essen', id: Sync.repo.pb, secret: Auth.token } : null; },
+  who() { return typeof Konto !== 'undefined' && Konto.loggedIn() ? Konto.user() : ''; },
+  /* Einkaufsliste: mehrere Artikel kurz hintereinander → eine Mitteilung */
+  extras: [], exTimer: null,
+  extraAdded(t) {
+    if (typeof Push === 'undefined' || !this.item()) return;
+    this.extras.push(t); clearTimeout(this.exTimer);
+    this.exTimer = setTimeout(() => this.flushExtras(), 15000);
+  },
+  flushExtras() {
+    clearTimeout(this.exTimer); this.exTimer = null;
+    const list = this.extras.splice(0), it = this.item(); if (!list.length || !it) return;
+    const what = list.length === 1 ? `„${list[0]}“` : list.length <= 4 ? list.map(x => `„${x}“`).join(', ') : `${list.length} Artikel`, w = this.who();
+    Push.notify(it, 'einkauf', 'Einkaufsliste', `${w ? w + ' hat ' : ''}${what} hinzugefügt`.replace(/^./, c => c.toUpperCase()), 'essensplanung.html');
+  },
+  /* Wochenplan übernommen */
+  planCommitted(ws) {
+    const it = this.item(); if (typeof Push === 'undefined' || !it) return;
+    const days = EP.weekDays(ws), m = planByDate(db), names = [];
+    days.forEach(d => { const p = m.get(d); const r = p && p.type === 'COOK' && (p.dayIndex || 1) === 1 && recipeById(p.recipeId); if (r) names.push(EP.weekday(d) + ' ' + r.name); });
+    const w = this.who();
+    Push.notify(it, 'plan', 'Wochenplan ab ' + EP.fmtShort(ws), (w ? w + ' hat geplant: ' : '') + (names.join(' · ') || 'Neue Woche geplant'), 'essensplanung.html');
+  },
+  /* Kocherinnerung: die nächsten 7 Tage zur eingestellten Uhrzeit auf diesem Gerät */
+  remindText(d) {
+    const parts = [], main = planByDate(db).get(d);
+    const name = p => p && p.type === 'COOK' && (p.dayIndex || 1) === 1 && recipeById(p.recipeId) ? recipeById(p.recipeId).name : '';
+    if (name(main)) parts.push(name(main));
+    [['LUNCH', 'Mittag'], ['CAKE', 'Kuchen']].forEach(([l, lbl]) => { const n = name(laneAt(db, d, l)); if (n) parts.push(lbl + ': ' + n); });
+    return parts.join(' · ');
+  },
+  remindPlan() {
+    const out = {}; if (!db) return out;
+    const p = Push.prefs(), [hh, mm] = String(p.remindTime || '16:30').split(':').map(Number), now = Date.now();
+    for (let i = 0; i < 7; i++) {
+      const d = EP.addDays(EP.todayISO(), i), txt = this.remindText(d); if (!txt) continue;
+      const at = EP.parseISO(d); at.setHours(hh || 0, mm || 0, 0, 0);
+      if (at.getTime() > now + 60000) out['remind-' + d] = { at: at.getTime(), txt };
+    }
+    return out;
+  },
+  rTimer: null,
+  later() { clearTimeout(this.rTimer); this.rTimer = setTimeout(() => this.syncRemind(), 3000); },
+  rRun: null, rAgain: false,
+  syncRemind() {   // nie zwei Abgleiche gleichzeitig; Wünsche währenddessen werden danach nachgeholt
+    if (this.rRun) { this.rAgain = true; return this.rRun; }
+    this.rRun = this._syncRemind().catch(() => {}).finally(() => { this.rRun = null; if (this.rAgain) { this.rAgain = false; this.syncRemind(); } });
+    return this.rRun;
+  },
+  async _syncRemind() {
+    if (typeof Push === 'undefined') return;
+    let old = {}; try { old = JSON.parse(localStorage.getItem('ep-remind') || '{}'); } catch (e) {}
+    const want = Push.enabled() && Push.prefs().remind ? this.remindPlan() : {}, next = {};
+    for (const tag of Object.keys(old)) {
+      if (want[tag]) continue;
+      if (old[tag].at > Date.now() && !(await Push.cancel(tag))) next[tag] = old[tag];   // später erneut versuchen
+    }
+    for (const [tag, v] of Object.entries(want)) {
+      const o = old[tag];
+      if (o && o.at === v.at && o.txt === v.txt) { next[tag] = o; continue; }
+      if (await Push.schedule(tag, v.at, 'remind', 'Heute kochen', v.txt, 'essensplanung.html')) next[tag] = v;
+    }
+    try { localStorage.setItem('ep-remind', JSON.stringify(next)); } catch (e) {}
+  },
+};
+if (typeof Push !== 'undefined') Push.onChange(() => Notes.later());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Notes.later(); else if (Notes.exTimer) Notes.flushExtras(); });
 
 /* Kochfortschritt (abgehakte Zutaten/Schritte, Portionen) 12 Stunden je Rezept merken */
 const PROG_KEY = 'ep_cookprog';
@@ -4269,6 +4735,7 @@ const SI = {
   up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7 9l5-5 5 5M5 20h14"/></svg>',
   book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.5h11a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg>',
   key: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l2 2M14 9l2 2"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
   out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M10 16l-4-4 4-4M6 12h10"/></svg>',
 };
 const CHEV = '<svg class="gchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>';
@@ -4303,6 +4770,7 @@ function vSettings() {
       gRow({ icon: 'leaf', color: '#34C759', label: 'Zutaten', value: EP.live(db.ingredients).length, act: 'to', arg: 'ingredients' }),
       gRow({ icon: 'cycle', color: '#5856D6', label: 'Rotation ansehen', act: 'to', arg: 'rotation' }),
       gRow({ icon: 'sync', color: '#0A84FF', label: 'Geräteabgleich', value: syncVal, act: 'to', arg: 'sync' }),
+      gRow({ icon: 'bell', color: '#FF3B30', label: 'Mitteilungen', sub: 'Kochtimer, Kocherinnerung, Einkaufsliste …', value: typeof Push !== 'undefined' && Push.enabled() ? 'An' : 'Aus', act: 'mitteilungen' }),
     ])
     + gGroup('Datensicherung', [
       gRow({ icon: 'image', color: '#FF2D55', label: 'Bilder mit sichern', sub: 'Größere Datei', right: `<label class="switch"><input type="checkbox" id="s-img" aria-label="Bilder mit sichern"><i></i></label>` }),
@@ -4337,6 +4805,7 @@ function addExtraItem(t) {
   shopState(shopRange.from, shopRange.to).extraItems.push({ text: t, checked: false }); EP.touch(db.shopping);
   const n = EP.normExtra(t), rec = (db.settings.recentExtras || []).filter(x => EP.normExtra(x) !== n);
   db.settings.recentExtras = [t].concat(rec).slice(0, 12); EP.touch(db.settings);
+  Notes.extraAdded(t);
 }
 /* Kategorie eines Zusatzartikels ändern – wird für diesen Begriff gemerkt */
 function extraCatSheet(i) {
@@ -4377,6 +4846,18 @@ function vSources() {
     }).join('') : '<p class="empty">Noch keine Zutaten.</p>'}`;
 }
 
+/* ---------- Einladungen für den Haushalt ---------- */
+async function renderInvites() {
+  const box = $('#inv-list'); if (!box || !Sync.isPB) return;
+  let list = [];
+  try { list = (await Konto.sentList('essen')).filter(x => x.key === 'essen:' + Sync.repo.pb); } catch (e) {}
+  if (!$('#inv-list')) return;
+  const st = x => x.status === 'offen' ? `offen bis ${EP.fmtShort(x.expiresAt.slice(0, 10))}` : x.status === 'abgelaufen' ? 'abgelaufen' : x.status === 'erledigt' ? 'angenommen oder abgelehnt' : 'Stand unbekannt';
+  box.innerHTML = list.length ? `<h3>Einladungen</h3><div class="glist">${list.map(x => `<div class="gi"><span class="gic" style="--c:${x.status === 'offen' ? '#0A84FF' : '#8E8E93'}">${SI.people}</span>
+    <span class="gbody"><span class="glbl">${esc(x.to)}<small>${st(x)}</small></span>
+    ${x.status === 'offen' ? `<button class="btn small danger" data-act="invw" data-arg="${x.iid}">Zurückziehen</button>` : `<button class="btn small quiet" data-act="invf" data-arg="${x.iid}">Entfernen</button>`}</span></div>`).join('')}</div>` : '';
+}
+
 /* ---------- Geräteabgleich ---------- */
 let pendingJoin = '';
 const pwField = id => `<label class="field"><span>Dein Haushaltspasswort</span><input class="in" id="${id}" type="password" autocomplete="current-password"></label>`;
@@ -4397,7 +4878,12 @@ function vSync() {
     <p class="sub">Öffne diesen Link auf dem anderen Gerät oder füge ihn dort unter „Mit bestehendem Haushalt verbinden“ ein. Danach wird das Haushaltspasswort abgefragt.</p>
     <div class="box stack"><input class="in" id="pb-link" readonly value="${esc(PB.link(r.pb, Auth.token))}" aria-label="Verbindungslink">
       <div class="btns${navigator.share ? ' two' : ''}"><button class="btn primary" data-act="pbcopy">Link kopieren</button>${navigator.share ? '<button class="btn" data-act="pbshare">Senden …</button>' : ''}</div></div>
-    <p class="hint">Wer den Link hat, kann eure Daten entschlüsseln. Gib ihn nur an Personen im Haushalt weiter.</p>`;
+    <p class="hint">Wer den Link hat, kann eure Daten entschlüsseln. Gib ihn nur an Personen im Haushalt weiter.</p>
+    ${Konto.loggedIn() ? `<h3>Per Benutzername einladen</h3>
+    <div class="box stack"><input class="in" id="inv-n" placeholder="Benutzername" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" enterkeyhint="send" aria-label="Benutzername">
+      <p class="hint" id="inv-s" style="margin:0">Die Person sieht die Einladung im Hauptmenü und muss nur bestätigen. Gültig ${Konto.inviteDays} Tage.</p>
+      <div class="btns"><button class="btn primary" data-act="invsend">Einladen</button></div></div>
+    <div id="inv-list"></div>` : `<p class="hint">Mit Konto kannst du andere per Benutzername einladen – <a href="index.html#konto">im Hauptmenü anmelden</a>.</p>`}`;
   if (on) return `<div class="box"><p><b>Verbunden</b> mit dem GitHub-Repository ${esc(r.owner)}/${esc(r.name)}.</p>${status}</div>
     <h3>Auf deinen Pi umziehen</h3>
     <p class="sub">Die Daten liegen dann verschlüsselt auf deinem Pi statt bei GitHub. Tokens werden nicht mehr gebraucht, die Bilder ziehen mit um.</p>
@@ -4549,7 +5035,7 @@ const ACT = {
     startDraft(weekStartISO); rerender();
   },
   discard: () => { draft = null; rerender(); notify('Entwurf verworfen.'); },
-  commit: () => { commitDraft(); change('Plan übernommen.'); Sync.run(); },
+  commit: async () => { const ws = draft && draft.ws; commitDraft(); await change('Plan übernommen.'); try { await Sync.run(); } catch (e) {} if (ws) Notes.planCommitted(ws); },
   toshop: () => { shopRange = { from: weekStartISO, to: EP.addDays(weekStartISO, 6) }; go('shop'); },
   /* Einkauf */
   addextra: () => {
@@ -4648,11 +5134,27 @@ const ACT = {
   import: () => $('#s-file').click(),
   chpw: () => changePasswordSheet(),
   konto: () => { location.href = 'index.html#konto'; },
+  mitteilungen: () => { location.href = 'index.html#mitteilungen'; },
   logout: () => confirmSheet('Abmelden?', 'Die Daten bleiben auf diesem Gerät gespeichert. Zum Öffnen brauchst du wieder dein Passwort.', 'Abmelden', 'Abbrechen', () => { Auth.logout(); location.reload(); }),
   syncsetup: () => setupSync(),
   pbcreate: () => pbCreate($('#pb-pw1').value),
   pbmigrate: () => pbMigrate(),
   pbjoinhere: () => pbJoinHere(),
+  invsend: async () => {
+    const inp = $('#inv-n'), name = inp.value.trim(); if (!name) return notify('Bitte einen Benutzernamen eingeben.');
+    const b = $('[data-act=invsend]'); b.disabled = true; b.textContent = 'Sende …';
+    try {
+      const r = await Konto.invite(name, 'essen:' + Sync.repo.pb, { app: 'essen', id: Sync.repo.pb, secret: Auth.token, label: db.household.name });
+      inp.value = ''; $('#inv-s').textContent = '';
+      notify(`Einladung an ${r.to} gesendet – gültig bis ${EP.weekday(r.expiresAt.slice(0, 10))} ${EP.fmtShort(r.expiresAt.slice(0, 10))}`);
+      renderInvites();
+    } catch (e) { notify(e.offline ? 'Keine Verbindung zum Server.' : e.message); }
+    finally { b.disabled = false; b.textContent = 'Einladen'; }
+  },
+  invw: iid => confirmSheet('Einladung zurückziehen?', 'Die Person sieht die Einladung danach nicht mehr.', 'Zurückziehen', 'Abbrechen', async () => {
+    try { await Konto.withdraw(iid); notify('Zurückgezogen.'); } catch (e) { notify(e.message); } renderInvites();
+  }, true),
+  invf: iid => { Konto.forget(iid); renderInvites(); },
   pbcopy: async () => { const l = $('#pb-link'); try { await navigator.clipboard.writeText(l.value); notify('Link kopiert.'); } catch (e) { l.focus(); l.select(); notify('Link markiert – jetzt kopieren.'); } },
   pbshare: () => navigator.share({ title: 'Essensplanung verbinden', url: $('#pb-link').value }).catch(() => {}),
   syncnow: () => Sync.run({ force: true }).then(rerender),
@@ -4692,6 +5194,24 @@ function changePasswordSheet() {
 
 /* Bindungen je Ansicht (Eingabefelder) */
 const BIND = {
+  sync: m => {
+    const inp = $('#inv-n', m); if (!inp) return;
+    renderInvites();
+    let t = null;
+    inp.oninput = () => {
+      clearTimeout(t); const v = inp.value.trim(), h = $('#inv-s', m);
+      if (!v) { h.textContent = ''; return; }
+      t = setTimeout(async () => {
+        try {
+          const p = await Konto.findUser(v);
+          if (inp.value.trim() !== v) return;
+          h.textContent = !p ? 'Kein Konto mit diesem Namen' : p.user.toLowerCase() === Konto.user().toLowerCase() ? 'Das bist du selbst' : `✓ ${p.user} gefunden`;
+          h.classList.toggle('warn', !p);
+        } catch (e) { h.textContent = ''; }
+      }, 500);
+    };
+    inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); ACT.invsend(); } };
+  },
   sources: m => { $$('details[data-cat]', m).forEach(d => d.addEventListener('toggle', () => { d.open ? srcOpen.add(d.dataset.cat) : srcOpen.delete(d.dataset.cat); })); },
   shop: m => {
     const setRange = () => {
@@ -4926,6 +5446,8 @@ async function kontoEnsure() {
       await Store.set('imgq', Images.allKeys()); await Store.set('imgdel', []);
       Sync.run({ force: true }); Sync.startPolling();
     }
+    const other = Konto.items('essen').filter(x => x.id !== (Sync.isPB && Sync.repo.pb));
+    if (other.length && Sync.isPB && !Konto.items('essen').some(x => x.id === Sync.repo.pb)) { location.reload(); return; }   // Wechsel → beim Neustart übernehmen
     if (Sync.isPB && Auth.token) Konto.put('essen:' + Sync.repo.pb, { app: 'essen', id: Sync.repo.pb, secret: Auth.token, label: db.household.name });
   } catch (e) { /* offline – beim nächsten Start erneut */ }
 }
@@ -4936,6 +5458,9 @@ async function kontoBoot() {
   if (!it) { try { await Konto.sync(); } catch (e) {} it = kontoItem(); }
   if (db && db.household) {
     if (it && Sync.isPB && it.id === Sync.repo.pb) { await Auth.startSession(it.secret); enterApp(); return true; }
+    if (it && Sync.isPB && it.id !== Sync.repo.pb) {   // im Konto wurde zu einem anderen Haushalt gewechselt (Einladung angenommen)
+      try { await kontoJoin(it, true, true); notify(`Du bist jetzt im Haushalt „${it.label || 'neu'}“. Deine Rezepte wurden übernommen.`); return true; } catch (e) { /* offline: alter Stand */ }
+    }
     if (it && !Sync.enabled()) {   // lokaler Haushalt ohne Abgleich, im Konto gibt es schon einen: dorthin verbinden
       try { await kontoJoin(it, true); return true; } catch (e) { return false; }
     }
@@ -4945,9 +5470,10 @@ async function kontoBoot() {
   if (it) { try { await kontoJoin(it, false); return true; } catch (e) { notify(e.message || 'Haushalt aus dem Konto nicht erreichbar.'); } }
   return false;
 }
-async function kontoJoin(it, mergeLocal) {
+async function kontoJoin(it, mergeLocal, keepRemoteName) {
   const f = await PB.fetchHousehold(it.id, it.secret);
   db = mergeLocal && db ? repairDb(EP.mergeDb(db, f.remote)) : f.remote;
+  if (mergeLocal && f.remote.household) db.household = f.remote.household;   // Name/Passwort des beigetretenen Haushalts gelten
   if (mergeLocal) { EP.normalizePlan(db); }
   Sync.sha = f.updated; Sync.remoteRev = f.rev; Sync.dirty = !!mergeLocal; Sync.lastSync = Date.now();
   await Store.set('db', db); await Sync.saveMeta();

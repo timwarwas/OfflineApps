@@ -236,6 +236,23 @@ dialog::backdrop{background:rgba(30,32,28,.55)}
 .kontorow .ktxt small{display:block;font-size:12px;color:var(--ink-3)}
 .kontorow .kval{flex:none;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);font-size:14px}
 .kontorow .kchev{flex:none;color:var(--ink-3);font-size:22px;line-height:1}
+.pushrow{border-top:1px solid var(--rule-2)}
+.sharebox{position:static}
+.invform{display:flex;gap:8px;align-items:stretch;margin-top:8px}
+.invform input{flex:1;min-width:0;min-height:44px;font-size:16px;padding:0 10px}
+.invform .btn{flex:none;min-height:44px;padding:0 16px}
+.invcheck,.invnote{font-size:13px;margin-top:6px;color:var(--ink-3);overflow-wrap:anywhere}
+.invcheck:empty,.invnote:empty{display:none}
+.invcheck.good,.invnote.good{color:#1F7A3A}
+.invcheck.bad,.invnote.bad{color:var(--signal)}
+.invlist .lbl{margin-top:14px}
+.invrow{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--rule-2)}
+.invrow .invtxt{flex:1;min-width:0}
+.invrow .invtxt b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.invrow .invtxt small{display:block;font-size:12px;color:var(--ink-3)}
+.invrow .invtxt small.offen{color:var(--ink-2)}
+.invrow .btn{flex:none;min-height:44px;padding:0 12px}
+.invlogin{display:flex;align-items:center;min-height:44px;color:var(--ink);font-size:14px}
 </style>
 <style id="pagestyle">@page{size:594mm 420mm;margin:0}</style>
 </head>
@@ -261,7 +278,10 @@ dialog::backdrop{background:rgba(30,32,28,.55)}
    Face ID: optional über einen Passkey mit PRF-Erweiterung (iOS 18+).
    Passwort vergessen: optional Sicherheitsfrage. Aus Benutzername + Antwort wird (PBKDF2) ein zweiter
    Schlüssel abgeleitet, der einen Datensatz mit dem Hauptschlüssel öffnet. Die Frage selbst liegt
-   in einem Datensatz, der nur mit dem Benutzernamen lesbar ist. */
+   in einem Datensatz, der nur mit dem Benutzernamen lesbar ist.
+   Einladungen: Jedes Konto veröffentlicht ein Profil (öffentliche Schlüssel ECDH + ECDSA) und hat ein Postfach,
+   beide auffindbar über den Benutzernamen. Eine Einladung (Verbindungslink einer Reise/eines Haushalts …) wird für
+   den Empfänger verschlüsselt, vom Absender signiert, ins Postfach gelegt und läuft nach einigen Tagen ab. */
 const Konto = (() => {
   const DEFAULT = 'https://kostenpi.tail281e3e.ts.net';
   const ITER = 310000;
@@ -347,12 +367,13 @@ const Konto = (() => {
   const fail = r => { const e = new Error('Server antwortet mit ' + r.status); e.status = r.status; return e; };
 
   /* ---------- Schlüsselbund zusammenführen ---------- */
-  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {}, recovery: null }; }
+  function emptyVault(user) { return { v: 1, user, items: {}, deleted: {}, passkeys: {}, recovery: null, keys: null, sent: {} }; }
   function clean(v, user) {
     v = v && typeof v === 'object' ? v : {};
     return { v: 1, user: v.user || user || '', items: v.items && typeof v.items === 'object' ? v.items : {},
       deleted: v.deleted && typeof v.deleted === 'object' ? v.deleted : {}, passkeys: v.passkeys && typeof v.passkeys === 'object' ? v.passkeys : {},
-      recovery: v.recovery && typeof v.recovery === 'object' ? v.recovery : null };
+      recovery: v.recovery && typeof v.recovery === 'object' ? v.recovery : null,
+      keys: v.keys && typeof v.keys === 'object' ? v.keys : null, sent: v.sent && typeof v.sent === 'object' ? v.sent : {} };
   }
   function merge(a, b) {
     a = clean(a); b = clean(b);
@@ -368,6 +389,8 @@ const Konto = (() => {
     for (const k in out.passkeys) if (out.deleted['pk:' + k]) delete out.passkeys[k];
     out.recovery = [a.recovery, b.recovery].filter(Boolean).sort((x, y) => (y.createdAt || '').localeCompare(x.createdAt || ''))[0] || null;
     if (out.recovery && out.deleted.recovery && out.deleted.recovery >= out.recovery.createdAt) out.recovery = null;
+    out.keys = [a.keys, b.keys].filter(Boolean).sort((x, y) => (x.createdAt || '').localeCompare(y.createdAt || '') || (x.encPub > y.encPub ? 1 : -1))[0] || null;   // älteste gewinnt
+    for (const src of [a.sent, b.sent]) for (const k in src) if (!out.deleted['sent:' + k]) out.sent[k] = src[k];
     return out;
   }
   const canon = v => { const s = x => Array.isArray(x) ? '[' + x.map(s).join(',') + ']' : x && typeof x === 'object' ? '{' + Object.keys(x).sort().map(k => JSON.stringify(k) + ':' + s(x[k])).join(',') + '}' : JSON.stringify(x); return s(v); };
@@ -435,6 +458,7 @@ const Konto = (() => {
     ls.set('konto', { user: f.vault.user || user, master, at: nowIso() });
     ls.set('konto-cache', f.vault);
     emit();
+    ensureProfile().catch(() => {});
     return { ok: true };
   }
   async function register(user, pw) {
@@ -448,9 +472,10 @@ const Konto = (() => {
     ls.set('konto', { user, master, at: nowIso() });
     ls.set('konto-cache', emptyVault(user));
     emit();
+    await ensureProfile().catch(() => {});
     return { ok: true };
   }
-  function logout() { ['konto', 'konto-cache', 'konto-state'].forEach(ls.del); keyCache.clear(); emit(); }
+  function logout() { ['konto', 'konto-cache', 'konto-state', 'konto-inbox'].forEach(ls.del); keyCache.clear(); emit(); }
   let recovered = false;   // gerade über die Sicherheitsfrage angemeldet → neues Passwort ohne altes erlaubt
   async function changePassword(oldPw, newPw) {
     const s = session(); if (!s) throw new Error('Nicht angemeldet.');
@@ -601,13 +626,356 @@ const Konto = (() => {
     return { ok: true };
   }
 
+  /* ---------- Profil, Postfach, Einladungen ---------- */
+  const INVITE_DAYS = 7;
+  async function nameKeys(user, salt) {
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', te(salt + '|' + normUser(user))));
+    return keys(b64e(h), salt);
+  }
+  const profileKeys = user => nameKeys(user, 'konto-profil-v1');
+  const inboxKeys = user => nameKeys(user, 'konto-postfach-v1');
+  const ECDH = { name: 'ECDH', namedCurve: 'P-256' }, ECDSA = { name: 'ECDSA', namedCurve: 'P-256' };
+  async function readRec(k) {
+    const r = await api('GET', '/' + k.id, k.auth);
+    if (r.status === 404) return null;
+    if (r.status !== 200 || !r.json) throw fail(r);
+    return { data: await decrypt(k.enc, r.json.data), rev: +r.json.rev || 0 };
+  }
+  /* Schlüsselpaare anlegen (einmal pro Konto) und Profil + Postfach veröffentlichen */
+  async function ensureProfile() {
+    const s = session(); if (!s) return null;
+    let v = cache();
+    if (!v.keys) {
+      const e = await crypto.subtle.generateKey(ECDH, true, ['deriveBits']);
+      const g = await crypto.subtle.generateKey(ECDSA, true, ['sign', 'verify']);
+      v.keys = { createdAt: nowIso(), encPub: await crypto.subtle.exportKey('jwk', e.publicKey), encPriv: await crypto.subtle.exportKey('jwk', e.privateKey),
+        sigPub: await crypto.subtle.exportKey('jwk', g.publicKey), sigPriv: await crypto.subtle.exportKey('jwk', g.privateKey) };
+      ls.set('konto-cache', v);
+      v = await sync();
+    }
+    const pk = await profileKeys(s.user), cur = await readRec(pk);
+    const prof = { user: s.user, encPub: v.keys.encPub, sigPub: v.keys.sigPub };
+    if (!cur || canon(cur.data) !== canon(prof)) await upsert(pk, prof);
+    const ik = await inboxKeys(s.user);
+    if (!(await readRec(ik))) await upsert(ik, { entries: {} });
+    return prof;
+  }
+  /* Gibt es ein Konto mit genau diesem Namen? → Profil (mit richtiger Schreibweise) oder null */
+  async function findUser(name) { const p = await readRec(await profileKeys(String(name || '').trim())); return p ? p.data : null; }
+  async function sealFor(prof, payload) {
+    const eph = await crypto.subtle.generateKey(ECDH, true, ['deriveBits']);
+    const pub = await crypto.subtle.importKey('jwk', prof.encPub, ECDH, false, []);
+    const bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, eph.privateKey, 256);
+    const key = (await keys(b64e(new Uint8Array(bits)), 'konto-einladung-v1')).enc;
+    return { epk: await crypto.subtle.exportKey('jwk', eph.publicKey), box: await encrypt(key, payload) };
+  }
+  async function openSealed(sealed, encPriv) {
+    const priv = await crypto.subtle.importKey('jwk', encPriv, ECDH, false, ['deriveBits']);
+    const pub = await crypto.subtle.importKey('jwk', sealed.epk, ECDH, false, []);
+    const bits = await crypto.subtle.deriveBits({ name: 'ECDH', public: pub }, priv, 256);
+    return decrypt((await keys(b64e(new Uint8Array(bits)), 'konto-einladung-v1')).enc, sealed.box);
+  }
+  async function signBody(body, sigPriv) {
+    const k = await crypto.subtle.importKey('jwk', sigPriv, ECDSA, false, ['sign']);
+    return b64e(new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, k, te(canon(body)))));
+  }
+  async function verifyBody(body, sig, sigPub) {
+    try { const k = await crypto.subtle.importKey('jwk', sigPub, ECDSA, false, ['verify']); return await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, k, b64d(sig), te(canon(body))); }
+    catch (e) { return false; }
+  }
+  async function editInbox(user, fn) {
+    const ik = await inboxKeys(user);
+    for (let i = 0; i < 3; i++) {
+      const cur = await readRec(ik);
+      if (!cur) throw new Error('Postfach nicht gefunden');
+      const entries = Object.assign({}, cur.data.entries || {});
+      const now = nowIso();
+      for (const k in entries) if ((entries[k].expiresAt || '') < now) delete entries[k];   // Abgelaufenes aufräumen
+      if (fn(entries) === false) return;
+      const u = await api('PATCH', '/' + ik.id, ik.auth, { data: await encrypt(ik.enc, { entries }), rev: cur.rev + 1 });
+      if (u.status === 200) return;
+    }
+    throw new Error('Postfach gerade nicht beschreibbar');
+  }
+  /* Einladung senden: item = {app, id, secret, label} (wie im Schlüsselbund) */
+  async function invite(toName, key, item, days) {
+    const s = session(); if (!s) throw new Error('Bitte zuerst anmelden.');
+    await ensureProfile();
+    const prof = await findUser(toName);
+    if (!prof) { const e = new Error(`Kein Konto „${String(toName).trim()}“ gefunden. Stimmt die Schreibweise?`); e.notFound = true; throw e; }
+    if (normUser(prof.user) === normUser(s.user)) throw new Error('Du kannst dich nicht selbst einladen.');
+    const iid = b64e(crypto.getRandomValues(new Uint8Array(12)));
+    const createdAt = nowIso(), expiresAt = new Date(Date.now() + (days || INVITE_DAYS) * 864e5).toISOString();
+    const body = { iid, from: s.user, to: prof.user, key, item, createdAt, expiresAt };
+    const sig = await signBody(body, cache().keys.sigPriv);
+    const sealed = await sealFor(prof, { body, sig });
+    await editInbox(prof.user, e => { e[iid] = { sealed, expiresAt }; });
+    const v = cache(); v.sent[iid] = { to: prof.user, app: item.app, label: item.label || '', key, createdAt, expiresAt };
+    ls.set('konto-cache', v); sync().catch(() => {});
+    return { iid, to: prof.user, expiresAt };
+  }
+  async function withdraw(iid) {
+    const v = cache(), x = v.sent[iid]; if (!x) return false;
+    try { await editInbox(x.to, e => { if (!e[iid]) return false; delete e[iid]; }); } catch (e) { if (!/Postfach nicht gefunden/.test(e.message)) throw e; }
+    delete v.sent[iid]; v.deleted['sent:' + iid] = nowIso(); ls.set('konto-cache', v); sync().catch(() => {});
+    return true;
+  }
+  /* gesendete Einladungen mit Stand: offen | abgelaufen | erledigt (angenommen/abgelehnt) */
+  async function sentList(app) {
+    const v = cache(), now = nowIso(), out = [];
+    const byUser = {};
+    for (const iid in v.sent) { const x = v.sent[iid]; if (app && x.app !== app) continue; (byUser[x.to] = byUser[x.to] || []).push(Object.assign({ iid }, x)); }
+    for (const u in byUser) {
+      let entries = null;
+      try { const r = await readRec(await inboxKeys(u)); entries = r ? r.data.entries || {} : {}; } catch (e) { entries = null; }
+      byUser[u].forEach(x => out.push(Object.assign(x, { status: x.expiresAt < now ? 'abgelaufen' : entries === null ? 'unbekannt' : entries[x.iid] ? 'offen' : 'erledigt' })));
+    }
+    return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  function forget(iid) { const v = cache(); if (!v.sent[iid]) return; delete v.sent[iid]; v.deleted['sent:' + iid] = nowIso(); ls.set('konto-cache', v); sync().catch(() => {}); }
+  /* eigene Einladungen lesen (geprüft: Signatur des Absenders, nicht abgelaufen) */
+  async function inbox() {
+    const s = session(); if (!s) return [];
+    await ensureProfile();
+    const r = await readRec(await inboxKeys(s.user)); if (!r) return [];
+    const now = nowIso(), keysV = cache().keys, out = [];
+    for (const iid in r.data.entries || {}) {
+      const e = r.data.entries[iid]; if ((e.expiresAt || '') < now) continue;
+      try {
+        const { body, sig } = await openSealed(e.sealed, keysV.encPriv);
+        if (body.iid !== iid || normUser(body.to) !== normUser(s.user) || body.expiresAt < now) continue;
+        const sender = await findUser(body.from);
+        if (!sender || !(await verifyBody(body, sig, sender.sigPub))) continue;
+        out.push(Object.assign({}, body, { from: sender.user }));
+      } catch (err) { /* nicht für uns / beschädigt */ }
+    }
+    ls.set('konto-inbox', out.map(x => ({ iid: x.iid, from: x.from, app: x.item.app, label: x.item.label, expiresAt: x.expiresAt })));
+    emit();
+    return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  async function accept(inv) {
+    put(inv.key, Object.assign({}, inv.item, { invitedBy: inv.from }));
+    await editInbox(user(), e => { if (!e[inv.iid]) return false; delete e[inv.iid]; });
+    await sync().catch(() => {});
+    inbox().catch(() => {});
+  }
+  async function decline(inv) { await editInbox(user(), e => { if (!e[inv.iid]) return false; delete e[inv.iid]; }); inbox().catch(() => {}); }
+  const user = () => (session() || {}).user || '';
+
   return {
-    session, user: () => (session() || {}).user || '', loggedIn: () => !!session(), state: () => ls.get('konto-state') || {},
+    session, user, loggedIn: () => !!session(), state: () => ls.get('konto-state') || {},
     login, register, logout, changePassword, sync, items, put, remove, onChange: fn => listeners.add(fn),
     passkeySupported, enablePasskey, loginWithPasskey, hasPasskey: () => Object.keys(cache().passkeys).length > 0,
-    setRecovery, removeRecovery, getQuestion, recover, hasRecovery: () => !!cache().recovery, recoveryQuestion: () => (cache().recovery || {}).question || '',
+    setRecovery, removeRecovery, getQuestion, recover,
+    ensureProfile, findUser, invite, withdraw, sentList, forget, inbox, accept, decline, inviteDays: INVITE_DAYS,
+    inboxCount: () => (ls.get('konto-inbox') || []).filter(x => x.expiresAt >= nowIso()).length, hasRecovery: () => !!cache().recovery, recoveryQuestion: () => (cache().recovery || {}).question || '',
     _merge: merge,
+    _forge: async (prof, body, sig) => { const sealed = await sealFor(prof, { body, sig }); await editInbox(prof.user, e => { e[body.iid] = { sealed, expiresAt: body.expiresAt }; }); },
   };
+})();
+</script>
+<script>
+/* ==== Mitteilungen der Anwendungssammlung (gleicher Code in allen Apps) ====
+   Web-Push über den Push-Dienst auf dem Pi (…/push). Funktioniert auf dem iPhone nur in einer App
+   vom Home-Bildschirm (ab iOS 16.4). Kanäle werden aus den Geheimnissen der Apps abgeleitet, Texte
+   sind mit einem Kanalschlüssel verschlüsselt – der Pi sieht weder Namen noch Inhalte. Der Service
+   Worker (sw.js) entschlüsselt sie mit den Schlüsseln aus IndexedDB „push-keys“ und zeigt sie an.
+   Welche Arten ein Gerät bekommt, steht in localStorage „push-prefs“ und wird beim Pi hinterlegt. */
+const Push = (() => {
+  const DEFAULT = 'https://kostenpi.tail281e3e.ts.net/push';
+  const KINDS = [
+    { key: 'timer', label: 'Kochtimer', sub: 'Wenn ein Timer der Kochansicht abläuft', def: true },
+    { key: 'remind', label: 'Kocherinnerung', sub: 'Am Kochtag: „Heute: Spaghetti Bolognese“', def: false },
+    { key: 'einkauf', label: 'Einkaufsliste', sub: 'Jemand im Haushalt ergänzt die Einkaufsliste', def: true },
+    { key: 'plan', label: 'Wochenplan', sub: 'Jemand im Haushalt übernimmt einen neuen Wochenplan', def: false },
+    { key: 'invite', label: 'Einladungen', sub: 'Jemand lädt dich per Benutzername ein', def: true },
+    { key: 'kosten', label: 'Neue Ausgaben', sub: 'Jemand trägt in einer geteilten Reise etwas ein', def: true },
+    { key: 'spiele', label: 'Spiele', sub: 'Neue Partie im Verlauf der Spielgruppe', def: false },
+    { key: 'cocktails', label: 'Cocktails', sub: 'Änderungen an geteilten Cocktail-Projekten', def: false },
+  ];
+  const APP_KINDS = { essen: ['einkauf', 'plan'], kosten: ['kosten'], spiele: ['spiele'], cocktails: ['cocktails'] };
+  const te = t => new TextEncoder().encode(t);
+  const b64e = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const b64d = str => { str = String(str).replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const b = atob(str), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+  const ls = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} },
+  };
+  const server = () => { try { return localStorage.getItem('push-server') || DEFAULT; } catch (e) { return DEFAULT; } };
+  const rnd = n => b64e(crypto.getRandomValues(new Uint8Array(n)));
+  function device() {
+    let d = ls.get('push-device');
+    if (!d || !d.id) { d = { id: rnd(18), secret: rnd(24), ch: rnd(32) }; ls.set('push-device', d); }
+    return d;
+  }
+  function prefs() {
+    const p = Object.assign({ remindTime: '16:30' }, ls.get('push-prefs') || {});
+    KINDS.forEach(k => { if (typeof p[k.key] !== 'boolean') p[k.key] = k.def; });
+    return p;
+  }
+  const listeners = new Set(); const emit = () => listeners.forEach(f => { try { f(); } catch (e) {} });
+
+  /* ---------- Kanäle ---------- */
+  const chanCache = new Map();
+  function chan(secret, label) {
+    const ck = label + '|' + secret;
+    if (!chanCache.has(ck)) chanCache.set(ck, (async () => {
+      const base = await crypto.subtle.importKey('raw', te(secret), 'HKDF', false, ['deriveBits']);
+      const bits = n => crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: te('push-v1'), info: te(label + '|' + n) }, base, 256);
+      return { id: b64e(new Uint8Array(await bits('id')).subarray(0, 24)), key: b64e(new Uint8Array(await bits('key'))) };
+    })());
+    return chanCache.get(ck);
+  }
+  const normUser = u => String(u || '').trim().toLowerCase();
+  const itemChan = it => chan(it.secret, it.app + ':' + it.id);
+  const userChan = name => chan('konto-postfach|' + normUser(name), 'inbox');
+  const devChan = () => chan(device().ch, 'device');
+  async function encrypt(keyB64, obj) {
+    const key = await crypto.subtle.importKey('raw', b64d(keyB64), 'AES-GCM', false, ['encrypt']);
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    return 'v1.' + b64e(iv) + '.' + b64e(new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, te(JSON.stringify(obj)))));
+  }
+  /* Kanalschlüssel für den Service Worker ablegen */
+  function idb() {
+    return new Promise((res, rej) => { const r = indexedDB.open('push-keys', 1); r.onupgradeneeded = () => r.result.createObjectStore('k'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  }
+  async function storeKeys(map) {
+    const db = await idb();
+    await new Promise((res, rej) => { const tx = db.transaction('k', 'readwrite'), st = tx.objectStore('k'); st.clear(); Object.entries(map).forEach(([k, v]) => st.put(v, k)); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+    db.close();
+  }
+  async function channels() {
+    const p = prefs(), out = {}, keys = {};
+    const add = (c, kinds) => { if (!kinds.length) return; out[c.id] = (out[c.id] || []).concat(kinds); keys[c.id] = c.key; };
+    add(await devChan(), ['test'].concat(['timer', 'remind'].filter(k => p[k])));   // „test“ immer, damit die Testmitteilung ankommt
+    const K = typeof Konto !== 'undefined' && Konto.loggedIn() ? Konto : null;
+    if (K) {
+      if (p.invite) add(await userChan(K.user()), ['invite']);
+      for (const it of K.items()) { const kinds = (APP_KINDS[it.app] || []).filter(k => p[k]); if (kinds.length && it.secret) add(await itemChan(it), kinds); }
+    }
+    return { out, keys };
+  }
+
+  /* ---------- Server ---------- */
+  async function api(path, body) {
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 15000);
+    try {
+      const r = await fetch(server() + path, { method: body ? 'POST' : 'GET', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', signal: ctl.signal });
+      let j = null; try { j = await r.json(); } catch (e) {}
+      if (!r.ok) { const e = new Error((j && j.error) || ('Push-Dienst antwortet mit ' + r.status)); e.status = r.status; throw e; }
+      return j;
+    } catch (e) { if (e.status) throw e; const err = new Error('Push-Dienst nicht erreichbar'); err.offline = true; throw err; }
+    finally { clearTimeout(to); }
+  }
+
+  /* ---------- Abo ---------- */
+  const standalone = () => { try { return window.navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } };
+  const supported = () => typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  function status() {
+    if (!supported()) return { state: standalone() ? 'unsupported' : 'notInstalled', text: standalone() ? 'Dieses Gerät unterstützt keine Mitteilungen für Web-Apps (iOS 16.4 oder neuer nötig).' : 'Mitteilungen gehen nur in der App vom Home-Bildschirm (Teilen → „Zum Home-Bildschirm“).' };
+    if (Notification.permission === 'denied') return { state: 'denied', text: 'Mitteilungen sind abgelehnt. Erlauben unter iPhone-Einstellungen → Mitteilungen → diese App.' };
+    const s = ls.get('push-state') || {};
+    if (Notification.permission === 'granted' && s.on) return { state: 'on', text: s.err ? 'Aktiv – letzter Abgleich fehlgeschlagen: ' + s.err : 'Aktiv auf diesem Gerät' };
+    return { state: 'off', text: 'Aus' };
+  }
+  async function swReg() {
+    const reg = (await navigator.serviceWorker.getRegistration()) || (await navigator.serviceWorker.register('sw.js'));
+    return navigator.serviceWorker.ready.then(() => reg);
+  }
+  /* Einschalten – muss aus einem Tipp heraus aufgerufen werden (iOS fragt dann nach der Erlaubnis) */
+  async function enable() {
+    if (!supported()) throw new Error(status().text);
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') throw new Error('Ohne Erlaubnis keine Mitteilungen.');
+    const { publicKey } = await api('/vapid');
+    const reg = await swReg();
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64d(publicKey) });
+    ls.set('push-state', { on: true, err: '' });
+    await sync(true);
+    emit();
+    return true;
+  }
+  async function disable() {
+    try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch (e) {}
+    const d = device();
+    try { await api('/unsubscribe', { device: d.id, secret: d.secret }); } catch (e) {}
+    ls.set('push-state', { on: false }); ls.del('push-sig'); emit();
+  }
+  let syncing = null;
+  /* Kanäle und Arten beim Pi aktualisieren (nur wenn sich etwas geändert hat) */
+  async function sync(force) {
+    const st = ls.get('push-state') || {};
+    if (!st.on || !supported() || Notification.permission !== 'granted') return false;
+    if (syncing) return syncing;
+    syncing = (async () => {
+      try {
+        const reg = await swReg();
+        const sub = await reg.pushManager.getSubscription();
+        if (!sub) { ls.set('push-state', { on: false }); emit(); return false; }
+        const { out, keys } = await channels();
+        await storeKeys(keys);
+        const sj = sub.toJSON(), sig = JSON.stringify([sj.endpoint, out]);
+        if (!force && ls.get('push-sig') === sig) return true;
+        const d = device();
+        await api('/subscribe', { device: d.id, secret: d.secret, sub: { endpoint: sj.endpoint, keys: sj.keys }, channels: out });
+        ls.set('push-sig', sig); ls.set('push-state', { on: true, err: '' });
+        return true;
+      } catch (e) { ls.set('push-state', { on: true, err: e.message }); throw e; }
+      finally { syncing = null; emit(); }
+    })();
+    return syncing;
+  }
+  function setPrefs(p) { ls.set('push-prefs', Object.assign(prefs(), p)); emit(); return sync().catch(() => {}); }
+
+  /* ---------- Senden ---------- */
+  /* an alle Geräte eines geteilten Dings (außer diesem): item = {app, id, secret} */
+  async function notify(item, kind, title, body, url) {
+    if (!item || !item.secret || !item.id) return false;
+    try {
+      const c = await itemChan(item);
+      await api('/send', { channels: [c.id], kind, boxes: { '*': await encrypt(c.key, { title, body, url: url || null, tag: kind + ':' + item.id }) }, exclude: device().id });
+      return true;
+    } catch (e) { return false; }
+  }
+  async function notifyUser(name, kind, title, body, url) {
+    try { const c = await userChan(name); await api('/send', { channels: [c.id], kind, boxes: { '*': await encrypt(c.key, { title, body, url: url || null }) } }); return true; }
+    catch (e) { return false; }
+  }
+  /* an dieses Gerät zu einem Zeitpunkt (Kochtimer, Kocherinnerung); gleicher tag ersetzt */
+  async function schedule(tag, at, kind, title, body, url) {
+    if (!(ls.get('push-state') || {}).on) return false;
+    try {
+      const c = await devChan();
+      await api('/send', { channels: [c.id], kind, tag, at: new Date(at).toISOString(), ttl: 3600, boxes: { '*': await encrypt(c.key, { title, body, url: url || null, tag }) } });
+      return true;
+    } catch (e) { return false; }
+  }
+  async function cancel(tag) {
+    if (!(ls.get('push-state') || {}).on) return false;
+    try { const c = await devChan(); await api('/cancel', { channels: [c.id], tag }); return true; } catch (e) { return false; }
+  }
+  async function test() {
+    const c = await devChan();
+    await api('/send', { channels: [c.id], kind: 'test', boxes: { '*': await encrypt(c.key, { title: 'Testmitteilung', body: 'Mitteilungen funktionieren 👍', url: 'index.html#mitteilungen' }) } });
+  }
+
+  /* Einladungen automatisch ankündigen */
+  if (typeof Konto !== 'undefined' && Konto.invite && !Konto.invite._push) {
+    const orig = Konto.invite;
+    Konto.invite = async function (name, key, item, days) {
+      const r = await orig.apply(this, arguments);
+      notifyUser(r.to, 'invite', 'Neue Einladung', `${Konto.user()} lädt dich zu „${(item && item.label) || 'etwas'}“ ein`, 'index.html#konto');
+      return r;
+    };
+    Konto.invite._push = true;
+  }
+  if (typeof Konto !== 'undefined' && Konto.onChange) Konto.onChange(() => { sync().catch(() => {}); });
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sync().catch(() => {}); });
+
+  return { KINDS, supported, standalone, status, enable, disable, sync, prefs, setPrefs, notify, notifyUser, schedule, cancel, test, onChange: f => listeners.add(f),
+    enabled: () => !!(ls.get('push-state') || {}).on && supported() && Notification.permission === 'granted', _chan: chan, _channels: channels };
 })();
 </script>
 <script>'use strict';
@@ -4394,7 +4762,7 @@ function renderFundus(root) {
       var acts = el('div', { class:'acts' }, [
         el('button', { class:'btn small primary', onclick:function () {
           var p = Store.project();
-          p.cocktails.push(cloneCocktail(c)); Store.save();
+          p.cocktails.push(cloneCocktail(c)); Store.save(); notifyNewCocktail(p, c.name);
           toast(c.name + ' ins Projekt übernommen.'); render();
         }, text:'Übernehmen' }),
         el('button', { class:'btn small', onclick:function () {
@@ -4478,7 +4846,7 @@ function renderProject(root) {
             onclick:function () { var t = p.cocktails[i+1]; p.cocktails[i+1] = c; p.cocktails[i] = t; Store.save(); render(); }, text:'↓' }),
           el('button', { class:'btn small', onclick:function () { openEditor(c, { inProject:true }); }, text:'Bearbeiten' }),
           el('button', { class:'btn small ghost', title:'duplizieren', onclick:function () {
-            p.cocktails.splice(i + 1, 0, cloneCocktail(c)); Store.save(); render();
+            p.cocktails.splice(i + 1, 0, cloneCocktail(c)); Store.save(); notifyNewCocktail(p, c.name); render();
           }, text:'⧉' }),
           el('button', { class:'btn small danger', title:'entfernen', onclick:function () {
             p.cocktails.splice(i, 1); Store.save(); render();
@@ -4497,7 +4865,7 @@ function renderProject(root) {
       }, text:'Alle entfernen' })
     ]));
   }
-  var kbox = el('div', { class:'panel kontobox' }, [el('h2', {}, ['Konto']), kontoRow()]);
+  var kbox = el('div', { class:'panel kontobox' }, [el('h2', {}, ['Konto']), kontoRow(), pushRow()]);
   root.appendChild(el('div', { class:'split' }, [el('div', { class:'leftcol' }, [left, kbox]), right]));
 }
 
@@ -4944,7 +5312,7 @@ function openEditor(src, opt) {
         var copy = cloneCocktail(work);
         copy.name = work.name + ' (Kopie)';
         p.cocktails.splice(i < 0 ? p.cocktails.length : i + 1, 0, copy);
-        Store.save(); dlg.close(); render();
+        Store.save(); notifyNewCocktail(p, copy.name); dlg.close(); render();
         toast('Duplikat angelegt – das Original bleibt unverändert.');
       }, text:'Duplizieren' }));
     }
@@ -4963,8 +5331,9 @@ function openEditor(src, opt) {
     }
     foot.appendChild(el('button', { class:'btn primary', onclick:function () {
       if (!valid()) return;
-      if (!opt.inProject && !opt.inLibrary) Store.project().cocktails.push(cloneCocktail(work));
-      Store.save(); dlg.close();
+      if (!opt.inProject && !opt.inLibrary) { Store.project().cocktails.push(cloneCocktail(work)); Store.save(); notifyNewCocktail(Store.project(), work.name); }
+      else Store.save();
+      dlg.close();
       if (!opt.inLibrary) UI.tab = 'project';
       render();
       toast(opt.inProject ? 'Änderungen gespeichert.'
@@ -5164,9 +5533,9 @@ var Share = {
   },
   paint: function () { var b = document.getElementById('shareBadge'); if (b) b.textContent = this.badge(); var st = document.getElementById('shareStatus'); if (st) st.textContent = this.statusText(Store.project().id); }
 };
-function liveShareSection(body) {
+function liveShareSection(body, onlyBox) {
   var p = Store.project(), s = Share.get(p.id);
-  var box = el('div', { class:'livebox' });
+  var box = el('div', { class:'livebox sharebox' });
   box.appendChild(el('h3', { text:'Gemeinsam nutzen über deinen Pi' }));
   if (!s) {
     box.appendChild(el('p', { class:'hint', text:'Das Projekt wird verschlüsselt auf deinem Pi gespeichert. Wer den Link öffnet, sieht immer den aktuellen Stand und kann selbst Änderungen machen. Es gilt jeweils die zuletzt gespeicherte Fassung.' }));
@@ -5200,7 +5569,125 @@ function liveShareSection(body) {
     }, text:'Teilen beenden' }));
   }
   body.appendChild(box);
+  if (onlyBox) return;
+  inviteSection(body, p);
   body.appendChild(el('h3', { class:'snaph', text:'Momentaufnahme als Link' }));
+}
+
+/* ---------- Per Benutzername einladen (Konto-Modul: invite/findUser/sentList/withdraw/forget) ----------
+   Nur wenn angemeldet. Ist das Projekt noch nicht geteilt, wird es vor dem Einladen still geteilt. */
+var Invite = {
+  seq: 0, timer: null,
+  WD: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+  day: function (iso) { var d = new Date(iso); return this.WD[d.getDay()] + ' ' + String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.'; },
+  /* Projekt geteilt sicherstellen (still; parallele automatische Teilung abwarten statt doppelt teilen) */
+  ensureShared: async function (p) {
+    if (Share.get(p.id)) return Share.get(p.id);
+    if (KontoCk.starting[p.id]) {
+      for (var i = 0; i < 100 && KontoCk.starting[p.id]; i++) await new Promise(function (r) { setTimeout(r, 150); });
+      if (Share.get(p.id)) return Share.get(p.id);
+    }
+    KontoCk.starting[p.id] = true;
+    try { await Share.start(p); } finally { delete KontoCk.starting[p.id]; }
+    renderBar();
+    return Share.get(p.id);
+  },
+  statusText: function (x) {
+    if (x.status === 'offen') return 'offen bis ' + this.day(x.expiresAt);
+    if (x.status === 'abgelaufen') return 'abgelaufen';
+    if (x.status === 'erledigt') return 'angenommen oder abgelehnt';
+    return 'Stand gerade unbekannt';
+  },
+  paintList: function (p, list) {
+    var self = this, s = Share.get(p.id); if (!list || !list.parentNode) return;
+    if (!s) { clear(list); return; }
+    var key = KontoCk.key(s.id), my = ++this.listSeq;
+    Konto.sentList(KontoCk.APP).then(function (all) {
+      if (my !== self.listSeq || !list.parentNode) return;
+      var rows = all.filter(function (x) { return x.key === key; });
+      clear(list);
+      if (!rows.length) return;
+      list.appendChild(el('div', { class:'lbl', text:'Einladungen zu diesem Projekt' }));
+      rows.forEach(function (x) {
+        var open = x.status === 'offen';
+        list.appendChild(el('div', { class:'invrow', 'data-iid':x.iid }, [
+          el('div', { class:'invtxt' }, [el('b', { text:x.to }), el('small', { class:'invst ' + x.status, text:self.statusText(x) })]),
+          el('button', { class:'btn ' + (open ? 'danger' : 'ghost'), onclick:function (e) {
+            var b = e.currentTarget;
+            if (!open) { Konto.forget(x.iid); self.paintList(p, list); return; }
+            askDlg('Einladung zurückziehen?', x.to + ' kann dieser Einladung dann nicht mehr folgen. Wer schon beigetreten ist, bleibt im Projekt.', [
+              { label:'Zurückziehen', value:true, cls:'danger' }, { label:'Abbrechen', value:false }
+            ]).then(function (ok) {
+              if (!ok) return;
+              b.disabled = true;
+              Konto.withdraw(x.iid).then(function () { toast('Einladung an ' + x.to + ' zurückgezogen.'); self.paintList(p, list); },
+                function () { b.disabled = false; toast('Server nicht erreichbar – bitte später erneut versuchen.'); });
+            });
+          }, text: open ? 'Zurückziehen' : 'Entfernen' })
+        ]));
+      });
+    }, function () {});
+  },
+  listSeq: 0
+};
+function inviteSection(body, p) {
+  var box = el('div', { class:'livebox sharebox invbox', id:'inviteBox' });
+  box.appendChild(el('h3', { text:'Per Benutzername einladen' }));
+  if (!KontoCk.on()) {
+    box.appendChild(el('a', { class:'invlogin', href:'index.html#konto', text:'Mit Konto kannst du andere per Benutzername einladen ›' }));
+    body.appendChild(box); return;
+  }
+  var inp = el('input', { type:'text', id:'inviteName', placeholder:'Benutzername', autocomplete:'off', autocapitalize:'off', autocorrect:'off', spellcheck:'false', enterkeyhint:'send', 'aria-label':'Benutzername' });
+  var check = el('div', { class:'invcheck', id:'inviteCheck', 'aria-live':'polite' });
+  var note = el('div', { class:'invnote', id:'inviteNote', 'aria-live':'polite' });
+  var list = el('div', { class:'invlist', id:'inviteList' });
+  var btn = el('button', { class:'btn primary', id:'inviteBtn', text:'Einladen' });
+  var setCheck = function (t, cls) { check.textContent = t; check.className = 'invcheck' + (cls ? ' ' + cls : ''); };
+  inp.addEventListener('input', function () {
+    var v = inp.value.trim(), my = ++Invite.seq;
+    clearTimeout(Invite.timer); note.textContent = ''; note.className = 'invnote';
+    if (!v) { setCheck(''); return; }
+    setCheck('Suche …');
+    Invite.timer = setTimeout(function () {
+      Konto.findUser(v).then(function (prof) {
+        if (my !== Invite.seq) return;
+        if (!prof) setCheck('Kein Konto mit diesem Namen', 'bad');
+        else if (prof.user.trim().toLowerCase() === String(Konto.user()).trim().toLowerCase()) setCheck('Das bist du selbst', 'bad');
+        else setCheck('✓ ' + prof.user + ' gefunden', 'good');
+      }, function () { if (my === Invite.seq) setCheck('Prüfung gerade nicht möglich (keine Verbindung)'); });
+    }, 500);
+  });
+  var send = async function () {
+    var v = inp.value.trim();
+    if (!v) { setCheck('Bitte einen Benutzernamen eingeben', 'bad'); inp.focus(); return; }
+    btn.disabled = true; clearTimeout(Invite.timer); Invite.seq++;
+    note.className = 'invnote'; note.textContent = Share.get(p.id) ? 'Wird gesendet …' : 'Projekt wird geteilt …';
+    try {
+      var s = await Invite.ensureShared(p);
+      if (!s) throw new Error('Teilen nicht möglich');
+      note.textContent = 'Wird gesendet …';
+      var r = await Konto.invite(v, KontoCk.key(s.id), { app:KontoCk.APP, id:s.id, secret:s.secret, label:p.name || 'Projekt' });
+      inp.value = ''; setCheck('');
+      note.className = 'invnote good'; note.textContent = 'Einladung an ' + r.to + ' gesendet – gültig bis ' + Invite.day(r.expiresAt);
+      var lb = document.querySelector('#dlg .sharebox:not(.invbox)');
+      if (lb) { var tmp = el('div'); liveShareSection(tmp, true); if (tmp.firstChild) lb.parentNode.replaceChild(tmp.firstChild, lb); }
+      Invite.paintList(p, list);
+    } catch (e) {
+      note.className = 'invnote bad';
+      note.textContent = e && e.notFound ? e.message : (e && e.offline) || /fetch|network|verbindung|Server/i.test((e && e.message) || '') ?
+        'Keine Verbindung zum Server – bitte später erneut versuchen.' : ((e && e.message) || 'Einladen nicht möglich.');
+      if (e && e.notFound) setCheck('Kein Konto mit diesem Namen', 'bad');
+    } finally { btn.disabled = false; }
+  };
+  btn.addEventListener('click', send);
+  inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); send(); } });
+  box.appendChild(el('p', { class:'hint', text:'Die Person bekommt die Einladung im Hauptmenü unter „Konto“ und ist nach dem Annehmen automatisch im Projekt.' }));
+  box.appendChild(el('div', { class:'invform' }, [inp, btn]));
+  box.appendChild(check);
+  box.appendChild(note);
+  box.appendChild(list);
+  body.appendChild(box);
+  Invite.paintList(p, list);
 }
 
 
@@ -5316,6 +5803,36 @@ function kontoRow() {
     el('span', { class:'kval', text: on ? Konto.user() : 'Nicht angemeldet' }),
     el('span', { class:'kchev', text:'›' })
   ]);
+}
+
+/* ---------- Mitteilungen ----------
+   Neuer Cocktail in einem geteilten Projekt → still an die anderen Geräte (Push-Dienst auf dem Pi).
+   Nur bei eigenen Aktionen, nie beim Abgleich-Import. */
+function notifyNewCocktail(p, name) {
+  try {
+    if (typeof Push === 'undefined' || !p) return;
+    var s = Share.get(p.id); if (!s || !s.id || !s.secret) return;
+    var who = KontoCk.on() ? Konto.user() : '';
+    Push.notify({ app:'cocktails', id:s.id, secret:s.secret }, 'cocktails', p.name || 'Projekt',
+      'Neu: ' + (name || 'Cocktail') + (who ? ' · von ' + who : ''), 'cocktails.html');
+  } catch (e) { /* still */ }
+}
+function pushRow() {
+  var on = typeof Push !== 'undefined' && Push.enabled();
+  return el('a', { class:'kontorow pushrow', id:'pushRow', href:'index.html#mitteilungen' }, [
+    el('span', { class:'kicon', html:'<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><path d="M10 20.5a2 2 0 0 0 4 0" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>' }),
+    el('span', { class:'ktxt' }, [
+      el('b', { text:'Mitteilungen' }),
+      el('small', { text:'Neue Cocktails in geteilten Projekten' })
+    ]),
+    el('span', { class:'kval', text: on ? 'An' : 'Aus' }),
+    el('span', { class:'kchev', text:'›' })
+  ]);
+}
+function paintPushRow() { var r = document.getElementById('pushRow'); if (r && r.parentNode) r.parentNode.replaceChild(pushRow(), r); }
+if (typeof Push !== 'undefined') {
+  Push.onChange(paintPushRow);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') paintPushRow(); });
 }
 
 /* ---------- Deeplink ---------- */
