@@ -361,21 +361,8 @@ header .back+.back::before{width:22px;height:22px;
 .hero .qr-btn{margin:0 -8px 0 0}
 .qr-btn svg{width:24px;height:24px}
 
-/* App-Kacheln: Fläche mit Linie, Symbol in der Akzentfarbe der App */
-.appgrid{gap:10px;padding:2px 0 4px}
-.apptile{background:var(--plate);border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 2px rgba(23,32,51,.05),0 4px 14px rgba(23,32,51,.05);
-  padding:14px 4px 11px;gap:8px;color:var(--ink);transition:transform .12s,background .12s}
-.apptile:active{transform:scale(.97);background:var(--rim-soft)}
-.apptile:active .appic{transform:none}
-.appic{width:52px;height:52px;border-radius:15px;color:var(--c);box-shadow:none;
-  background:color-mix(in srgb,var(--c) 12%,var(--plate))}
-.appic svg{width:28px;height:28px}
-.appname{font-size:13px;font-weight:600;color:var(--ink);max-width:100%;overflow-wrap:anywhere}
-@media (prefers-color-scheme: dark){
-  .apptile{box-shadow:none}
-  .appic{background:color-mix(in srgb,var(--c) 17%,var(--plate))}
-}
-@media (max-width:340px){.appic{width:46px;height:46px}.appic svg{width:25px;height:25px}}
+/* App-Kacheln: bunte Symbole wie auf dem iPhone-Home-Bildschirm (bewusst beibehalten) */
+.appname{color:var(--ink)}
 .menu-foot{color:var(--speckle)}
 
 /* iOS-Listen wie .glist/.gi der Vorlage */
@@ -551,16 +538,16 @@ a.gi:active,button.gi:active,label.gi:active{background:var(--rim-soft)}
 
   <h3 class="ghead">Alltag</h3>
   <div class="appgrid" id="menu-alltag">
-    <a class="apptile" href="essensplanung.html"><span class="appic" style="--c:var(--a-essen)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a2 2 0 0 0 2 2v9M10 3v7a2 2 0 0 1-2 2M8 3v6"/><path d="M17 21V3c-2.2 1.2-3 3.6-3 6.5V13h3"/></svg></span><span class="appname">Essensplanung</span></a>
-    <a class="apptile" href="kosten.html"><span class="appic" style="--c:var(--a-kosten)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6.5A7 7 0 1 0 18 17.5"/><path d="M4 10h9M4 14h9"/></svg></span><span class="appname">Kosten</span></a>
-    <button class="apptile" onclick="openLetter()"><span class="appic" style="--c:var(--a-briefe)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg></span><span class="appname">Briefe</span></button>
+    <a class="apptile" href="essensplanung.html"><span class="appic" style="--c:#FF9500"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v7a2 2 0 0 0 2 2v9M10 3v7a2 2 0 0 1-2 2M8 3v6"/><path d="M17 21V3c-2.2 1.2-3 3.6-3 6.5V13h3"/></svg></span><span class="appname">Essensplanung</span></a>
+    <a class="apptile" href="kosten.html"><span class="appic" style="--c:#5856D6"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6.5A7 7 0 1 0 18 17.5"/><path d="M4 10h9M4 14h9"/></svg></span><span class="appname">Kosten</span></a>
+    <button class="apptile" onclick="openLetter()"><span class="appic" style="--c:#0A84FF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 6.5l8.5 6.5 8.5-6.5"/></svg></span><span class="appname">Briefe</span></button>
   </div>
 
   <h3 class="ghead">Freizeit</h3>
   <div class="appgrid" id="menu-freizeit">
-    <a class="apptile" href="spiele.html"><span class="appic" style="--c:var(--a-spiele)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/></svg></span><span class="appname">Spiele</span></a>
-    <a class="apptile" href="workout.html"><span class="appic" style="--c:var(--a-workout)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></span><span class="appname">Workout</span></a>
-    <a class="apptile" href="cocktails.html"><span class="appic" style="--c:var(--a-cocktails)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-8 9z"/><path d="M12 13v7M8 20h8M16.5 4l2-2"/></svg></span><span class="appname">Cocktails</span></a>
+    <a class="apptile" href="spiele.html"><span class="appic" style="--c:#FF2D55"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/></svg></span><span class="appname">Spiele</span></a>
+    <a class="apptile" href="workout.html"><span class="appic" style="--c:#34C759"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></span><span class="appname">Workout</span></a>
+    <a class="apptile" href="cocktails.html"><span class="appic" style="--c:#AF52DE"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16l-8 9z"/><path d="M12 13v7M8 20h8M16.5 4l2-2"/></svg></span><span class="appname">Cocktails</span></a>
   </div>
 </div>
 
