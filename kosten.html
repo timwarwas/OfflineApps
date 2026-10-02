@@ -74,6 +74,8 @@ select.in{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--field);color:var(--text);font:600 15px var(--body);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chip.on{background:var(--petrol);border-color:var(--petrol);color:#fff}
+#catChips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#catChips .chip{border-radius:14px;white-space:normal;line-height:1.2;text-align:left;padding:6px 10px;font-size:14.5px;display:flex;align-items:center;gap:6px}
 .chips.sm .chip{min-height:44px;font-size:14px;padding:0 12px}
 .modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .modes .chip{border-radius:12px;padding:0 4px;font-size:14px;white-space:normal;line-height:1.15}
@@ -133,8 +135,8 @@ select.in{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50
 .fab{position:fixed;right:max(16px,calc(50vw - 264px));bottom:calc(72px + var(--barb));min-height:56px;padding:0 22px;border-radius:28px;background:var(--petrol);color:#fff;border:0;font:700 17px var(--body);box-shadow:0 6px 18px rgba(14,107,99,.35);z-index:11}
 /* Untere Navigation: schwebende Glas-Leiste („Liquid Glass“) */
 .tabbar{position:fixed;left:12px;right:12px;bottom:var(--barb);max-width:520px;margin:0 auto;border-radius:28px;padding:4px;z-index:10;
-  background:color-mix(in srgb,var(--card) 32%,transparent);
-  border:1px solid color-mix(in srgb,#fff 55%,transparent);border-top-color:color-mix(in srgb,#fff 80%,transparent);
+  background:color-mix(in srgb,var(--card) 24%,transparent);
+  border:1px solid color-mix(in srgb,#fff 60%,transparent);border-top-color:color-mix(in srgb,#fff 80%,transparent);
   -webkit-backdrop-filter:blur(14px) saturate(200%) brightness(1.04);backdrop-filter:blur(14px) saturate(200%) brightness(1.04);
   box-shadow:0 10px 30px rgba(15,25,45,.16),0 1px 3px rgba(15,25,45,.08),inset 0 1px 0 rgba(255,255,255,.55)}
 .tabbar .in2{display:flex;gap:2px}
@@ -143,7 +145,7 @@ select.in{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50
 .tab .ti svg{display:block;width:24px;height:24px}
 .tab.on{color:var(--petrol-ink);background:color-mix(in srgb,var(--petrol) 13%,transparent)}
 @media (prefers-color-scheme: dark){
-  .tabbar{background:color-mix(in srgb,var(--card) 45%,transparent);border-color:rgba(255,255,255,.12);border-top-color:rgba(255,255,255,.22);
+  .tabbar{background:color-mix(in srgb,var(--card) 36%,transparent);border-color:rgba(255,255,255,.14);border-top-color:rgba(255,255,255,.22);
     box-shadow:0 10px 30px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08)}
   .tab.on{background:color-mix(in srgb,var(--petrol) 24%,transparent)}
 }
@@ -1643,7 +1645,43 @@ const Push = (() => {
 <script>
 /* ===== Oberfläche ===== */
 const KEY='kostenaufteilung-v1';
-const CATS=[['unterkunft','Unterkunft','🏠'],['essen','Essen','🍽️'],['einkauf','Einkauf','🛒'],['transport','Transport','🚗'],['aktivitaet','Aktivität','🎟️'],['sonstiges','Sonstiges','📦']];
+const CATS=[['unterkunft','Unterkunft','🏨'],['essen','Restaurant & Café','🍽️'],['bar','Bar & Getränke','🍹'],['einkauf','Lebensmittel & Einkauf','🛒'],
+  ['transport','Transport','🚆'],['tanken','Tanken & Laden','⛽'],['parken','Parken & Maut','🅿️'],['aktivitaet','Freizeit & Vergnügen','🎢'],
+  ['kultur','Eintritt & Kultur','🎟️'],['shopping','Shopping & Souvenirs','🛍️'],['gesundheit','Apotheke & Gesundheit','💊'],['wohnen','Miete & Nebenkosten','💡'],
+  ['sonstiges','Sonstiges','📦']];
+/* Kategorie aus dem Titel erraten: gelernte Zuordnung (dieses Gerät), sonst Stichwörter.
+   Kurze Wörter (≤3) nur als ganzes Wort, 4 Buchstaben am Wortanfang, längere auch mitten im Wort (Abendessen). Längster Treffer gewinnt. */
+const CAT_WORDS={
+  unterkunft:'hotel hostel airbnb ferienwohnung fewo pension unterkunft übernachtung uebernachtung booking camping campingplatz zimmer apartment motel jugendherberge hütte huette chalet bungalow',
+  essen:'eis restaurant essen abendessen mittagessen frühstück fruehstueck brunch pizza pizzeria burger döner doener kebab sushi imbiss café cafe kaffee bäckerei baeckerei bäcker eisdiele eiscafé eiscafe mcdonalds mcdonald burger king kfc subway wirtshaus gasthaus gasthof trattoria bistro mensa lieferando lieferdienst takeaway snack kuchen tapas ramen pommes brezel essen gehen kantine',
+  bar:'bar bier cocktail cocktails wein drinks getränke getraenke kneipe pub aperitivo aperol sekt weinprobe biergarten schnaps longdrink',
+  einkauf:'supermarkt lebensmittel einkauf einkaufen rewe edeka aldi lidl netto penny kaufland spar billa hofer migros coop carrefour mercadona tesco biomarkt alnatura getränkemarkt getraenkemarkt drogerie rossmann müller wasser obst gemüse brot',
+  transport:'zug bahn db flug flight flugzeug ryanair lufthansa easyjet eurowings condor bus flixbus taxi uber bolt fähre faehre mietwagen leihwagen autovermietung sixt europcar hertz avis ubahn u-bahn s-bahn tram metro öpnv oepnv fahrkarte fahrrad fahrradverleih roller e-scooter scooter lime transfer shuttle gondel seilbahn bergbahn',
+  tanken:'tanken tankstelle benzin diesel sprit shell aral esso jet ladesäule ladesaeule ladestation aufladen supercharger',
+  parken:'parken parkhaus parkplatz parkticket maut vignette autobahn tunnel brücke mautgebühr',
+  aktivitaet:'kino freizeitpark therme schwimmbad bad freibad ski skipass lift bowling minigolf klettern kletterhalle tour ausflug boot bootstour kajak surfen surfkurs tauchen wellness spa massage konzert festival party club disco escape zoo aquarium spielhalle golf rodeln sauna',
+  kultur:'museum eintritt eintrittskarte ticket tickets theater oper ausstellung führung fuehrung schloss burg galerie kirche dom stadtführung',
+  shopping:'souvenir souvenirs shopping kleidung geschenk geschenke mitbringsel postkarte postkarten h&m zara primark amazon buch bücher schuhe',
+  gesundheit:'apotheke arzt ärztin medikament medikamente pflaster krankenhaus zahnarzt notarzt tabletten',
+  wohnen:'miete nebenkosten strom gas internet wlan handy handyvertrag versicherung rundfunk gez müll muell wasserrechnung heizung hausrat reinigung putzfrau'
+};
+const CAT_LIST=Object.entries(CAT_WORDS).flatMap(([c,w])=>w.split(' ').filter(Boolean).map(x=>[c,x]));
+const catNorm=t=>String(t||'').toLowerCase().replace(/\s+/g,' ').trim();
+function catLearned(){try{return JSON.parse(localStorage.getItem('kosten-kategorien')||'{}')||{};}catch(e){return {};}}
+function catLearn(title,cat){const n=catNorm(title);if(!n)return;const m=catLearned();if(cat)m[n]=cat;else delete m[n];const k=Object.keys(m);if(k.length>400)delete m[k[0]];try{localStorage.setItem('kosten-kategorien',JSON.stringify(m));}catch(e){}}
+function guessCat(title){
+  const n=catNorm(title); if(!n) return null;
+  const l=catLearned()[n]; if(l&&CATS.some(c=>c[0]===l)) return l;
+  const t=' '+n.replace(/[.,;:!?()"']/g,' ')+' ';
+  let best=null;
+  CAT_LIST.forEach(([c,w])=>{
+    const i=t.indexOf(w); if(i<0) return;
+    const before=t[i-1], after=t[i+w.length], startOk=/\s|-|\//.test(before), endOk=/\s|-|\//.test(after);
+    const hit=w.length<=3?(startOk&&endOk):w.length===4?startOk:true;
+    if(hit&&(!best||w.length>best[1].length)) best=[c,w];
+  });
+  return best?best[0]:null;
+}
 const MODES=[['equal','Gleich­mäßig'],['weights','Anteile'],['nights','Nach Nächten'],['fixed','Feste Beträge'],['percent','Prozent'],['items','Einzel­posten']];
 const MODE_SHORT={equal:'gleichmäßig',weights:'nach Anteilen',nights:'nach Nächten',fixed:'feste Beträge',percent:'nach Prozent',items:'Einzelposten'};
 const MODE_HINT={
@@ -1969,7 +2007,7 @@ function vStats(g){
   // Kategorien
   const byCat=new Map(); exp.forEach(e=>{const k=e.category||'none';byCat.set(k,(byCat.get(k)||0)+e.amountCents);});
   const cats=[...byCat].sort((a,b)=>b[1]-a[1]), maxC=cats[0][1];
-  h+=`<div class="card"><h2>Nach Kategorie</h2>${cats.map(([k,v])=>{const c=CATS.find(x=>x[0]===k);return `<button class="cstat" data-act="filterCat" data-id="${k}" aria-label="Ausgaben der Kategorie ${c?c[1]:'ohne Kategorie'} anzeigen"><div class="top2"><span>${c?c[2]+' '+c[1]:'💶 Ohne Kategorie'}</span><span>${fmtEuro(v)} <span class="muted small">${Math.round(v/total*100)} %</span></span></div><div class="hbar"><i style="width:${(v/maxC*100).toFixed(1)}%"></i></div></button>`;}).join('')}<p class="small muted" style="margin:8px 0 0">Tippe auf eine Kategorie, um ihre Ausgaben zu sehen.</p></div>`;
+  h+=`<div class="card"><h2>Nach Kategorie</h2>${cats.map(([k,v])=>{const c=CATS.find(x=>x[0]===k);return `<button class="cstat" data-act="filterCat" data-id="${k}" aria-label="Ausgaben der Kategorie ${c?c[1]:'ohne Kategorie'} anzeigen"><div class="top2"><span>${c?c[2]+' '+c[1]:'💶 Ohne Kategorie'}</span><span>${fmtEuro(v)} <span class="muted small">${Math.round(v/total*100)} %</span></span></div><div class="hbar"><i style="width:${(v/maxC*100).toFixed(1)}%"></i></div></button>`;}).join('')}<p class="small muted" style="margin:8px 0 0">Tippe auf eine Kategorie, um ihre Ausgaben zu sehen.</p>${(()=>{const n=exp.filter(e=>!e.category&&guessCat(e.title)).length;return n?`<button class="btn block" data-act="autoCats" style="margin-top:10px">${n} ohne Kategorie automatisch zuordnen</button>`:'';})()}</div>`;
   // Personen
   const paid={},share={}; g.members.forEach(m=>{paid[m.id]=0;share[m.id]=0;});
   exp.forEach(e=>{const p=paidMap(e);for(const k in p)paid[k]=(paid[k]||0)+p[k];for(const k in e.shares)share[k]=(share[k]||0)+e.shares[k];});
@@ -2060,7 +2098,7 @@ function newDraft(g,e){
   g.members.forEach(m=>{d.eq[m.id]=true;d.wt[m.id]=m.defaultWeight??1;d.nt[m.id]=m.nights??tn??1;d.fx[m.id]='';d.pc[m.id]='';d.pay[m.id]='';});
   if(!e&&g.defaultSplit) fillSplit(d,g,g.defaultSplit,true);
   if(e){
-    Object.assign(d,{id:e.id,createdAt:e.createdAt||null,title:e.title||'',amount:fmtPlain(e.amountCents),date:e.date,paidBy:e.paidBy,category:e.category||null,note:e.note||'',seriesId:e.seriesId||null});
+    Object.assign(d,{id:e.id,createdAt:e.createdAt||null,title:e.title||'',amount:fmtPlain(e.amountCents),date:e.date,paidBy:e.paidBy,category:e.category||null,catManual:!!e.category,note:e.note||'',seriesId:e.seriesId||null});
     fillSplit(d,g,e.split||{mode:'equal',weights:{}},false);
     if(e.payers&&payerIds(e).length>1){d.multi=true;for(const k in e.payers) if(e.payers[k]>0) d.pay[k]=fmtPlain(e.payers[k]);}
     if(e.fx){d.curOn=true;d.curCode=e.fx.currency;d.curAmt=fmtPlain(e.fx.amountCents);d.curRate=fmtRate(e.fx.rate);}
@@ -2168,7 +2206,7 @@ function vExpense(){
       <p class="small muted" style="margin:8px 0 0">Kurs vom Tag der Ausgabe. Er wird für diese Reise gemerkt. Aufgeteilt und abgerechnet wird in €.</p></div>`:''}
   </div>
   <div class="card"><h2>Bezahlt von</h2>${payBlock}<button class="linkbtn" data-act="togMulti">${d.multi?'Nur eine Person hat bezahlt':'Mehrere Personen haben bezahlt'}</button></div>
-  <div class="card"><h2>Kategorie <span class="opt">optional</span></h2><div class="chips">${CATS.map(c=>`<button class="chip ${d.category===c[0]?'on':''}" data-act="setCat" data-id="${c[0]}" aria-pressed="${d.category===c[0]}">${c[2]} ${c[1]}</button>`).join('')}</div></div>
+  <div class="card"><h2>Kategorie <span class="opt" id="catAuto">${d.category&&!d.catManual?'automatisch erkannt':'optional'}</span></h2><div class="chips" id="catChips">${CATS.map(c=>`<button class="chip ${d.category===c[0]?'on':''}" data-act="setCat" data-id="${c[0]}" aria-pressed="${d.category===c[0]}">${c[2]} ${c[1]}</button>`).join('')}</div></div>
   <div class="card"><h2>Aufteilung</h2><div class="modes">${MODES.map(([k,l])=>`<button class="chip ${d.mode===k?'on':''}" data-act="setMode" data-id="${k}" aria-pressed="${d.mode===k}">${l}</button>`).join('')}</div>
     <p class="small muted hint">${MODE_HINT[d.mode]}</p>
     <div id="splitEd">${vSplit(g,d)}</div>
@@ -2944,7 +2982,12 @@ const ACT={
     }
     render(true);
   },
-  setCat:el=>{D.category=D.category===el.dataset.id?null:el.dataset.id;render(true);},
+  autoCats:()=>{   // Ausgaben ohne Kategorie anhand des Titels einsortieren
+    const g=grp(), now=new Date().toISOString(); let n=0;
+    g.entries.forEach(e=>{ if(e.type==='expense'&&!e.category){ const c=guessCat(e.title); if(c){ e.category=c; e.updatedAt=now; n++; } } });
+    if(!n) return; save(); render(true); notify(`${n} ${n===1?'Ausgabe':'Ausgaben'} einsortiert`);
+  },
+  setCat:el=>{D.category=D.category===el.dataset.id?null:el.dataset.id;D.catManual=true;render(true);},
   setMode:el=>{D.mode=el.dataset.id;render(true);},
   setFreq:el=>{D.freq=el.dataset.id;if(!D.freq)D.until='';render(true);},
   saveDefault:()=>{
@@ -2976,6 +3019,7 @@ const ACT={
     const g=grp(), r=evalDraft(g,D);
     if(!r.ok){notify(r.msg);return;}
     const now=new Date().toISOString();
+    if(D.catManual&&D.title.trim()&&D.category!==guessCat(D.title)) catLearn(D.title,D.category);
     const e={id:D.id||uid(),type:'expense',title:D.title.trim(),category:D.category,date:D.date,amountCents:r.amount,paidBy:r.paidBy,
       split:draftSplit(g,D),shares:r.split.shares,createdAt:D.createdAt||now,updatedAt:now};
     if(r.payers) e.payers=r.payers;
@@ -3059,11 +3103,19 @@ document.addEventListener('click',e=>{
   const f=ACT[el.dataset.act]; if(!f) return;
   e.preventDefault(); f(el,e);
 });
+/* beim Tippen des Titels Kategorie vorschlagen, solange sie nicht von Hand gewählt wurde */
+function autoCat(){
+  if(!D||D.catManual) return;
+  const c=guessCat(D.title); if(c===D.category) return;
+  D.category=c;
+  document.querySelectorAll('#catChips [data-act=setCat]').forEach(b=>{const on=b.dataset.id===c;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});
+  const a=document.getElementById('catAuto'); if(a) a.textContent=c?'automatisch erkannt':'optional';
+}
 function onField(e){
   const el=e.target;
   if(el.dataset&&el.dataset.s==='q'){F.q=el.value;updateList();return;}
   const f=el.dataset&&el.dataset.f; if(!f||!D) return;
-  if(f==='title') D.title=el.value;
+  if(f==='title'){D.title=el.value;autoCat();}
   else if(f==='amount') D.amount=el.value;
   else if(f==='date') D.date=el.value;
   else if(f==='until') D.until=el.value;
