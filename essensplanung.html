@@ -502,6 +502,12 @@ button.ordlbl{cursor:pointer;font-weight:600}
 .secitem .btn{min-height:44px;min-width:44px}
 @media print{.storechip{display:none}}
 
+/* Einkaufsliste: Ansicht und übernommene Artikel */
+.shopmode{margin:4px 0 10px}
+.shopmode button{min-height:44px}
+.item .nm small.carry{display:block;color:var(--mustard);font-size:12.5px;font-weight:600;margin-top:1px}
+.carryhint{color:var(--mustard);font-weight:600}
+
 </style>
 </head>
 <body>
@@ -1456,6 +1462,7 @@ const EP = (function () {
   function nextEntries(db, n, exclude, rng, lane, month) {
     exclude = exclude || new Set();
     lane = lane || 'MAIN';
+    cleanRotation(db);
     const rec = month ? new Map(live(db.recipes).map(r => [r.id, r])) : null;
     for (let guard = 0; guard < 60; guard++) {
       let pend = pendingSorted(db, lane).filter(e => !exclude.has(e.id));
@@ -1470,6 +1477,26 @@ const EP = (function () {
       if (!appendCycle(db, rng, lane, month).length) return pend;
     }
     return pendingSorted(db, lane).filter(e => !exclude.has(e.id)).slice(0, n);
+  }
+  /* offene Einträge entfernen, deren Rezept gelöscht, archiviert, pausiert oder in eine andere Spur gewechselt ist
+     (z. B. nach dem Abgleich mit einem anderen Gerät oder dem Zusammenführen zweier Haushalte) */
+  function cleanRotation(db) {
+    const rec = new Map((db.recipes || []).map(r => [r.id, r]));
+    let n = 0;
+    live(db.rotation).forEach(e => {
+      if (e.status !== 'PENDING') return;
+      const r = rec.get(e.recipeId);
+      const ok = r && !r.deleted && r.inRotation && !r.archivedAt && ROTATES(laneOf(r)) && laneOf(r) === laneOf(e);
+      if (!ok) { tomb(e); n++; }
+    });
+    return n;
+  }
+  /* „Geplant“ ohne zugehörigen Planeintrag (Tag gelöscht, auf anderem Gerät geändert) → wieder offen */
+  function releaseOrphans(db) {
+    const used = new Set(live(db.plan).map(p => p.rotationEntryId).filter(Boolean));
+    let n = 0;
+    live(db.rotation).forEach(e => { if (e.status === 'PLANNED' && !used.has(e.id)) { e.status = 'PENDING'; touch(e); n++; } });
+    return n;
   }
   function setStatus(entry, status) { entry.status = status; touch(entry); }
   function planEntry(entry) { setStatus(entry, 'PLANNED'); }
@@ -1725,13 +1752,18 @@ const EP = (function () {
     return out.map(k => k.startsWith('S:') ? { key: k, label: secs.get(k.slice(2)).name, section: true, id: k.slice(2) } : { key: k, label: CAT[k].label, section: false });
   }
 
-  function buildShoppingList(db, from, to) {
+  /* ---------- Einkaufsstand (v2) ----------
+     Gekauft/entfernt wird je Kochtag und Zutat gemerkt („Einheit“ = Planeintrag|Position der Zutat im Rezept),
+     damit derselbe Stand in jeder Ansicht gilt (alles Kommende, einzelne Woche, eigener Zeitraum) und
+     nicht Gekauftes in die nächste Woche wandert. shopping = { v:2, bought:{key:{on,t}}, removed:{key:{on,t}},
+     extras:[{id,text,date,checked,category,del,addedAt,updatedAt}], stores:{…} } */
+  function shopUnits(db, from, to) {
     const recipes = new Map(live(db.recipes).map(r => [r.id, r]));
     const ings = new Map(live(db.ingredients).map(i => [i.id, i]));
     const laneRank = { MAIN: 0, LUNCH: 1, CAKE: 2, EXTRA: 3, SIDE: 3 };
     const cooks = live(db.plan).filter(p => p.type === 'COOK' && p.date >= from && p.date <= to)
       .sort((a, b) => a.date.localeCompare(b.date) || laneRank[laneOf(a)] - laneRank[laneOf(b)]);
-    const names = [], warnings = [], per = new Map();
+    const names = [], warnings = [], units = [];
     cooks.forEach(p => {
       const r = recipes.get(p.recipeId);
       if (!r) return;
@@ -1741,27 +1773,103 @@ const EP = (function () {
         const w = `Für „${r.name}“ sind keine Zutaten hinterlegt.`;
         if (!warnings.includes(w)) warnings.push(w);
       }
-      list.forEach(x => {
-        if (!per.has(x.ingredientId)) per.set(x.ingredientId, []);
-        per.get(x.ingredientId).push({ quantity: x.quantity, unit: x.unit });
+      (r.ingredients || []).forEach((x, k) => {
+        if (ings.has(x.ingredientId)) units.push({ key: p.id + '|' + k, ingId: x.ingredientId, quantity: x.quantity, unit: x.unit, date: p.date });
       });
     });
-    const st = db.shopping && db.shopping.from === from && db.shopping.to === to ? db.shopping : { checkedKeys: [], extraItems: [] };
+    return { names, warnings, units, ings };
+  }
+  /* älteren Stand (ein Zeitraum mit checkedKeys/extraItems) übernehmen – gleiches Ergebnis auf jedem Gerät */
+  function migrateShopping(old, db) {
+    if (old && old.v === 2) return old;
+    const t = (old && old.updatedAt) || 0;
+    const s = { v: 2, bought: {}, removed: {}, extras: [], stores: (old && old.stores) || {}, updatedAt: t };
+    if (!old) return s;
+    if (old.from && old.to && db) {
+      const ck = new Set((old.checkedKeys || []).map(k => String(k).split('|')[0]));
+      const rm = new Set((old.removedKeys || []).map(k => String(k).split('|')[0]));
+      shopUnits(db, old.from, old.to).units.forEach(u => {
+        if (ck.has(u.ingId)) s.bought[u.key] = { on: true, t };
+        if (rm.has(u.ingId)) s.removed[u.key] = { on: true, t };
+      });
+    }
+    (old.extraItems || []).forEach((x, i) => {
+      if (x && x.text) s.extras.push({ id: 'm' + i + '-' + t, text: x.text, date: old.from || todayISO(), checked: !!x.checked, category: x.category || null, addedAt: t + i, updatedAt: t });
+    });
+    return s;
+  }
+  function ensureShopping(db) {
+    if (!db.shopping || db.shopping.v !== 2) db.shopping = migrateShopping(db.shopping, db);
+    ['bought', 'removed', 'stores'].forEach(k => { if (!db.shopping[k] || typeof db.shopping[k] !== 'object') db.shopping[k] = {}; });
+    if (!Array.isArray(db.shopping.extras)) db.shopping.extras = [];
+    return db.shopping;
+  }
+  const isOn = (m, k) => !!(m && m[k] && m[k].on);
+  /* Einheiten als gekauft/entfernt markieren (oder zurücknehmen) */
+  function shopMark(db, map, keys, on) {
+    const s = ensureShopping(db), t = clock();
+    keys.forEach(k => { s[map][k] = { on: !!on, t }; });
+    touch(s);
+  }
+  /* zwei Einkaufsstände zusammenführen: je Einheit/Artikel gewinnt die neuere Änderung */
+  function mergeShopping(a, b, da, dbb) {
+    if (!a) return b; if (!b) return a;
+    a = migrateShopping(a, da); b = migrateShopping(b, dbb);
+    const mm = (x, y) => { const o = Object.assign({}, x); Object.entries(y || {}).forEach(([k, v]) => { if (!o[k] || (v.t || 0) > (o[k].t || 0)) o[k] = v; }); return o; };
+    const ex = new Map();
+    (a.extras || []).concat(b.extras || []).forEach(e => { const c = ex.get(e.id); if (!c || (e.updatedAt || 0) > (c.updatedAt || 0)) ex.set(e.id, e); });
+    const nb = (b.updatedAt || 0) > (a.updatedAt || 0) ? b : a;
+    return { v: 2, bought: mm(a.bought, b.bought), removed: mm(a.removed, b.removed),
+      extras: [...ex.values()].sort((x, y) => (x.addedAt || 0) - (y.addedAt || 0)), stores: nb.stores || {}, updatedAt: Math.max(a.updatedAt || 0, b.updatedAt || 0) };
+  }
+  /* alte Markierungen und erledigte Zusatzartikel aufräumen */
+  function pruneShopping(db, today) {
+    const s = ensureShopping(db), lim = addDays(today || todayISO(), -45);
+    const plan = new Map((db.plan || []).filter(p => !p.deleted).map(p => [p.id, p]));
+    let n = 0;
+    ['bought', 'removed'].forEach(m => Object.keys(s[m]).forEach(k => {
+      const p = plan.get(k.split('|')[0]);
+      if (!p || p.date < lim) { delete s[m][k]; n++; }
+    }));
+    const before = s.extras.length;
+    s.extras = s.extras.filter(x => !((x.del || x.checked) && (x.date || '') < addDays(today || todayISO(), -30)));
+    return n + before - s.extras.length;
+  }
+
+  /* opts.today (Tests); läuft der Zeitraum über heute, wandern nicht Gekauftes der Vorwoche und offene Zusatzartikel mit */
+  function buildShoppingList(db, from, to, opts) {
+    opts = opts || {};
+    const today = opts.today || todayISO();
+    const st = migrateShopping(db.shopping, db);
+    const carry = from <= today && today <= to;
+    const carryFrom = addDays(weekStart(today), -7);
+    const main = shopUnits(db, from, to), ings = main.ings, names = main.names, warnings = main.warnings;
+    let units = main.units.filter(u => !isOn(st.removed, u.key));
+    if (carry && carryFrom < from) {
+      units = units.concat(shopUnits(db, carryFrom, addDays(from, -1)).units
+        .filter(u => !isOn(st.removed, u.key) && !isOn(st.bought, u.key) && sourceOf(ings.get(u.ingId), db.settings) !== 'VORRAT')   // Vorrat prüft man je Woche neu
+        .map(u => Object.assign(u, { carry: true })));
+    }
     const learned = (db.settings && db.settings.extraCats) || {};
-    const checked = new Set(st.checkedKeys || []), removed = new Set(st.removedKeys || []);
-    const rows = [...per.entries()].map(([id, items]) => {
+    const per = new Map();
+    units.forEach(u => { if (!per.has(u.ingId)) per.set(u.ingId, []); per.get(u.ingId).push(u); });
+    const rows = [...per.entries()].map(([id, us]) => {
       const ing = ings.get(id);
-      const sum = sumAmounts(items);
-      const key = id + '|' + sum.dims.join('+');
-      return { key, name: ing.name, amount: sum.text, category: ing.category, source: sourceOf(ing, db.settings), checked: checked.has(key) };
-    }).filter(r => !removed.has(r.key));
+      const open = us.filter(u => !isOn(st.bought, u.key)), checked = !open.length;
+      const sum = sumAmounts(checked ? us : open);
+      return { key: 'i:' + id, ingId: id, units: us.map(u => u.key), name: ing.name, amount: sum.text, category: ing.category,
+        source: sourceOf(ing, db.settings), checked, carry: open.some(u => u.carry) };
+    });
+    const removedIngs = new Set(main.units.filter(u => isOn(st.removed, u.key)).map(u => u.ingId));
+    rows.forEach(r => removedIngs.delete(r.ingId));
     /* zusätzliche Artikel („Spülmittel“) wie Zutaten einsortieren; Vorrat zählt hier nicht – die will man ja kaufen */
-    (st.extraItems || []).forEach((x, i) => {
-      if (!x || !x.text || !x.text.trim()) return;
+    const extras = (st.extras || []).filter(x => x && !x.del && x.text && x.text.trim()
+      && ((x.date >= from && x.date <= to) || (carry && x.date < from && !x.checked)));
+    extras.forEach(x => {
       const category = x.category || extraCategory(x.text, learned);
       let source = categorySource(category, db.settings);
       if (source === 'VORRAT') source = 'SUPERMARKT';
-      rows.push({ key: 'extra:' + i, extra: i, name: x.text.trim(), amount: '', category, source, checked: !!x.checked });
+      rows.push({ key: 'x:' + x.id, extra: x.id, name: x.text.trim(), amount: '', category, source, checked: !!x.checked, carry: x.date < from });
     });
     const stores = {}; STORE_KINDS.forEach(([k]) => { stores[k] = storeFor(db.settings, k, st); });
     /* Gruppen nach der Reihenfolge des Geschäfts; eigene Bereiche ziehen ihre Artikel aus den Kategorien */
@@ -1791,8 +1899,9 @@ const EP = (function () {
     };
     const supermarket = groupsOf('SUPERMARKT'), drogerie = groupsOf('DROGERIE');
     const pantry = rows.filter(r => r.source === 'VORRAT').sort((a, b) => cmpDe(a.name, b.name))
-      .map(r => ({ key: r.key, name: r.name, checked: r.checked }));
-    return { from, to, recipes: names, market, marketGroups, supermarket, drogerie, pantry, extraItems: st.extraItems || [], warnings, removedCount: removed.size, stores };
+      .map(r => ({ key: r.key, ingId: r.ingId, units: r.units, name: r.name, checked: r.checked, carry: r.carry }));
+    return { from, to, recipes: names, market, marketGroups, supermarket, drogerie, pantry, extraItems: extras, warnings,
+      removedCount: removedIngs.size, stores, carried: rows.filter(r => r.carry && !r.checked).length };
   }
   /* Text zum Teilen/Kopieren: nur die offenen Zutaten, eine pro Zeile – ohne Überschrift, Gerichte oder Kategorien
      (so lässt es sich z. B. direkt in die Erinnerungen einfügen). Vorrat und Hinweise bleiben weg. */
@@ -1825,7 +1934,7 @@ const EP = (function () {
       version: Math.max(local.version || 1, remote.version || 1),
       household: newer(local.household, remote.household),
       settings: newer(local.settings, remote.settings),
-      shopping: newer(local.shopping, remote.shopping),
+      shopping: mergeShopping(local.shopping, remote.shopping, local, remote),
       recipes: mergeById(local.recipes, remote.recipes),
       ingredients: mergeById(local.ingredients, remote.ingredients),
       rotation: mergeById(local.rotation, remote.rotation),
@@ -2062,8 +2171,8 @@ const EP = (function () {
     manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
     nextFreeDates, layoutDraft, fillWeek,
     UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
-    CATEGORIES, CAT, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText,
-    mergeDb, normalizePlan, pruneTombstones, buildRecipeExport,
+    CATEGORIES, CAT, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText, shopUnits, migrateShopping, ensureShopping, shopMark, mergeShopping, pruneShopping,
+    mergeDb, cleanRotation, releaseOrphans, normalizePlan, pruneTombstones, buildRecipeExport,
     parseAmount, parseRecipeImport, parseTimers, fmtClock, nameSimilar, similarRecipes,
   };
 })();
@@ -2203,7 +2312,7 @@ function emptyDb() {
     settings: EP.touch({ portionsPerDay: 2, roundingMode: 'FLOOR', rotationMode: 'SHUFFLE', marketListShowQuantities: true,
       categorySources: { GEWUERZE: 'SUPERMARKT', OELE_ESSIG: 'SUPERMARKT' },
       lanes: { LUNCH: { days: [6, 0] }, CAKE: { days: [6] } } }),
-    shopping: EP.touch({ from: '', to: '', checkedKeys: [], extraItems: [] }),
+    shopping: EP.touch({ v: 2, bought: {}, removed: {}, extras: [], stores: {} }),
     recipes: [], ingredients: [], rotation: [], plan: [],
   };
 }
@@ -2216,9 +2325,7 @@ function repairDb(d) {
   d.settings.lanes = Object.assign({}, e.settings.lanes, d.settings.lanes || {});
   ['LUNCH', 'CAKE'].forEach(l => { if (!d.settings.lanes[l] || !Array.isArray(d.settings.lanes[l].days)) d.settings.lanes[l] = deep(e.settings.lanes[l]); });
   d.ingredients.forEach(i => { if (i.reviewed === undefined) i.reviewed = true; });
-  d.shopping = Object.assign({}, e.shopping, d.shopping || {});
-  if (!Array.isArray(d.shopping.checkedKeys)) d.shopping.checkedKeys = [];
-  if (!Array.isArray(d.shopping.extraItems)) d.shopping.extraItems = [];
+  d.shopping = d.shopping && typeof d.shopping === 'object' ? d.shopping : e.shopping;
   d.recipes.forEach(r => {
     if (!Array.isArray(r.ingredients)) r.ingredients = [];
     if (!Array.isArray(r.images)) r.images = [];
@@ -2228,6 +2335,7 @@ function repairDb(d) {
     if (!r.kind) r.kind = 'MAIN';
     if (r.seasonMonths === undefined) r.seasonMonths = null;
   });
+  EP.ensureShopping(d);   // älteren Einkaufsstand (ein Zeitraum) übernehmen
   return d;
 }
 /* Täglicher Abschluss: vergangene Kochtage gelten als gekocht (5.2 complete) */
@@ -2243,6 +2351,9 @@ function housekeeping() {
       if (e && !e.deleted && e.status === 'PLANNED') { EP.completeEntry(e); changed = true; }
     }
   });
+  if (EP.cleanRotation(db)) changed = true;   // Einträge gelöschter/pausierter Rezepte
+  if (!draft && EP.releaseOrphans(db)) changed = true;   // „Geplant“, obwohl der Tag nicht mehr im Plan steht
+  if (EP.pruneShopping(db, today)) changed = true;
   const before = JSON.stringify([db.recipes.length, db.ingredients.length, db.rotation.length, db.plan.length]);
   EP.pruneTombstones(db, 60 * DAY);
   if (before !== JSON.stringify([db.recipes.length, db.ingredients.length, db.rotation.length, db.plan.length])) changed = true;
@@ -3106,12 +3217,20 @@ function mergeIngredient(fromId, toId) {
 }
 
 /* ---------- Einkaufsliste: Zustand je Zeitraum (4.8) ---------- */
-function shopState(from, to) {
-  if (db.shopping.from !== from || db.shopping.to !== to) {
-    db.shopping = EP.touch({ from, to, checkedKeys: [], extraItems: [] });
+/* Einkaufsstand gilt für alle Zeiträume (gekauft je Kochtag und Zutat) */
+function shopState() { return EP.ensureShopping(db); }
+/* aktueller Zeitraum der Einkaufsliste: „alles Kommende“ = ab heute bis zum letzten geplanten Kochtag (mind. Wochenende) */
+function curShopRange() {
+  if (!shopRange) shopRange = { mode: 'all' };
+  if (shopRange.mode === 'all') {
+    const today = EP.todayISO(), end = EP.addDays(EP.weekStart(today), 6);
+    const last = EP.live(db.plan).filter(p => p.type === 'COOK' && p.date >= today).reduce((m, p) => p.date > m ? p.date : m, end);
+    shopRange.from = today; shopRange.to = last;
   }
-  return db.shopping;
+  return shopRange;
 }
+const curShopList = () => { const r = curShopRange(); return EP.buildShoppingList(db, r.from, r.to); };
+const shopRows = l => l.market.concat(...l.supermarket.map(g => g.items), ...l.drogerie.map(g => g.items), l.pantry);
 
 /* ---------- Sicherung ---------- */
 async function exportData(withImages) {
@@ -3602,7 +3721,7 @@ function laneSeg(cur, act, kinds) {
 function vSuggest() {
   const lane = suggestLane;
   const month = EP.monthOf(EP.todayISO());
-  const sig = () => db.rotation.length + ':' + db.rotation.filter(e => e.status === 'SKIPPED').length;
+  const sig = () => db.rotation.length + ':' + db.rotation.filter(e => e.deleted).length + ':' + db.rotation.filter(e => e.status === 'SKIPPED').length;
   const before = sig();
   const next = EP.nextEntries(db, 6, null, rng, lane, month);
   if (sig() !== before) persist();
@@ -3885,17 +4004,16 @@ function addLaneOptions(d, opts) {
 
 /* ---------- Einkauf (5.5) ---------- */
 function vShop() {
-  if (!shopRange) shopRange = { from: weekStartISO, to: EP.addDays(weekStartISO, 6) };
-  const { from, to } = shopRange;
+  const { from, to, mode } = curShopRange();
   const isWeek = EP.weekStart(from) === from && EP.addDays(from, 6) === to;
   const list = EP.buildShoppingList(db, from, to);
   const showQ = db.settings.marketListShowQuantities;
   const item = (r, withAmt) => r.extra != null
     ? `<div class="item xitem ${r.checked ? 'checked' : ''}"><input type="checkbox" data-extra="${r.extra}" ${r.checked ? 'checked' : ''} aria-label="${esc(r.name)} abhaken">
-      <button class="nm xname" data-act="xcat" data-arg="${r.extra}" aria-label="${esc(r.name)}: Kategorie ändern">${esc(r.name)}<small>zusätzlich</small></button>
+      <button class="nm xname" data-act="xcat" data-arg="${r.extra}" aria-label="${esc(r.name)}: Kategorie ändern">${esc(r.name)}<small>${r.carry && !r.checked ? 'zusätzlich · noch offen von vorher' : 'zusätzlich'}</small></button>
       <button class="btn quiet small noprint xdel" data-act="delextra" data-arg="${r.extra}" aria-label="${esc(r.name)} entfernen">✕</button></div>`
     : `<label class="item ${r.checked ? 'checked' : ''}"><input type="checkbox" data-check="${esc(r.key)}" ${r.checked ? 'checked' : ''}>
-    <span class="nm">${esc(r.name)}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}</label>`;
+    <span class="nm">${esc(r.name)}${r.carry && !r.checked ? '<small class="carry">noch offen von vorher</small>' : ''}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}</label>`;
   const groups = gs => gs.map(g => `<p class="cat">${esc(g.label)}</p>${g.items.map(r => item(r, true)).join('')}`).join('');
   const onList = new Set(list.extraItems.map(x => EP.normExtra(x.text)));
   const recent = (db.settings.recentExtras || []).filter(t => !onList.has(EP.normExtra(t))).slice(0, 8);
@@ -3907,18 +4025,20 @@ function vShop() {
     ? list.marketGroups.map(g => `<p class="cat">${esc(g.label)}</p>${g.items.map(r => item(r, showQ)).join('')}`).join('')
     : list.market.map(r => item(r, showQ)).join('');
   const nChecked = list.market.concat(...list.supermarket.map(g => g.items), ...list.drogerie.map(g => g.items), list.pantry).filter(r => r.checked).length;
-  return `<div class="weekhead noprint">
+  return `<div class="seg shopmode noprint"><button data-act="shopmode" data-arg="all" aria-pressed="${mode === 'all'}">Alles Kommende</button><button data-act="shopmode" data-arg="week" aria-pressed="${mode !== 'all'}">Nach Woche</button></div>
+    ${mode === 'all' ? `<div class="weekhead noprint"><div class="kw"><b>Ab heute</b><span>${EP.fmtRange(from, to)}</span></div></div>` : `<div class="weekhead noprint">
       <button class="iconbtn" data-act="shopwk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
       <div class="kw"><b>${isWeek ? 'KW ' + EP.isoWeek(from) : 'Eigener Zeitraum'}</b><span>${EP.fmtRange(from, to)}</span></div>
       <button class="iconbtn" data-act="shopwk" data-arg="7" aria-label="Nächste Woche" style="transform:scaleX(-1)">${ICON.back}</button>
-    </div>
-    <details class="box noprint rangebox" ${isWeek ? '' : 'open'}><summary>Zeitraum anpassen</summary>
+    </div>`}
+    <details class="box noprint rangebox" ${mode === 'custom' ? 'open' : ''}><summary>Zeitraum anpassen</summary>
       <div class="dategrid">
         <label><span class="hint">Von</span><input class="in" type="date" id="sf" value="${from}"></label>
         <label><span class="hint">Bis</span><input class="in" type="date" id="st" value="${to}"></label>
       </div></details>
     <h2 style="margin-top:18px" class="printonly-h">Einkauf ${EP.fmtRange(from, to)}</h2>
     <p class="sub">${!list.recipes.length ? 'In diesem Zeitraum ist nichts gekocht geplant.' : 'Für: ' + esc(list.recipes.join(', '))}</p>
+    ${list.carried ? `<p class="hint carryhint">${list.carried} ${list.carried === 1 ? 'Artikel ist' : 'Artikel sind'} noch nicht gekauft und ${mode === 'all' ? 'aus den letzten Tagen' : 'aus der Vorwoche'} übernommen.</p>` : ''}
     ${list.warnings.length ? `<ul class="box warnbox" style="margin-top:12px">${list.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
     ${list.market.length ? `<section class="shopsec box">${head('MARKT', 'Markt', list.market.length)}${marketHtml}</section>` : ''}
     ${list.supermarket.length ? `<section class="shopsec box">${head('SUPERMARKT', 'Supermarkt')}${groups(list.supermarket)}</section>` : ''}
@@ -3944,10 +4064,7 @@ function vShop() {
       </div>
     </div>`;
 }
-function shopText() {
-  const { from, to } = shopRange;
-  return EP.shoppingText(EP.buildShoppingList(db, from, to), db.settings);
-}
+function shopText() { return EP.shoppingText(curShopList(), db.settings); }
 
 /* ==========================================================================
    Essensplanung – App Teil 4: Rezepte, Einstellungen, Anmeldung, Start
@@ -4792,22 +4909,27 @@ function ingredientSheet(id) {
 
 /* ---------- Rotation ---------- */
 function vRotation() {
-  const before = db.rotation.length;
+  const sig = () => db.rotation.length + ':' + db.rotation.filter(e => e.deleted).length + ':' + db.rotation.filter(e => e.status === 'SKIPPED').length;
+  const before = sig();
   EP.LANES.forEach(l => EP.nextEntries(db, 1, null, rng, l.key, EP.monthOf(EP.todayISO())));
-  if (db.rotation.length !== before) persist();
+  if (sig() !== before) persist();
+  // nur Rezepte, die es noch gibt: keine gelöschten/archivierten, pausierte nur solange sie noch eingeplant sind
+  const shownE = e => { const r = recipeById(e.recipeId); return r && !r.deleted && !r.archivedAt && (r.inRotation || e.status === 'PLANNED'); };
   const stLabel = { PENDING: ['Offen', ''], PLANNED: ['Geplant', 'cook'], DONE: ['Gekocht', 'done'], SKIPPED: ['Ausgelassen', 'block'] };
   const fixed = db.settings.rotationMode === 'FIXED';
   const actives = EP.activeRecipes(db).sort((a, b) => a.sortOrder - b.sortOrder);
   const allCycles = EP.LANES.flatMap(l => EP.openCycles(db, l.key).map(c => [l.key, c]));
   return (allCycles.length ? allCycles.map(([lane, c]) => {
-    const es = EP.cycleEntries(db, c, lane);
+    const all = EP.cycleEntries(db, c, lane).filter(shownE);
+    const season = all.filter(e => e.status === 'SKIPPED' && e.skipReason === 'SEASON');
+    const es = all.filter(e => !season.includes(e));
+    const seasonNames = [...new Set(season.map(e => recipeById(e.recipeId).name))];
     return `<h3>${LANE_LABEL[lane]} · Durchlauf ${c}</h3><div class="box">${es.map(e => {
-      const r = recipeById(e.recipeId), [l0, cls] = stLabel[e.status];
-      const l = e.status === 'SKIPPED' && e.skipReason === 'SEASON' ? 'Keine Saison' : l0;
+      const r = recipeById(e.recipeId), [l, cls] = stLabel[e.status];
       return `<div class="item"><span class="nm serif" style="font-size:17px">${esc(r ? r.name : '–')}${r && r.weight > 1 ? ` <span class="sub">(${e.occurrence}/${r.weight})</span>` : ''}</span>
         <span class="badge ${cls}">${l}</span>
         ${e.status === 'PENDING' ? `<button class="btn quiet small" data-act="rpost" data-arg="${e.id}">Später</button><button class="btn quiet small" data-act="rskip" data-arg="${e.id}">Auslassen</button>` : ''}</div>`;
-    }).join('')}</div>`;
+    }).join('')}</div>${seasonNames.length ? `<p class="hint">Gerade keine Saison, in diesem Durchlauf ausgelassen: ${esc(seasonNames.join(', '))}</p>` : ''}`;
   }).join('') : '<p class="empty">Keine offenen Durchläufe – leg Rezepte an und nimm sie in die Rotation.</p>')
   + (fixed && actives.length ? `<h3>Feste Reihenfolge</h3><p class="hint" style="margin-top:0">Gilt ab dem nächsten Durchlauf.</p><div class="box">${actives.map((r, i) => `<div class="item">
       <span class="nm serif">${esc(r.name)}</span>
@@ -4906,14 +5028,16 @@ function srcSeg(act, id, cur, extraCls) {
 }
 /* ---------- Zusätzliche Artikel auf der Einkaufsliste ---------- */
 function addExtraItem(t) {
-  shopState(shopRange.from, shopRange.to).extraItems.push({ text: t, checked: false }); EP.touch(db.shopping);
+  const st = shopState(), r = curShopRange(), today = EP.todayISO(), now = Date.now();
+  const date = r.to >= today ? (r.from > today ? r.from : today) : r.from;   // gehört zum gezeigten Zeitraum
+  st.extras.push({ id: EP.uuid(), text: t, date, checked: false, category: null, addedAt: now, updatedAt: now }); EP.touch(st);
   const n = EP.normExtra(t), rec = (db.settings.recentExtras || []).filter(x => EP.normExtra(x) !== n);
   db.settings.recentExtras = [t].concat(rec).slice(0, 12); EP.touch(db.settings);
   Notes.extraAdded(t);
 }
 /* Kategorie eines Zusatzartikels ändern – wird für diesen Begriff gemerkt */
 function extraCatSheet(i) {
-  const st = shopState(shopRange.from, shopRange.to), x = st.extraItems[i]; if (!x) return;
+  const st = shopState(), x = st.extras.find(e => e.id === i); if (!x) return;
   const cur = x.category || EP.extraCategory(x.text, db.settings.extraCats);
   let src = EP.categorySource(cur, db.settings); if (src === 'VORRAT') src = 'SUPERMARKT';
   const store = EP.storeFor(db.settings, src, st), nx = EP.normExtra(x.text), inSec = store && store.assign && store.assign[nx];
@@ -4924,7 +5048,7 @@ function extraCatSheet(i) {
     label: c.label, hint: { MARKT: 'Markt', SUPERMARKT: 'Supermarkt', DROGERIE: 'Drogerie', VORRAT: 'Vorrat' }[EP.categorySource(c.key, db.settings)],
     icon: c.key === cur ? 'check' : 'bowl', tone: c.key === cur ? 'basil' : 'speckle', group: 0,
     run: () => {
-      x.category = c.key; EP.touch(st); unSec();
+      x.category = c.key; EP.touch(x); EP.touch(st); unSec();
       db.settings.extraCats = Object.assign({}, db.settings.extraCats, { [EP.normExtra(x.text)]: c.key }); EP.touch(db.settings);
       change(`${x.text} → ${c.label}`);
     } }))).concat([{ label: 'Entfernen', danger: true, run: () => ACT.delextra(i) }]));
@@ -5006,7 +5130,7 @@ function sectionSheet(secId) {
 }
 /* Geschäft für einen Einkaufsort in dieser Einkaufsliste wählen */
 function storePickSheet(kind) {
-  const st = shopState(shopRange.from, shopRange.to), cur = EP.storeFor(db.settings, kind, st);
+  const st = shopState(), cur = EP.storeFor(db.settings, kind, st);
   const def = (db.settings.storeDefault || {})[kind];
   const set = v => { st.stores = Object.assign({}, st.stores, { [kind]: v }); EP.touch(st); change(); };
   const opts = EP.liveStores(db.settings).filter(x => x.kind === kind).map(x => ({ label: x.name, hint: x.id === def ? 'Standard' : '',
@@ -5167,7 +5291,7 @@ const ACT = {
   },
   lane: a => { const [d, l] = a.split('|'); laneActions(d, l); },
   extra: id => extraActions(id),
-  shopwk: n => { const f = EP.addDays(EP.weekStart(shopRange.from), +n); shopRange = { from: f, to: EP.addDays(f, 6) }; rerender(); },
+  shopwk: n => { const f = EP.addDays(EP.weekStart(curShopRange().from), +n); shopRange = { mode: 'week', from: f, to: EP.addDays(f, 6) }; rerender(); },
   ekind: k => { readEditForm(); const r = editState.r; if (EP.laneOf(r) === k) return; if (EP.laneOf(r) === 'SIDE') r.inRotation = true; r.kind = k; if (k === 'CAKE' && r.servings <= 4) r.servings = 12; if (k !== 'CAKE' && r.servings > 8 && editState.isNew) r.servings = db.settings.portionsPerDay; editState.dirty = true; rerender(); },
   emonth: m => { readEditForm(); m = +m; const r = editState.r; const set = new Set(r.seasonMonths || []); set.has(m) ? set.delete(m) : set.add(m); r.seasonMonths = [...set].sort((a, b) => a - b); editState.dirty = true; rerender(); },
   laneday: a => {
@@ -5234,7 +5358,7 @@ const ACT = {
   },
   discard: () => { draft = null; rerender(); notify('Entwurf verworfen.'); },
   commit: async () => { const ws = draft && draft.ws; commitDraft(); await change('Plan übernommen.'); try { await Sync.run(); } catch (e) {} if (ws) Notes.planCommitted(ws); },
-  toshop: () => { shopRange = { from: weekStartISO, to: EP.addDays(weekStartISO, 6) }; go('shop'); },
+  toshop: () => { shopRange = { mode: 'week', from: weekStartISO, to: EP.addDays(weekStartISO, 6) }; go('shop'); },
   /* Einkauf */
   addextra: () => {
     const inp = $('#extra'); const t = inp.value.trim(); if (!t) return;
@@ -5290,20 +5414,30 @@ const ACT = {
     if (!db.settings.recentExtras.length) recentEdit = false;
     change(`${t} aus den Vorschlägen entfernt`);
   },
-  xcat: i => extraCatSheet(+i),
+  xcat: i => extraCatSheet(i),
   clearchecked: () => {   // abgehakte Einträge ausblenden, zusätzliche Artikel löschen – mit Rückgängig
-    const st = shopState(shopRange.from, shopRange.to), before = deep(st);
-    const list = EP.buildShoppingList(db, shopRange.from, shopRange.to);
-    const keys = list.market.concat(...list.supermarket.map(g => g.items), ...list.drogerie.map(g => g.items), list.pantry).filter(r => r.checked && r.extra == null).map(r => r.key);
-    const n = keys.length + st.extraItems.filter(x => x.checked).length;
-    st.removedKeys = [...new Set((st.removedKeys || []).concat(keys))];
-    st.checkedKeys = (st.checkedKeys || []).filter(k => !keys.includes(k));
-    st.extraItems = st.extraItems.filter(x => !x.checked);
+    const st = shopState(), rows = shopRows(curShopList()).filter(r => r.checked);
+    const units = [].concat(...rows.filter(r => r.extra == null).map(r => r.units));
+    const xs = st.extras.filter(x => rows.some(r => r.extra === x.id));
+    EP.shopMark(db, 'removed', units, true);
+    xs.forEach(x => { x.del = true; EP.touch(x); });
     EP.touch(st);
-    persist().then(() => { rerender(); notify(`${n} entfernt`, () => { db.shopping = EP.touch(Object.assign(before, { updatedAt: 0 })); change('Wiederhergestellt'); }); });
+    const n = rows.length;
+    persist().then(() => { rerender(); notify(`${n} entfernt`, () => {
+      EP.shopMark(db, 'removed', units, false); xs.forEach(x => { x.del = false; EP.touch(x); }); EP.touch(st); change('Wiederhergestellt');
+    }); });
   },
-  showremoved: () => { const st = shopState(shopRange.from, shopRange.to); st.removedKeys = []; EP.touch(st); change('Wieder eingeblendet'); },
-  delextra: i => { const st = shopState(shopRange.from, shopRange.to); st.extraItems.splice(+i, 1); EP.touch(st); change(); },
+  showremoved: () => {
+    const r = curShopRange(), st = shopState();
+    EP.shopMark(db, 'removed', EP.shopUnits(db, r.from, r.to).units.map(u => u.key).filter(k => st.removed[k] && st.removed[k].on), false);
+    change('Wieder eingeblendet');
+  },
+  delextra: i => { const st = shopState(), x = st.extras.find(e => e.id === i); if (!x) return; x.del = true; EP.touch(x); EP.touch(st); change(); },
+  shopmode: m => {
+    if (m === 'all') shopRange = { mode: 'all' };
+    else { const f = EP.weekStart(EP.todayISO()); shopRange = { mode: 'week', from: f, to: EP.addDays(f, 6) }; }
+    rerender();
+  },
   copyshop: () => {
     const t = shopText();
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => notify('Einkaufsliste kopiert.')).catch(() => notify('Kopieren nicht möglich.'));
@@ -5469,7 +5603,7 @@ const BIND = {
   shop: m => {
     const setRange = () => {
       const f = $('#sf', m).value, t = $('#st', m).value;
-      if (f && t && f <= t) { shopRange = { from: f, to: t }; rerender(); }
+      if (f && t && f <= t) { shopRange = { mode: 'custom', from: f, to: t }; rerender(); }
     };
     $('#sf', m).onchange = setRange; $('#st', m).onchange = setRange;
     const updClean = () => {   // Knopf „Abgehakte entfernen“ ohne Neuaufbau (Scrollposition bleibt)
@@ -5478,13 +5612,12 @@ const BIND = {
       w.classList.toggle('hidden', !n && !$('[data-act=showremoved]', m));
     };
     $$('[data-check]', m).forEach(c => c.onchange = () => {
-      const st = shopState(shopRange.from, shopRange.to), k = c.dataset.check;
-      st.checkedKeys = c.checked ? [...new Set(st.checkedKeys.concat(k))] : st.checkedKeys.filter(x => x !== k);
-      EP.touch(st); persist(); c.closest('.item').classList.toggle('checked', c.checked); updClean();
+      const row = shopRows(curShopList()).find(r => r.key === c.dataset.check); if (!row) return;
+      EP.shopMark(db, 'bought', row.units, c.checked); persist(); c.closest('.item').classList.toggle('checked', c.checked); updClean();
     });
     $$('[data-extra]', m).forEach(c => c.onchange = () => {
-      const st = shopState(shopRange.from, shopRange.to);
-      st.extraItems[+c.dataset.extra].checked = c.checked; EP.touch(st); persist(); c.closest('.item').classList.toggle('checked', c.checked); updClean(); updClean();
+      const st = shopState(), x = st.extras.find(e => e.id === c.dataset.extra); if (!x) return;
+      x.checked = c.checked; EP.touch(x); EP.touch(st); persist(); c.closest('.item').classList.toggle('checked', c.checked); updClean();
     });
     const ex = $('#extra', m); if (ex) ex.onkeydown = e => { if (e.key === 'Enter') ACT.addextra(); };
   },
