@@ -508,6 +508,51 @@ button.ordlbl{cursor:pointer;font-weight:600}
 .item .nm small.carry{display:block;color:var(--mustard);font-size:12.5px;font-weight:600;margin-top:1px}
 .carryhint{color:var(--mustard);font-weight:600}
 
+/* Backformen */
+.panchips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:14px}
+.panchip{min-height:52px;flex-direction:column;justify-content:center;align-items:center;text-align:center;line-height:1.2;padding:6px 4px;white-space:normal}
+.panchip small{display:block;font-size:12px;font-weight:500;color:var(--speckle);margin-top:2px}
+.panchip[aria-pressed=true] small{color:inherit}
+.panbtn{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;width:100%;min-height:52px;margin:4px 0 12px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:transparent;color:inherit;font:inherit;font-size:16px;text-align:left;cursor:pointer}
+.panbtn span{color:var(--speckle);font-size:14px}
+.panbtn small{flex-basis:100%;color:var(--speckle);font-size:13.5px}
+.panfield{text-align:left;cursor:pointer;min-height:48px}
+.laneline .nm small.panlbl{display:block;font-size:12.5px;color:var(--speckle);font-weight:500}
+
+/* Durchgehende Wochenansicht */
+.wktop{text-align:center;margin:0 0 6px}
+.wktop .btn,.wkmore .btn{display:inline-flex;min-height:44px}
+.wkblock{margin-bottom:18px}
+.wksep{position:sticky;top:var(--toph,60px);z-index:6;background:var(--enamel);margin:0 -16px 8px;padding:8px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.wksep .kw{flex:1;text-align:left;min-width:0}
+.wksep .kw b{display:inline;font-size:19px;margin-right:8px}
+.wksep .kw span{white-space:nowrap}
+.wkbtns{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.wkbtns .btn{min-height:44px;padding:0 14px}
+.wkblock.drafting .wksep{border-bottom-color:var(--mustard)}
+.wkmore{text-align:center;margin:8px 0 24px}
+.todaybtn{position:fixed;right:16px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:21;min-height:44px;padding:0 18px;border-radius:99px;border:0;background:var(--ink);color:var(--enamel);font:inherit;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer}
+.todaybtn.hidden{display:none}
+
+/* Vorschlag: Tagesleiste */
+.dstrip{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;margin:12px -16px 4px;padding:4px 16px 6px;scrollbar-width:none}
+.dstrip::-webkit-scrollbar{display:none}
+.dchip{flex:0 0 auto;width:48px;min-height:66px;border-radius:14px;border:1px solid var(--line);background:var(--plate);color:inherit;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px 0;scroll-snap-align:center;cursor:pointer;position:relative}
+.dchip small{font-size:11.5px;color:var(--speckle);font-weight:600}
+.dchip b{font-size:18px;line-height:1.2}
+.dchip i{width:7px;height:7px;border-radius:50%;background:transparent;margin-top:2px}
+.dchip.busy i{background:var(--speckle)}
+.dchip.busy b{color:var(--speckle)}
+.dchip.blocked b{text-decoration:line-through;color:var(--speckle)}
+.dchip.blocked i{background:var(--tomato)}
+.dchip.today{border-color:var(--speckle)}
+.dchip.sel{background:var(--basil);border-color:var(--basil);color:var(--enamel)}
+.dchip.sel small,.dchip.sel b{color:var(--enamel)}
+.dchip.sel.busy i{background:var(--enamel)}
+.dstrip ~ .plate-wrap .plate{width:min(62vw,250px)}
+.dchip.start{box-shadow:0 0 0 2px var(--enamel),0 0 0 4px var(--basil)}
+.dstrip-info{text-align:center;font-weight:600;margin:4px 0 0;color:var(--basil)}
+
 </style>
 </head>
 <body>
@@ -1752,6 +1797,53 @@ const EP = (function () {
     return out.map(k => k.startsWith('S:') ? { key: k, label: secs.get(k.slice(2)).name, section: true, id: k.slice(2) } : { key: k, label: CAT[k].label, section: false });
   }
 
+  /* ---------- Backformen (Kuchen) ----------
+     pan = { shape: 'ROUND'|'RING'|'RECT'|'TRAY'|'LOAF', d?, w?, l? } in cm. Mengen skalieren mit der Grundfläche. */
+  const PAN_SHAPES = [['ROUND', 'Springform rund'], ['RING', 'Gugelhupf / Kranz'], ['RECT', 'Eckige Form'], ['TRAY', 'Backblech'], ['LOAF', 'Kastenform']];
+  const PAN_PRESETS = [
+    { shape: 'ROUND', d: 18 }, { shape: 'ROUND', d: 20 }, { shape: 'ROUND', d: 22 }, { shape: 'ROUND', d: 24 }, { shape: 'ROUND', d: 26 }, { shape: 'ROUND', d: 28 },
+    { shape: 'RING', d: 22 }, { shape: 'RING', d: 26 }, { shape: 'LOAF', l: 25 }, { shape: 'LOAF', l: 30 },
+    { shape: 'RECT', w: 20, l: 20 }, { shape: 'RECT', w: 20, l: 30 }, { shape: 'TRAY', w: 30, l: 40 },
+  ];
+  const panNum = v => { const n = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(n) && n > 0 && n < 200 ? Math.round(n * 10) / 10 : null; };
+  function cleanPan(p) {
+    if (!p || !PAN_SHAPES.some(([k]) => k === p.shape)) return null;
+    if (p.shape === 'ROUND' || p.shape === 'RING') { const d = panNum(p.d); return d ? { shape: p.shape, d } : null; }
+    if (p.shape === 'LOAF') { const l = panNum(p.l); return l ? { shape: 'LOAF', l } : null; }
+    const w = panNum(p.w), l = panNum(p.l); return w && l ? { shape: p.shape, w, l } : null;
+  }
+  function panArea(p) {
+    p = cleanPan(p); if (!p) return 0;
+    if (p.shape === 'ROUND') return Math.PI * (p.d / 2) ** 2;
+    if (p.shape === 'RING') return Math.PI * (p.d / 2) ** 2 * 0.86;   // ohne Mittelrohr
+    if (p.shape === 'LOAF') return p.l * 11;                          // übliche Breite 11 cm
+    return p.w * p.l;
+  }
+  /* Faktor für die Zutaten, wenn statt der Originalform eine andere benutzt wird */
+  function panFactor(orig, target) {
+    const a = panArea(orig), b = panArea(target);
+    return a && b ? b / a : 1;
+  }
+  const fmtCm = n => String(n).replace('.', ',');
+  function panLabel(p) {
+    p = cleanPan(p); if (!p) return '';
+    if (p.shape === 'ROUND') return `Springform Ø ${fmtCm(p.d)} cm`;
+    if (p.shape === 'RING') return `Gugelhupf Ø ${fmtCm(p.d)} cm`;
+    if (p.shape === 'LOAF') return `Kastenform ${fmtCm(p.l)} cm`;
+    return `${p.shape === 'TRAY' ? 'Blech' : 'Form'} ${fmtCm(p.w)} × ${fmtCm(p.l)} cm`;
+  }
+  const samePan = (a, b) => JSON.stringify(cleanPan(a)) === JSON.stringify(cleanPan(b));
+  /* umgerechnete Menge zum Einkaufen sinnvoll runden: Gewicht/Volumen auf 5 bzw. 1, Stückartiges aufrunden */
+  function roundScaled(q, unit) {
+    if (q == null) return q;
+    const dim = dimOf(unit), f = (UNITS[unit] && UNITS[unit].f) || 1;
+    if (dim === 'MASS' || dim === 'VOLUME') { const base = q * f, r = base >= 100 ? 5 : base >= 10 ? 1 : 0.1; return Math.round(base / r) * r / f; }
+    if (['EL', 'TL', 'PRISE'].includes(unit)) return Math.max(0.5, Math.round(q * 2) / 2);
+    return Math.max(1, Math.ceil(q - 0.05));
+  }
+  /* Faktor eines Planeintrags (Kuchen mit eigener Backform) */
+  function planFactor(p, r) { return p && p.pan && r && r.pan ? panFactor(r.pan, p.pan) : 1; }
+
   /* ---------- Einkaufsstand (v2) ----------
      Gekauft/entfernt wird je Kochtag und Zutat gemerkt („Einheit“ = Planeintrag|Position der Zutat im Rezept),
      damit derselbe Stand in jeder Ansicht gilt (alles Kommende, einzelne Woche, eigener Zeitraum) und
@@ -1773,8 +1865,9 @@ const EP = (function () {
         const w = `Für „${r.name}“ sind keine Zutaten hinterlegt.`;
         if (!warnings.includes(w)) warnings.push(w);
       }
+      const f = planFactor(p, r);   // Kuchen in anderer Backform
       (r.ingredients || []).forEach((x, k) => {
-        if (ings.has(x.ingredientId)) units.push({ key: p.id + '|' + k, ingId: x.ingredientId, quantity: x.quantity, unit: x.unit, date: p.date });
+        if (ings.has(x.ingredientId)) units.push({ key: p.id + '|' + k, ingId: x.ingredientId, quantity: x.quantity == null || f === 1 ? x.quantity : roundScaled(x.quantity * f, x.unit), unit: x.unit, date: p.date });
       });
     });
     return { names, warnings, units, ings };
@@ -2171,7 +2264,7 @@ const EP = (function () {
     manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
     nextFreeDates, layoutDraft, fillWeek,
     UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
-    CATEGORIES, CAT, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText, shopUnits, migrateShopping, ensureShopping, shopMark, mergeShopping, pruneShopping,
+    CATEGORIES, CAT, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText, PAN_SHAPES, PAN_PRESETS, cleanPan, panArea, panFactor, panLabel, samePan, planFactor, roundScaled, shopUnits, migrateShopping, ensureShopping, shopMark, mergeShopping, pruneShopping,
     mergeDb, cleanRotation, releaseOrphans, normalizePlan, pruneTombstones, buildRecipeExport,
     parseAmount, parseRecipeImport, parseTimers, fmtClock, nameSimilar, similarRecipes,
   };
@@ -3310,6 +3403,7 @@ const ICON = {
   star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z"/></svg>',
   starOn: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8z"/></svg>',
   omore: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="18.5" cy="12" r="1.8"/></svg>',
+  ocake: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="8" rx="8" ry="3"/><path d="M4 8v8c0 1.7 3.6 3 8 3s8-1.3 8-3V8"/></svg>',
   oinfo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
   ox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   oimage: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M20.5 16l-5-5-8 8"/></svg>',
@@ -3323,6 +3417,7 @@ const TITLES = { suggest: 'Als Nächstes', week: 'Wochenplan', shop: 'Einkaufsli
 const LANE_LABEL = { MAIN: 'Hauptgerichte', LUNCH: 'Mittag', CAKE: 'Kuchen', SIDE: 'Beilagen' };
 const DISH_LABEL = { MAIN: 'Hauptgericht', LUNCH: 'Mittag', CAKE: 'Kuchen', SIDE: 'Beilage' };
 let suggestLane = 'MAIN';
+const suggestPick = {};   // je Spur: { date, replace: blockId|null } – Zieltag des Vorschlags
 
 let route = { name: 'week' }, stack = [];
 let recentEdit = false;   // Vorschläge „Zuletzt verwendet“ bearbeiten
@@ -3590,7 +3685,7 @@ function recipePickSheet(title, onPick, kind, opts) {
 }
 /* Aussehen der Menüpunkte: Symbol, Farbe und Gruppe (Reihenfolge) – aus dem Text abgeleitet, per o.icon/o.tone überschreibbar */
 const OPT_STYLE = [
-  [/^Kochansicht/, 'pot', 'rim', 0], [/^Als (gekocht|gebacken)/, 'check', 'basil', 0],
+  [/^Kochansicht/, 'pot', 'rim', 0], [/^Backform/, 'cake', 'mustard', 0], [/^Als (gekocht|gebacken)/, 'check', 'basil', 0],
   [/^Tauschen/, 'swap', 'rim', 1], [/^Nächstes aus/, 'dice', 'rim', 1], [/^(Selbst wählen|Anderes Gericht)/, 'search', 'rim', 1],
   [/^Früher/, 'up', 'rim', 1, 1], [/^Später/, 'down', 'rim', 1, 1], [/verschieben$|^Verschieben/i, 'move', 'rim', 1],
   [/^Fixierung lösen/, 'unpin', 'rim', 1, 1], [/^Fixieren/, 'pin', 'rim', 1, 1], [/^Notiz/, 'pencil', 'rim', 1, 1],
@@ -3672,8 +3767,8 @@ function go(name, params) {
 /* heutigen Tag ins Bild holen, falls er nicht sichtbar ist */
 function scrollToToday() {
   const el = $('.day.today'); if (!el) return;
-  const b = el.getBoundingClientRect();
-  if (b.top < 70 || b.bottom > window.innerHeight - 100) window.scrollTo(0, Math.max(0, window.scrollY + b.top - 150));
+  const b = el.getBoundingClientRect(), head = (($('.top') || {}).offsetHeight || 60) + (($('.wksep') || {}).offsetHeight || 56);
+  if (b.top < head || b.bottom > window.innerHeight - 100) window.scrollTo(0, Math.max(0, window.scrollY + b.top - head - 8));
 }
 function back() {
   if (route.name === 'edit' && editState && editState.dirty) {
@@ -3718,6 +3813,49 @@ function rerender() {
 function laneSeg(cur, act, kinds) {
   return `<div class="seg lane-seg ${kinds && kinds.length > 3 ? 'seg4' : ''}">${(kinds || EP.LANES).map(l => `<button data-act="${act}" data-arg="${l.key}" aria-pressed="${cur === l.key}">${LANE_LABEL[l.key]}</button>`).join('')}</div>`;
 }
+/* Tagesleiste im Vorschlag: welche Tage zeigen, welcher ist gewählt, welche würde das Gericht belegen */
+function suggestDays(lane) {
+  const today = EP.todayISO(), out = [];
+  if (lane === 'MAIN') { for (let i = 0; i < 14; i++) out.push(EP.addDays(today, i)); return out; }
+  for (let i = 0; i < 70 && out.length < 8; i++) { const d = EP.addDays(today, i); if (laneActiveOn(lane, d)) out.push(d); }
+  return out;
+}
+function suggestBusy(lane, d) { return lane === 'MAIN' ? planByDate().get(d) || null : laneAt(db, d, lane); }
+function suggestTarget(lane, r) {
+  const today = EP.todayISO();
+  let t = suggestPick[lane];
+  if (t && (t.date < today || (lane !== 'MAIN' && !laneActiveOn(lane, t.date)))) t = null;
+  if (t && t.replace && !EP.live(db.plan).some(p => p.blockId === t.replace)) t = null;
+  if (t && !t.replace && suggestBusy(lane, t.date)) t = null;
+  if (!t) t = { date: lane === 'MAIN' ? firstFreeFrom(today) : firstLaneDay(lane, today), replace: null };
+  suggestPick[lane] = t;
+  let dates = [t.date];
+  if (lane === 'MAIN' && r) {
+    const occ = mainDates();
+    if (t.replace) EP.live(db.plan).filter(p => p.blockId === t.replace).forEach(p => occ.delete(p.date));
+    dates = EP.nextFreeDates(t.date, daysOf(r), occ);
+  }
+  const old = t.replace && EP.live(db.plan).find(p => p.blockId === t.replace);
+  return Object.assign({}, t, { dates, replacing: old ? recipeById(old.recipeId) : null });
+}
+/* „Mi 07.10.“, „Mi 07. + Do 08.10.“, „Mi 07.–Fr 09.10.“ */
+function shortRange(ds) {
+  const f = d => `${EP.weekday(d)} ${EP.fmtShort(d)}`, g = d => `${EP.weekday(d)} ${d.slice(8)}.`;
+  if (ds.length === 1) return f(ds[0]);
+  const consec = ds.every((d, i) => !i || d === EP.addDays(ds[i - 1], 1));
+  if (ds.length === 2) return `${g(ds[0])} + ${f(ds[1])}`;
+  return consec ? `${g(ds[0])}–${f(ds[ds.length - 1])}` : ds.map(g).join(', ');
+}
+function suggestStrip(lane, t) {
+  const today = EP.todayISO(), sel = new Set(t.dates);
+  return `<div class="dstrip" role="group" aria-label="Tag wählen">${suggestDays(lane).map(d => {
+    const p = suggestBusy(lane, d), blocked = p && p.type === 'BLOCKED', r = p && p.recipeId ? recipeById(p.recipeId) : null;
+    const st = blocked ? 'blocked' : p ? 'busy' : 'free';
+    const lbl = `${EP.weekdayLong(d)}, ${EP.fmtShort(d)}: ${blocked ? 'gesperrt' : r ? r.name : 'frei'}${sel.has(d) ? ' (gewählt)' : ''}`;
+    return `<button class="dchip ${st}${sel.has(d) ? ' sel' : ''}${d === t.date ? ' start' : ''}${d === today ? ' today' : ''}" data-act="sday" data-arg="${d}" aria-label="${esc(lbl)}">
+      <small>${d === today ? 'Heute' : EP.weekday(d)}</small><b>${+d.slice(8)}</b><i></i></button>`;
+  }).join('')}</div>`;
+}
 function vSuggest() {
   const lane = suggestLane;
   const month = EP.monthOf(EP.todayISO());
@@ -3745,13 +3883,17 @@ function vSuggest() {
   const occ = r.weight > 1 ? ` (${e.occurrence}/${r.weight})` : '';
   const meta = lane === 'MAIN' ? `${r.servings} Portionen, reicht für ${daysLabel(n)}${occ}` : `${r.servings} ${lane === 'CAKE' ? 'Stücke' : 'Portionen'}${occ}`;
   const season = EP.seasonLabel(r);
-  return `${seg}<div class="plate-wrap">
+  const t = suggestTarget(lane, r);
+  const busyNote = t.replacing ? `ersetzt „${esc(t.replacing.name)}“` : '';
+  return `${seg}${suggestStrip(lane, t)}
+    <p class="dstrip-info">${lane === 'MAIN' ? (t.dates.length > 1 ? `Belegt ${shortRange(t.dates)}` : shortRange(t.dates)) : `${LANE_LABEL[lane]} am ${shortRange(t.dates)}`}${busyNote ? ` · ${busyNote}` : ''}</p>
+    <div class="plate-wrap">
       <div class="plate ${lane !== 'MAIN' ? 'plate-' + lane.toLowerCase() : ''}">${ck ? `<img data-img="${ck}" data-thumb="0" alt="">` : `<span class="dish">${esc(r.name)}</span>`}</div>
       ${ck ? `<div class="dish-under">${esc(r.name)}</div>` : ''}
       <p class="plate-meta">${meta}${r.prepTimeMinutes ? `, ${r.prepTimeMinutes} min` : ''}${season ? `<br>Saison: ${season}` : ''}</p>
     </div>
     <div class="btns">
-      <button class="btn primary" data-act="accept" data-arg="${e.id}">Übernehmen</button>
+      <button class="btn primary" data-act="accept" data-arg="${e.id}">Für ${shortRange(t.dates)} einplanen</button>
       <div class="btns two" style="margin-top:0">
         <button class="btn" data-act="postpone" data-arg="${e.id}">Später</button>
         <button class="btn" data-act="skip" data-arg="${e.id}">Diesmal auslassen</button>
@@ -3774,12 +3916,21 @@ function cookBtn(r) {
   return `<button class="cookbtn" data-act="cook" data-arg="${r.id}" aria-label="Kochansicht: ${esc(r.name)}">${ICON.pot}</button>`;
 }
 function laneVisible(lane) { return laneDays(lane).length > 0 && liveRecipes().some(r => EP.laneOf(r) === lane); }
-function vWeek() {
-  const ws = weekStartISO, days = EP.weekDays(ws), today = EP.todayISO();
+/* Durchgehende Wochenansicht: Wochen untereinander, KW als mitlaufende Trennzeile.
+   weekStartISO bleibt die „aktive“ Woche für Menüs und Entwurf; sie wird beim Antippen eines Tages gesetzt. */
+let weekRange = null;   // { from: Montag der ersten gezeigten Woche, weeks: Anzahl }
+function ensureWeekShown(ws) {
+  const today = EP.todayISO();
+  if (!weekRange) weekRange = { from: EP.addDays(EP.weekStart(today), -7), weeks: 6 };
+  if (ws < weekRange.from) { const n = Math.round((EP.parseISO(weekRange.from) - EP.parseISO(ws)) / 6048e5); weekRange.from = ws; weekRange.weeks += n; }
+  const last = EP.addDays(weekRange.from, 7 * (weekRange.weeks - 1));
+  if (ws > last) weekRange.weeks += Math.round((EP.parseISO(ws) - EP.parseISO(last)) / 6048e5) + 1;
+}
+function weekBlock(ws, today, showLane) {
+  const days = EP.weekDays(ws);
   const isDraft = draft && draft.ws === ws;
   const ents = weekEntries(ws);
   const kw = EP.isoWeek(ws);
-  const showLane = { LUNCH: laneVisible('LUNCH'), CAKE: laneVisible('CAKE') };
   const rows = days.map(d => {
     const p = ents.get(d);
     const cls = ['day', d === today ? 'today' : '', d < today ? 'past' : '', p && p.drafted ? 'drafted' : ''].join(' ');
@@ -3800,7 +3951,7 @@ function vWeek() {
       if (!x && !(showLane[l] && laneActiveOn(l, d) && d >= today)) return '';
       const r = x && recipeById(x.recipeId);
       return `<div class="dayrow lanerow"><button class="laneline ${x && x.drafted ? 'drafted' : ''} lane-${l.toLowerCase()}" data-act="lane" data-arg="${d}|${l}">
-        <span class="lanelbl">${LANE_LABEL[l]}</span><span class="nm ${x ? '' : 'free'}">${x ? esc(r ? r.name : 'Gelöschtes Rezept') : 'Frei'}</span>
+        <span class="lanelbl">${LANE_LABEL[l]}</span><span class="nm ${x ? '' : 'free'}">${x ? esc(r ? r.name : 'Gelöschtes Rezept') : 'Frei'}${x && x.pan ? `<small class="panlbl">${esc(EP.panLabel(x.pan))}</small>` : ''}</span>
         ${x && x.status === 'DONE' ? `<span class="badge done">${l === 'CAKE' ? 'Gebacken' : 'Gekocht'}</span>` : ''}</button>${x ? cookBtn(r) : ''}</div>`;
     }).join('');
     const extraLines = (ents.extras.get(d) || []).map(x => {
@@ -3813,17 +3964,32 @@ function vWeek() {
     return `<div class="${cls}"><div class="dayrow"><button class="daymain" data-act="day" data-arg="${d}"><div class="dt"><b>${EP.weekday(d)}</b><span>${EP.fmtShort(d)}</span>${d === today ? '<i class="todaypill">Heute</i>' : ''}</div>
       <div class="what">${body}</div>${p && p.locked ? ICON.lock : ''}</button>${cookBtn(mainRecipe)}</div>${laneLines}${extraLines}</div>`;
   }).join('');
-  return `<div class="weekhead">
-      <button class="iconbtn" data-act="wk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
-      <div class="kw"><b>KW ${kw}</b><span>${EP.fmtRange(ws, days[6])}</span></div>
-      <button class="iconbtn" data-act="wk" data-arg="7" aria-label="Nächste Woche" style="transform:scaleX(-1)">${ICON.back}</button>
-    </div>
-    ${ws !== EP.weekStart(today) ? '<div style="text-align:center;margin:-6px 0 10px"><button class="btn quiet small" data-act="wk" data-arg="0" style="display:inline-flex">Zur aktuellen Woche</button></div>' : ''}
+  const canFill = !draft && days[6] >= today;
+  return `<section class="wkblock${isDraft ? ' drafting' : ''}${ws === EP.weekStart(today) ? ' current' : ''}" data-ws="${ws}">
+    <div class="wksep weekhead"><div class="kw"><b>KW ${kw}</b><span>${EP.fmtRange(ws, days[6])}</span></div>
+      <div class="wkbtns">${canFill ? `<button class="btn small primary" data-act="fill" data-arg="${ws}" aria-label="KW ${kw} füllen">Füllen</button>` : ''}
+        <button class="iconbtn" data-act="toshop" data-arg="${ws}" aria-label="Einkaufsliste KW ${kw}">${ICON.cart}</button></div></div>
     ${isDraft ? `<div class="draftbar"><b>Entwurf</b> – noch nicht gespeichert. Tippe auf einen Tag, um zu tauschen, zu verschieben oder selbst zu wählen.</div>` : ''}
     <div class="days">${rows}</div>
-    ${isDraft
-      ? `<div class="btns two"><button class="btn" data-act="discard">Verwerfen</button><button class="btn primary" data-act="commit">Plan übernehmen</button></div>`
-      : `<div class="btns two"><button class="btn primary" data-act="fill">Woche füllen</button><button class="btn" data-act="toshop">Einkaufsliste</button></div>`}`;
+    ${isDraft ? `<div class="btns two"><button class="btn" data-act="discard">Verwerfen</button><button class="btn primary" data-act="commit">Plan übernehmen</button></div>` : ''}
+  </section>`;
+}
+function vWeek() {
+  const today = EP.todayISO();
+  ensureWeekShown(weekStartISO);
+  if (draft) ensureWeekShown(draft.ws);
+  const showLane = { LUNCH: laneVisible('LUNCH'), CAKE: laneVisible('CAKE') };
+  const weeks = Array.from({ length: weekRange.weeks }, (_, i) => EP.addDays(weekRange.from, 7 * i));
+  return `<div class="wktop"><button class="btn quiet small" data-act="wkearlier">Frühere Woche zeigen</button></div>
+    ${weeks.map(ws => weekBlock(ws, today, showLane)).join('')}
+    <div class="wkmore" id="wkmore"><button class="btn quiet" data-act="wkmore">Weitere Wochen laden</button></div>
+    <button class="todaybtn hidden" id="todaybtn" data-act="wk" data-arg="0" aria-label="Zu heute springen">Heute</button>`;
+}
+/* eine Woche in den sichtbaren Bereich holen (unter die mitlaufende Kopfzeile) */
+function scrollToWeek(ws, smooth) {
+  const el = $(`.wkblock[data-ws="${ws}"]`); if (!el) return;
+  const top = el.getBoundingClientRect().top + window.scrollY - (($('.top') || {}).offsetHeight || 0) - 4;
+  window.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
 }
 /* Aktionen für Mittag / Kuchen an einem Tag */
 function laneActions(d, lane) {
@@ -3854,6 +4020,7 @@ function laneActions(d, lane) {
   } else {
     if (x.status !== 'DONE') opts.push({ label: lane === 'CAKE' ? 'Als gebacken markieren' : 'Als gekocht markieren', run: () => undoable(() => { markCooked(x.blockId); return 'Erledigt.'; }) });
     if (r && (r.instructions || r.ingredients.length)) opts.push({ label: 'Kochansicht öffnen', run: () => openCook(r.id) });
+    if (r && lane === 'CAKE') opts.push({ label: 'Backform', hint: x.pan ? EP.panLabel(x.pan) + ' (statt ' + EP.panLabel(r.pan) + ')' : r.pan ? EP.panLabel(r.pan) + ' – andere Größe wählen' : 'Größe angeben und umrechnen', run: () => planPanSheet(x, r) });
     if (d >= EP.todayISO()) {
       opts.push({ label: 'Tauschen', hint: 'Nächstes aus der ' + what + '-Rotation', run: () => undoable(() => { const nr = swapLane(d, lane); return nr ? 'Getauscht gegen ' + nr.name + '.' : 'Keine weiteren Gerichte in dieser Rotation.'; }) });
       opts.push({ label: 'Selbst wählen', run: () => recipePickSheet(what + ' wählen', id => pickCheck(id, d, y => y.blockId === x.blockId, o => undoable(() => { if (o) removeOther(o); const e = EP.manualPickEntry(db, id), m = pickMsg(id, e, o); placeLane(d, lane, id, e ? e.id : null); return m.replace('Eingeplant', 'Ersetzt'); })), lane, { date: d, ignore: y => y.blockId === x.blockId }) });
@@ -3978,6 +4145,7 @@ function extraActions(id) {
   const r = recipeById(x.recipeId), k = x.dishKind || 'MAIN';
   const opts = [];
   if (r && (r.instructions || r.ingredients.length)) opts.push({ label: 'Kochansicht öffnen', run: () => openCook(r.id) });
+  if (r && k === 'CAKE' && !(draft && draft.ws === weekStartISO)) opts.push({ label: 'Backform', hint: x.pan ? EP.panLabel(x.pan) : r.pan ? EP.panLabel(r.pan) + ' – andere Größe wählen' : 'Größe angeben und umrechnen', run: () => planPanSheet(x, r) });
   opts.push({ label: 'Anderes Gericht wählen', run: () => recipePickSheet('Gericht wählen', nid => pickCheck(nid, x.date, y => y.id === id, o => undoable(() => { if (o) removeOther(o); replaceExtra(id, nid); return 'Ersetzt.'; })), k, { kinds: EXTRA_KINDS, date: x.date, ignore: y => y.id === id }) });
   opts.push({ label: 'Auf anderen Tag verschieben', run: () => extraMoveSheet(x, r) });
   opts.push({ label: 'Noch ein Gericht hinzufügen', run: () => addExtraSheet(x.date) });
@@ -4355,6 +4523,8 @@ function vEdit() {
     <div class="field"><span>Art</span>
       <div class="seg seg4">${EP.KINDS.map(l => `<button data-act="ekind" data-arg="${l.key}" aria-pressed="${kind === l.key}">${l.short}</button>`).join('')}</div>
       <p class="hint">${isMain ? 'Normale Mahlzeit, belegt je nach Portionen mehrere Tage.' : kind === 'LUNCH' ? 'Zusätzliches Mittagessen an den eingestellten Tagen, eigene Rotation.' : kind === 'SIDE' ? 'Salat, Soße, Brot … Keine Rotation – im Wochenplan über „Weiteres Gericht hinzufügen“ einplanen.' : 'Kommt zusätzlich zum Essen dazu, eigene Rotation.'}</p></div>
+    ${kind === 'CAKE' ? `<div class="field"><span>Backform</span><button class="in panfield" data-act="epan">${r.pan ? esc(EP.panLabel(r.pan)) : 'Nicht angegeben – antippen'}</button>
+      <p class="hint">Größe, für die die Mengen gedacht sind. Beim Backen und im Wochenplan kannst du dann auf andere Formen umrechnen.</p></div>` : ''}
     <div class="field"><span>${kind === 'CAKE' ? 'Stücke' : 'Portionen pro Zubereitung'}</span>
       <div class="stepper"><button data-act="serv" data-arg="-1" aria-label="Weniger">−</button><output id="e-serv">${r.servings}</output><button data-act="serv" data-arg="1" aria-label="Mehr">+</button></div>
       ${isMain ? `<p class="live" id="e-live">${liveDaysText(r)}</p><p class="hint" id="e-hint">${esc(hint)}</p>` : ''}</div>
@@ -4591,6 +4761,15 @@ const Timers = {
   },
 };
 
+/* „Heute“-Knopf in der Wochenansicht nur zeigen, wenn der heutige Tag aus dem Bild gescrollt ist */
+function weekScroll() {
+  const b = $('#todaybtn'); if (!b || route.name !== 'week') return;
+  const t = $('.day.today'); let off = true;
+  if (t) { const r = t.getBoundingClientRect(); off = r.bottom < 80 || r.top > window.innerHeight - 90; }
+  b.classList.toggle('hidden', !off);
+}
+window.addEventListener('scroll', () => { if (route && route.name === 'week') weekScroll(); }, { passive: true });
+
 /* ---------- Mitteilungen (Web-Push über den Pi) ---------- */
 const Notes = {
   /* geteilter Haushalt als Konto-Ding – nur mit Pi-Abgleich */
@@ -4669,7 +4848,7 @@ function saveCookProgress() {
   if (!cookState) return;
   const all = LS.get(PROG_KEY) || {}, now = Date.now();
   Object.keys(all).forEach(k => { if (now - all[k].t > 12 * 3600e3) delete all[k]; });
-  if (cookState.done.size || cookState.n !== (cookState.r.servings || 2)) all[cookState.r.id] = { done: [...cookState.done], n: cookState.n, t: now };
+  if (cookState.done.size || cookState.n !== (cookState.r.servings || 2) || cookState.pan) all[cookState.r.id] = { done: [...cookState.done], n: cookState.n, pan: cookState.pan || null, t: now };
   else delete all[cookState.r.id];
   LS.set(PROG_KEY, all);
 }
@@ -4689,6 +4868,53 @@ function renderMd(md) {
   if (!steps.length) return { steps: notes.map(fmt), intro: '' };
   return { steps: steps.map(fmt), intro: notes.map(n => `<p>${fmt(n)}</p>`).join('') };
 }
+/* ---------- Backformen (Kuchen): Größe wählen, Mengen über die Fläche umrechnen ---------- */
+const panShort = p => { p = EP.cleanPan(p); if (!p) return ''; const c = n => String(n).replace('.', ',');
+  return p.shape === 'ROUND' ? `Ø ${c(p.d)} cm` : p.shape === 'RING' ? `Gugelhupf Ø ${c(p.d)}` : p.shape === 'LOAF' ? `Kasten ${c(p.l)} cm` : `${p.shape === 'TRAY' ? 'Blech ' : ''}${c(p.w)}×${c(p.l)} cm`; };
+const fmtFactor = f => Math.abs(f - 1) < 0.005 ? 'wie im Rezept' : '×' + f.toFixed(2).replace('.', ',').replace(/0$/, '');
+/* o = { title, sub, cur, orig, onPick(pan), reset: Text für „Originalform“ } */
+function panSheet(o) {
+  let shape = (o.cur && o.cur.shape) || (o.orig && o.orig.shape) || 'ROUND';
+  const cur = EP.cleanPan(o.cur) || {};
+  const dims = () => {
+    const f = (id, lbl, v) => `<label class="field grow" style="margin:0"><span>${lbl}</span><input class="in" id="${id}" inputmode="decimal" value="${v ? String(v).replace('.', ',') : ''}" placeholder="cm"></label>`;
+    return shape === 'ROUND' || shape === 'RING' ? f('p-d', 'Durchmesser (cm)', cur.shape === shape ? cur.d : '')
+      : shape === 'LOAF' ? f('p-l', 'Länge (cm)', cur.shape === shape ? cur.l : '')
+      : `<div class="row" style="gap:10px">${f('p-w', 'Breite (cm)', cur.shape === shape ? cur.w : '')}${f('p-l', 'Länge (cm)', cur.shape === shape ? cur.l : '')}</div>`;
+  };
+  openSheet(`<h2>${esc(o.title)}</h2>${o.sub ? `<p class="sub" style="margin-top:6px">${esc(o.sub)}</p>` : ''}
+    <div class="panchips">${EP.PAN_PRESETS.map((p, i) => `<button class="chip panchip" data-pi="${i}" aria-pressed="${EP.samePan(p, o.cur)}">${esc(panShort(p))}${o.orig ? `<small>${fmtFactor(EP.panFactor(o.orig, p))}</small>` : ''}</button>`).join('')}</div>
+    <h3 style="margin:18px 0 8px">Eigene Größe</h3>
+    <label class="field" style="margin:0 0 10px"><span>Form</span><select class="in" id="p-shape">${EP.PAN_SHAPES.map(([k, l]) => `<option value="${k}" ${k === shape ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+    <div id="p-dims">${dims()}</div>
+    <p class="hint" id="p-hint" style="min-height:1.4em"></p>
+    <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">Übernehmen</button></div>
+    ${o.reset ? `<div class="btns"><button class="btn quiet" data-x="reset">${esc(o.reset)}</button></div>` : ''}`, el => {
+    const read = () => EP.cleanPan({ shape, d: ($('#p-d', el) || {}).value, w: ($('#p-w', el) || {}).value, l: ($('#p-l', el) || {}).value });
+    const hint = () => { const p = read(); $('#p-hint', el).textContent = p ? EP.panLabel(p) + (o.orig ? ' · Zutaten ' + fmtFactor(EP.panFactor(o.orig, p)) : '') : ''; };
+    const bindDims = () => $$('#p-dims input', el).forEach(i => { i.oninput = hint; i.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('[data-x=yes]', el).click(); } }; });
+    $('#p-shape', el).onchange = e => { shape = e.target.value; $('#p-dims', el).innerHTML = dims(); bindDims(); hint(); };
+    bindDims(); hint();
+    $$('[data-pi]', el).forEach(b => b.onclick = () => { closeSheet(); o.onPick(EP.cleanPan(EP.PAN_PRESETS[+b.dataset.pi])); });
+    $('[data-x=no]', el).onclick = closeSheet;
+    $('[data-x=yes]', el).onclick = () => { const p = read(); if (!p) { const i = $('#p-dims input', el); if (i) i.focus(); $('#p-hint', el).textContent = 'Bitte die Größe in cm eingeben.'; return; } closeSheet(); o.onPick(p); };
+    const rs = $('[data-x=reset]', el); if (rs) rs.onclick = () => { closeSheet(); o.onPick(null); };
+  });
+}
+/* Originalform eines Rezepts festlegen (nötig, bevor umgerechnet werden kann) */
+function recipePanSheet(r, then) {
+  panSheet({ title: 'Backform des Rezepts', sub: `Für welche Form sind die Mengen von „${r.name}“ gedacht? Danach kannst du auf jede andere Größe umrechnen.`, cur: r.pan,
+    onPick: p => { r.pan = p; EP.touch(r); persist(); notify('Originalform: ' + EP.panLabel(p)); if (then) then(p); } });
+}
+/* Backform für einen geplanten Kuchen (Mengen und Einkaufsliste passen sich an) */
+function planPanSheet(shown, r) {
+  const x = EP.live(db.plan).find(p => p.id === shown.id) || shown;   // Anzeige-Kopie → gespeicherter Planeintrag
+  const go2 = () => panSheet({ title: 'Backform für diesen Kuchen', sub: `Rezept: ${EP.panLabel(r.pan)}. Die Zutaten und die Einkaufsliste werden umgerechnet.`,
+    cur: x.pan || r.pan, orig: r.pan, reset: `Originalform (${EP.panLabel(r.pan)})`,
+    onPick: p => { x.pan = p && !EP.samePan(p, r.pan) ? p : null; EP.touch(x); change(x.pan ? `Backform: ${EP.panLabel(x.pan)} (Zutaten ${fmtFactor(EP.panFactor(r.pan, x.pan))})` : 'Originalform des Rezepts'); } });
+  if (!r.pan) recipePanSheet(r, () => go2()); else go2();
+}
+
 /* ---------- Kochansicht (Karten wie in Rezept-Apps: Kopf, Zutaten mit Portionen-Umschalter, Schritte zum Abhaken) ---------- */
 let cookState = null;
 const COOK_ICON = {
@@ -4721,7 +4947,12 @@ function cookIngredients() {
   }).filter(o => o.name);
   return list.filter(o => !o.spice).concat(list.filter(o => o.spice));   // Gewürze immer zuletzt
 }
-function cookFactor() { return cookState.n / (cookState.r.servings || cookState.n || 1); }
+const isCake = r => EP.laneOf(r) === 'CAKE' || r.kind === 'CAKE';
+function cookFactor() {
+  const r = cookState.r;
+  if (isCake(r) && r.pan && cookState.pan) return EP.panFactor(r.pan, cookState.pan);
+  return cookState.n / (r.servings || cookState.n || 1);
+}
 function cookIngRows() {
   const f = cookFactor();
   return cookIngredients().map((o, k) => `<li data-ci="${k}" class="${cookState.done.has('i' + k) ? 'done' : ''}"><span class="q">${esc(cookAmount(o.x, f))}</span>
@@ -4761,7 +4992,9 @@ const ingLine = (o, f) => `<li class="${o.spice ? 'spice' : ''}">${esc(cookAmoun
 function openCook(id) {
   const r = recipeById(id); if (!r) return;
   const prog = loadCookProgress(id);
-  cookState = { r, n: prog ? prog.n : (r.servings || 2), done: new Set(prog ? prog.done : []) };
+  // Backform: gespeicherter Kochstand, sonst der nächste geplante Termin dieses Kuchens
+  const planned = EP.live(db.plan).filter(p => p.recipeId === id && p.pan && p.date >= EP.todayISO()).sort((a, b) => a.date.localeCompare(b.date))[0];
+  cookState = { r, n: prog ? prog.n : (r.servings || 2), done: new Set(prog ? prog.done : []), pan: prog && prog.pan !== undefined ? prog.pan : (planned ? planned.pan : null) };
   const el = $('#cookview');
   el.classList.remove('hidden');
   renderCook();
@@ -4787,7 +5020,8 @@ function renderCook() {
       <div class="cmeta">${meta}</div>
       ${(r.tags || []).length ? `<div class="ctags">${r.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}</section>
     ${ings.length ? `<section class="ccard"><h2>Zutaten</h2>
-      <div class="cstep" role="group" aria-label="${unit}"><button data-act="cookpp" data-arg="-1" aria-label="Weniger ${unit}">−</button><output id="cook-n">${cookState.n} ${unit}</output><button data-act="cookpp" data-arg="1" aria-label="Mehr ${unit}">+</button></div>
+      ${isCake(r) ? `<button class="panbtn" data-act="cookpan">${r.pan ? `<span>Backform</span><b>${esc(EP.panLabel(cookState.pan || r.pan))} ▾</b>${cookState.pan ? `<small>Zutaten ${fmtFactor(cookFactor())} · ca. ${Math.max(1, Math.round((r.servings || 12) * cookFactor()))} Stücke</small>` : ''}` : '<span>Backform</span><b>Größe angeben ▾</b><small>dann auf andere Formen umrechnen</small>'}</button>` : ''}
+      ${isCake(r) && r.pan ? '' : `<div class="cstep" role="group" aria-label="${unit}"><button data-act="cookpp" data-arg="-1" aria-label="Weniger ${unit}">−</button><output id="cook-n">${cookState.n} ${unit}</output><button data-act="cookpp" data-arg="1" aria-label="Mehr ${unit}">+</button></div>`}
       <ul class="cing" id="cook-ing">${cookIngRows()}</ul></section>` : ''}
     ${md.steps.length ? (() => {
       const plan = cookPlan(md.steps), f = cookFactor();
@@ -4846,6 +5080,14 @@ function cookPortions(d) {
   const el = $('#cookview'), y = el.scrollTop;
   renderCook();       // Abhak-Zustand bleibt in cookState.done
   el.scrollTop = y;
+}
+function cookPan() {
+  if (!cookState) return;
+  const r = cookState.r, redraw = () => { const el = $('#cookview'), y = el.scrollTop; renderCook(); el.scrollTop = y; };
+  if (!r.pan) return recipePanSheet(r, () => { cookState.pan = null; saveCookProgress(); redraw(); });
+  panSheet({ title: 'Backform', sub: `Rezept: ${EP.panLabel(r.pan)}. Die Mengen werden über die Fläche umgerechnet.`, cur: cookState.pan || r.pan, orig: r.pan,
+    reset: `Originalform (${EP.panLabel(r.pan)})`,
+    onPick: p => { cookState.pan = p && !EP.samePan(p, r.pan) ? p : null; saveCookProgress(); redraw(); } });
 }
 function closeCook() {
   $('#cookview').classList.add('hidden');
@@ -5289,8 +5531,8 @@ const ACT = {
     const res = await importData({ data: seedToDb(LANE_SAMPLES[lane], EP) }, 'merge');
     change(`${res.added} ${lane === 'CAKE' ? 'Kuchen' : 'Mittagsgerichte'} geladen.`);
   },
-  lane: a => { const [d, l] = a.split('|'); laneActions(d, l); },
-  extra: id => extraActions(id),
+  lane: a => { const [d, l] = a.split('|'); weekStartISO = EP.weekStart(d); laneActions(d, l); },
+  extra: id => { const x = EP.live((draft ? draft.clone : db).plan).find(p => p.id === id) || EP.live(db.plan).find(p => p.id === id); if (x) weekStartISO = EP.weekStart(x.date); extraActions(id); },
   shopwk: n => { const f = EP.addDays(EP.weekStart(curShopRange().from), +n); shopRange = { mode: 'week', from: f, to: EP.addDays(f, 6) }; rerender(); },
   ekind: k => { readEditForm(); const r = editState.r; if (EP.laneOf(r) === k) return; if (EP.laneOf(r) === 'SIDE') r.inRotation = true; r.kind = k; if (k === 'CAKE' && r.servings <= 4) r.servings = 12; if (k !== 'CAKE' && r.servings > 8 && editState.isNew) r.servings = db.settings.portionsPerDay; editState.dirty = true; rerender(); },
   emonth: m => { readEditForm(); m = +m; const r = editState.r; const set = new Set(r.seasonMonths || []); set.has(m) ? set.delete(m) : set.add(m); r.seasonMonths = [...set].sort((a, b) => a - b); editState.dirty = true; rerender(); },
@@ -5330,10 +5572,33 @@ const ACT = {
     change(`${res.added} Beispielrezepte geladen.`);
   },
   /* Vorschlag */
-  accept: id => {
-    const e = rotById(null, id), r = recipeById(e.recipeId), lane = EP.laneOf(e);
-    if (lane !== 'MAIN') return laneDateSheet('Übernehmen', r, lane, firstLaneDay(lane, EP.todayISO()), 'Übernehmen', d => { placeLane(d, lane, r.id, e.id); change('Eingeplant am ' + EP.fmtShort(d) + '.'); });
-    dateSheet('Übernehmen', r, firstFreeFrom(EP.todayISO()), 'Übernehmen', d => { placeBlock(d, { recipeId: r.id, rotationEntryId: e.id }); change('Eingeplant ab ' + EP.fmtShort(d) + '.'); });
+  accept: id => {   // auf den in der Tagesleiste gewählten Tag; danach weiter zum nächsten freien Tag
+    const e = rotById(null, id), r = recipeById(e.recipeId), lane = EP.laneOf(e), t = suggestTarget(lane, r);
+    undoable(() => {
+      if (lane !== 'MAIN') {
+        placeLane(t.date, lane, r.id, e.id);
+        suggestPick[lane] = { date: firstLaneDay(lane, EP.addDays(t.date, 1)), replace: null };
+        return `${r.name}: ${shortRange([t.date])}`;
+      }
+      if (t.replace) removeBlock(t.replace, true);
+      const ds = placeBlock(t.date, { recipeId: r.id, rotationEntryId: e.id });
+      suggestPick.MAIN = { date: firstFreeFrom(EP.addDays(ds[ds.length - 1], 1)), replace: null };
+      return `${r.name}: ${shortRange(ds)}`;
+    });
+  },
+  sday: d => {   // Tag in der Tagesleiste antippen
+    const lane = suggestLane, p = suggestBusy(lane, d), set = (date, replace) => { suggestPick[lane] = { date, replace: replace || null }; rerender(); };
+    if (!p) return set(d);
+    const title = `${EP.weekdayLong(d)}, ${EP.fmtShort(d)}`;
+    const nextFree = () => set(lane === 'MAIN' ? firstFreeFrom(EP.addDays(d, 1)) : firstLaneDay(lane, EP.addDays(d, 1)));
+    if (p.type === 'BLOCKED') return optionsSheet(title, `Gesperrt: ${esc(p.note || 'kein Kochen')}`, [
+      { label: 'Tag freigeben und hier planen', icon: 'unpin', run: () => { unblockDay(d); suggestPick[lane] = { date: d, replace: null }; change('Tag freigegeben.'); } },
+      { label: 'Nächster freier Tag danach', icon: 'move', run: nextFree }]);
+    const r = recipeById(p.recipeId);
+    if (p.status === 'DONE') return optionsSheet(title, esc(r ? r.name : ''), [{ label: 'Nächster freier Tag danach', icon: 'move', run: nextFree }]);
+    optionsSheet(title, `Hier steht schon „${esc(r ? r.name : 'ein Gericht')}“.`, [
+      { label: `„${r ? r.name : 'Gericht'}“ ersetzen`, hint: p.dayCount > 1 && lane === 'MAIN' ? 'Ersetzt das Gericht samt Resttagen' : 'Der Vorschlag kommt an diesen Tag', icon: 'swap', run: () => set(d, p.blockId) },
+      { label: 'Nächster freier Tag danach', icon: 'move', run: nextFree }]);
   },
   postpone: id => { EP.postpone(db, rotById(null, id)); change('Kommt später wieder dran.'); },
   skip: id => {
@@ -5346,19 +5611,33 @@ const ACT = {
       if (o) removeOther(o);
       const e = EP.manualPickEntry(db, id), m = pickMsg(id, e, o); fn(d, e); return m.replace(/^Eingeplant/, 'Eingeplant am ' + EP.fmtShort(d));
     }));
-    if (lane !== 'MAIN') return laneDateSheet('Einplanen', r, lane, firstLaneDay(lane, EP.todayISO()), 'Einplanen', d => place(d, (d2, e) => placeLane(d2, lane, id, e ? e.id : null)));
-    dateSheet('Einplanen', r, firstFreeFrom(EP.todayISO()), 'Einplanen', d => place(d, (d2, e) => placeBlock(d2, { recipeId: id, rotationEntryId: e ? e.id : null })));
+    const t = suggestTarget(lane, r);   // gleicher Zieltag wie in der Tagesleiste
+    if (lane !== 'MAIN') return place(t.date, (d2, e) => { placeLane(d2, lane, id, e ? e.id : null); suggestPick[lane] = { date: firstLaneDay(lane, EP.addDays(d2, 1)), replace: null }; });
+    place(t.date, (d2, e) => {
+      if (t.replace) removeBlock(t.replace, true);
+      const ds = placeBlock(d2, { recipeId: id, rotationEntryId: e ? e.id : null });
+      suggestPick.MAIN = { date: firstFreeFrom(EP.addDays(ds[ds.length - 1], 1)), replace: null };
+    });
   }, suggestLane),
   /* Woche */
-  wk: a => { const n = +a; weekStartISO = n === 0 ? EP.weekStart(EP.todayISO()) : EP.addDays(weekStartISO, n); rerender(); if (n === 0) scrollToToday(); },
-  day: d => dayActions(d),
-  fill: () => {
+  wk: a => {
+    const n = +a; weekStartISO = n === 0 ? EP.weekStart(EP.todayISO()) : EP.addDays(weekStartISO, n);
+    rerender(); if (n === 0) scrollToToday(); else scrollToWeek(weekStartISO);
+  },
+  wkmore: () => { if (!weekRange || weekRange.weeks >= 60) return; weekRange.weeks += 4; const y = window.scrollY; rerender(); window.scrollTo(0, y); },
+  wkearlier: () => {   // eine Woche davor einblenden und zeigen
+    weekRange.from = EP.addDays(weekRange.from, -7); weekRange.weeks++;
+    rerender(); scrollToWeek(weekRange.from);
+  },
+  day: d => { weekStartISO = EP.weekStart(d); dayActions(d); },
+  fill: ws => {
     if (!EP.activeRecipes(db).length) return notify('Keine Rezepte in der Rotation.');
-    startDraft(weekStartISO); rerender();
+    if (ws) weekStartISO = ws;
+    startDraft(weekStartISO); rerender(); scrollToWeek(weekStartISO);
   },
   discard: () => { draft = null; rerender(); notify('Entwurf verworfen.'); },
   commit: async () => { const ws = draft && draft.ws; commitDraft(); await change('Plan übernommen.'); try { await Sync.run(); } catch (e) {} if (ws) Notes.planCommitted(ws); },
-  toshop: () => { shopRange = { mode: 'week', from: weekStartISO, to: EP.addDays(weekStartISO, 6) }; go('shop'); },
+  toshop: ws => { const f = ws || weekStartISO; shopRange = { mode: 'week', from: f, to: EP.addDays(f, 6) }; go('shop'); },
   /* Einkauf */
   addextra: () => {
     const inp = $('#extra'); const t = inp.value.trim(); if (!t) return;
@@ -5460,6 +5739,9 @@ const ACT = {
   w: a => { const [id, d] = a.split('|'); const r = recipeById(id); setWeight(r, r.weight + (+d)); change(); },
   edit: id => openEdit(id),
   cook: id => openCook(id),
+  cookpan: () => cookPan(),
+  epan: () => { readEditForm(); const r = editState.r; panSheet({ title: 'Backform des Rezepts', sub: 'Für diese Form sind die Mengen gedacht.', cur: r.pan, reset: r.pan ? 'Keine Angabe' : '',
+    onPick: p => { r.pan = p; editState.dirty = true; rerender(); } }); },
   fav: id => { const r = recipeById(id); if (!r) return; r.favorite = !r.favorite; EP.touch(r); change(r.favorite ? '★ Favorit.' : 'Kein Favorit mehr.'); },
   cookreset: () => { cookState.done.clear(); saveCookProgress(); const el = $('#cookview'), y = el.scrollTop; renderCook(); el.scrollTop = y; },
   closecook: () => closeCook(),
@@ -5598,6 +5880,16 @@ const BIND = {
       if (c.checked) d[s.kind] = s.id; else if (d[s.kind] === s.id) delete d[s.kind];
       db.settings.storeDefault = d; storesSave(c.checked ? `${s.name} ist Standard` : '');
     };
+  },
+  suggest: m => { const s = $('.dstrip .start', m); if (s && s.scrollIntoView) { const st = $('.dstrip', m); st.scrollLeft = Math.max(0, s.offsetLeft - st.clientWidth / 2 + s.offsetWidth / 2); } },
+  week: m => {
+    const top = $('.top'); if (top) document.documentElement.style.setProperty('--toph', top.offsetHeight + 'px');
+    weekScroll();
+    const more = $('#wkmore', m);
+    if (more && 'IntersectionObserver' in window) {
+      const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting) && route.name === 'week') { io.disconnect(); ACT.wkmore(); } }, { rootMargin: '400px 0px' });
+      io.observe(more);
+    }
   },
   sources: m => { $$('details[data-cat]', m).forEach(d => d.addEventListener('toggle', () => { d.open ? srcOpen.add(d.dataset.cat) : srcOpen.delete(d.dataset.cat); })); },
   shop: m => {
