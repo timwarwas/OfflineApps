@@ -554,6 +554,9 @@ button.ordlbl{cursor:pointer;font-weight:600}
 .dchip.start{box-shadow:0 0 0 2px var(--enamel),0 0 0 4px var(--basil)}
 .dstrip-info{text-align:center;font-weight:600;margin:4px 0 0;color:var(--basil)}
 
+/* Vorschläge: wieder fällige Artikel hervorheben */
+.recentx .chip.due{border-color:var(--basil);color:var(--basil);font-weight:700}
+
 </style>
 </head>
 <body>
@@ -1798,6 +1801,31 @@ const EP = (function () {
     return out.map(k => k.startsWith('S:') ? { key: k, label: secs.get(k.slice(2)).name, section: true, id: k.slice(2) } : { key: k, label: CAT[k].label, section: false });
   }
 
+  /* ---------- Vorschläge für zusätzliche Artikel: häufig gekauft und „wieder fällig“ ----------
+     stats = { <normierter Name>: { t: Anzeigename, d: [ISO-Daten, je Tag einmal, max. 12], hidden?: true } } */
+  function recordExtra(stats, text, date) {
+    const n = normExtra(text); if (!n) return stats;
+    const o = Object.assign({}, stats), e = Object.assign({ d: [] }, o[n]);
+    e.t = String(text).trim(); delete e.hidden;
+    if (!e.d.includes(date)) e.d = e.d.concat(date).sort().slice(-12);
+    o[n] = e; return o;
+  }
+  const dayDiff = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 864e5);
+  /* liefert [{ text, n, due, every }] – fällige zuerst (nach Überfälligkeit), dann die häufigsten */
+  function extraSuggestions(stats, today, exclude, max) {
+    const out = [];
+    Object.entries(stats || {}).forEach(([k, e]) => {
+      if (!e || e.hidden || !e.d || !e.d.length || (exclude && exclude.has(k))) return;
+      const d = e.d.slice().sort(), n = d.length, last = d[n - 1], since = dayDiff(last, today);
+      const every = n >= 2 ? dayDiff(d[0], last) / (n - 1) : null;
+      const due = !!(every && every >= 1 && since >= every * 0.8);
+      const ratio = every ? since / every : 0;
+      const score = (due ? 1000 + Math.min(ratio, 3) * 100 : 0) + n * 10 - Math.min(since, 120) / 12;
+      out.push({ text: e.t || k, n, due, every: every ? Math.round(every) : null, score });
+    });
+    return out.sort((a, b) => b.score - a.score).slice(0, max || 8);
+  }
+
   /* ---------- Backformen (Kuchen) ----------
      pan = { shape: 'ROUND'|'RING'|'RECT'|'TRAY'|'LOAF', d?, w?, l? } in cm. Mengen skalieren mit der Grundfläche. */
   const PAN_SHAPES = [['ROUND', 'Springform rund'], ['RING', 'Gugelhupf / Kranz'], ['RECT', 'Eckige Form'], ['TRAY', 'Backblech'], ['LOAF', 'Kastenform']];
@@ -2265,7 +2293,7 @@ const EP = (function () {
     manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
     nextFreeDates, layoutDraft, fillWeek,
     UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
-    CATEGORIES, CAT, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText, PAN_SHAPES, PAN_PRESETS, cleanPan, panArea, panFactor, panLabel, samePan, planFactor, roundScaled, shopUnits, migrateShopping, ensureShopping, shopMark, mergeShopping, pruneShopping,
+    CATEGORIES, CAT, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText, recordExtra, extraSuggestions, PAN_SHAPES, PAN_PRESETS, cleanPan, panArea, panFactor, panLabel, samePan, planFactor, roundScaled, shopUnits, migrateShopping, ensureShopping, shopMark, mergeShopping, pruneShopping,
     mergeDb, cleanRotation, releaseOrphans, normalizePlan, pruneTombstones, buildRecipeExport,
     parseAmount, parseRecipeImport, parseTimers, fmtClock, nameSimilar, similarRecipes,
   };
@@ -4185,7 +4213,7 @@ function vShop() {
     <span class="nm">${esc(r.name)}${r.carry && !r.checked ? '<small class="carry">noch offen von vorher</small>' : ''}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}</label>`;
   const groups = gs => gs.map(g => `<p class="cat">${esc(g.label)}</p>${g.items.map(r => item(r, true)).join('')}`).join('');
   const onList = new Set(list.extraItems.map(x => EP.normExtra(x.text)));
-  const recent = (db.settings.recentExtras || []).filter(t => !onList.has(EP.normExtra(t))).slice(0, 8);
+  const sugg = EP.extraSuggestions(extraStats(), EP.todayISO(), onList, 8), recent = sugg.map(x => x.text);
   const empty = !list.recipes.length && !list.extraItems.length;
   const anyStore = k => EP.liveStores(db.settings).some(x => x.kind === k);
   const storeChip = (k, lbl) => `<button class="storechip noprint" data-act="storepick" data-arg="${k}" aria-label="Geschäft für ${lbl} wählen">${list.stores[k] ? esc(list.stores[k].name) : anyStore(k) ? 'Ohne Geschäft' : 'Geschäft wählen'} ▾</button>`;
@@ -4215,11 +4243,11 @@ function vShop() {
     <section class="shopsec box noprint"><h3>Weitere Artikel</h3>
       <p class="hint" style="margin-top:0">Werden automatisch einsortiert, z. B. Spülmittel → Haushalt, Zahnpasta → Drogerie. Antippen zum Umsortieren.</p>
       <div class="quick" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. Spülmittel" enterkeyhint="done" autocomplete="off"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
-      ${recent.length ? `<div class="recenthead"><span class="hint">${recentEdit ? 'Antippen zum Entfernen aus den Vorschlägen' : 'Zuletzt verwendet – antippen zum erneut Hinzufügen'}</span>
+      ${recent.length ? `<div class="recenthead"><span class="hint">${recentEdit ? 'Antippen zum Entfernen aus den Vorschlägen' : 'Vorschläge: wieder fällig ↻ und oft gekauft'}</span>
         <button class="btn quiet small" data-act="recentedit">${recentEdit ? 'Fertig' : 'Bearbeiten'}</button></div>
       <div class="chips recentx${recentEdit ? ' editing' : ''}">${recent.map(t => recentEdit
         ? `<button class="chip" data-act="recentdel" data-arg="${esc(t)}" aria-label="${esc(t)} aus den Vorschlägen entfernen">✕ ${esc(t)}</button>`
-        : `<button class="chip" data-act="recentx" data-arg="${esc(t)}">+ ${esc(t)}</button>`).join('')}</div>` : ''}
+        : (x => `<button class="chip${x.due ? ' due' : ''}" data-act="recentx" data-arg="${esc(t)}" aria-label="${esc(t)} hinzufügen${x.due ? `, wieder fällig (etwa alle ${x.every} Tage)` : x.n > 1 ? `, ${x.n}-mal gekauft` : ''}">${x.due ? '↻' : '+'} ${esc(t)}</button>`)(sugg.find(y => y.text === t))).join('')}</div>` : ''}
     </section>
     ${list.pantry.length ? `<details class="shopsec box"><summary>Vorrat prüfen (${list.pantry.length})</summary>${list.pantry.map(r => item(r, false)).join('')}</details>` : ''}
     <div class="btns two noprint shopclean ${nChecked || list.removedCount ? '' : 'hidden'}">
@@ -5270,12 +5298,21 @@ function srcSeg(act, id, cur, extraCls) {
   return `<div class="seg srcseg ${extraCls || ''}">${SRC.map(([k, l]) => `<button data-act="${act}" data-arg="${id}|${k}" aria-pressed="${cur === k}">${l}</button>`).join('')}</div>`;
 }
 /* ---------- Zusätzliche Artikel auf der Einkaufsliste ---------- */
+/* Verlauf der zusätzlichen Artikel; beim ersten Mal aus vorhandenen Einträgen und „zuletzt verwendet“ aufbauen */
+function extraStats() {
+  if (db.settings.extraStats) return db.settings.extraStats;
+  let st = {};
+  (shopState().extras || []).forEach(x => { if (x && x.text) st = EP.recordExtra(st, x.text, x.date || EP.todayISO()); });
+  (db.settings.recentExtras || []).slice().reverse().forEach(t => { if (!st[EP.normExtra(t)]) st = EP.recordExtra(st, t, EP.todayISO()); });
+  return st;
+}
 function addExtraItem(t) {
   const st = shopState(), r = curShopRange(), today = EP.todayISO(), now = Date.now();
   const date = r.to >= today ? (r.from > today ? r.from : today) : r.from;   // gehört zum gezeigten Zeitraum
   st.extras.push({ id: EP.uuid(), text: t, date, checked: false, category: null, addedAt: now, updatedAt: now }); EP.touch(st);
   const n = EP.normExtra(t), rec = (db.settings.recentExtras || []).filter(x => EP.normExtra(x) !== n);
-  db.settings.recentExtras = [t].concat(rec).slice(0, 12); EP.touch(db.settings);
+  db.settings.recentExtras = [t].concat(rec).slice(0, 12);   // ältere App-Fassungen lesen noch diese Liste
+  db.settings.extraStats = EP.recordExtra(extraStats(), t, today); EP.touch(db.settings);
   Notes.extraAdded(t);
 }
 /* Kategorie eines Zusatzartikels ändern – wird für diesen Begriff gemerkt */
@@ -5690,8 +5727,10 @@ const ACT = {
   },
   recentdel: t => {
     const n = EP.normExtra(t);
-    db.settings.recentExtras = (db.settings.recentExtras || []).filter(x => EP.normExtra(x) !== n); EP.touch(db.settings);
-    if (!db.settings.recentExtras.length) recentEdit = false;
+    db.settings.recentExtras = (db.settings.recentExtras || []).filter(x => EP.normExtra(x) !== n);
+    const st = Object.assign({}, extraStats()); if (st[n]) st[n] = Object.assign({}, st[n], { hidden: true });   // bis zum nächsten Eintragen ausgeblendet
+    db.settings.extraStats = st; EP.touch(db.settings);
+    if (!EP.extraSuggestions(st, EP.todayISO(), null, 1).length) recentEdit = false;
     change(`${t} aus den Vorschlägen entfernt`);
   },
   xcat: i => extraCatSheet(i),
