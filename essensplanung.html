@@ -480,6 +480,9 @@ main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 .xitem .xname{flex:1;min-width:0;text-align:left;min-height:44px;display:flex;flex-direction:column;justify-content:center;font:inherit;color:inherit}
 .xitem .xname small{font-size:11px;color:var(--speckle);font-weight:600}
 .xitem .xdel{min-width:44px;min-height:44px}
+.xitem .xedit{min-width:44px;min-height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--rim)}
+.xitem .xedit svg{width:18px;height:18px}
+.xitem.checked .xedit{opacity:.5}
 .recentx{margin-top:6px}
 .recenthead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px}
 .recenthead .hint{margin:0;min-width:0}
@@ -3866,6 +3869,27 @@ function go(name, params) {
   rerender();
   if (name === 'week') scrollToToday();
 }
+/* Android: Zurück-Taste/-Geste. Ein Puffer-Eintrag im Verlauf fängt „Zurück“ ab; zuerst schließen sich Blätter,
+   dann die Kochansicht, dann Unterseiten, dann geht es zur Woche. Erst danach verlässt „Zurück“ die App (bzw. geht zum Hauptmenü). */
+const BackNav = (() => {
+  let armed = false;
+  try { armed = !!(history.state && history.state.epGuard); } catch (e) {}
+  const arm = () => { if (armed) return; try { history.pushState({ epGuard: 1 }, ''); armed = true; } catch (e) {} };
+  const handle = () => {
+    if ($('#scrim')) { closeSheet(); return true; }
+    const cv = $('#cookview'); if (cv && !cv.classList.contains('hidden')) { closeCook(); return true; }
+    if (!$('#shell') || $('#shell').classList.contains('hidden')) return false;
+    if (!TABS.some(t => t[0] === route.name)) { back(); return true; }
+    if (route.name !== 'week') { go('week'); return true; }
+    return false;
+  };
+  addEventListener('popstate', () => {
+    if (!armed) return;
+    armed = false;
+    if (handle()) arm(); else history.back();
+  });
+  return { arm, handle };
+})();
 /* heutigen Tag ins Bild holen, falls er nicht sichtbar ist */
 function scrollToToday() {
   const el = $('.day.today'); if (!el) return;
@@ -4333,7 +4357,8 @@ function vShop() {
   const item = (r, withAmt) => r.extra != null
     ? `<div class="item xitem ${r.checked ? 'checked' : ''}"><input type="checkbox" data-extra="${r.extra}" ${r.checked ? 'checked' : ''} aria-label="${esc(r.name)} abhaken">
       <button class="nm xname" data-act="xcat" data-arg="${r.extra}" aria-label="${esc(r.name)}: bearbeiten oder einsortieren">${esc(r.name)}<small>${r.carry && !r.checked ? 'zusätzlich · noch offen von vorher' : 'zusätzlich'}</small></button>
-      <button class="btn quiet small noprint xdel" data-act="delextra" data-arg="${r.extra}" aria-label="${esc(r.name)} entfernen">✕</button></div>`
+      <button class="btn quiet small noprint xedit" data-act="xedit" data-arg="${r.extra}" aria-label="${esc(r.name)} bearbeiten">${ICON.opencil}</button>
+<button class="btn quiet small noprint xdel" data-act="delextra" data-arg="${r.extra}" aria-label="${esc(r.name)} entfernen">✕</button></div>`
     : `<label class="item ${r.checked ? 'checked' : ''}"><input type="checkbox" data-check="${esc(r.key)}" ${r.checked ? 'checked' : ''}>
     <span class="nm">${esc(r.name)}${r.carry && !r.checked ? '<small class="carry">noch offen von vorher</small>' : ''}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}</label>`;
   const groups = gs => gs.map(g => `<p class="cat">${esc(g.label)}</p>${g.items.map(r => item(r, true)).join('')}`).join('');
@@ -5920,6 +5945,7 @@ const ACT = {
     change(`${t} aus den Vorschlägen entfernt`);
   },
   xcat: i => extraCatSheet(i),
+  xedit: i => extraEditSheet(i),
   clearchecked: () => {   // abgehakte Einträge ausblenden, zusätzliche Artikel löschen – mit Rückgängig
     const st = shopState(), rows = shopRows(curShopList()).filter(r => r.checked);
     const units = [].concat(...rows.filter(r => r.extra == null).map(r => r.units));
@@ -6396,6 +6422,7 @@ async function enterApp() {
   route = { name: 'week' }; stack = [];
   rerender();
   scrollToToday();
+  BackNav.arm();
   if (Sync.enabled()) { Sync.run(); Sync.startPolling(); }
   if (pendingJoin) {
     const j = PB.parseLink(pendingJoin);

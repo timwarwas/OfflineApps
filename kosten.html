@@ -3314,12 +3314,34 @@ document.addEventListener('focusout',()=>{ if(pendingRender) setTimeout(()=>{con
 window.addEventListener('hashchange',()=>{if(location.hash==='#tests'){V={name:'tests'};render();}});
 
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+/* Android: Zurück-Taste/-Geste. Ein Puffer-Eintrag im Verlauf fängt „Zurück“ ab; zuerst schließen sich Kalender,
+   Rückfragen und Blätter, dann die Ausgabe (mit Rückfrage bei Änderungen), dann geht es zur Reise und zur Reiseliste.
+   Erst danach verlässt „Zurück“ die App (bzw. geht zum Hauptmenü). */
+const BackNav=(()=>{
+  let armed=false;
+  try{armed=!!(history.state&&history.state.kGuard);}catch(e){}
+  const arm=()=>{if(armed)return;try{history.pushState({kGuard:1},'');armed=true;}catch(e){}};
+  const isOpen=id=>byId(id).classList.contains('open');
+  const handle=()=>{
+    if(isOpen('pick-root')){closePicker();return true;}
+    if(isOpen('ask-root')){ACT.askBtn({dataset:{i:String(askBtns.findIndex(b=>!b.value&&b.value!==0))}});return true;}
+    if(isOpen('sheet-root')){closeSheet();return true;}
+    if(V.name==='expense'){ACT.cancelExpense();return true;}
+    if(V.name==='tests'){V={name:'groups'};render();return true;}
+    if(V.name==='group'&&V.tab&&V.tab!=='overview'){V={name:'group',tab:'overview'};render();return true;}
+    if(V.name==='group'){ACT.goGroups();return true;}
+    return false;
+  };
+  addEventListener('popstate',()=>{if(!armed)return;armed=false;if(handle())arm();else history.back();});
+  return {arm,handle};
+})();
 runRecurring();
 const J=parseJoin(location.hash);
 if(location.hash==='#tests') V={name:'tests'};
 else if(grp()) V={name:'group',tab:'overview'};
 render();
 if(J){ try{history.replaceState(null,'',location.pathname+location.search);}catch(e){} joinTrip(J.id,J.secret); }
+BackNav.arm();
 syncAll();
 kontoRefresh();
 </script>
