@@ -1841,6 +1841,15 @@ const EP = (function () {
     if (!e.d.includes(date)) e.d = e.d.concat(date).sort().slice(-12);
     o[n] = e; return o;
   }
+  /* Tippfehler korrigiert: Kauftag vom alten Begriff auf den neuen übertragen */
+  function renameExtra(stats, oldText, newText, date) {
+    const o = Object.assign({}, stats), n = normExtra(oldText);
+    if (n && n !== normExtra(newText) && o[n]) {
+      const e = Object.assign({}, o[n]); e.d = (e.d || []).filter(x => x !== date);
+      if (e.d.length) o[n] = e; else delete o[n];
+    }
+    return recordExtra(o, newText, date);
+  }
   const dayDiff = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 864e5);
   /* liefert [{ text, n, due, every }] – fällige zuerst (nach Überfälligkeit), dann die häufigsten */
   function extraSuggestions(stats, today, exclude, max) {
@@ -2325,7 +2334,7 @@ const EP = (function () {
     manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
     nextFreeDates, layoutDraft, fillWeek,
     UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
-    CATEGORIES, CAT, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText, recordExtra, extraSuggestions, PAN_SHAPES, PAN_PRESETS, cleanPan, panArea, panFactor, panLabel, samePan, planFactor, roundScaled, shopUnits, migrateShopping, ensureShopping, shopMark, mergeShopping, pruneShopping,
+    CATEGORIES, CAT, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText, recordExtra, renameExtra, extraSuggestions, PAN_SHAPES, PAN_PRESETS, cleanPan, panArea, panFactor, panLabel, samePan, planFactor, roundScaled, shopUnits, migrateShopping, ensureShopping, shopMark, mergeShopping, pruneShopping,
     mergeDb, cleanRotation, releaseOrphans, normalizePlan, pruneTombstones, buildRecipeExport,
     parseAmount, parseRecipeImport, parseTimers, fmtClock, nameSimilar, similarRecipes,
   };
@@ -4323,7 +4332,7 @@ function vShop() {
   const showQ = db.settings.marketListShowQuantities;
   const item = (r, withAmt) => r.extra != null
     ? `<div class="item xitem ${r.checked ? 'checked' : ''}"><input type="checkbox" data-extra="${r.extra}" ${r.checked ? 'checked' : ''} aria-label="${esc(r.name)} abhaken">
-      <button class="nm xname" data-act="xcat" data-arg="${r.extra}" aria-label="${esc(r.name)}: Kategorie ändern">${esc(r.name)}<small>${r.carry && !r.checked ? 'zusätzlich · noch offen von vorher' : 'zusätzlich'}</small></button>
+      <button class="nm xname" data-act="xcat" data-arg="${r.extra}" aria-label="${esc(r.name)}: bearbeiten oder einsortieren">${esc(r.name)}<small>${r.carry && !r.checked ? 'zusätzlich · noch offen von vorher' : 'zusätzlich'}</small></button>
       <button class="btn quiet small noprint xdel" data-act="delextra" data-arg="${r.extra}" aria-label="${esc(r.name)} entfernen">✕</button></div>`
     : `<label class="item ${r.checked ? 'checked' : ''}"><input type="checkbox" data-check="${esc(r.key)}" ${r.checked ? 'checked' : ''}>
     <span class="nm">${esc(r.name)}${r.carry && !r.checked ? '<small class="carry">noch offen von vorher</small>' : ''}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}</label>`;
@@ -5480,7 +5489,8 @@ function extraCatSheet(i) {
   const unSec = () => { if (inSec) { const a = Object.assign({}, store.assign); delete a[nx]; store.assign = a; EP.touch(db.settings); } };
   const secOpts = store ? (store.sections || []).map(sec => ({ label: sec.name, hint: `Bereich in „${store.name}“`, icon: inSec === sec.id ? 'check' : 'bowl', tone: inSec === sec.id ? 'basil' : 'speckle', group: 0,
     run: () => { store.assign = Object.assign({}, store.assign, { [nx]: sec.id }); EP.touch(db.settings); change(`${x.text} → ${sec.name}`); } })) : [];
-  optionsSheet(`„${x.text}“ einsortieren`, 'Die Zuordnung wird für diesen Begriff gemerkt.', secOpts.concat(EP.CATEGORIES.map(c => ({
+  const editOpt = { label: 'Bearbeiten', hint: 'Tippfehler korrigieren', icon: 'pencil', tone: 'rim', group: -1, run: () => extraEditSheet(i) };
+  optionsSheet(`„${x.text}“`, 'Bearbeiten oder einsortieren – die Zuordnung wird für diesen Begriff gemerkt.', [editOpt].concat(secOpts).concat(EP.CATEGORIES.map(c => ({
     label: c.label, hint: { MARKT: 'Markt', SUPERMARKT: 'Supermarkt', DROGERIE: 'Drogerie', VORRAT: 'Vorrat' }[EP.categorySource(c.key, db.settings)],
     icon: c.key === cur ? 'check' : 'bowl', tone: c.key === cur ? 'basil' : 'speckle', group: 0,
     run: () => {
@@ -5488,6 +5498,23 @@ function extraCatSheet(i) {
       db.settings.extraCats = Object.assign({}, db.settings.extraCats, { [EP.normExtra(x.text)]: c.key }); EP.touch(db.settings);
       change(`${x.text} → ${c.label}`);
     } }))).concat([{ label: 'Entfernen', danger: true, run: () => ACT.delextra(i) }]));
+}
+/* Zusatzartikel umbenennen (Tippfehler): Text ändern, Kategorie neu erkennen, Vorschläge mitziehen */
+function extraEditSheet(i) {
+  const st = shopState(), x = st.extras.find(e => e.id === i); if (!x) return;
+  textSheet('Eintrag bearbeiten', '', x.text, 'Speichern', v => {
+    v = v.slice(0, 80); const old = x.text;
+    if (v === old) return;
+    x.text = v;
+    if (x.category && !(db.settings.extraCats || {})[EP.normExtra(old)]) x.category = null;   // automatisch erkannte Kategorie neu bestimmen
+    EP.touch(x); EP.touch(st);
+    const dt = EP.iso(new Date(x.addedAt || Date.now()));
+    if (db.settings.extraStats) db.settings.extraStats = EP.renameExtra(db.settings.extraStats, old, v, dt);
+    const no = EP.normExtra(old);
+    if (db.settings.recentExtras) db.settings.recentExtras = db.settings.recentExtras.map(t => EP.normExtra(t) === no ? v : t);
+    EP.touch(db.settings);
+    change(`Geändert: ${v}`);
+  });
 }
 /* ---------- Geschäfte (Regal-Reihenfolge) ---------- */
 const KIND_LABEL = Object.fromEntries(EP.STORE_KINDS);
