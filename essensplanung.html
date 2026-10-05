@@ -574,6 +574,19 @@ button.ordlbl{cursor:pointer;font-weight:600}
 .stepper.big output{min-width:64px;font-size:30px;font-family:var(--serif)}
 .kindnames .field{margin-top:10px}
 
+/* ==== Verknüpfte Beilagen ==== */
+.sidesug .sidesugin{display:flex;align-items:center;gap:8px;width:100%;padding:6px 6px 8px 70px;border-top:1px dashed var(--line)}
+.sidesug .lanelbl{font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;flex-shrink:0;border:1.5px dashed var(--mustard);color:var(--mustard)}
+.sidesug .sidechips{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-width:0}
+.sidesug .chip.small{min-height:44px;padding:6px 12px;font-size:14px;max-width:100%;overflow-wrap:anywhere;text-align:left}
+.sidesug .sideoff{min-width:44px;min-height:44px;color:var(--speckle);font-size:16px;flex-shrink:0}
+.sidelinks{display:flex;flex-wrap:wrap;gap:8px}
+.sidelinks .chip{min-height:44px}
+.sidelinks .addchip{color:var(--rim);border-style:dashed}
+.csides{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}
+.csides span{font-size:14px;color:var(--speckle);font-weight:600}
+.csides .chip{min-height:44px;font-size:15px}
+
 </style>
 </head>
 <body>
@@ -1406,6 +1419,15 @@ const EP = (function () {
     const k = KINDS.find(x => x.key === key);
     return k ? (plural ? k.label : k.short) : key;
   }
+  /* verknüpfte Beilagen eines Rezepts (nur vorhandene, nicht gelöschte, ohne sich selbst) */
+  function linkedSides(db, r) {
+    if (!r || !r.sides || !r.sides.length) return [];
+    return r.sides.map(id => (db.recipes || []).find(x => x.id === id)).filter(x => x && !x.deleted && !x.archivedAt && x.id !== r.id);
+  }
+  /* umgekehrt: zu welchen Gerichten passt diese Beilage */
+  function linkedFrom(db, r) {
+    return r ? live(db.recipes || []).filter(x => !x.archivedAt && x.id !== r.id && (x.sides || []).includes(r.id)) : [];
+  }
   /* besondere Tage (Wochentage 0=So … 6=Sa), Standard Sonntag */
   function specialDays(settings) { const d = settings && settings.specialDays; return Array.isArray(d) ? d : [0]; }
   /* Gäste: Personen am Kochtag statt der üblichen Portionen pro Tag. Die zusätzlichen (oder fehlenden) Portionen
@@ -2230,12 +2252,14 @@ const EP = (function () {
     if (!ingredients.length) warn.push('Keine Zutaten erkannt.');
     if (!instructions) warn.push('Keine Anleitung erkannt.');
     return { name: name || `Rezept ${idx + 1}`, noName: !name, kind, servings, prepTimeMinutes: time, tags, seasonMonths,
-      ingredients, instructions, notes, favorite: x.favorit === true || x.favorite === true, warnings: warn };
+      ingredients, instructions, notes, favorite: x.favorit === true || x.favorite === true, warnings: warn,
+      sideNames: (Array.isArray(x.beilagen) ? x.beilagen : Array.isArray(x.sides) ? x.sides : []).map(str).filter(Boolean).slice(0, 12) };
   }
   /* Rezepte im Import-Format ausgeben (wieder einlesbar mit parseRecipeImport) */
   const KIND_OUT = { MAIN: 'Hauptgericht', LUNCH: 'Mittag', CAKE: 'Kuchen', SIDE: 'Beilage', SPECIAL: 'Besonderes' };
   function buildRecipeExport(db, ids) {
     const ing = new Map((db.ingredients || []).map(i => [i.id, i]));
+    const byId = new Map(live(db.recipes).filter(r => !r.archivedAt).map(r => [r.id, r]));
     const pick = new Set(ids);
     const rezepte = live(db.recipes).filter(r => !r.archivedAt && pick.has(r.id))
       .sort((a, b) => a.name.localeCompare(b.name, 'de')).map(r => {
@@ -2254,6 +2278,8 @@ const EP = (function () {
         if (r.instructions) o.anleitung = r.instructions;
         if (r.notes) o.notizen = r.notes;
         if (r.favorite) o.favorit = true;
+        const sides = (r.sides || []).map(id => byId.get(id)).filter(Boolean).map(s => s.name);
+        if (sides.length) o.beilagen = sides;
         return o;
       });
     return { format: 'essensplanung-import', version: 1, exportiertAm: new Date().toISOString(), rezepte };
@@ -2331,7 +2357,7 @@ const EP = (function () {
   return {
     setClock, uuid, touch, live, tomb, seededRng,
     iso, parseISO, addDays, todayISO, weekStart, weekDays, isoWeek, fmtDate, fmtShort, fmtRange, weekday, weekdayLong,
-    daysFor, daysHint, LANES, KINDS, ROTATES, laneOf, kindName, specialDays, guestFactor, MONTHS, inSeason, seasonLabel, monthOf,
+    daysFor, daysHint, LANES, KINDS, ROTATES, laneOf, kindName, specialDays, guestFactor, linkedSides, linkedFrom, MONTHS, inSeason, seasonLabel, monthOf,
     activeRecipes, repairAdjacency, buildCycle, cycleEntries, maxCycle, openCycles, pendingSorted,
     lastRecipeOfCycle, appendCycle, nextEntries, planEntry, completeEntry, skipEntry, postpone, release,
     manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
@@ -3139,6 +3165,32 @@ function extrasAt(src, date) {
 }
 /* Änderung auf echten Plan und – falls vorhanden – auf den Entwurf anwenden */
 function eachPlan(fn) { fn(db.plan); if (draft) fn(draft.clone.plan); }
+/* Beilagen-Vorschläge für einen Tag: verknüpfte Beilagen der dort gekochten Gerichte, die noch nicht eingeplant
+   und für diesen Termin nicht abgelehnt sind. ents = weekEntries(ws). Liefert { sides, sources } */
+function sideSuggestions(ents, d) {
+  const srcs = [], main = ents.get(d), lunch = ents.lanes.LUNCH.get(d), extras = ents.extras.get(d) || [];
+  if (main && main.type === 'COOK' && !main.drafted) srcs.push(main);
+  if (lunch && !lunch.drafted) srcs.push(lunch);
+  extras.forEach(x => { if (x.dishKind !== 'SIDE') srcs.push(x); });
+  const have = new Set(extras.map(x => x.recipeId).concat(srcs.map(x => x.recipeId)));
+  const out = [];
+  srcs.forEach(p => {
+    if (p.status === 'DONE') return;
+    const off = new Set(p.sidesOff || []);
+    EP.linkedSides(db, recipeById(p.recipeId)).forEach(s => { if (!have.has(s.id) && !off.has(s.id) && !out.some(o => o.id === s.id)) out.push(s); });
+  });
+  return { sides: out, sources: srcs };
+}
+/* „Diesmal nicht“: Vorschläge an diesem Tag ausblenden (am jeweiligen Planeintrag gemerkt) */
+function dismissSides(ents, d) {
+  const { sides, sources } = sideSuggestions(ents, d);
+  sources.forEach(p => {
+    const e = db.plan.find(x => x.id === p.id && !x.deleted); if (!e) return;
+    const mine = EP.linkedSides(db, recipeById(e.recipeId)).map(s => s.id).filter(id => sides.some(s => s.id === id));
+    if (!mine.length) return;
+    e.sidesOff = [...new Set((e.sidesOff || []).concat(mine))]; EP.touch(e);
+  });
+}
 function addExtra(date, recipeId) {
   const r = recipeById(recipeId);
   const id = EP.uuid();
@@ -3357,7 +3409,7 @@ function uniqueRecipeName(name) {
   return name + ' ' + Date.now();
 }
 function importRecipes(items) {
-  const res = { added: 0, replaced: 0, skipped: 0, newIngredients: 0, ids: [] };
+  const res = { added: 0, replaced: 0, skipped: 0, newIngredients: 0, ids: [] }, links = [];
   items.forEach(it => {
     if (it.mode === 'skip') { res.skipped++; return; }
     const src = it.rec, kind = it.kind || src.kind;
@@ -3373,12 +3425,20 @@ function importRecipes(items) {
       Object.assign(ex, fields, { archivedAt: null, tags: src.tags.length ? src.tags : ex.tags, notes: src.notes || ex.notes,
         seasonMonths: src.seasonMonths || ex.seasonMonths, daysOverride: kind === 'MAIN' ? ex.daysOverride : null });
       if (src.favorite) ex.favorite = true;
+      links.push([ex, src.sideNames]);
       EP.touch(ex); EP.syncRecipeIntoCycles(db, ex, rng); res.replaced++; res.ids.push(ex.id);
       return;
     }
     const r = newRecipe(ex && !it.targetId ? uniqueRecipeName(src.name) : src.name, kind);
     Object.assign(r, fields, { tags: src.tags, notes: src.notes, seasonMonths: src.seasonMonths, favorite: !!src.favorite });
     db.recipes.push(r); EP.syncRecipeIntoCycles(db, r, rng); res.added++; res.ids.push(r.id);
+    links.push([r, src.sideNames]);
+  });
+  // Beilagen-Verknüpfungen per Name (auch auf Rezepte aus demselben Import)
+  links.forEach(([r, names]) => {
+    const ids = (names || []).map(n => findRecipeByName(n)).filter(x => x && !x.archivedAt && x.id !== r.id).map(x => x.id);
+    if (!ids.length) return;
+    r.sides = [...new Set((r.sides || []).concat(ids))]; EP.touch(r);
   });
   return res;
 }
@@ -4087,11 +4147,15 @@ function weekBlock(ws, today, showLane) {
         ${x.status === 'DONE' ? `<span class="badge done">${k === 'CAKE' ? 'Gebacken' : 'Gekocht'}</span>` : ''}</button>${cookBtn(r)}</div>`;
     }).join('');
     const mainRecipe = p && p.recipeId ? recipeById(p.recipeId) : null;
+    const sg = !isDraft && d >= today ? sideSuggestions(ents, d).sides : [];
+    const sideLine = sg.length ? `<div class="dayrow lanerow sidesug"><div class="sidesugin"><span class="lanelbl">Dazu?</span>
+      <span class="sidechips">${sg.map(s => `<button class="chip small" data-act="sideadd" data-arg="${d}|${s.id}" aria-label="${esc(s.name)} dazu einplanen">+ ${esc(s.name)}</button>`).join('')}</span>
+      <button class="sideoff" data-act="sideoff" data-arg="${d}" aria-label="Diesmal keine Beilage vorschlagen">✕</button></div></div>` : '';
     const specialLine = showLane.SPECIAL && d >= today && isSpecialDay(d) && !specialOn(ents, d)
       ? `<div class="dayrow lanerow"><button class="laneline lane-special" data-act="special" data-arg="${d}">
         <span class="lanelbl">${esc(DISH_LABEL.SPECIAL)}</span><span class="nm free">${isDraft && !p ? 'Freigehalten – ' : ''}Gericht wählen</span><span class="plus" aria-hidden="true">+</span></button></div>` : '';
     return `<div class="${cls}"><div class="dayrow"><button class="daymain" data-act="day" data-arg="${d}"><div class="dt"><b>${EP.weekday(d)}</b><span>${EP.fmtShort(d)}</span>${d === today ? '<i class="todaypill">Heute</i>' : ''}</div>
-      <div class="what">${body}</div>${p && p.locked ? ICON.lock : ''}</button>${cookBtn(mainRecipe)}</div>${specialLine}${laneLines}${extraLines}</div>`;
+      <div class="what">${body}</div>${p && p.locked ? ICON.lock : ''}</button>${cookBtn(mainRecipe)}</div>${specialLine}${laneLines}${extraLines}${sideLine}</div>`;
   }).join('');
   const canFill = !draft && days[6] >= today;
   return `<section class="wkblock${isDraft ? ' drafting' : ''}${ws === EP.weekStart(today) ? ' current' : ''}" data-ws="${ws}">
@@ -4732,6 +4796,12 @@ function vEdit() {
     </div>
     <label class="field"><span>Notizen</span><textarea class="in" id="e-notes" style="min-height:70px">${esc(r.notes)}</textarea></label>
 
+    <h3>${kind === 'SIDE' ? 'Weitere Beilagen dazu' : 'Passende Beilagen'}</h3>
+    <p class="hint" style="margin-top:0">${kind === 'SIDE' ? 'z. B. Brot zum Salat.' : 'z. B. Naan zum Curry, Sauce Hollandaise zum Spargel.'} Ist das Gericht eingeplant, schlägt der Wochenplan sie mit einem Tipp vor.</p>
+    <div class="chips sidelinks">${EP.linkedSides(db, r).map(s => `<button class="chip" data-act="esidedel" data-arg="${s.id}" aria-label="${esc(s.name)} nicht mehr verknüpfen">${esc(s.name)} <span aria-hidden="true">✕</span></button>`).join('')}
+      <button class="chip addchip" data-act="esideadd">+ Beilage verknüpfen</button></div>
+    ${(() => { const f = EP.linkedFrom(db, r); return f.length ? `<p class="hint">Passt zu: ${f.map(x => esc(x.name)).join(', ')}</p>` : ''; })()}
+
     <h3>Bilder</h3>
     <div class="gallery">${imgs.map(im => `<button data-act="img" data-arg="${im.fileKey}" aria-label="Bild bearbeiten"><img data-img="${im.fileKey}" data-thumb="1" alt="">${im.isCover ? '<span class="cover">Titelbild</span>' : ''}</button>`).join('')}
       <button class="add" data-act="imgadd" aria-label="Bild hinzufügen">+</button></div>
@@ -4768,7 +4838,8 @@ function saveEdit() {
   r.name = r.name.trim();
   if (!r.name) return notify('Bitte einen Namen eingeben.');
   if (r.seasonMonths && (!r.seasonMonths.length || r.seasonMonths.length >= 12)) r.seasonMonths = null;
-  if (EP.laneOf(r) !== 'MAIN') r.daysOverride = null;
+  if (EP.laneOf(r) !== 'MAIN' && EP.laneOf(r) !== 'SPECIAL') r.daysOverride = null;
+  r.sides = (r.sides || []).filter(id => id !== r.id && recipeById(id));
   const dup = findRecipeByName(r.name);
   if (dup && dup.id !== r.id && !dup.archivedAt) return notify('Ein Rezept mit diesem Namen gibt es schon.');
   // Zutaten auflösen, unbekannte anlegen
@@ -5201,7 +5272,10 @@ function renderCook() {
     ${ck ? `<img class="hero" data-img="${ck}" data-thumb="0" alt="">` : ''}
     <section class="ccard chead"><h1>${esc(r.name)}</h1>
       <div class="cmeta">${meta}</div>
-      ${(r.tags || []).length ? `<div class="ctags">${r.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}</section>
+      ${(r.tags || []).length ? `<div class="ctags">${r.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
+      ${(() => { const a = EP.linkedSides(db, r), b = EP.linkedFrom(db, r).filter(x => !a.some(y => y.id === x.id));
+        return a.length || b.length ? `<div class="csides">${a.length ? `<span>Dazu:</span>${a.map(s => `<button class="chip small" data-act="cookside" data-arg="${s.id}">${esc(s.name)} ›</button>`).join('')}` : ''}
+          ${b.length ? `<span>Passt zu:</span>${b.map(s => `<button class="chip small" data-act="cookside" data-arg="${s.id}">${esc(s.name)} ›</button>`).join('')}` : ''}</div>` : ''; })()}</section>
     ${ings.length ? `<section class="ccard"><h2>Zutaten</h2>
       ${isCake(r) ? `<button class="panbtn" data-act="cookpan">${r.pan ? `<span>Backform</span><b>${esc(EP.panLabel(cookState.pan || r.pan))} ▾</b>${cookState.pan ? `<small>Zutaten ${fmtFactor(cookFactor())} · ca. ${Math.max(1, Math.round((r.servings || 12) * cookFactor()))} Stücke</small>` : ''}` : '<span>Backform</span><b>Größe angeben ▾</b><small>dann auf andere Formen umrechnen</small>'}</button>` : ''}
       ${isCake(r) && r.pan ? '' : `<div class="cstep" role="group" aria-label="${unit}"><button data-act="cookpp" data-arg="-1" aria-label="Weniger ${unit}">−</button><output id="cook-n">${cookState.n} ${unit}</output><button data-act="cookpp" data-arg="1" aria-label="Mehr ${unit}">+</button></div>`}
@@ -5781,6 +5855,19 @@ const ACT = {
   extra: id => { const x = EP.live((draft ? draft.clone : db).plan).find(p => p.id === id) || EP.live(db.plan).find(p => p.id === id); if (x) weekStartISO = EP.weekStart(x.date); extraActions(id); },
   shopwk: n => { const f = EP.addDays(EP.weekStart(curShopRange().from), +n); shopRange = { mode: 'week', from: f, to: EP.addDays(f, 6) }; rerender(); },
   ekind: k => { readEditForm(); const r = editState.r; if (EP.laneOf(r) === k) return; if (!EP.ROTATES(EP.laneOf(r))) r.inRotation = true; if (!EP.ROTATES(k)) r.inRotation = false; if (k !== 'MAIN' && k !== 'SPECIAL') r.daysOverride = null; r.kind = k; if (k === 'CAKE' && r.servings <= 4) r.servings = 12; if (k !== 'CAKE' && r.servings > 8 && editState.isNew) r.servings = db.settings.portionsPerDay; editState.dirty = true; rerender(); },
+  esideadd: () => {
+    readEditForm();
+    const r = editState.r, has = new Set(r.sides || []);
+    recipePickSheet('Beilage verknüpfen', id => {
+      if (id === r.id) return notify('Das ist dasselbe Rezept.');
+      if (has.has(id)) return notify('Ist schon verknüpft.');
+      r.sides = (r.sides || []).concat(id); editState.dirty = true; rerender();
+    }, 'SIDE', { kinds: ['SIDE', 'MAIN', 'LUNCH', 'SPECIAL', 'CAKE'] });
+  },
+  esidedel: id => { readEditForm(); const r = editState.r; r.sides = (r.sides || []).filter(x => x !== id); editState.dirty = true; rerender(); },
+  sideadd: a => { const [d, id] = a.split('|'); const s = recipeById(id); undoable(() => { addExtra(d, id); return `${s ? s.name : 'Beilage'} dazu eingeplant.`; }); },
+  sideoff: d => { weekStartISO = EP.weekStart(d); undoable(() => { dismissSides(weekEntries(EP.weekStart(d)), d); return 'Diesmal ohne Beilage.'; }); },
+  cookside: id => { closeCook(); openCook(id); },
   emonth: m => { readEditForm(); m = +m; const r = editState.r; const set = new Set(r.seasonMonths || []); set.has(m) ? set.delete(m) : set.add(m); r.seasonMonths = [...set].sort((a, b) => a - b); editState.dirty = true; rerender(); },
   laneday: a => {
     const [l, d] = a.split('|'); const days = new Set(laneDays(l)); days.has(+d) ? days.delete(+d) : days.add(+d);
