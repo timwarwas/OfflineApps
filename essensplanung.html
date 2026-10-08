@@ -1777,6 +1777,9 @@ const EP = (function () {
     const o = settings && settings.categorySources;
     return (o && o[cat]) || (CAT[cat] || CAT.SONSTIGES).source;
   }
+  /* Zutaten, die nie auf die Einkaufsliste kommen: von Hand markiert (noShop) oder Wasser aus der Leitung */
+  const WATER = /^(heißes|heisses|kaltes|lauwarmes|warmes|kochendes|eiskaltes|lauwarm(es)?)?\s*(leitungs|eis|koch|nudel)?wasser$/i;
+  function neverShop(ing) { return !!ing && (ing.noShop === true || (ing.noShop !== false && WATER.test(String(ing.name || '').trim()))); }
   function sourceOf(ing, settings) { return ing.shoppingSource || categorySource(ing.category, settings); }
   /* Kategorie aus dem Zutatennamen erraten (längster Treffer gewinnt) */
   const GUESS = {
@@ -1810,7 +1813,54 @@ const EP = (function () {
     }
     return out;
   });
-  const normExtra = t => String(t || '').toLowerCase().trim().replace(/\s+/g, ' ').replace(/^\d+\s*(x|stk\.?|stück|pack|packung|flaschen?|dosen?|l|kg|g)?\s+/, '');
+  const normExtra = t => parseExtra(t).name.toLowerCase().replace(/\s+/g, ' ');
+  /* Mengen in frei eingetragenen Artikeln: „4 Oatly“, „4 Packungen Feta“, „Feta 4 Pck.“, „Oatly x4“, „500g Hack“, „1,5 l Milch“ */
+  const XUNITS = {
+    G: ['g', 'g'], KG: ['kg', 'kg'], ML: ['ml', 'ml'], L: ['l', 'l'], STUECK: ['Stück', 'Stück'], PACKUNG: ['Packung', 'Packungen'],
+    DOSE: ['Dose', 'Dosen'], GLAS: ['Glas', 'Gläser'], BUND: ['Bund', 'Bund'], SCHEIBE: ['Scheibe', 'Scheiben'],
+    FLASCHE: ['Flasche', 'Flaschen'], BECHER: ['Becher', 'Becher'], BEUTEL: ['Beutel', 'Beutel'], TUETE: ['Tüte', 'Tüten'],
+    NETZ: ['Netz', 'Netze'], KISTE: ['Kiste', 'Kisten'], TAFEL: ['Tafel', 'Tafeln'], ROLLE: ['Rolle', 'Rollen'], TUBE: ['Tube', 'Tuben'],
+    SCHALE: ['Schale', 'Schalen'], KOPF: ['Kopf', 'Köpfe'], LAIB: ['Laib', 'Laibe'], KARTON: ['Karton', 'Kartons'], STANGE: ['Stange', 'Stangen'], DOSENPACK: ['Pack', 'Packs'],
+  };
+  const XALIAS = { g: 'G', gr: 'G', gramm: 'G', kg: 'KG', kilo: 'KG', ml: 'ML', l: 'L', liter: 'L', ltr: 'L',
+    stück: 'STUECK', stueck: 'STUECK', stk: 'STUECK', st: 'STUECK', packung: 'PACKUNG', packungen: 'PACKUNG', pck: 'PACKUNG', pkg: 'PACKUNG',
+    pkt: 'PACKUNG', päckchen: 'PACKUNG', paeckchen: 'PACKUNG', pack: 'DOSENPACK', packs: 'DOSENPACK', dose: 'DOSE', dosen: 'DOSE', glas: 'GLAS', gläser: 'GLAS', glaeser: 'GLAS',
+    bund: 'BUND', scheibe: 'SCHEIBE', scheiben: 'SCHEIBE', flasche: 'FLASCHE', flaschen: 'FLASCHE', fl: 'FLASCHE', becher: 'BECHER',
+    beutel: 'BEUTEL', tüte: 'TUETE', tüten: 'TUETE', tuete: 'TUETE', tueten: 'TUETE', netz: 'NETZ', netze: 'NETZ', kiste: 'KISTE', kisten: 'KISTE',
+    tafel: 'TAFEL', tafeln: 'TAFEL', rolle: 'ROLLE', rollen: 'ROLLE', tube: 'TUBE', tuben: 'TUBE', schale: 'SCHALE', schalen: 'SCHALE',
+    kopf: 'KOPF', köpfe: 'KOPF', koepfe: 'KOPF', laib: 'LAIB', laibe: 'LAIB', karton: 'KARTON', kartons: 'KARTON', stange: 'STANGE', stangen: 'STANGE' };
+  const XWORDS = { ein: 1, eine: 1, einen: 1, zwei: 2, drei: 3, vier: 4, fünf: 5, fuenf: 5, sechs: 6, sieben: 7, acht: 8, neun: 9, zehn: 10, elf: 11, zwölf: 12, zwoelf: 12, halbe: 0.5, halber: 0.5, halbes: 0.5 };
+  const XNUM = '(\\d+(?:[.,]\\d+)?|½|' + Object.keys(XWORDS).join('|') + ')';
+  const XUNIT = '(' + Object.keys(XALIAS).sort((a, b) => b.length - a.length).join('|') + ')';
+  const RX_FRONT = new RegExp('^' + XNUM + '\\s*(?:x|×|mal)?\\s*(?:' + XUNIT + '\\.?)?\\s+(.+)$', 'i');
+  const RX_FRONT_GLUED = new RegExp('^(\\d+(?:[.,]\\d+)?)' + XUNIT + '\\.?\\s+(.+)$', 'i');
+  const RX_BACK = new RegExp('^(.+?)\\s+(?:x|×)?\\s*(\\d+(?:[.,]\\d+)?|½)\\s*(?:x|×)?\\s*(?:' + XUNIT + '\\.?)?$', 'i');
+  const xnum = s => { s = String(s).toLowerCase(); if (s === '½') return 0.5; if (XWORDS[s] != null) return XWORDS[s]; const n = parseFloat(s.replace(',', '.')); return isFinite(n) && n > 0 ? n : null; };
+  function parseExtra(text) {
+    const t = String(text || '').trim().replace(/\s+/g, ' ');
+    const out = (name, q, u) => {
+      const qty = xnum(q), nm = String(name || '').trim().replace(/^[-–:,]+\s*|\s*[-–:,]+$/g, '');
+      if (!qty || !nm || /^\d/.test(nm) && !/[a-zäöüß]/i.test(nm)) return null;
+      return { name: nm, qty, unit: u ? XALIAS[u.toLowerCase()] || null : null };
+    };
+    let m = t.match(RX_FRONT_GLUED), r = m && out(m[3], m[1], m[2]);
+    if (!r && (m = t.match(RX_FRONT))) r = out(m[3], m[1], m[2]);
+    if (!r && (m = t.match(RX_BACK)) && !/\s(in|zu|für|mit|und|von|pro|à|a|x|nr\.?|größe|gr\.?)$/i.test(m[1])) r = out(m[1], m[2], m[3]);
+    return r || { name: t, qty: null, unit: null };
+  }
+  /* Name/Menge eines Zusatzartikels (neue Einträge speichern sie getrennt, ältere werden aus dem Text gelesen) */
+  function extraParts(x) {
+    if (!x) return { name: '', qty: null, unit: null };
+    if (x.qty != null) return { name: String(x.text || '').trim(), qty: x.qty, unit: x.unit || null };
+    return parseExtra(x.text);
+  }
+  function extraAmount(p) {
+    if (!p || p.qty == null) return '';
+    const u = XUNITS[p.unit || 'STUECK'] || XUNITS.STUECK;
+    return fmtNum(p.qty) + ' ' + (p.qty === 1 ? u[0] : u[1]);
+  }
+  /* Text zum Bearbeiten: „4 Packungen Feta“ */
+  const extraEditText = p => (p.qty != null ? extraAmount(p) + ' ' : '') + p.name;
   /* Kategorie für einen frei eingetragenen Artikel: gelernte Zuordnung, sonst erraten */
   function extraCategory(text, learned) {
     const n = normExtra(text);
@@ -1954,14 +2004,14 @@ const EP = (function () {
       const r = recipes.get(p.recipeId);
       if (!r) return;
       if (!names.includes(r.name)) names.push(r.name);
-      const list = (r.ingredients || []).filter(x => ings.has(x.ingredientId));
+      const list = (r.ingredients || []).filter(x => ings.has(x.ingredientId));   // (Wasser zählt hier mit: Rezept hat Zutaten)
       if (!list.length) {
         const w = `Für „${r.name}“ sind keine Zutaten hinterlegt.`;
         if (!warnings.includes(w)) warnings.push(w);
       }
       const f = planFactor(p, r) * guestFactor(p, r, db.settings);   // Kuchen in anderer Backform, Gäste
       (r.ingredients || []).forEach((x, k) => {
-        if (ings.has(x.ingredientId)) units.push({ key: p.id + '|' + k, ingId: x.ingredientId, quantity: x.quantity == null || f === 1 ? x.quantity : roundScaled(x.quantity * f, x.unit), unit: x.unit, date: p.date });
+        if (ings.has(x.ingredientId) && !neverShop(ings.get(x.ingredientId))) units.push({ key: p.id + '|' + k, pid: p.id, k, recipeId: p.recipeId, cooked: !!p.cookedAt, ingId: x.ingredientId, quantity: x.quantity == null || f === 1 ? x.quantity : roundScaled(x.quantity * f, x.unit), unit: x.unit, date: p.date });
       });
     });
     return { names, warnings, units, ings };
@@ -1992,6 +2042,29 @@ const EP = (function () {
     return db.shopping;
   }
   const isOn = (m, k) => !!(m && m[k] && m[k].on);
+  /* Vorgänger eines Planeintrags: gelöschte Kochtage desselben Rezepts (verschoben, neu gefüllt, auf einem anderen
+     Gerät doppelt angelegt …), älter als der Eintrag und höchstens 14 Tage entfernt – neueste zuerst.
+     Ihr Einkaufsstand (gekauft/entfernt) gilt weiter, solange der neue Eintrag keinen eigenen hat. */
+  function predecessorsFn(db) {
+    const dead = new Map();
+    (db.plan || []).forEach(q => { if (q.deleted && q.type === 'COOK' && q.recipeId) { if (!dead.has(q.recipeId)) dead.set(q.recipeId, []); dead.get(q.recipeId).push(q); } });
+    dead.forEach(l => l.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)));
+    const cache = new Map();
+    return p => {
+      if (!p || !dead.has(p.recipeId)) return [];
+      if (cache.has(p.id)) return cache.get(p.id);
+      const pd = parseISO(p.date), r = dead.get(p.recipeId).filter(q => q.id !== p.id && ((q.createdAt || 0) <= (p.createdAt || 0) || q.date === p.date)
+        && Math.abs(pd - parseISO(q.date)) <= 14 * 864e5);
+      cache.set(p.id, r); return r;
+    };
+  }
+  /* Markierung einer Einheit – eigene, sonst vom Vorgänger geerbte */
+  function markOf(m, u, preds) {
+    if (m && m[u.key]) return m[u.key];
+    if (!preds || !u.pid) return null;
+    for (const q of preds(u)) { const v = m && m[q.id + '|' + u.k]; if (v) return v; }
+    return null;
+  }
   /* Einheiten als gekauft/entfernt markieren (oder zurücknehmen) */
   function shopMark(db, map, keys, on) {
     const s = ensureShopping(db), t = clock();
@@ -2014,6 +2087,17 @@ const EP = (function () {
     const s = ensureShopping(db), lim = addDays(today || todayISO(), -45);
     const plan = new Map((db.plan || []).filter(p => !p.deleted).map(p => [p.id, p]));
     let n = 0;
+    // Stand gelöschter Kochtage an ihre Nachfolger (verschoben/neu gefüllt) weitergeben, bevor er wegfällt
+    const pf = predecessorsFn(db);
+    plan.forEach(p => {
+      if (p.type !== 'COOK') return;
+      const ps = pf(p); if (!ps.length) return;
+      ['bought', 'removed'].forEach(m => Object.keys(s[m]).forEach(k => {
+        const [qid, idx] = k.split('|'); if (!ps.some(q => q.id === qid)) return;
+        const nk = p.id + '|' + idx;
+        if (!s[m][nk]) { s[m][nk] = s[m][k]; n++; }
+      }));
+    });
     ['bought', 'removed'].forEach(m => Object.keys(s[m]).forEach(k => {
       const p = plan.get(k.split('|')[0]);
       if (!p || p.date < lim) { delete s[m][k]; n++; }
@@ -2028,13 +2112,16 @@ const EP = (function () {
     opts = opts || {};
     const today = opts.today || todayISO();
     const st = migrateShopping(db.shopping, db);
+    const pf = predecessorsFn(db), byId = new Map((db.plan || []).map(p => [p.id, p]));
+    const preds = u => pf(byId.get(u.pid));
+    const on = (m, u) => { const v = markOf(st[m], u, preds); return !!(v && v.on); };
     const carry = from <= today && today <= to;
     const carryFrom = addDays(weekStart(today), -7);
     const main = shopUnits(db, from, to), ings = main.ings, names = main.names, warnings = main.warnings;
-    let units = main.units.filter(u => !isOn(st.removed, u.key));
+    let units = main.units.filter(u => !on('removed', u));
     if (carry && carryFrom < from) {
       units = units.concat(shopUnits(db, carryFrom, addDays(from, -1)).units
-        .filter(u => !isOn(st.removed, u.key) && !isOn(st.bought, u.key) && sourceOf(ings.get(u.ingId), db.settings) !== 'VORRAT')   // Vorrat prüft man je Woche neu
+        .filter(u => !on('removed', u) && !on('bought', u) && !u.cooked && sourceOf(ings.get(u.ingId), db.settings) !== 'VORRAT')   // Vorrat prüft man je Woche neu; gekocht = erledigt
         .map(u => Object.assign(u, { carry: true })));
     }
     const learned = (db.settings && db.settings.extraCats) || {};
@@ -2042,21 +2129,22 @@ const EP = (function () {
     units.forEach(u => { if (!per.has(u.ingId)) per.set(u.ingId, []); per.get(u.ingId).push(u); });
     const rows = [...per.entries()].map(([id, us]) => {
       const ing = ings.get(id);
-      const open = us.filter(u => !isOn(st.bought, u.key)), checked = !open.length;
+      const open = us.filter(u => !on('bought', u)), checked = !open.length;
       const sum = sumAmounts(checked ? us : open);
       return { key: 'i:' + id, ingId: id, units: us.map(u => u.key), name: ing.name, amount: sum.text, category: ing.category,
         source: sourceOf(ing, db.settings), checked, carry: open.some(u => u.carry) };
     });
-    const removedIngs = new Set(main.units.filter(u => isOn(st.removed, u.key)).map(u => u.ingId));
+    const removedIngs = new Set(main.units.filter(u => on('removed', u)).map(u => u.ingId));
     rows.forEach(r => removedIngs.delete(r.ingId));
     /* zusätzliche Artikel („Spülmittel“) wie Zutaten einsortieren; Vorrat zählt hier nicht – die will man ja kaufen */
     const extras = (st.extras || []).filter(x => x && !x.del && x.text && x.text.trim()
       && ((x.date >= from && x.date <= to) || (carry && x.date < from && !x.checked)));
     extras.forEach(x => {
-      const category = x.category || extraCategory(x.text, learned);
+      const p = extraParts(x);
+      const category = x.category || extraCategory(p.name, learned);
       let source = categorySource(category, db.settings);
       if (source === 'VORRAT') source = 'SUPERMARKT';
-      rows.push({ key: 'x:' + x.id, extra: x.id, name: x.text.trim(), amount: '', category, source, checked: !!x.checked, carry: x.date < from });
+      rows.push({ key: 'x:' + x.id, extra: x.id, name: p.name, amount: extraAmount(p), category, source, checked: !!x.checked, carry: x.date < from });
     });
     const stores = {}; STORE_KINDS.forEach(([k]) => { stores[k] = storeFor(db.settings, k, st); });
     /* Gruppen nach der Reihenfolge des Geschäfts; eigene Bereiche ziehen ihre Artikel aus den Kategorien */
@@ -2099,7 +2187,7 @@ const EP = (function () {
     list.supermarket.concat(list.drogerie || []).forEach(g => g.items.filter(open).forEach(r => L.push(r.name + (r.amount ? ` (${r.amount})` : ''))));
     // ältere Listenform ohne einsortierte Zusatzartikel
     if (!list.supermarket.concat(list.market, list.drogerie || []).some(g => (g.items || [g]).some(r => r.extra != null)))
-      (list.extraItems || []).filter(x => open(x) && x.text && x.text.trim()).forEach(x => L.push(x.text.trim()));
+      (list.extraItems || []).filter(x => open(x) && x.text && x.text.trim()).forEach(x => { const p = extraParts(x); L.push(p.name + (p.qty != null ? ` (${extraAmount(p)})` : '')); });
     return L.join('\n');
   }
 
@@ -2363,7 +2451,7 @@ const EP = (function () {
     manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
     nextFreeDates, layoutDraft, fillWeek,
     UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
-    CATEGORIES, CAT, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText, recordExtra, renameExtra, extraSuggestions, PAN_SHAPES, PAN_PRESETS, cleanPan, panArea, panFactor, panLabel, samePan, planFactor, roundScaled, shopUnits, migrateShopping, ensureShopping, shopMark, mergeShopping, pruneShopping,
+    CATEGORIES, CAT, neverShop, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText, recordExtra, renameExtra, parseExtra, extraParts, extraAmount, extraEditText, extraSuggestions, PAN_SHAPES, PAN_PRESETS, cleanPan, panArea, panFactor, panLabel, samePan, planFactor, roundScaled, shopUnits, migrateShopping, ensureShopping, shopMark, mergeShopping, pruneShopping,
     mergeDb, cleanRotation, releaseOrphans, normalizePlan, pruneTombstones, buildRecipeExport,
     parseAmount, parseRecipeImport, parseTimers, fmtClock, nameSimilar, similarRecipes,
   };
@@ -3041,7 +3129,8 @@ function removeBlock(bid, releaseIt) {
 }
 function markCooked(bid) {
   const es = blockEntries(bid);
-  es.forEach(p => { p.status = 'DONE'; EP.touch(p); });
+  const now = Date.now();
+  es.forEach(p => { p.status = 'DONE'; if (p.type === 'COOK') p.cookedAt = now; EP.touch(p); });   // gekocht: Zutaten wandern nicht mehr in die nächste Woche
   const e = es[0] && es[0].rotationEntryId && rotById(null, es[0].rotationEntryId);
   if (e) EP.completeEntry(e);
 }
@@ -4421,6 +4510,7 @@ function vShop() {
   const item = (r, withAmt) => r.extra != null
     ? `<div class="item xitem ${r.checked ? 'checked' : ''}"><input type="checkbox" data-extra="${r.extra}" ${r.checked ? 'checked' : ''} aria-label="${esc(r.name)} abhaken">
       <button class="nm xname" data-act="xcat" data-arg="${r.extra}" aria-label="${esc(r.name)}: bearbeiten oder einsortieren">${esc(r.name)}<small>${r.carry && !r.checked ? 'zusätzlich · noch offen von vorher' : 'zusätzlich'}</small></button>
+      ${r.amount ? `<span class="amt xamt">${esc(r.amount)}</span>` : ''}
       <button class="btn quiet small noprint xedit" data-act="xedit" data-arg="${r.extra}" aria-label="${esc(r.name)} bearbeiten">${ICON.opencil}</button>
 <button class="btn quiet small noprint xdel" data-act="delextra" data-arg="${r.extra}" aria-label="${esc(r.name)} entfernen">✕</button></div>`
     : `<label class="item ${r.checked ? 'checked' : ''}"><input type="checkbox" data-check="${esc(r.key)}" ${r.checked ? 'checked' : ''}>
@@ -4455,8 +4545,8 @@ function vShop() {
     ${list.supermarket.length ? `<section class="shopsec box">${head('SUPERMARKT', 'Supermarkt')}${groups(list.supermarket)}</section>` : ''}
     ${list.drogerie.length ? `<section class="shopsec box">${head('DROGERIE', 'Drogerie')}${groups(list.drogerie)}</section>` : ''}
     <section class="shopsec box noprint"><h3>Weitere Artikel</h3>
-      <p class="hint" style="margin-top:0">Werden automatisch einsortiert, z. B. Spülmittel → Haushalt, Zahnpasta → Drogerie. Antippen zum Umsortieren.</p>
-      <div class="quick" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. Spülmittel" enterkeyhint="done" autocomplete="off"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
+      <p class="hint" style="margin-top:0">Werden automatisch einsortiert, z. B. Spülmittel → Haushalt, Zahnpasta → Drogerie. Mengen gehen davor oder dahinter: „4 Oatly“, „Feta 2 Packungen“. Antippen zum Umsortieren.</p>
+      <div class="quick" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. 2 Packungen Feta" enterkeyhint="done" autocomplete="off"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
       ${recent.length ? `<div class="recenthead"><span class="hint">${recentEdit ? 'Antippen zum Entfernen aus den Vorschlägen' : 'Vorschläge: wieder fällig ↻ und oft gekauft'}</span>
         <button class="btn quiet small" data-act="recentedit">${recentEdit ? 'Fertig' : 'Bearbeiten'}</button></div>
       <div class="chips recentx${recentEdit ? ' editing' : ''}">${recent.map(t => recentEdit
@@ -5311,9 +5401,19 @@ function markCurrentStep() {
   lis.forEach(li => li.classList.toggle('cur', li === cur && lis.some(x => x.classList.contains('done'))));
   return cur;
 }
+/* Durchstreichen sicher an- und ausschalten: Safari (iOS) zeichnet geerbtes text-decoration nach dem Entfernen
+   einer Klasse am Elternelement manchmal nicht neu – deshalb zusätzlich direkt an den Textelementen setzen. */
+function strikeRow(item, on, cls) {
+  if (!item) return;
+  item.classList.toggle(cls || 'checked', on);
+  item.querySelectorAll('.nm, .amt, .xname, .stxt, .sing').forEach(e => {
+    e.style.textDecorationLine = on ? 'line-through' : 'none';
+    if (!on) e.style.color = ''; void e.offsetWidth;   // Neuzeichnen erzwingen
+  });
+}
 function bindCook() {
   const el = $('#cookview');
-  const flip = (li, k) => { cookState.done.has(k) ? cookState.done.delete(k) : cookState.done.add(k); li.classList.toggle('done'); saveCookProgress(); };
+  const flip = (li, k) => { const on = !cookState.done.has(k); on ? cookState.done.add(k) : cookState.done.delete(k); strikeRow(li, on, 'done'); saveCookProgress(); };
   $$('[data-ci]', el).forEach(li => li.onclick = () => flip(li, 'i' + li.dataset.ci));
   $$('[data-cs]', el).forEach(li => li.onclick = () => {
     flip(li, 's' + li.dataset.cs);
@@ -5363,7 +5463,7 @@ function vIngredients() {
       const items = all.filter(i => i.category === c.key).sort((a, b) => a.name.localeCompare(b.name, 'de'));
       if (!items.length) return '';
       return `<h3>${esc(c.label)}</h3><div class="box">${items.map(i => `<button class="item" data-act="ing" data-arg="${i.id}">
-        <span class="nm">${esc(i.name)}</span><span class="amt">${srcLabel[EP.sourceOf(i, db.settings)]}${i.shoppingSource ? ' (angepasst)' : ''}</span></button>`).join('')}</div>`;
+        <span class="nm">${esc(i.name)}</span><span class="amt">${EP.neverShop(i) ? 'Nie kaufen' : srcLabel[EP.sourceOf(i, db.settings)] + (i.shoppingSource ? ' (angepasst)' : '')}</span></button>`).join('')}</div>`;
     }).join('') || '<p class="empty">Noch keine Zutaten. Sie entstehen automatisch, wenn du sie in einem Rezept einträgst.</p>'}`;
 }
 function ingredientSheet(id) {
@@ -5379,6 +5479,8 @@ function ingredientSheet(id) {
       <option value="SUPERMARKT" ${i.shoppingSource === 'SUPERMARKT' ? 'selected' : ''}>Supermarkt</option>
       <option value="DROGERIE" ${i.shoppingSource === 'DROGERIE' ? 'selected' : ''}>Drogerie</option>
       <option value="VORRAT" ${i.shoppingSource === 'VORRAT' ? 'selected' : ''}>Vorrat</option></select></label>
+    <div class="field"><div class="row"><span class="grow" style="margin:0;color:var(--ink);font-weight:600">Nie auf die Einkaufsliste<small class="hint" style="display:block;font-weight:400;margin:2px 0 0">z. B. Wasser aus der Leitung</small></span>
+      <label class="switch"><input type="checkbox" id="in-ns" ${EP.neverShop(i) ? 'checked' : ''} aria-label="Nie auf die Einkaufsliste"><i></i></label></div></div>
     <label class="field"><span>Standardeinheit</span><select class="in" id="in-u">${EP.UNIT_ORDER.map(u => `<option value="${u}" ${u === i.defaultUnit ? 'selected' : ''}>${EP.UNITS[u].s}</option>`).join('')}</select></label>
     ${id ? `<p class="hint">In ${used} ${used === 1 ? 'Rezept' : 'Rezepten'} verwendet.</p>` : ''}
     <div class="btns"><button class="btn primary" data-x="save">Speichern</button>
@@ -5394,6 +5496,9 @@ function ingredientSheet(id) {
       if (ex && ex.id !== id) return notify('Diese Zutat gibt es schon – nutze „Zusammenführen“.');
       const tgt = id ? ingById(id) : createIngredient(name);
       Object.assign(tgt, { name, category: $('#in-c', el).value, shoppingSource: $('#in-s', el).value || null, defaultUnit: $('#in-u', el).value });
+      const ns = $('#in-ns', el).checked;   // nur speichern, wenn es von der Automatik abweicht
+      tgt.noShop = ns === EP.neverShop(Object.assign({}, tgt, { noShop: undefined })) ? undefined : ns;
+      if (tgt.noShop === undefined) delete tgt.noShop;
       EP.touch(tgt); closeSheet(); change('Gespeichert.');
     };
     const m = $('[data-x=merge]', el);
@@ -5566,45 +5671,65 @@ function srcSeg(act, id, cur, extraCls) {
 function extraStats() {
   if (db.settings.extraStats) return db.settings.extraStats;
   let st = {};
-  (shopState().extras || []).forEach(x => { if (x && x.text) st = EP.recordExtra(st, x.text, x.date || EP.todayISO()); });
+  (shopState().extras || []).forEach(x => { if (x && x.text) st = EP.recordExtra(st, EP.extraParts(x).name, x.date || EP.todayISO()); });
   (db.settings.recentExtras || []).slice().reverse().forEach(t => { if (!st[EP.normExtra(t)]) st = EP.recordExtra(st, t, EP.todayISO()); });
   return st;
 }
+/* Artikel hinzufügen; Menge wird erkannt („4 Packungen Feta“). Steht derselbe Artikel schon offen auf der Liste,
+   wird die Menge dazugezählt. Liefert { name, amount, merged, exists } für die Meldung. */
 function addExtraItem(t) {
+  const p = EP.parseExtra(t); if (!p.name) return null;
   const st = shopState(), r = curShopRange(), today = EP.todayISO(), now = Date.now();
   const date = r.to >= today ? (r.from > today ? r.from : today) : r.from;   // gehört zum gezeigten Zeitraum
-  st.extras.push({ id: EP.uuid(), text: t, date, checked: false, category: null, addedAt: now, updatedAt: now }); EP.touch(st);
-  const n = EP.normExtra(t), rec = (db.settings.recentExtras || []).filter(x => EP.normExtra(x) !== n);
-  db.settings.recentExtras = [t].concat(rec).slice(0, 12);   // ältere App-Fassungen lesen noch diese Liste
-  db.settings.extraStats = EP.recordExtra(extraStats(), t, today); EP.touch(db.settings);
-  Notes.extraAdded(t);
+  const n = EP.normExtra(p.name), same = u => (u || 'STUECK') === (p.unit || 'STUECK');
+  const ex = st.extras.find(x => x && !x.del && !x.checked && x.date >= r.from && x.date <= r.to && EP.normExtra(x.text) === n
+    && (EP.extraParts(x).qty == null || p.qty == null || same(EP.extraParts(x).unit)));
+  let res;
+  if (ex) {
+    const q = EP.extraParts(ex);
+    if (p.qty == null) return { name: q.name, amount: EP.extraAmount(q), exists: true };
+    const qty = q.qty == null ? p.qty : Math.round((q.qty + p.qty) * 1000) / 1000;
+    Object.assign(ex, { text: q.name, qty, unit: q.qty == null ? p.unit : q.unit }); EP.touch(ex); EP.touch(st);
+    res = { name: q.name, amount: EP.extraAmount(EP.extraParts(ex)), merged: true };
+  } else {
+    st.extras.push({ id: EP.uuid(), text: p.name, qty: p.qty, unit: p.unit, date, checked: false, category: null, addedAt: now, updatedAt: now }); EP.touch(st);
+    res = { name: p.name, amount: EP.extraAmount(p) };
+  }
+  const rec = (db.settings.recentExtras || []).filter(x => EP.normExtra(x) !== n);
+  db.settings.recentExtras = [p.name].concat(rec).slice(0, 12);   // ältere App-Fassungen lesen noch diese Liste
+  db.settings.extraStats = EP.recordExtra(extraStats(), p.name, today); EP.touch(db.settings);
+  Notes.extraAdded(res.amount ? `${res.name} (${res.amount})` : res.name);
+  return res;
 }
 /* Kategorie eines Zusatzartikels ändern – wird für diesen Begriff gemerkt */
 function extraCatSheet(i) {
   const st = shopState(), x = st.extras.find(e => e.id === i); if (!x) return;
-  const cur = x.category || EP.extraCategory(x.text, db.settings.extraCats);
+  const nm = EP.extraParts(x).name;
+  const cur = x.category || EP.extraCategory(nm, db.settings.extraCats);
   let src = EP.categorySource(cur, db.settings); if (src === 'VORRAT') src = 'SUPERMARKT';
-  const store = EP.storeFor(db.settings, src, st), nx = EP.normExtra(x.text), inSec = store && store.assign && store.assign[nx];
+  const store = EP.storeFor(db.settings, src, st), nx = EP.normExtra(nm), inSec = store && store.assign && store.assign[nx];
   const unSec = () => { if (inSec) { const a = Object.assign({}, store.assign); delete a[nx]; store.assign = a; EP.touch(db.settings); } };
   const secOpts = store ? (store.sections || []).map(sec => ({ label: sec.name, hint: `Bereich in „${store.name}“`, icon: inSec === sec.id ? 'check' : 'bowl', tone: inSec === sec.id ? 'basil' : 'speckle', group: 0,
-    run: () => { store.assign = Object.assign({}, store.assign, { [nx]: sec.id }); EP.touch(db.settings); change(`${x.text} → ${sec.name}`); } })) : [];
+    run: () => { store.assign = Object.assign({}, store.assign, { [nx]: sec.id }); EP.touch(db.settings); change(`${nm} → ${sec.name}`); } })) : [];
   const editOpt = { label: 'Bearbeiten', hint: 'Tippfehler korrigieren', icon: 'pencil', tone: 'rim', group: -1, run: () => extraEditSheet(i) };
-  optionsSheet(`„${x.text}“`, 'Bearbeiten oder einsortieren – die Zuordnung wird für diesen Begriff gemerkt.', [editOpt].concat(secOpts).concat(EP.CATEGORIES.map(c => ({
+  optionsSheet(`„${nm}“`, 'Bearbeiten oder einsortieren – die Zuordnung wird für diesen Begriff gemerkt.', [editOpt].concat(secOpts).concat(EP.CATEGORIES.map(c => ({
     label: c.label, hint: { MARKT: 'Markt', SUPERMARKT: 'Supermarkt', DROGERIE: 'Drogerie', VORRAT: 'Vorrat' }[EP.categorySource(c.key, db.settings)],
     icon: c.key === cur ? 'check' : 'bowl', tone: c.key === cur ? 'basil' : 'speckle', group: 0,
     run: () => {
       x.category = c.key; EP.touch(x); EP.touch(st); unSec();
-      db.settings.extraCats = Object.assign({}, db.settings.extraCats, { [EP.normExtra(x.text)]: c.key }); EP.touch(db.settings);
-      change(`${x.text} → ${c.label}`);
+      db.settings.extraCats = Object.assign({}, db.settings.extraCats, { [EP.normExtra(nm)]: c.key }); EP.touch(db.settings);
+      change(`${nm} → ${c.label}`);
     } }))).concat([{ label: 'Entfernen', danger: true, run: () => ACT.delextra(i) }]));
 }
 /* Zusatzartikel umbenennen (Tippfehler): Text ändern, Kategorie neu erkennen, Vorschläge mitziehen */
 function extraEditSheet(i) {
   const st = shopState(), x = st.extras.find(e => e.id === i); if (!x) return;
-  textSheet('Eintrag bearbeiten', '', x.text, 'Speichern', v => {
-    v = v.slice(0, 80); const old = x.text;
-    if (v === old) return;
-    x.text = v;
+  const cur = EP.extraParts(x);
+  textSheet('Eintrag bearbeiten', 'Menge davor oder dahinter, z. B. „4 Packungen Feta“', EP.extraEditText(cur), 'Speichern', v => {
+    const p = EP.parseExtra(v.slice(0, 80)), old = cur.name;
+    if (!p.name) return;
+    if (p.name === old && p.qty === cur.qty && (p.unit || null) === (cur.unit || null)) return;
+    Object.assign(x, { text: p.name, qty: p.qty, unit: p.unit }); v = p.name;
     if (x.category && !(db.settings.extraCats || {})[EP.normExtra(old)]) x.category = null;   // automatisch erkannte Kategorie neu bestimmen
     EP.touch(x); EP.touch(st);
     const dt = EP.iso(new Date(x.addedAt || Date.now()));
@@ -5612,7 +5737,7 @@ function extraEditSheet(i) {
     const no = EP.normExtra(old);
     if (db.settings.recentExtras) db.settings.recentExtras = db.settings.recentExtras.map(t => EP.normExtra(t) === no ? v : t);
     EP.touch(db.settings);
-    change(`Geändert: ${v}`);
+    change(`Geändert: ${EP.extraEditText(p)}`);
   });
 }
 /* ---------- Geschäfte (Regal-Reihenfolge) ---------- */
@@ -5977,11 +6102,12 @@ const ACT = {
   /* Einkauf */
   addextra: () => {
     const inp = $('#extra'); const t = inp.value.trim(); if (!t) return;
-    addExtraItem(t);
-    const cat = EP.extraCategory(t, db.settings.extraCats), lbl = (EP.CAT[cat] || EP.CAT.SONSTIGES).label;
-    change(`${t} → ${lbl}`).then(() => { const i = $('#extra'); if (i) i.focus(); });
+    const res = addExtraItem(t); if (!res) return;
+    const cat = EP.extraCategory(res.name, db.settings.extraCats), lbl = (EP.CAT[cat] || EP.CAT.SONSTIGES).label;
+    const msg = res.exists ? `${res.name} steht schon auf der Liste.` : res.merged ? `${res.name}: jetzt ${res.amount}` : `${res.name}${res.amount ? ` (${res.amount})` : ''} → ${lbl}`;
+    change(msg).then(() => { const i = $('#extra'); if (i) i.focus(); });
   },
-  recentx: t => { addExtraItem(t); change(`${t} hinzugefügt`); },
+  recentx: t => { const res = addExtraItem(t); change(res && res.exists ? `${res.name} steht schon auf der Liste.` : `${t} hinzugefügt`); },
   recentedit: () => { recentEdit = !recentEdit; rerender(); },
   storepick: k => storePickSheet(k),
   storeadd: k => storeAddSheet(k),
@@ -6047,7 +6173,7 @@ const ACT = {
   },
   showremoved: () => {
     const r = curShopRange(), st = shopState();
-    EP.shopMark(db, 'removed', EP.shopUnits(db, r.from, r.to).units.map(u => u.key).filter(k => st.removed[k] && st.removed[k].on), false);
+    EP.shopMark(db, 'removed', EP.shopUnits(db, r.from, r.to).units.map(u => u.key), false);   // auch vom verschobenen Vorgänger geerbte
     change('Wieder eingeblendet');
   },
   delextra: i => { const st = shopState(), x = st.extras.find(e => e.id === i); if (!x) return; x.del = true; EP.touch(x); EP.touch(st); change(); },
@@ -6244,11 +6370,11 @@ const BIND = {
     };
     $$('[data-check]', m).forEach(c => c.onchange = () => {
       const row = shopRows(curShopList()).find(r => r.key === c.dataset.check); if (!row) return;
-      EP.shopMark(db, 'bought', row.units, c.checked); persist(); c.closest('.item').classList.toggle('checked', c.checked); updClean();
+      EP.shopMark(db, 'bought', row.units, c.checked); persist(); strikeRow(c.closest('.item'), c.checked); updClean();
     });
     $$('[data-extra]', m).forEach(c => c.onchange = () => {
       const st = shopState(), x = st.extras.find(e => e.id === c.dataset.extra); if (!x) return;
-      x.checked = c.checked; EP.touch(x); EP.touch(st); persist(); c.closest('.item').classList.toggle('checked', c.checked); updClean();
+      x.checked = c.checked; EP.touch(x); EP.touch(st); persist(); strikeRow(c.closest('.item'), c.checked); updClean();
     });
     const ex = $('#extra', m); if (ex) ex.onkeydown = e => { if (e.key === 'Enter') ACT.addextra(); };
   },
