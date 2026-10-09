@@ -177,6 +177,12 @@ details.arch summary{min-height:44px;display:flex;align-items:center;font-weight
 .tr{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
 .tr:first-of-type{border-top:0}
 .tr .who{flex:1;min-width:0}
+.tr .btn.pp{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#003087;border-color:#9DB8E8;flex:none}
+.tr .btn.pp svg{width:18px;height:18px}
+.badge.pp{background:#E5EDFA;color:#003087;margin-left:6px}
+.pphint{margin:8px 0 0}
+.pphint .btn{margin-top:8px}
+@media (prefers-color-scheme:dark){.tr .btn.pp{color:#9DC1FF;border-color:#33507F}.badge.pp{background:#1D2C47;color:#9DC1FF}}
 .tr .who .n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tr .who .a{font:800 18px var(--head);font-variant-numeric:tabular-nums}
 .done .a{font-weight:600;font-size:15px;color:var(--muted)}
@@ -348,6 +354,15 @@ button.gi:active{background:var(--field)}
   body.xlock{overflow:hidden}
 }
 @keyframes fadein{from{opacity:0}to{opacity:1}}
+/* ==== Querformat: Rand für Notch/Kamera und niedrige Bildschirme (iPhone quer) ==== */
+.wrap{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+@media (min-width:800px){.wrap{padding-left:max(28px,env(safe-area-inset-left));padding-right:max(28px,env(safe-area-inset-right))}}
+@media (min-width:800px) and (max-height:520px){
+  .xdlg{top:0;max-height:100dvh;border-radius:0 0 22px 22px}
+  .sheet{top:0;max-height:100dvh;border-radius:0 0 22px 22px}
+  .colR{position:static;max-height:none;overflow:visible}
+  h1.title{font-size:34px}
+}
 @media (hover:hover){
   .entry:hover,.grow:hover,.cstat:hover{border-color:var(--petrol)}
   .chip:hover:not(.on){border-color:var(--petrol)}
@@ -1875,6 +1890,23 @@ let lastTransfers=[], paySuggest=0;
 const grp=()=>S.groups.find(g=>g.id===S.ui.activeGroupId)||null;
 const nameOf=(g,id)=>(g.members.find(m=>m.id===id)||{}).name||'?';
 function meId(g){const id=S.ui.meByGroup[g.id];return g.members.some(m=>m.id===id)?id:null;}
+/* PayPal.Me: Name aus Eingabe wie „paypal.me/tim“, „https://www.paypal.com/paypalme/tim“, „@tim“ oder „tim“ */
+function normPaypal(v){
+  let t=String(v||'').trim().replace(/^https?:\/\//i,'').replace(/^www\./i,'').replace(/^(paypal\.me|paypal\.com\/paypalme)\/?/i,'').replace(/^@/,'');
+  if(/\s/.test(t)) return null;
+  t=t.split(/[\/?#]/)[0];
+  return /^[A-Za-z0-9]{1,20}$/.test(t)?t:null;
+}
+/* Link mit Betrag – PayPal öffnet „Geld senden“ an diese Person mit vorausgefülltem Betrag */
+const paypalUrl=(h,cents)=>`https://paypal.me/${encodeURIComponent(h)}/${(cents/100).toFixed(2)}EUR`;
+const paypalOf=(g,id)=>{const m=g.members.find(x=>x.id===id);return m&&m.paypal||null;};
+/* eigenen PayPal.Me-Namen (dieses Gerät) bei „Ich“ in allen Reisen eintragen, wo noch keiner steht */
+function applyMyPaypal(){
+  const h=S.ui.myPaypal; if(!h) return false;
+  let ch=false;
+  S.groups.forEach(g=>{const id=meId(g), m=id&&g.members.find(x=>x.id===id); if(m&&!m.paypal){m.paypal=h;m.updatedAt=nowISO();ch=true;}});
+  return ch;
+}
 function payerIds(e){const p=paidMap(e);return Object.keys(p).filter(id=>p[id]>0);}
 function payerNames(g,e){return payerIds(e).map(id=>nameOf(g,id)).join(' + ');}
 function usedIds(g){
@@ -1925,6 +1957,7 @@ const info=(title,text)=>ask({title,text,buttons:[{label:'Verstanden',value:true
 /* Linien-Symbole für Menüs, Listen und Navigation */
 const SVG=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const IC={
+  paypal:SVG('<path d="M7 20l2.2-14h6.3c2.6 0 4.2 1.6 3.8 4-.5 3-2.8 4.4-5.6 4.4h-2.4L10.4 20z"/><path d="M5 17L7.2 4"/>'),
   back:SVG('<path d="M15 5l-7 7 7 7"/>'),
   receipt:SVG('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
   chart:SVG('<path d="M4 20h16"/><path d="M7 16v-5M12 16V6M17 16v-8"/>'),
@@ -2032,7 +2065,7 @@ function vGroups(){
   ${act.length?`<div class="glist">${act.map(row).join('')}</div>`:`<div class="card empty"><p>Noch keine Reise angelegt. Leg eine neue an oder probier die Beispielreise aus.</p><button class="btn block" data-act="loadExample">Beispielreise „Hütte Tirol“ laden</button></div>`}
   <div class="btnrow"><button class="btn primary" data-act="newGroup">+ Neue Reise</button></div>
   ${arc.length?`<details class="arch"><summary>Archiviert (${arc.length})</summary><div class="glist">${arc.map(row).join('')}</div></details>`:''}
-  <div class="more">${gGroup('',[kontoRow(),pushRow()])}${gGroup('Weitere',[
+  <div class="more">${gGroup('',[kontoRow(),pushRow(),gRow({icon:'paypal',color:'#003087',label:'Meine PayPal.Me',sub:'Wird in deinen Reisen bei „Ich“ eingetragen',value:S.ui.myPaypal||'Keine',act:'myPaypal'})])}${gGroup('Weitere',[
     gRow({icon:'link',color:'#0A84FF',label:'Geteilte Reise öffnen',sub:'Mit einem Link von Mitreisenden',act:'openJoin'}),
     gRow({icon:'up',color:'#8E8E93',label:'Datei importieren',sub:'Reise aus einer JSON-Datei',act:'importPick'}),
     gRow({icon:'check',color:'#34C759',label:'Selbsttest',sub:'Rechenregeln und Abgleich prüfen',act:'showTests'})
@@ -2168,8 +2201,12 @@ function vSettle(g){
   }else{
     h+=`<p class="sumline"><b>${n} ${n===1?'Überweisung':'Überweisungen'}</b>${naive>n?` <span class="muted">statt ${naive} Einzelschulden</span>`:''}</p>`;
     mt.transfers.forEach((t,i)=>{
-      h+=`<div class="tr"><div class="who"><div class="n">${esc(nameOf(g,t.from))} → ${esc(nameOf(g,t.to))}</div><div class="a">${fmtEuro(t.cents)}</div></div><button class="btn sm" data-act="markPaid" data-i="${i}">Bezahlt</button></div>`;
+      const pp=paypalOf(g,t.to);
+      h+=`<div class="tr"><div class="who"><div class="n">${esc(nameOf(g,t.from))} → ${esc(nameOf(g,t.to))}</div><div class="a">${fmtEuro(t.cents)}</div></div>${pp?`<a class="btn sm pp" href="${esc(paypalUrl(pp,t.cents))}" target="_blank" rel="noopener" aria-label="${esc(fmtEuro(t.cents))} an ${esc(nameOf(g,t.to))} mit PayPal senden">${IC.paypal}PayPal</a>`:''}<button class="btn sm" data-act="markPaid" data-i="${i}">Bezahlt</button></div>`;
     });
+    const noPP=[...new Set(mt.transfers.map(t=>t.to))].filter(id=>!paypalOf(g,id));
+    if(noPP.length) h+=`<p class="small muted pphint">PayPal-Knopf: ${noPP.map(id=>esc(nameOf(g,id))).join(', ')} ${noPP.length===1?'hat':'haben'} noch keinen PayPal.Me-Namen. <br><button class="btn sm" data-act="tab" data-tab="members">Bei „Personen“ eintragen</button></p>`;
+    else h+=`<p class="small muted pphint">„PayPal“ öffnet PayPal mit Empfänger und Betrag. Danach hier „Bezahlt“ antippen.</p>`;
     if(!mt.exact) h+=`<p class="small muted">Bei mehr als 15 Personen mit offenem Saldo wird ein schnelles Näherungsverfahren genutzt.</p>`;
   }
   h+=`<button class="btn block" data-act="newPayment" style="margin-top:10px">+ Andere Zahlung erfassen</button></div>`;
@@ -2198,7 +2235,7 @@ function stepper(kind,id,val,label){
 const PCOL=['#0A84FF','#FF9500','#34C759','#AF52DE','#5856D6','#30B0C7','#FF2D55'];
 function vMembers(g){
   const me=meId(g), tn=tripNights(g), n=g.members.length;
-  const rows=g.members.map((m,i)=>`<div class="gperson"><span class="gic" style="--c:${PCOL[i%PCOL.length]}" aria-hidden="true">${esc((m.name.trim()[0]||'?').toUpperCase())}</span><div class="gbody"><div class="h"><button class="nmb" data-act="memberMenu" data-id="${m.id}">${esc(m.name)}</button>${m.id===me?'<span class="badge">Ich</span>':''}<button class="iconbtn" data-act="memberMenu" data-id="${m.id}" aria-label="Aktionen für ${esc(m.name)}">${IC.dots}</button></div>
+  const rows=g.members.map((m,i)=>`<div class="gperson"><span class="gic" style="--c:${PCOL[i%PCOL.length]}" aria-hidden="true">${esc((m.name.trim()[0]||'?').toUpperCase())}</span><div class="gbody"><div class="h"><button class="nmb" data-act="memberMenu" data-id="${m.id}">${esc(m.name)}</button>${m.id===me?'<span class="badge">Ich</span>':''}${m.paypal?'<span class="badge pp" title="PayPal.Me hinterlegt">PayPal</span>':''}<button class="iconbtn" data-act="memberMenu" data-id="${m.id}" aria-label="Aktionen für ${esc(m.name)}">${IC.dots}</button></div>
     <div class="ctl"><div><div class="lab">Standardanteil</div>${stepper('mw',m.id,fmtNum(m.defaultWeight),'Standardanteil von '+m.name)}</div><div><div class="lab">Nächte</div>${stepper('mn',m.id,m.nights??'–','Nächte von '+m.name)}</div></div></div></div>`);
   return gGroup('Person hinzufügen',[`<div class="gform"><div class="addrow"><input id="newMember" class="in" placeholder="Name" autocomplete="off" enterkeyhint="done" maxlength="40" aria-label="Name der Person"><button class="btn primary" data-act="addMember">Hinzufügen</button></div></div>`])
   +gGroup(`Personen (${n})`,rows.length?rows:['<div class="gform muted">Noch niemand dabei.</div>'],
@@ -2385,9 +2422,19 @@ function settlementText(g){
   if(!n) L.push('Alles ausgeglichen.');
   else{
     L.push(`Überweisungen (${n}${naive>n?` statt ${naive} Einzelschulden`:''})`);
-    mt.transfers.forEach(t=>L.push(`${nameOf(g,t.from)} → ${nameOf(g,t.to)}: ${sp(fmtEuro(t.cents))}`));
+    mt.transfers.forEach(t=>{L.push(`${nameOf(g,t.from)} → ${nameOf(g,t.to)}: ${sp(fmtEuro(t.cents))}`);const pp=paypalOf(g,t.to);if(pp)L.push(`   PayPal: ${paypalUrl(pp,t.cents)}`);});
   }
   return L.join('\n');
+}
+let ppDone=null;
+function ppSheet(title,cur,_id,done){
+  ppDone=done;
+  openSheet(`<h2>${esc(title)}</h2>
+  <label class="fl" for="ppIn">PayPal.Me-Name oder Link</label>
+  <input id="ppIn" class="in" value="${esc(cur?'paypal.me/'+cur:'')}" placeholder="paypal.me/maxmuster" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url">
+  <p class="small muted">Den Link findest du in der PayPal-App unter „PayPal.Me“. Bei der Abrechnung öffnet der PayPal-Knopf dann direkt „Geld senden“ an diese Person mit dem Betrag. Leer lassen zum Entfernen.</p>
+  <div class="btnrow"><button class="btn" data-act="closeSheet">Abbrechen</button><button class="btn primary" data-act="ppSave">Speichern</button></div>`);
+  const i=byId('ppIn'); i.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();ACT.ppSave();}};
 }
 function textSheet(txt){
   openSheet(`<h2>Abrechnung als Text</h2><p class="small muted">Text antippen, alles auswählen und kopieren.</p><textarea class="in" id="txtOut" readonly>${esc(txt)}</textarea><button class="btn block" data-act="closeSheet" style="margin-top:10px">Schließen</button>`);
@@ -2936,6 +2983,7 @@ const ACT={
     optSheet(m.name,`Standardanteil ${fmtNum(m.defaultWeight)} · ${m.nights??'–'} ${m.nights===1?'Nacht':'Nächte'}`,[
       {label:isMe?'Nicht mehr „Ich“':'Das bin ich',hint:isMe?'Zuordnung auf diesem Gerät aufheben':'Saldo und Anteil dieser Person zeigen',icon:'user',tone:'petrol',act:'setMe',id:m.id},
       {label:'Umbenennen',hint:'Name ändern',icon:'pencil',tone:'blue',act:'renameMember',id:m.id},
+      {label:'PayPal.Me',hint:m.paypal?'paypal.me/'+m.paypal:'Für den PayPal-Knopf bei der Abrechnung',icon:'paypal',tone:'blue',act:'paypalMember',id:m.id},
       used?{label:'Entfernen nicht möglich',hint:'Kommt in Ausgaben oder Zahlungen vor',icon:'info',tone:'grey',act:'delMember',id:m.id,group:5}
           :{label:'Aus der Reise entfernen',hint:'Kommt in keiner Ausgabe vor',icon:'trash',tone:'red',act:'delMember',id:m.id}
     ]);
@@ -2943,7 +2991,28 @@ const ACT={
   setMe:el=>{
     const g=grp(), id=el.dataset.id; closeSheet();
     if(meId(g)===id) delete S.ui.meByGroup[g.id]; else S.ui.meByGroup[g.id]=id;
-    persist(); render(true);
+    if(applyMyPaypal()) save(); else persist();
+    render(true);
+  },
+  paypalMember:el=>{
+    const m=grp().members.find(x=>x.id===el.dataset.id); if(!m) return;
+    ppSheet(`PayPal.Me von ${m.name}`,m.paypal,'pp-'+m.id,v=>{
+      const g=grp(), mm=g.members.find(x=>x.id===m.id); if(!mm) return;
+      if(v) mm.paypal=v; else delete mm.paypal;
+      mm.updatedAt=nowISO(); save(); render(true); notify(v?'PayPal.Me gespeichert':'PayPal.Me entfernt');
+    });
+  },
+  myPaypal:()=>{
+    ppSheet('Meine PayPal.Me',S.ui.myPaypal,'pp-me',v=>{
+      if(v) S.ui.myPaypal=v; else delete S.ui.myPaypal;
+      if(applyMyPaypal()) save(); else persist();
+      render(true); notify(v?'Gespeichert – in Reisen mit „Ich“ eingetragen':'Entfernt');
+    });
+  },
+  ppSave:el=>{
+    const raw=byId('ppIn').value.trim(), v=raw?normPaypal(raw):null;
+    if(raw&&!v){notify('Bitte nur den PayPal.Me-Namen oder den Link angeben, z. B. paypal.me/maxmuster');return;}
+    const f=ppDone; ppDone=null; closeSheet(); if(f) f(v);
   },
   menuMembers:()=>{closeSheet();V={name:'group',tab:'members'};render();},
   menuShare:async()=>{

@@ -587,6 +587,49 @@ button.ordlbl{cursor:pointer;font-weight:600}
 .csides span{font-size:14px;color:var(--speckle);font-weight:600}
 .csides .chip{min-height:44px;font-size:15px}
 
+/* ==== Querformat / iPad ==== */
+/* Rand für Notch und Kamera, wenn das iPhone quer liegt */
+.top{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+@media (min-width:700px){
+  main{max-width:760px}
+  main.r-week,main.r-shop,main.r-recipes{max-width:1240px}
+  /* Woche: Tage als Karten nebeneinander (iPad quer: 4 je Zeile, hochkant/iPhone quer: 2–3) */
+  .r-week .days{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;background:none;border:0;box-shadow:none;overflow:visible;border-radius:0}
+  .r-week .day,.r-week .day:first-child{background:var(--plate);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+  .r-week .day.today{border-color:var(--rim)}
+  .r-week .wktop,.r-week .wkmore,.r-week .draftbar,.r-week .wkblock>.btns{max-width:760px;margin-left:auto;margin-right:auto}
+  /* Einkauf: Markt, Supermarkt, Drogerie in Spalten; Bedienung oben bleibt schmal */
+  .r-shop>:not(.shopcols){max-width:760px;margin-left:auto;margin-right:auto}
+  .r-shop .shopcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;align-items:start;margin:14px 0}
+  .r-shop .shopcols>.shopsec{margin:0}
+  /* Rezepte: Karten im Raster */
+  .r-recipes>:not(.rlist){max-width:760px;margin-left:auto;margin-right:auto}
+  .r-recipes .rlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;align-items:start}
+  .r-recipes .rlist .rcard{margin:0}
+  main>input.in{display:block;margin-left:auto;margin-right:auto}
+}
+/* iPhone quer (niedrig): Leiste unten flacher, Symbol neben der Beschriftung */
+@media (max-height:500px) and (min-width:600px){
+  .tabs button{flex-direction:row;gap:6px;min-height:44px;padding:2px 8px}
+  .tabs button svg{width:20px;height:20px}
+  main{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+}
+/* Blätter auf großen Bildschirmen als Dialog in der Mitte */
+@media (min-width:700px) and (min-height:600px){
+  .scrim{align-items:center;padding:24px}
+  .sheet{max-width:560px;border-radius:22px;max-height:86dvh}
+}
+/* Kochansicht quer: Zutaten links (bleiben stehen), Zubereitung rechts */
+@media (min-width:900px){
+  .cookscreen .inner{max-width:1240px}
+  .cookscreen .inner.two{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:0 18px;align-items:start}
+  .cookscreen .inner.two>*{grid-column:1/-1}
+  .cookscreen .inner.two>.cingcard{grid-column:1;grid-row:span 2;position:sticky;top:12px;max-height:calc(100dvh - 24px);overflow:auto}
+  .cookscreen .inner.two>.cstepcard,.cookscreen .inner.two>.cnotecard{grid-column:2}
+  .cookscreen .hero{max-height:34dvh}
+}
+
 </style>
 </head>
 <body>
@@ -4076,6 +4119,7 @@ function rerender() {
   $('#tabs').innerHTML = TABS.map(([k, l, ic]) => `<button data-tab="${k}" ${route.name === k || (!isTab && stack[0] && stack[0].name === k) ? 'aria-current="page"' : ''}>${ic}${l}</button>`).join('');
   const views = { suggest: vSuggest, week: vWeek, shop: vShop, recipes: vRecipes, edit: vEdit, ingredients: vIngredients, rotation: vRotation, settings: vSettings, sync: vSync, sources: vSources, stores: vStores, store: vStore };
   const main = $('#main');
+  main.className = 'r-' + route.name;   // für breite Bildschirme (iPad, quer): Aufteilung je Ansicht
   main.innerHTML = (views[route.name] || vSuggest)();
   const binder = BIND[route.name]; if (binder) binder(main);
   renderSyncPill();
@@ -4541,9 +4585,11 @@ function vShop() {
     <p class="sub">${!list.recipes.length ? 'In diesem Zeitraum ist nichts gekocht geplant.' : 'Für: ' + esc(list.recipes.join(', '))}</p>
     ${list.carried ? `<p class="hint carryhint">${list.carried} ${list.carried === 1 ? 'Artikel ist' : 'Artikel sind'} noch nicht gekauft und ${mode === 'all' ? 'aus den letzten Tagen' : 'aus der Vorwoche'} übernommen.</p>` : ''}
     ${list.warnings.length ? `<ul class="box warnbox" style="margin-top:12px">${list.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+    <div class="shopcols">
     ${list.market.length ? `<section class="shopsec box">${head('MARKT', 'Markt', list.market.length)}${marketHtml}</section>` : ''}
     ${list.supermarket.length ? `<section class="shopsec box">${head('SUPERMARKT', 'Supermarkt')}${groups(list.supermarket)}</section>` : ''}
     ${list.drogerie.length ? `<section class="shopsec box">${head('DROGERIE', 'Drogerie')}${groups(list.drogerie)}</section>` : ''}
+    </div>
     <section class="shopsec box noprint"><h3>Weitere Artikel</h3>
       <p class="hint" style="margin-top:0">Werden automatisch einsortiert, z. B. Spülmittel → Haushalt, Zahnpasta → Drogerie. Mengen gehen davor oder dahinter: „4 Oatly“, „Feta 2 Packungen“. Antippen zum Umsortieren.</p>
       <div class="quick" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. 2 Packungen Feta" enterkeyhint="done" autocomplete="off"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
@@ -5357,7 +5403,7 @@ function renderCook() {
     EP.seasonLabel(r) ? `<span>${COOK_ICON.leaf}${esc(EP.seasonLabel(r))}</span>` : '',
   ].filter(Boolean).join('');
   const empty = !ings.length && !md.steps.length && !String(r.instructions || '').trim();
-  el.innerHTML = `<div class="inner">
+  el.innerHTML = `<div class="inner${ings.length && md.steps.length ? ' two' : ''}">
     <div class="cooktop"><button class="btn small" data-act="closecook">Schließen</button></div>
     ${ck ? `<img class="hero" data-img="${ck}" data-thumb="0" alt="">` : ''}
     <section class="ccard chead"><h1>${esc(r.name)}</h1>
@@ -5366,7 +5412,7 @@ function renderCook() {
       ${(() => { const a = EP.linkedSides(db, r), b = EP.linkedFrom(db, r).filter(x => !a.some(y => y.id === x.id));
         return a.length || b.length ? `<div class="csides">${a.length ? `<span>Dazu:</span>${a.map(s => `<button class="chip small" data-act="cookside" data-arg="${s.id}">${esc(s.name)} ›</button>`).join('')}` : ''}
           ${b.length ? `<span>Passt zu:</span>${b.map(s => `<button class="chip small" data-act="cookside" data-arg="${s.id}">${esc(s.name)} ›</button>`).join('')}` : ''}</div>` : ''; })()}</section>
-    ${ings.length ? `<section class="ccard"><h2>Zutaten</h2>
+    ${ings.length ? `<section class="ccard cingcard"><h2>Zutaten</h2>
       ${isCake(r) ? `<button class="panbtn" data-act="cookpan">${r.pan ? `<span>Backform</span><b>${esc(EP.panLabel(cookState.pan || r.pan))} ▾</b>${cookState.pan ? `<small>Zutaten ${fmtFactor(cookFactor())} · ca. ${Math.max(1, Math.round((r.servings || 12) * cookFactor()))} Stücke</small>` : ''}` : '<span>Backform</span><b>Größe angeben ▾</b><small>dann auf andere Formen umrechnen</small>'}</button>` : ''}
       ${isCake(r) && r.pan ? '' : `<div class="cstep" role="group" aria-label="${unit}"><button data-act="cookpp" data-arg="-1" aria-label="Weniger ${unit}">−</button><output id="cook-n">${cookState.n} ${unit}</output><button data-act="cookpp" data-arg="1" aria-label="Mehr ${unit}">+</button></div>`}
       <ul class="cing" id="cook-ing">${cookIngRows()}</ul></section>` : ''}
@@ -5374,7 +5420,7 @@ function renderCook() {
       const plan = cookPlan(md.steps), f = cookFactor();
       const unused = plan.all.filter((o, k) => plan.first[k] < 0);
       const prep = unused.filter(o => !o.spice), spices = unused.filter(o => o.spice);
-      return `<section class="ccard"><h2>Zubereitung</h2>${md.intro ? `<div class="md cintro">${md.intro}</div>` : ''}
+      return `<section class="ccard cstepcard"><h2>Zubereitung</h2>${md.intro ? `<div class="md cintro">${md.intro}</div>` : ''}
       ${prep.length ? `<div class="cextra" id="cook-prep"><b>Außerdem bereitlegen</b><ul>${prep.map(o => ingLine(o, f)).join('')}</ul></div>` : ''}
       <ol class="steps-big">${md.steps.map((t, k) => {
         const here = plan.all.filter((o, j) => plan.first[j] === k)
@@ -5386,7 +5432,7 @@ function renderCook() {
       }).join('')}</ol>
       ${spices.length ? `<div class="cextra spices" id="cook-spices"><b>Zum Würzen und Abschmecken</b><ul>${spices.map(o => ingLine(o, f)).join('')}</ul></div>` : ''}</section>`;
     })() : ''}
-    ${r.notes ? `<section class="ccard"><h2>Notizen</h2><p class="cnotes">${esc(r.notes)}</p></section>` : ''}
+    ${r.notes ? `<section class="ccard cnotecard"><h2>Notizen</h2><p class="cnotes">${esc(r.notes)}</p></section>` : ''}
     ${empty ? `<section class="ccard"><p style="font-size:18px;margin:0 0 12px">Für dieses Gericht sind noch keine Zutaten und keine Anleitung hinterlegt.</p>
       <button class="btn primary" data-act="cookedit" data-arg="${r.id}">Rezept ergänzen</button></section>` : ''}
     ${cookState.done.size ? '<div class="btns"><button class="btn quiet" data-act="cookreset">Abhaken zurücksetzen</button></div>' : ''}
