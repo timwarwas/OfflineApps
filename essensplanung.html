@@ -630,6 +630,18 @@ main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
   .cookscreen .hero{max-height:34dvh}
 }
 
+/* ==== Eingabefelder in Karten (v. a. Nachtmodus) und Feld „Weitere Artikel“ ==== */
+#extra{border-color:color-mix(in srgb,var(--rim) 55%,var(--line))}
+#extra:focus{border-color:var(--rim);box-shadow:0 0 0 3px color-mix(in srgb,var(--rim) 25%,transparent);outline:none}
+@media (prefers-color-scheme:dark){
+  .box .in{background:var(--enamel)}
+  #extra{border-color:color-mix(in srgb,var(--rim) 75%,transparent)}
+  #extra::placeholder{color:#8E9AB0}
+}
+
+/* Tastatur offen (Touch-Geräte): Leiste unten und „Heute“ ausblenden – sie würden sonst mit der Seite wandern */
+@media (hover:none){html.typing .tabs,html.typing .todaybtn,html.typing .timerbar{display:none}}
+
 </style>
 </head>
 <body>
@@ -4061,26 +4073,44 @@ function go(name, params) {
   rerender();
   if (name === 'week') scrollToToday();
 }
-/* Android: Zurück-Taste/-Geste. Ein Puffer-Eintrag im Verlauf fängt „Zurück“ ab; zuerst schließen sich Blätter,
-   dann die Kochansicht, dann Unterseiten, dann geht es zur Woche. Erst danach verlässt „Zurück“ die App (bzw. geht zum Hauptmenü). */
+/* Zurück-Geste (iPhone: vom linken Rand wischen) und Android-Zurück: Der Verlauf spiegelt die Ebenen der App
+   (Woche 0, anderer Reiter 1, Unterseiten +1 je Stufe, Kochansicht +1, offenes Blatt +1). Einträge entstehen nur direkt
+   nach einem Antippen – Safari und Chrome überspringen beim Zurückwischen Einträge, die ohne Bedienung angelegt wurden. */
 const BackNav = (() => {
-  let armed = false;
-  try { armed = !!(history.state && history.state.epGuard); } catch (e) {}
-  const arm = () => { if (armed) return; try { history.pushState({ epGuard: 1 }, ''); armed = true; } catch (e) {} };
+  let expect = null;
+  try { history.scrollRestoration = 'manual'; } catch (e) {}   // Zurück im Verlauf soll die Scrollposition nicht verstellen
+  const hd = () => { try { return (history.state && history.state.bd) || 0; } catch (e) { return 0; } };
+  const cookOpen = () => { const cv = $('#cookview'); return !!cv && !cv.classList.contains('hidden'); };
+  const depth = () => {
+    if (!$('#shell') || $('#shell').classList.contains('hidden')) return 0;
+    const root = stack.length ? stack[0].name : route.name;
+    return stack.length + (root !== 'week' ? 1 : 0) + (cookOpen() ? 1 : 0) + ($('#scrim') ? 1 : 0);
+  };
   const handle = () => {
     if ($('#scrim')) { closeSheet(); return true; }
-    const cv = $('#cookview'); if (cv && !cv.classList.contains('hidden')) { closeCook(); return true; }
+    if (cookOpen()) { closeCook(); return true; }
     if (!$('#shell') || $('#shell').classList.contains('hidden')) return false;
     if (!TABS.some(t => t[0] === route.name)) { back(); return true; }
     if (route.name !== 'week') { go('week'); return true; }
     return false;
   };
+  function sync() {
+    try {
+      if (expect != null) return;
+      const want = depth(), have = hd();
+      if (want > have) { for (let d = have + 1; d <= want; d++) history.pushState({ bd: d }, ''); }
+      else if (want < have) { expect = want; history.go(want - have); }
+    } catch (e) {}
+  }
+  const later = () => setTimeout(sync, 0);
   addEventListener('popstate', () => {
-    if (!armed) return;
-    armed = false;
-    if (handle()) arm(); else history.back();
+    const now = hd();
+    if (expect != null) { if (now <= expect) { expect = null; later(); } return; }   // Verlauf nach „Zurück“ in der App nachgezogen
+    if (now < depth()) handle();                                                      // Zurück-Geste: eine Ebene zurück
+    later();
   });
-  return { arm, handle };
+  ['click', 'touchend', 'keydown'].forEach(t => document.addEventListener(t, later, true));
+  return { sync, handle, depth, arm: later };
 })();
 /* heutigen Tag ins Bild holen, falls er nicht sichtbar ist */
 function scrollToToday() {
@@ -6671,6 +6701,19 @@ async function kontoJoin(it, mergeLocal, keepRemoteName) {
   await Auth.startSession(it.secret);
   enterApp();
 }
+
+/* iOS: Solange die Tastatur offen ist, hängt eine feste Leiste unten an der Seite statt am Bildschirm und wandert beim
+   Scrollen mit nach oben. Deshalb beim Tippen ausblenden und nach dem Schließen der Tastatur die Lage neu berechnen lassen. */
+const isTyping = el => !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !/^(checkbox|radio|button|submit|file|range|color|hidden)$/i.test(el.type)));
+const kbdOpen = () => !!window.visualViewport && visualViewport.height < window.innerHeight * 0.85;   // Bildschirmtastatur sichtbar
+function kbdCheck() {
+  const on = isTyping(document.activeElement) && kbdOpen(), was = document.documentElement.classList.contains('typing');
+  document.documentElement.classList.toggle('typing', on);
+  if (was && !on) window.scrollTo(window.scrollX, window.scrollY);   // Safari ordnet feste Elemente danach wieder am Bildschirm aus
+}
+document.addEventListener('focusin', () => { kbdCheck(); setTimeout(kbdCheck, 350); });
+document.addEventListener('focusout', () => setTimeout(kbdCheck, 80));
+if (window.visualViewport) visualViewport.addEventListener('resize', kbdCheck);
 
 /* ---------- Start ---------- */
 async function enterApp() {

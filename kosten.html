@@ -354,6 +354,7 @@ button.gi:active{background:var(--field)}
   body.xlock{overflow:hidden}
 }
 @keyframes fadein{from{opacity:0}to{opacity:1}}
+@media (hover:none){html.typing .tabbar,html.typing .fab{display:none}}
 /* ==== Querformat: Rand für Notch/Kamera und niedrige Bildschirme (iPhone quer) ==== */
 .wrap{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
 @media (min-width:800px){.wrap{padding-left:max(28px,env(safe-area-inset-left));padding-right:max(28px,env(safe-area-inset-right))}}
@@ -3383,14 +3384,20 @@ document.addEventListener('focusout',()=>{ if(pendingRender) setTimeout(()=>{con
 window.addEventListener('hashchange',()=>{if(location.hash==='#tests'){V={name:'tests'};render();}});
 
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){navigator.serviceWorker.register('sw.js').catch(()=>{});}
-/* Android: Zurück-Taste/-Geste. Ein Puffer-Eintrag im Verlauf fängt „Zurück“ ab; zuerst schließen sich Kalender,
-   Rückfragen und Blätter, dann die Ausgabe (mit Rückfrage bei Änderungen), dann geht es zur Reise und zur Reiseliste.
-   Erst danach verlässt „Zurück“ die App (bzw. geht zum Hauptmenü). */
+/* Zurück-Geste (iPhone: vom linken Rand wischen) und Android-Zurück: Der Verlauf spiegelt die Ebenen der App
+   (Reiseliste 0 → Reise 1 → Ausgabe/Unterseite 2, offenes Blatt/Rückfrage/Kalender +1). Einträge werden nur direkt
+   nach einem Antippen angelegt – Safari und Chrome überspringen sonst beim Zurückwischen Einträge, die ohne
+   Bedienung entstanden sind, und man landete von der Reise direkt im Hauptmenü. */
 const BackNav=(()=>{
-  let armed=false;
-  try{armed=!!(history.state&&history.state.kGuard);}catch(e){}
-  const arm=()=>{if(armed)return;try{history.pushState({kGuard:1},'');armed=true;}catch(e){}};
+  let expect=null;
+  try{history.scrollRestoration='manual';}catch(e){}
   const isOpen=id=>byId(id).classList.contains('open');
+  const hd=()=>{try{return (history.state&&history.state.bd)||0;}catch(e){return 0;}};
+  const depth=()=>{
+    let d=V.name==='groups'?0:V.name==='tests'?1:V.name==='expense'?2:(V.tab&&V.tab!=='overview'?2:1);
+    if(isOpen('sheet-root'))d++; if(isOpen('ask-root'))d++; if(isOpen('pick-root'))d++;
+    return d;
+  };
   const handle=()=>{
     if(isOpen('pick-root')){closePicker();return true;}
     if(isOpen('ask-root')){ACT.askBtn({dataset:{i:String(askBtns.findIndex(b=>!b.value&&b.value!==0))}});return true;}
@@ -3401,16 +3408,37 @@ const BackNav=(()=>{
     if(V.name==='group'){ACT.goGroups();return true;}
     return false;
   };
-  addEventListener('popstate',()=>{if(!armed)return;armed=false;if(handle())arm();else history.back();});
-  return {arm,handle};
+  function sync(){
+    try{
+      const want=depth(), have=hd();
+      if(expect!=null) return;
+      if(want>have){for(let d=have+1;d<=want;d++)history.pushState({bd:d},'');}
+      else if(want<have){expect=want;history.go(want-have);}
+    }catch(e){}
+  }
+  const later=()=>setTimeout(sync,0);
+  addEventListener('popstate',()=>{
+    const now=hd();
+    if(expect!=null){if(now<=expect){expect=null;later();}return;}   // Verlauf nach „Zurück“ in der App nachgezogen
+    if(now<depth()) handle();                               // Zurück-Geste: eine Ebene zurück
+    later();
+  });
+  ['click','touchend','keydown'].forEach(t=>document.addEventListener(t,later,true));
+  return {sync,handle,depth};
 })();
+/* iOS: bei offener Tastatur wandert die feste Leiste unten mit der Seite – beim Tippen ausblenden, danach neu ausrichten */
+const isTyping=el=>!!el&&(el.tagName==='TEXTAREA'||el.isContentEditable||(el.tagName==='INPUT'&&!/^(checkbox|radio|button|submit|file|range|color|hidden)$/i.test(el.type)));
+const kbdOpen=()=>!!window.visualViewport&&visualViewport.height<window.innerHeight*0.85;
+function kbdCheck(){const on=isTyping(document.activeElement)&&kbdOpen(),was=document.documentElement.classList.contains('typing');document.documentElement.classList.toggle('typing',on);if(was&&!on)window.scrollTo(window.scrollX,window.scrollY);}
+document.addEventListener('focusin',()=>{kbdCheck();setTimeout(kbdCheck,350);});
+document.addEventListener('focusout',()=>setTimeout(kbdCheck,80));
+if(window.visualViewport)visualViewport.addEventListener('resize',kbdCheck);
 runRecurring();
 const J=parseJoin(location.hash);
 if(location.hash==='#tests') V={name:'tests'};
 else if(grp()) V={name:'group',tab:'overview'};
 render();
 if(J){ try{history.replaceState(null,'',location.pathname+location.search);}catch(e){} joinTrip(J.id,J.secret); }
-BackNav.arm();
 syncAll();
 kontoRefresh();
 </script>
