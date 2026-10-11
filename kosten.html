@@ -181,6 +181,9 @@ details.arch summary{min-height:44px;display:flex;align-items:center;font-weight
 .tr .btn.pp svg{width:18px;height:18px}
 .badge.pp{background:#E5EDFA;color:#003087;margin-left:6px}
 .pphint{margin:8px 0 0}
+.setwrap{max-width:640px;margin:0 auto}
+.top .gearbtn{margin-left:auto;flex:none}
+.top .gearbtn svg{width:24px;height:24px}
 .pphint .btn{margin-top:8px}
 @media (prefers-color-scheme:dark){.tr .btn.pp{color:#9DC1FF;border-color:#33507F}.badge.pp{background:#1D2C47;color:#9DC1FF}}
 .tr .who .n{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1958,6 +1961,7 @@ const info=(title,text)=>ask({title,text,buttons:[{label:'Verstanden',value:true
 /* Linien-Symbole für Menüs, Listen und Navigation */
 const SVG=p=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
 const IC={
+  gear:SVG('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>'),
   paypal:SVG('<path d="M7 20l2.2-14h6.3c2.6 0 4.2 1.6 3.8 4-.5 3-2.8 4.4-5.6 4.4h-2.4L10.4 20z"/><path d="M5 17L7.2 4"/>'),
   back:SVG('<path d="M15 5l-7 7 7 7"/>'),
   receipt:SVG('<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/>'),
@@ -2044,11 +2048,11 @@ const isWide=()=>{try{return matchMedia('(min-width: 800px)').matches;}catch(e){
 let SIDE='settle';
 function render(keep){
   const y=window.scrollY, oldDlg=document.querySelector('.xdlg'), dy=oldDlg?oldDlg.scrollTop:0;
-  if(V.name!=='groups'&&V.name!=='tests'&&!grp()) V={name:'groups'};
+  if(V.name!=='groups'&&V.name!=='tests'&&V.name!=='settings'&&!grp()) V={name:'groups'};
   if(V.name==='expense'&&!D) V={name:'group',tab:'overview'};
   const wideExp=V.name==='expense'&&isWide();
   const html=wideExp?vGroup(V.under||'overview')+`<div class="xmodal"><div class="xscrim" data-act="cancelExpense"></div><div class="xdlg${oldDlg?'':' anim'}" role="dialog" aria-modal="true" aria-label="Ausgabe">${vExpense()}</div></div>`
-    :V.name==='group'?vGroup():V.name==='expense'?vExpense():V.name==='tests'?vTests():vGroups();
+    :V.name==='group'?vGroup():V.name==='expense'?vExpense():V.name==='tests'?vTests():V.name==='settings'?vSettings():vGroups();
   byId('app').innerHTML=html;
   document.body.classList.toggle('xlock',wideExp);
   window.scrollTo(0,(keep||wideExp)?y:0);
@@ -2060,18 +2064,26 @@ function vGroups(){
   const act=S.groups.filter(g=>!g.archived), arc=S.groups.filter(g=>g.archived);
   const row=g=>`<button class="grow" data-act="openGroup" data-id="${g.id}"><div class="mid"><div class="t">${g.share?'🔗 ':''}${esc(g.name)}</div><div class="small muted">${esc([fmtRange(g),g.members.length+(g.members.length===1?' Person':' Personen'),fmtEuro(totalExpenses(g))].filter(Boolean).join(' · '))}</div></div><span class="chev" aria-hidden="true">›</span></button>`;
   return `<div class="wrap">
-  <div class="top"><a class="iconbtn back" href="./index.html">${IC.back}Sammlung</a><div class="ttl"></div></div>
+  <div class="top"><a class="iconbtn back" href="./index.html">${IC.back}Sammlung</a><div class="ttl"></div><button class="iconbtn gearbtn" data-act="showSettings" aria-label="Einstellungen">${IC.gear}</button></div>
   <h1 class="title">Kosten&shy;aufteilung</h1>
   <p class="lead">Ausgaben einer Reise erfassen, fair aufteilen und am Ende mit möglichst wenigen Überweisungen ausgleichen.</p>
   ${act.length?`<div class="glist">${act.map(row).join('')}</div>`:`<div class="card empty"><p>Noch keine Reise angelegt. Leg eine neue an oder probier die Beispielreise aus.</p><button class="btn block" data-act="loadExample">Beispielreise „Hütte Tirol“ laden</button></div>`}
-  <div class="btnrow"><button class="btn primary" data-act="newGroup">+ Neue Reise</button></div>
+  <div class="btnrow"><button class="btn primary" data-act="newGroup">+ Neue Reise</button><button class="btn" data-act="openJoin">Per Link öffnen</button></div>
   ${arc.length?`<details class="arch"><summary>Archiviert (${arc.length})</summary><div class="glist">${arc.map(row).join('')}</div></details>`:''}
-  <div class="more">${gGroup('',[kontoRow(),pushRow(),gRow({icon:'paypal',color:'#003087',label:'Meine PayPal.Me',sub:'Wird in deinen Reisen bei „Ich“ eingetragen',value:S.ui.myPaypal||'Keine',act:'myPaypal'})])}${gGroup('Weitere',[
-    gRow({icon:'link',color:'#0A84FF',label:'Geteilte Reise öffnen',sub:'Mit einem Link von Mitreisenden',act:'openJoin'}),
-    gRow({icon:'up',color:'#8E8E93',label:'Datei importieren',sub:'Reise aus einer JSON-Datei',act:'importPick'}),
-    gRow({icon:'check',color:'#34C759',label:'Selbsttest',sub:'Rechenregeln und Abgleich prüfen',act:'showTests'})
-  ],(Konto.loggedIn()?'Angemeldet werden Reisen automatisch verschlüsselt geteilt und erscheinen auf deinen anderen Geräten.':'Die Daten bleiben auf diesem Gerät, außer du teilst eine Reise.')+' Zum Sichern eine Reise exportieren (•••-Menü der Reise).')}</div>
   </div>`;
+}
+/* Einstellungen (Zahnrad auf der Startseite): Konto, Mitteilungen, PayPal, Daten, Selbsttest */
+function vSettings(){
+  return `<div class="wrap"><div class="top"><button class="iconbtn back" data-act="goGroups">${IC.back}Reisen</button><div class="ttl"><h1>Einstellungen</h1></div></div>
+  <div class="setwrap">
+  ${gGroup('Konto und Mitteilungen',[kontoRow(),pushRow()],Konto.loggedIn()?'Angemeldet werden Reisen automatisch verschlüsselt geteilt und erscheinen auf deinen anderen Geräten.':'Ohne Konto bleiben die Daten auf diesem Gerät, außer du teilst eine Reise.')}
+  ${gGroup('Bezahlen',[gRow({icon:'paypal',color:'#003087',label:'Meine PayPal.Me',sub:'Wird in deinen Reisen bei „Ich“ eingetragen',value:S.ui.myPaypal||'Keine',act:'myPaypal'})],'Damit erscheint bei der Abrechnung ein PayPal-Knopf mit Betrag für alle, die dir Geld schulden.')}
+  ${gGroup('Reisen',[
+    gRow({icon:'link',color:'#0A84FF',label:'Geteilte Reise öffnen',sub:'Mit einem Link von Mitreisenden',act:'openJoin'}),
+    gRow({icon:'up',color:'#8E8E93',label:'Datei importieren',sub:'Reise aus einer JSON-Datei',act:'importPick'})
+  ],'Zum Sichern eine Reise exportieren (•••-Menü der Reise).')}
+  ${gGroup('Hilfe',[gRow({icon:'check',color:'#34C759',label:'Selbsttest',sub:'Rechenregeln und Abgleich prüfen',act:'showTests'})])}
+  </div></div>`;
 }
 
 function vGroup(tabArg){
@@ -2406,7 +2418,7 @@ function updatePreview(){
 
 function vTests(){
   const R=runSelfTests(), ok=R.filter(r=>r.ok).length;
-  return `<div class="wrap"><div class="top"><button class="iconbtn back" data-act="goGroups">${IC.back}Zurück</button><div class="ttl"><h1>Selbsttest</h1></div></div>
+  return `<div class="wrap"><div class="top"><button class="iconbtn back" data-act="showSettings">${IC.back}Einstellungen</button><div class="ttl"><h1>Selbsttest</h1></div></div>
   <div class="card"><h2 class="${ok===R.length?'pos':'neg'}">${ok} von ${R.length} Tests bestanden</h2>
   ${R.map(r=>`<div class="tres"><b class="${r.ok?'pos':'neg'}">${r.ok?'✓':'✗'} ${esc(r.name)}</b>${r.detail?`<span class="small muted">${esc(r.detail)}</span>`:''}</div>`).join('')}</div></div>`;
 }
@@ -2936,6 +2948,7 @@ const ACT={
     const f=askResolve; askResolve=null; if(f) f(b?b.value:null);
   },
   showTests:()=>{V={name:'tests'};render();},
+  showSettings:()=>{V={name:'settings'};render();},
   goGroups:()=>{S.ui.activeGroupId=null;persist();F={q:'',cat:'',person:''};V={name:'groups'};render();},
   openGroup:el=>{
     S.ui.activeGroupId=el.dataset.id;
@@ -3394,7 +3407,7 @@ const BackNav=(()=>{
   const isOpen=id=>byId(id).classList.contains('open');
   const hd=()=>{try{return (history.state&&history.state.bd)||0;}catch(e){return 0;}};
   const depth=()=>{
-    let d=V.name==='groups'?0:V.name==='tests'?1:V.name==='expense'?2:(V.tab&&V.tab!=='overview'?2:1);
+    let d=V.name==='groups'?0:V.name==='settings'?1:V.name==='tests'?2:V.name==='expense'?2:(V.tab&&V.tab!=='overview'?2:1);
     if(isOpen('sheet-root'))d++; if(isOpen('ask-root'))d++; if(isOpen('pick-root'))d++;
     return d;
   };
@@ -3403,7 +3416,8 @@ const BackNav=(()=>{
     if(isOpen('ask-root')){ACT.askBtn({dataset:{i:String(askBtns.findIndex(b=>!b.value&&b.value!==0))}});return true;}
     if(isOpen('sheet-root')){closeSheet();return true;}
     if(V.name==='expense'){ACT.cancelExpense();return true;}
-    if(V.name==='tests'){V={name:'groups'};render();return true;}
+    if(V.name==='tests'){V={name:'settings'};render();return true;}
+    if(V.name==='settings'){V={name:'groups'};render();return true;}
     if(V.name==='group'&&V.tab&&V.tab!=='overview'){V={name:'group',tab:'overview'};render();return true;}
     if(V.name==='group'){ACT.goGroups();return true;}
     return false;

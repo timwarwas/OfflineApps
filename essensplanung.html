@@ -595,9 +595,12 @@ main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
   main{max-width:760px}
   main.r-week,main.r-shop,main.r-recipes{max-width:1240px}
   /* Woche: Tage als Karten nebeneinander (iPad quer: 4 je Zeile, hochkant/iPhone quer: 2–3) */
-  .r-week .days{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;background:none;border:0;box-shadow:none;overflow:visible;border-radius:0}
+  .r-week .days{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;background:none;border:0;box-shadow:none;overflow:visible;border-radius:0}
   .r-week .day,.r-week .day:first-child{background:var(--plate);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
   .r-week .day.today{border-color:var(--rim)}
+  /* in den Karten: Mittag/Kuchen/Beilagen ohne die Einrückung der Listenansicht, damit die Namen Platz haben */
+  .r-week .laneline{padding-left:14px}
+  .r-week .sidesug .sidesugin{padding-left:14px}
   .r-week .wktop,.r-week .wkmore,.r-week .draftbar,.r-week .wkblock>.btns{max-width:760px;margin-left:auto;margin-right:auto}
   /* Einkauf: Markt, Supermarkt, Drogerie in Spalten; Bedienung oben bleibt schmal */
   .r-shop>:not(.shopcols){max-width:760px;margin-left:auto;margin-right:auto}
@@ -641,6 +644,12 @@ main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 
 /* Tastatur offen (Touch-Geräte): Leiste unten und „Heute“ ausblenden – sie würden sonst mit der Seite wandern */
 @media (hover:none){html.typing .tabs,html.typing .todaybtn,html.typing .timerbar{display:none}}
+
+/* Suche bei den Einkaufsorten */
+.srcsearch{position:relative;margin:12px 0 4px}
+.srcsearch .in{padding-right:52px}
+.srcsearch .iconbtn{position:absolute;right:2px;top:2px;color:var(--speckle)}
+.srcsearch input[type=search]::-webkit-search-cancel-button{display:none}
 
 </style>
 </head>
@@ -5905,15 +5914,30 @@ function storePickSheet(kind) {
   optionsSheet(`${KIND_LABEL[kind]}: Geschäft`, 'Gilt für diese Einkaufsliste. Die Reihenfolge der Regale stellst du beim Geschäft ein.', opts);
 }
 
+let srcQuery = '';   // Suche bei den Einkaufsorten
+const srcNorm = t => String(t || '').toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss');
+function srcResults(q) {
+  const s = db.settings, n = srcNorm(q.trim());
+  if (!n) return '';
+  const hits = EP.live(db.ingredients).filter(i => srcNorm(i.name).includes(n))
+    .sort((a, b) => (srcNorm(a.name).startsWith(n) ? 0 : 1) - (srcNorm(b.name).startsWith(n) ? 0 : 1) || a.name.localeCompare(b.name, 'de')).slice(0, 60);
+  if (!hits.length) return `<p class="empty">Keine Zutat mit „${esc(q.trim())}“.</p>`;
+  return `<h3>${hits.length === 1 ? '1 Zutat' : hits.length + ' Zutaten'}</h3><div class="box">${hits.map(i => srcRow(i, s)).join('')}</div>`;
+}
+const srcRow = (i, s) => `<div class="srcrow"><div class="row"><span class="grow nm">${esc(i.name)}</span>
+      <span class="amt">${esc((EP.CAT[i.category] || EP.CAT.SONSTIGES).label)}${i.shoppingSource ? ' · angepasst' : ''}</span></div>
+      ${srcSeg('src', i.id, EP.sourceOf(i, s))}</div>`;
 const srcOpen = new Set();   // aufgeklappte Kategorien bleiben beim Ändern offen
 function vSources() {
   const s = db.settings;
   const ings = EP.live(db.ingredients).sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const fresh = ings.filter(i => i.reviewed === false);
-  const row = i => `<div class="srcrow"><div class="row"><span class="grow nm">${esc(i.name)}</span>
-      <span class="amt">${esc((EP.CAT[i.category] || EP.CAT.SONSTIGES).label)}${i.shoppingSource ? ' · angepasst' : ''}</span></div>
-      ${srcSeg('src', i.id, EP.sourceOf(i, s))}</div>`;
+  const row = i => srcRow(i, s);
   return `<p class="sub">Lege fest, was du auf dem Markt kaufst und was im Supermarkt. „Vorrat“ heißt: meist zu Hause, nur prüfen.</p>
+    <div class="srcsearch"><input class="in" id="srcq" type="search" placeholder="Zutat suchen, z. B. Feta" value="${esc(srcQuery)}" autocomplete="off" enterkeyhint="search" aria-label="Zutat suchen">
+      <button class="iconbtn ${srcQuery ? '' : 'hidden'}" id="srcx" aria-label="Suche löschen">✕</button></div>
+    <div id="srcres">${srcResults(srcQuery)}</div>
+    <div id="srcrest" class="${srcQuery.trim() ? 'hidden' : ''}">
     ${fresh.length ? `<h3>Neu hinzugekommen (${fresh.length})</h3><div class="box newbox">${fresh.map(row).join('')}
       <button class="btn primary" data-act="srcok" style="margin-top:12px">${fresh.length === 1 ? 'Passt so' : 'Alle passen so'}</button></div>` : ''}
     <h3>Nach Kategorie</h3>
@@ -5928,7 +5952,8 @@ function vSources() {
       return `<details class="box srcgroup" data-cat="${c.key}" ${srcOpen.has(c.key) ? 'open' : ''}><summary>${esc(c.label)} <span class="amt">${list.length}</span></summary>
         <div class="srcrow srcall"><div class="row"><span class="grow nm">Alle ${esc(c.label)}${mixed ? ' <small class="hint" style="display:inline;margin:0">(teils abweichend)</small>' : ''}</span></div>
         ${srcSeg('catall', c.key, mixed ? '' : cur)}</div>${list.map(row).join('')}</details>`;
-    }).join('') : '<p class="empty">Noch keine Zutaten.</p>'}`;
+    }).join('') : '<p class="empty">Noch keine Zutaten.</p>'}
+    </div>`;
 }
 
 /* ---------- Einladungen für den Haushalt ---------- */
@@ -6103,7 +6128,7 @@ const ACT = {
     change(`Alle ${(EP.CAT[cat] || {}).label || ''}: ${{ MARKT: 'Markt', SUPERMARKT: 'Supermarkt', DROGERIE: 'Drogerie', VORRAT: 'Vorrat' }[v]}.`);
   },
   srcok: () => { EP.live(db.ingredients).filter(i => i.reviewed === false).forEach(i => { i.reviewed = true; EP.touch(i); }); change('Einkaufsorte übernommen.'); },
-  to: a => go(a),
+  to: a => { if (a === 'sources') srcQuery = ''; go(a); },
   seed: async () => {
     const res = await importData({ data: seedToDb(SEED_DATA, EP) }, 'merge');
     change(`${res.added} Beispielrezepte geladen.`);
@@ -6432,7 +6457,14 @@ const BIND = {
       io.observe(more);
     }
   },
-  sources: m => { $$('details[data-cat]', m).forEach(d => d.addEventListener('toggle', () => { d.open ? srcOpen.add(d.dataset.cat) : srcOpen.delete(d.dataset.cat); })); },
+  sources: m => {
+    $$('details[data-cat]', m).forEach(d => d.addEventListener('toggle', () => { d.open ? srcOpen.add(d.dataset.cat) : srcOpen.delete(d.dataset.cat); }));
+    const q = $('#srcq', m), x = $('#srcx', m);
+    const upd = () => { srcQuery = q.value; $('#srcres', m).innerHTML = srcResults(srcQuery); $('#srcrest', m).classList.toggle('hidden', !!srcQuery.trim()); x.classList.toggle('hidden', !srcQuery); };
+    q.oninput = upd;
+    q.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); q.blur(); } };
+    x.onclick = () => { q.value = ''; upd(); q.focus(); };
+  },
   shop: m => {
     const setRange = () => {
       const f = $('#sf', m).value, t = $('#st', m).value;
