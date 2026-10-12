@@ -1856,7 +1856,7 @@ const EP = (function () {
     OBST: 'wassermelone apfel äpfel birne banane zitrone limette orange mandarine clementine beere beeren erdbeere erdbeeren himbeere himbeeren heidelbeere heidelbeeren blaubeere johannisbeere kirsche kirschen pflaume pflaumen zwetschge zwetschgen rhabarber traube trauben mango ananas aprikose pfirsich nektarine melone kiwi granatapfel feige',
     KRAEUTER: 'basilikum petersilie koriander schnittlauch dill minze rosmarin thymian salbei estragon kerbel liebstöckel frische kräuter',
     EIER: 'ei eier eigelb eiweiß',
-    BACKWAREN: 'brot brötchen toast toastbrot vollkornbrot tortilla tortillas weizentortillas wrap baguette fladenbrot pita ciabatta knäckebrot semmel',
+    BACKWAREN: 'brot brötchen toast toastbrot vollkornbrot tortilla tortillas weizentortillas wrap baguette fladenbrot pita ciabatta knäckebrot semmel croissant croissants laugenbrezel brezel brezeln bagel bagels kuchenboden zwieback',
     FLEISCH: 'hackfleisch hack rinderhack rind rindfleisch schwein schweinefleisch hähnchen hähnchenbrust huhn pute putenbrust speck schinken wurst würstchen salami lamm bacon chorizo fleisch geschnetzeltes gulasch leberkäse',
     FISCH: 'lachs thunfisch fisch garnele garnelen kabeljau forelle seelachs scampi krabben',
     MILCHPRODUKTE: 'milch sahne schlagsahne joghurt quark magerquark butter schmand crème fraîche creme fraiche saure sahne buttermilch kefir',
@@ -2214,7 +2214,7 @@ const EP = (function () {
     extras.forEach(x => {
       const p = extraParts(x);
       const category = x.category || extraCategory(p.name, learned);
-      let source = categorySource(category, db.settings);
+      let source = ((db.settings && db.settings.extraSrc) || {})[normExtra(p.name)] || categorySource(category, db.settings);   // eigener Einkaufsort je Begriff
       if (source === 'VORRAT') source = 'SUPERMARKT';
       rows.push({ key: 'x:' + x.id, extra: x.id, name: p.name, amount: extraAmount(p), category, source, checked: !!x.checked, carry: x.date < from });
     });
@@ -5759,6 +5759,21 @@ const SRC = [['MARKT', 'Markt'], ['SUPERMARKT', 'Supermarkt'], ['DROGERIE', 'Dro
 function srcSeg(act, id, cur, extraCls) {
   return `<div class="seg srcseg ${extraCls || ''}">${SRC.map(([k, l]) => `<button data-act="${act}" data-arg="${id}|${k}" aria-pressed="${cur === k}">${l}</button>`).join('')}</div>`;
 }
+/* Einkaufsort eigener Artikel (je Begriff gemerkt, z. B. Croissants → Markt) */
+const XSRC = [['MARKT', 'Markt'], ['SUPERMARKT', 'Supermarkt'], ['DROGERIE', 'Drogerie']];
+function extraSourceOf(name) {
+  const n = EP.normExtra(name), own = (db.settings.extraSrc || {})[n];
+  if (own) return own;
+  const s = EP.categorySource(EP.extraCategory(name, db.settings.extraCats), db.settings);
+  return s === 'VORRAT' ? 'SUPERMARKT' : s;
+}
+function setExtraSource(name, src) {
+  const n = EP.normExtra(name), cat = EP.categorySource(EP.extraCategory(name, db.settings.extraCats), db.settings);
+  const o = Object.assign({}, db.settings.extraSrc);
+  if (src === (cat === 'VORRAT' ? 'SUPERMARKT' : cat)) delete o[n]; else o[n] = src;   // nur Abweichungen merken
+  db.settings.extraSrc = o; EP.touch(db.settings);
+}
+const xsrcSeg = name => `<div class="seg srcseg xsrcseg">${XSRC.map(([k, l]) => `<button data-act="xsrc" data-arg="${esc(EP.normExtra(name) + '|' + k)}" data-name="${esc(name)}" aria-pressed="${extraSourceOf(name) === k}">${l}</button>`).join('')}</div>`;
 /* ---------- Zusätzliche Artikel auf der Einkaufsliste ---------- */
 /* Verlauf der zusätzlichen Artikel; beim ersten Mal aus vorhandenen Einträgen und „zuletzt verwendet“ aufbauen */
 function extraStats() {
@@ -5805,7 +5820,10 @@ function extraCatSheet(i) {
   const secOpts = store ? (store.sections || []).map(sec => ({ label: sec.name, hint: `Bereich in „${store.name}“`, icon: inSec === sec.id ? 'check' : 'bowl', tone: inSec === sec.id ? 'basil' : 'speckle', group: 0,
     run: () => { store.assign = Object.assign({}, store.assign, { [nx]: sec.id }); EP.touch(db.settings); change(`${nm} → ${sec.name}`); } })) : [];
   const editOpt = { label: 'Bearbeiten', hint: 'Tippfehler korrigieren', icon: 'pencil', tone: 'rim', group: -1, run: () => extraEditSheet(i) };
-  optionsSheet(`„${nm}“`, 'Bearbeiten oder einsortieren – die Zuordnung wird für diesen Begriff gemerkt.', [editOpt].concat(secOpts).concat(EP.CATEGORIES.map(c => ({
+  const curSrc = extraSourceOf(nm);
+  const srcOpts = XSRC.map(([k, l]) => ({ label: `Einkaufen: ${l}`, hint: k === curSrc ? 'aktuell' : 'für „' + nm + '“ merken', icon: k === curSrc ? 'check' : 'cart', tone: k === curSrc ? 'basil' : 'rim', group: -1,
+    run: () => { setExtraSource(nm, k); change(`${nm} → ${l}`); } }));
+  optionsSheet(`„${nm}“`, 'Bearbeiten, Einkaufsort oder Regal wählen – wird für diesen Begriff gemerkt.', [editOpt].concat(srcOpts).concat(secOpts).concat(EP.CATEGORIES.map(c => ({
     label: c.label, hint: { MARKT: 'Markt', SUPERMARKT: 'Supermarkt', DROGERIE: 'Drogerie', VORRAT: 'Vorrat' }[EP.categorySource(c.key, db.settings)],
     icon: c.key === cur ? 'check' : 'bowl', tone: c.key === cur ? 'basil' : 'speckle', group: 0,
     run: () => {
@@ -5929,9 +5947,20 @@ function srcResults(q) {
   if (!n) return '';
   const hits = EP.live(db.ingredients).filter(i => srcNorm(i.name).includes(n))
     .sort((a, b) => (srcNorm(a.name).startsWith(n) ? 0 : 1) - (srcNorm(b.name).startsWith(n) ? 0 : 1) || a.name.localeCompare(b.name, 'de')).slice(0, 60);
-  if (!hits.length) return `<p class="empty">Keine Zutat mit „${esc(q.trim())}“.</p>`;
-  return `<h3>${hits.length === 1 ? '1 Zutat' : hits.length + ' Zutaten'}</h3><div class="box">${hits.map(i => srcRow(i, s)).join('')}</div>`;
+  const xh = extraNames().filter(t => srcNorm(t).includes(n));
+  if (!hits.length && !xh.length) return `<p class="empty">Keine Zutat mit „${esc(q.trim())}“.</p>`;
+  return (hits.length ? `<h3>${hits.length === 1 ? '1 Zutat' : hits.length + ' Zutaten'}</h3><div class="box">${hits.map(i => srcRow(i, s)).join('')}</div>` : '')
+    + (xh.length ? `<h3>Eigene Artikel</h3><div class="box">${xh.map(xsrcRow).join('')}</div>` : '');
 }
+/* eigene Artikel: aus dem Verlauf und der aktuellen Liste, ohne Rezept-Zutaten gleichen Namens */
+function extraNames() {
+  const seen = new Map();
+  Object.values(db.settings.extraStats || {}).forEach(e => { if (e && e.t) seen.set(EP.normExtra(e.t), e.t); });
+  (shopState().extras || []).filter(x => x && !x.del).forEach(x => { const p = EP.extraParts(x); if (p.name) seen.set(EP.normExtra(p.name), p.name); });
+  const ingNames = new Set(EP.live(db.ingredients).map(i => EP.normExtra(i.name)));
+  return [...seen.entries()].filter(([k]) => !ingNames.has(k)).map(([, t]) => t).sort((a, b) => a.localeCompare(b, 'de'));
+}
+const xsrcRow = t => `<div class="srcrow"><div class="row"><span class="grow nm">${esc(t)}</span><span class="amt">eigener Artikel${(db.settings.extraSrc || {})[EP.normExtra(t)] ? ' · angepasst' : ''}</span></div>${xsrcSeg(t)}</div>`;
 const srcRow = (i, s) => `<div class="srcrow"><div class="row"><span class="grow nm">${esc(i.name)}</span>
       <span class="amt">${esc((EP.CAT[i.category] || EP.CAT.SONSTIGES).label)}${i.shoppingSource ? ' · angepasst' : ''}</span></div>
       ${srcSeg('src', i.id, EP.sourceOf(i, s))}</div>`;
@@ -5952,6 +5981,8 @@ function vSources() {
     <p class="hint" style="margin-top:0">Gilt für alle Zutaten der Kategorie, die du nicht einzeln geändert hast.</p>
     <div class="box">${EP.CATEGORIES.map(c => `<div class="srcrow"><div class="row"><span class="grow nm">${esc(c.label)}</span></div>
       ${srcSeg('catsrc', c.key, EP.categorySource(c.key, s))}</div>`).join('')}</div>
+    ${(() => { const xs = extraNames(); return xs.length ? `<details class="box srcgroup" data-cat="__x" ${srcOpen.has('__x') ? 'open' : ''}><summary>Eigene Artikel <span class="amt">${xs.length}</span></summary>
+      <p class="hint" style="margin:6px 0 0">Was du selbst auf die Einkaufsliste schreibst, z. B. Croissants → Markt.</p>${xs.map(xsrcRow).join('')}</details>` : ''; })()}
     <h3>Einzelne Zutaten</h3>
     ${ings.length ? EP.CATEGORIES.map(c => {
       const list = ings.filter(i => i.category === c.key && i.reviewed !== false);
@@ -6118,6 +6149,7 @@ const ACT = {
     optionsSheet(o[0], '', o[1].map(([v, l, h]) => ({ label: l, hint: h, icon: db.settings[k] === v ? 'check' : 'bowl', tone: db.settings[k] === v ? 'basil' : 'speckle', group: 0,
       run: () => { db.settings[k] = v; EP.touch(db.settings); change(); } })));
   },
+  xsrc: (a, el) => { const k = a.split('|').pop(), name = el && el.dataset.name || a.split('|')[0]; setExtraSource(name, k); change(); },
   src: a => {
     const [id, v] = a.split('|'); const i = ingById(id);
     i.shoppingSource = v === EP.categorySource(i.category, db.settings) ? null : v; i.reviewed = true; EP.touch(i); change();
@@ -6780,7 +6812,7 @@ async function boot() {
     if (!t) return;
     if (t.dataset.tab) { go(t.dataset.tab); return; }
     const fn = ACT[t.dataset.act];
-    if (fn) { e.preventDefault(); fn(t.dataset.arg); }
+    if (fn) { e.preventDefault(); fn(t.dataset.arg, t); }
   });
   $('#syncpill').onclick = () => go('sync');
   $('#gear').onclick = () => go('settings');
