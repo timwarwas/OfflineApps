@@ -2066,7 +2066,7 @@ function vGroups(){
   return `<div class="wrap">
   <div class="top"><a class="iconbtn back" href="./index.html">${IC.back}Sammlung</a><div class="ttl"></div><button class="iconbtn gearbtn" data-act="showSettings" aria-label="Einstellungen">${IC.gear}</button></div>
   <h1 class="title">Kosten&shy;aufteilung</h1>
-  <p class="lead">Ausgaben einer Reise erfassen, fair aufteilen und am Ende mit möglichst wenigen Überweisungen ausgleichen.</p>
+  
   ${act.length?`<div class="glist">${act.map(row).join('')}</div>`:`<div class="card empty"><p>Noch keine Reise angelegt. Leg eine neue an oder probier die Beispielreise aus.</p><button class="btn block" data-act="loadExample">Beispielreise „Hütte Tirol“ laden</button></div>`}
   <div class="btnrow"><button class="btn primary" data-act="newGroup">+ Neue Reise</button><button class="btn" data-act="openJoin">Per Link öffnen</button></div>
   ${arc.length?`<details class="arch"><summary>Archiviert (${arc.length})</summary><div class="glist">${arc.map(row).join('')}</div></details>`:''}
@@ -2076,12 +2076,12 @@ function vGroups(){
 function vSettings(){
   return `<div class="wrap"><div class="top"><button class="iconbtn back" data-act="goGroups">${IC.back}Reisen</button><div class="ttl"><h1>Einstellungen</h1></div></div>
   <div class="setwrap">
-  ${gGroup('Konto und Mitteilungen',[kontoRow(),pushRow()],Konto.loggedIn()?'Angemeldet werden Reisen automatisch verschlüsselt geteilt und erscheinen auf deinen anderen Geräten.':'Ohne Konto bleiben die Daten auf diesem Gerät, außer du teilst eine Reise.')}
-  ${gGroup('Bezahlen',[gRow({icon:'paypal',color:'#003087',label:'Meine PayPal.Me',sub:'Wird in deinen Reisen bei „Ich“ eingetragen',value:S.ui.myPaypal||'Keine',act:'myPaypal'})],'Damit erscheint bei der Abrechnung ein PayPal-Knopf mit Betrag für alle, die dir Geld schulden.')}
+  ${gGroup('Konto und Mitteilungen',[kontoRow(),pushRow()])}
+  ${gGroup('Bezahlen',[gRow({icon:'paypal',color:'#003087',label:'Meine PayPal.Me',value:S.ui.myPaypal||'Keine',act:'myPaypal'})])}
   ${gGroup('Reisen',[
     gRow({icon:'link',color:'#0A84FF',label:'Geteilte Reise öffnen',sub:'Mit einem Link von Mitreisenden',act:'openJoin'}),
     gRow({icon:'up',color:'#8E8E93',label:'Datei importieren',sub:'Reise aus einer JSON-Datei',act:'importPick'})
-  ],'Zum Sichern eine Reise exportieren (•••-Menü der Reise).')}
+  ])}
   ${gGroup('Hilfe',[gRow({icon:'check',color:'#34C759',label:'Selbsttest',sub:'Rechenregeln und Abgleich prüfen',act:'showTests'})])}
   </div></div>`;
 }
@@ -2184,7 +2184,7 @@ function vStats(g){
   // Kategorien
   const byCat=new Map(); exp.forEach(e=>{const k=e.category||'none';byCat.set(k,(byCat.get(k)||0)+e.amountCents);});
   const cats=[...byCat].sort((a,b)=>b[1]-a[1]), maxC=cats[0][1];
-  h+=`<div class="card"><h2>Nach Kategorie</h2>${cats.map(([k,v])=>{const c=CATS.find(x=>x[0]===k);return `<button class="cstat" data-act="filterCat" data-id="${k}" aria-label="Ausgaben der Kategorie ${c?c[1]:'ohne Kategorie'} anzeigen"><div class="top2"><span>${c?c[2]+' '+c[1]:'💶 Ohne Kategorie'}</span><span>${fmtEuro(v)} <span class="muted small">${Math.round(v/total*100)} %</span></span></div><div class="hbar"><i style="width:${(v/maxC*100).toFixed(1)}%"></i></div></button>`;}).join('')}<p class="small muted" style="margin:8px 0 0">Tippe auf eine Kategorie, um ihre Ausgaben zu sehen.</p>${(()=>{const n=exp.filter(e=>!e.category&&guessCat(e.title)).length;return n?`<button class="btn block" data-act="autoCats" style="margin-top:10px">${n} ohne Kategorie automatisch zuordnen</button>`:'';})()}</div>`;
+  h+=`<div class="card"><h2>Nach Kategorie</h2>${cats.map(([k,v])=>{const c=CATS.find(x=>x[0]===k);return `<button class="cstat" data-act="filterCat" data-id="${k}" aria-label="Ausgaben der Kategorie ${c?c[1]:'ohne Kategorie'} anzeigen"><div class="top2"><span>${c?c[2]+' '+c[1]:'💶 Ohne Kategorie'}</span><span>${fmtEuro(v)} <span class="muted small">${Math.round(v/total*100)} %</span></span></div><div class="hbar"><i style="width:${(v/maxC*100).toFixed(1)}%"></i></div></button>`;}).join('')}${(()=>{const n=exp.filter(e=>!e.category&&guessCat(e.title)).length;return n?`<button class="btn block" data-act="autoCats" style="margin-top:10px">${n} ohne Kategorie automatisch zuordnen</button>`:'';})()}</div>`;
   // Personen
   const paid={},share={}; g.members.forEach(m=>{paid[m.id]=0;share[m.id]=0;});
   exp.forEach(e=>{const p=paidMap(e);for(const k in p)paid[k]=(paid[k]||0)+p[k];for(const k in e.shares)share[k]=(share[k]||0)+e.shares[k];});
@@ -2204,7 +2204,7 @@ function vSettle(g){
     const v=b[m.id]||0, pct=Math.abs(v)/max*50;
     h+=`<div class="bal"><div class="nm">${esc(m.name)}</div><div class="v ${v>0?'pos':v<0?'neg':'muted'}">${fmtEuro(v,true)}</div><div class="bar" aria-hidden="true">${v?`<i class="${v>0?'p':'n'}" style="width:${pct.toFixed(2)}%"></i>`:''}</div></div>`;
   }
-  h+=`<p class="small muted" style="margin:10px 0 0">Plus: bekommt Geld zurück. Minus: schuldet Geld.</p></div>`;
+  h+=`</div>`;
 
   const mt=minTransfers(b,order); lastTransfers=mt.transfers;
   const naive=naiveDebtCount(g), n=mt.transfers.length;
@@ -2219,7 +2219,7 @@ function vSettle(g){
     });
     const noPP=[...new Set(mt.transfers.map(t=>t.to))].filter(id=>!paypalOf(g,id));
     if(noPP.length) h+=`<p class="small muted pphint">PayPal-Knopf: ${noPP.map(id=>esc(nameOf(g,id))).join(', ')} ${noPP.length===1?'hat':'haben'} noch keinen PayPal.Me-Namen. <br><button class="btn sm" data-act="tab" data-tab="members">Bei „Personen“ eintragen</button></p>`;
-    else h+=`<p class="small muted pphint">„PayPal“ öffnet PayPal mit Empfänger und Betrag. Danach hier „Bezahlt“ antippen.</p>`;
+
     if(!mt.exact) h+=`<p class="small muted">Bei mehr als 15 Personen mit offenem Saldo wird ein schnelles Näherungsverfahren genutzt.</p>`;
   }
   h+=`<button class="btn block" data-act="newPayment" style="margin-top:10px">+ Andere Zahlung erfassen</button></div>`;
@@ -2252,7 +2252,7 @@ function vMembers(g){
     <div class="ctl"><div><div class="lab">Standardanteil</div>${stepper('mw',m.id,fmtNum(m.defaultWeight),'Standardanteil von '+m.name)}</div><div><div class="lab">Nächte</div>${stepper('mn',m.id,m.nights??'–','Nächte von '+m.name)}</div></div></div></div>`);
   return gGroup('Person hinzufügen',[`<div class="gform"><div class="addrow"><input id="newMember" class="in" placeholder="Name" autocomplete="off" enterkeyhint="done" maxlength="40" aria-label="Name der Person"><button class="btn primary" data-act="addMember">Hinzufügen</button></div></div>`])
   +gGroup(`Personen (${n})`,rows.length?rows:['<div class="gform muted">Noch niemand dabei.</div>'],
-    'Standardanteil: wird bei „Anteile“ vorausgefüllt, z. B. 2 für jemanden, der dauerhaft für den Partner mitzahlt, oder 0,5 für ein Kind. Nächte: für „Nach Nächten“. Tippe auf einen Namen, um ihn zu ändern, als „Ich“ festzulegen oder zu entfernen.')
+    '')
   +(tn!=null&&n?gGroup('',[gRow({icon:'moon',color:'#5856D6',label:'Nächte aus Zeitraum übernehmen',sub:`Alle auf ${tn} ${tn===1?'Nacht':'Nächte'} setzen`,act:'nightsFromTrip'})]):'');
 }
 
@@ -2373,7 +2373,7 @@ function vExpense(){
   const repCard=d.seriesId
     ?`<div class="card"><h2>Wiederholung</h2><p class="small muted" style="margin:0 0 8px">Dieser Eintrag gehört zu einer Serie${src&&src.repeat?` (${FREQ_SHORT[src.repeat.freq]})`:''}. Änderungen hier gelten nur für diesen einen Eintrag.</p>${src?'<button class="btn block" data-act="openSeries">Original der Serie öffnen</button>':''}</div>`
     :`<div class="card"><h2>Wiederholen</h2><div class="chips">${FREQS.map(([k,l])=>`<button class="chip ${d.freq===k?'on':''}" data-act="setFreq" data-id="${k}" aria-pressed="${d.freq===k}">${l}</button>`).join('')}</div>
-      ${d.freq?`<label class="fl" for="fUntil-btn">Endet am (optional)</label>${dateField('fUntil',d.until,{f:'until',label:'Wiederholung endet am',optional:true,min:'fDate',pair:'fDate',placeholder:'kein Ende'})}<p class="small muted" style="margin:8px 0 0">Neue Einträge werden automatisch angelegt, sobald ihr Datum erreicht ist, z. B. die Miete jeden Monat.</p>`:''}</div>`;
+      ${d.freq?`<label class="fl" for="fUntil-btn">Endet am (optional)</label>${dateField('fUntil',d.until,{f:'until',label:'Wiederholung endet am',optional:true,min:'fDate',pair:'fDate',placeholder:'kein Ende'})}`:''}</div>`;
   return `<div class="wrap exp">
   <div class="top"><button class="iconbtn" data-act="cancelExpense">Abbrechen</button><div class="ttl"><h1>${d.id?'Ausgabe bearbeiten':'Neue Ausgabe'}</h1></div></div>
   <div class="card">
@@ -2384,7 +2384,7 @@ function vExpense(){
     ${d.curOn?`<div class="fxbox"><div class="two"><div><label class="fl" for="fxCur">Währung</label><select id="fxCur" class="in" data-f="curCode">${curList.map(c=>`<option ${c===d.curCode?'selected':''}>${c}</option>`).join('')}</select></div>
       <div><label class="fl" for="fxAmt">Betrag in <span class="curLbl">${esc(d.curCode)}</span></label><input id="fxAmt" class="in" data-f="curAmt" inputmode="decimal" value="${esc(d.curAmt)}" placeholder="0,00" autocomplete="off"></div></div>
       <label class="fl" for="fxRate">Kurs: 1 <span class="curLbl">${esc(d.curCode)}</span> = … €</label><input id="fxRate" class="in" data-f="curRate" inputmode="decimal" value="${esc(d.curRate)}" placeholder="z. B. 1,07" autocomplete="off">
-      <p class="small muted" style="margin:8px 0 0">Kurs vom Tag der Ausgabe. Er wird für diese Reise gemerkt. Aufgeteilt und abgerechnet wird in €.</p></div>`:''}
+      <p class="small muted" style="margin:8px 0 0">Abgerechnet wird in €.</p></div>`:''}
   </div>
   <div class="card"><h2>Bezahlt von</h2>${payBlock}<button class="linkbtn" data-act="togMulti">${d.multi?'Nur eine Person hat bezahlt':'Mehrere Personen haben bezahlt'}</button></div>
   <div class="card"><h2>Kategorie <span class="opt" id="catAuto">${d.category&&!d.catManual?'automatisch erkannt':'optional'}</span></h2><div class="chips" id="catChips">${CATS.map(c=>`<button class="chip ${d.category===c[0]?'on':''}" data-act="setCat" data-id="${c[0]}" aria-pressed="${d.category===c[0]}">${c[2]} ${c[1]}</button>`).join('')}</div></div>
@@ -2445,12 +2445,12 @@ function ppSheet(title,cur,_id,done){
   openSheet(`<h2>${esc(title)}</h2>
   <label class="fl" for="ppIn">PayPal.Me-Name oder Link</label>
   <input id="ppIn" class="in" value="${esc(cur?'paypal.me/'+cur:'')}" placeholder="paypal.me/maxmuster" autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url">
-  <p class="small muted">Den Link findest du in der PayPal-App unter „PayPal.Me“. Bei der Abrechnung öffnet der PayPal-Knopf dann direkt „Geld senden“ an diese Person mit dem Betrag. Leer lassen zum Entfernen.</p>
+  
   <div class="btnrow"><button class="btn" data-act="closeSheet">Abbrechen</button><button class="btn primary" data-act="ppSave">Speichern</button></div>`);
   const i=byId('ppIn'); i.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();ACT.ppSave();}};
 }
 function textSheet(txt){
-  openSheet(`<h2>Abrechnung als Text</h2><p class="small muted">Text antippen, alles auswählen und kopieren.</p><textarea class="in" id="txtOut" readonly>${esc(txt)}</textarea><button class="btn block" data-act="closeSheet" style="margin-top:10px">Schließen</button>`);
+  openSheet(`<h2>Abrechnung als Text</h2><textarea class="in" id="txtOut" readonly>${esc(txt)}</textarea><button class="btn block" data-act="closeSheet" style="margin-top:10px">Schließen</button>`);
   const ta=byId('txtOut'); ta.focus(); ta.select();
 }
 function slug(s){return String(s).toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'reise';}
@@ -2726,7 +2726,7 @@ async function joinTrip(id,secret){
   }
 }
 function whoAmI(g){
-  openSheet(`<h2>Wer bist du?</h2><p class="small muted" style="margin:0 0 10px">Damit die App deinen Saldo und deinen Anteil zeigen kann. Das bleibt nur auf diesem Gerät.</p>
+  openSheet(`<h2>Wer bist du?</h2><p class="small muted" style="margin:0 0 10px">Nur auf diesem Gerät.</p>
   <div class="chips">${g.members.map(m=>`<button class="chip" data-act="pickMe" data-id="${m.id}">${esc(m.name)}</button>`).join('')}</div>
   <button class="btn block" data-act="closeSheet" style="margin-top:12px">Später</button>`);
 }
@@ -2920,7 +2920,7 @@ function groupSheet(g){
   openSheet(`<h2>${g?'Reise bearbeiten':'Neue Reise'}</h2>
   <label class="fl" for="gName">Name</label><input id="gName" class="in" value="${esc(g?g.name:'')}" placeholder="z. B. Hütte Tirol" maxlength="60" autocomplete="off">
   <div class="two"><div><label class="fl" for="gStart-btn">Anreise</label>${dateField('gStart',g&&g.startDate,{label:'Anreise',optional:true,pair:'gEnd',placeholder:'optional'})}</div><div><label class="fl" for="gEnd-btn">Abreise</label>${dateField('gEnd',g&&g.endDate,{label:'Abreise',optional:true,min:'gStart',pair:'gStart',placeholder:'optional'})}</div></div>
-  <p class="small muted">Der Zeitraum ist optional. Aus ihm werden die Nächte vorausgefüllt.</p>
+  
   <div class="btnrow"><button class="btn" data-act="closeSheet">Abbrechen</button><button class="btn primary" data-act="saveGroup" data-id="${g?g.id:''}">${g?'Änderungen speichern':'Reise anlegen'}</button></div>`);
   if(!g) byId('gName').focus();
 }

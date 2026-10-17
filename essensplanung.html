@@ -656,6 +656,10 @@ main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 .item .nm small.dish .carry{color:var(--mustard);font-weight:600}
 .item.checked .nm small.dish{text-decoration:none}
 
+/* „Speichern“ oben beim Bearbeiten eines Rezepts */
+.top .hdrsave{min-height:44px;padding:0 16px;border-radius:12px;flex:none}
+.top .hdrsave.hidden,.top .hidden{display:none}
+
 </style>
 </head>
 <body>
@@ -665,6 +669,7 @@ main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
     <span id="topleft"></span>
     <div class="ttl" id="ttl">Essensplanung</div>
     <button class="syncpill" id="syncpill" aria-label="Geräteabgleich"></button>
+    <button class="btn small primary hdrsave hidden" id="hdrsave" data-act="save">Speichern</button>
     <button class="iconbtn" id="gear" aria-label="Einstellungen"><span class="gearbadge hidden" id="gearbadge"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
   </header>
   <main id="main"></main>
@@ -3961,7 +3966,7 @@ function pickCheck(recipeId, date, ignore, run) {
   const r = recipeById(recipeId), o = others.find(x => x.date > date) || others[others.length - 1], od = `${EP.weekday(o.date)} ${EP.fmtShort(o.date)}`, nd = `${EP.weekday(date)} ${EP.fmtShort(date)}`;
   const opts = [];
   if (canPull(o)) opts.push({ label: `Auf ${nd} ${o.date > date ? 'vorziehen' : 'verschieben'}`, hint: `Am ${od} fällt es dann weg${o.lane === 'MAIN' && !o.drafted ? ' – der Tag wird frei' : ''}`, icon: o.date > date ? 'up' : 'down', tone: 'rim', group: 0, run: () => run(o) });
-  opts.push({ label: 'Doppelt kochen', hint: `Steht dann am ${od} und am ${nd} im Plan`, icon: 'plus', tone: 'basil', group: 1, run: () => run(null) });
+  opts.push({ label: 'Doppelt kochen', icon: 'plus', tone: 'basil', group: 1, run: () => run(null) });
   optionsSheet(`Schon eingeplant`, `„${esc(r.name)}“ steht ${others.length > 1 ? `schon ${others.length}× im Plan, als Nächstes` : ''} am ${EP.weekdayLong(o.date)}, ${EP.fmtShort(o.date)}${others.length > 1 ? '' : ' im Plan'}`, opts);
 }
 /* Rückmeldung nach dem Einplanen: was ist mit der Rotation passiert? */
@@ -4170,6 +4175,8 @@ function rerender() {
   main.innerHTML = (views[route.name] || vSuggest)();
   const binder = BIND[route.name]; if (binder) binder(main);
   renderSyncPill();
+  const editing = route.name === 'edit';   // Rezept bearbeiten: „Speichern“ immer oben erreichbar
+  $('#hdrsave').classList.toggle('hidden', !editing); $('#syncpill').classList.toggle('hidden', editing); $('#gear').classList.toggle('hidden', editing);
   const n = unreviewedCount(), gb = $('#gearbadge');
   if (gb) { gb.textContent = n; gb.classList.toggle('hidden', !n); $('#gear').setAttribute('aria-label', n ? `Einstellungen – ${n} neue Zutat${n === 1 ? '' : 'en'} zuordnen` : 'Einstellungen'); }
   Images.hydrate(main);
@@ -4231,8 +4238,8 @@ function vSuggest() {
   if (sig() !== before) persist();
   const seg = laneSeg(lane, 'slane');
   const laneHint = lane === 'MAIN' ? '' : laneDays(lane).length
-    ? `<p class="hint" style="text-align:center">${esc(laneWhat(lane))} ist eingeplant für: ${laneDays(lane).slice().sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7)).map(d => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][d]).join(', ')} – änderbar in den Einstellungen.</p>`
-    : `<p class="hint" style="text-align:center">Für ${esc(laneWhat(lane))} sind keine Tage gewählt – das stellst du in den Einstellungen ein.</p>`;
+    ? `<p class="hint" style="text-align:center">${esc(laneWhat(lane))} an: ${laneDays(lane).slice().sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7)).map(d => ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'][d]).join(', ')}</p>`
+    : `<p class="hint" style="text-align:center">Keine Tage gewählt (Einstellungen).</p>`;
   if (!next.length) {
     const hasAny = liveRecipes().some(r => EP.laneOf(r) === lane);
     const txt = { MAIN: ['Noch nichts in der Rotation', 'Leg deine Gerichte im Reiter Rezepte an – ein Name reicht für den Anfang.'],
@@ -4377,8 +4384,8 @@ function specialPick(d) {
     const pr = p && p.recipeId && recipeById(p.recipeId), lr = lunch && recipeById(lunch.recipeId);
     const go = slot => pickCheck(id, d, null, o => undoable(() => { if (o) removeOther(o); placeSpecial(d, id, slot); return slot === 'LUNCH' ? 'Als Mittagessen eingeplant.' : 'Als Abendessen eingeplant.'; }));
     optionsSheet(r ? r.name : '', `${EP.weekdayLong(d)}, ${EP.fmtShort(d)}`, [
-      { label: 'Als Abendessen', icon: 'bowl', group: 0, hint: pr ? `statt „${pr.name}“${p.type === 'LEFTOVER' ? ' (Reste)' : ''}` : 'als Hauptgericht des Tages', run: () => go('MAIN') },
-      { label: 'Als Mittagessen', icon: 'bowl', tone: 'basil', group: 0, hint: lr ? `statt „${lr.name}“` : 'zusätzlich zum Hauptgericht', run: () => go('LUNCH') },
+      { label: 'Als Abendessen', icon: 'bowl', group: 0, hint: pr ? `statt „${pr.name}“` : '', run: () => go('MAIN') },
+      { label: 'Als Mittagessen', icon: 'bowl', tone: 'basil', group: 0, hint: lr ? `statt „${lr.name}“` : '', run: () => go('LUNCH') },
     ]);
   }, 'SPECIAL', { date: d });
 }
@@ -4391,7 +4398,7 @@ function guestSheet(p) {
     return n === pp ? `Wie immer (${pp} ${pp === 1 ? 'Person' : 'Personen'}).` : `Zutaten für ${Math.round((r.servings || pp) * f)} statt ${r.servings || pp} Portionen – die Reste bleiben gleich.`;
   };
   openSheet(`<h2>Personen</h2><p class="serif" style="font-size:19px;margin-top:4px">${esc(r ? r.name : '')}</p>
-    <p class="sub">${EP.weekdayLong(p.date)}, ${EP.fmtShort(p.date)} · z. B. wenn Gäste kommen</p>
+    <p class="sub">${EP.weekdayLong(p.date)}, ${EP.fmtShort(p.date)}</p>
     <div class="stepper big" style="margin:16px auto"><button data-x="m" aria-label="Weniger">−</button><output id="gn">${n}</output><button data-x="p" aria-label="Mehr">+</button></div>
     <p class="hint" id="gi" style="text-align:center">${info()}</p>
     <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">Übernehmen</button></div>`, el => {
@@ -4402,7 +4409,7 @@ function guestSheet(p) {
     $('[data-x=yes]', el).onclick = () => { closeSheet(); setGuests(p.id, n); change(n === pp ? 'Wieder wie immer.' : `Für ${n} Personen.`); };
   });
 }
-const guestOpt = p => ({ label: 'Personen / Gäste', icon: 'people', group: 0, hint: p.guests ? `${p.guests} Personen – Zutaten angepasst` : `Wie immer ${db.settings.portionsPerDay} – bei Gästen erhöhen`, run: () => guestSheet(p) });
+const guestOpt = p => ({ label: 'Personen / Gäste', icon: 'people', group: 0, hint: p.guests ? `${p.guests} Personen` : '', run: () => guestSheet(p) });
 /* Aktionen für Mittag / Kuchen an einem Tag */
 function laneActions(d, lane) {
   const ws = weekStartISO, isDraft = draft && draft.ws === ws;
@@ -4413,7 +4420,7 @@ function laneActions(d, lane) {
   const opts = [];
   if (isDraft) {
     if (x && x.drafted) {
-      opts.push({ label: 'Tauschen', hint: 'Nächstes aus der ' + what + '-Rotation', run: () => { draftLaneNext(d, lane); rerender(); } });
+      opts.push({ label: 'Tauschen', run: () => { draftLaneNext(d, lane); rerender(); } });
       opts.push({ label: 'Selbst wählen', run: () => recipePickSheet(what + ' wählen', id => pickCheck(id, d, null, o => { if (o) removeOther(o); draftLanePick(d, lane, id); rerender(); }), lane, { date: d }) });
       opts.push({ label: 'Diesmal kein ' + what, danger: true, run: () => { draftLaneRemove(d, lane); rerender(); } });
     } else if (!x) {
@@ -4433,12 +4440,12 @@ function laneActions(d, lane) {
     if (x.status !== 'DONE') opts.push({ label: lane === 'CAKE' ? 'Als gebacken markieren' : 'Als gekocht markieren', run: () => undoable(() => { markCooked(x.blockId); return 'Erledigt.'; }) });
     if (r && (r.instructions || r.ingredients.length)) opts.push({ label: 'Kochansicht öffnen', run: () => openCook(r.id) });
     if (r && lane === 'LUNCH' && x.date >= EP.todayISO()) opts.push(guestOpt(x));
-    if (r && lane === 'CAKE') opts.push({ label: 'Backform', hint: x.pan ? EP.panLabel(x.pan) + ' (statt ' + EP.panLabel(r.pan) + ')' : r.pan ? EP.panLabel(r.pan) + ' – andere Größe wählen' : 'Größe angeben und umrechnen', run: () => planPanSheet(x, r) });
+    if (r && lane === 'CAKE') opts.push({ label: 'Backform', hint: x.pan ? EP.panLabel(x.pan) : r.pan ? EP.panLabel(r.pan) : '', run: () => planPanSheet(x, r) });
     if (d >= EP.todayISO()) {
-      opts.push({ label: 'Tauschen', hint: 'Nächstes aus der ' + what + '-Rotation', run: () => undoable(() => { const nr = swapLane(d, lane); return nr ? 'Getauscht gegen ' + nr.name + '.' : 'Keine weiteren Gerichte in dieser Rotation.'; }) });
+      opts.push({ label: 'Tauschen', run: () => undoable(() => { const nr = swapLane(d, lane); return nr ? 'Getauscht gegen ' + nr.name + '.' : 'Keine weiteren Gerichte in dieser Rotation.'; }) });
       opts.push({ label: 'Selbst wählen', run: () => recipePickSheet(what + ' wählen', id => pickCheck(id, d, y => y.blockId === x.blockId, o => undoable(() => { if (o) removeOther(o); const e = EP.manualPickEntry(db, id), m = pickMsg(id, e, o); placeLane(d, lane, id, e ? e.id : null); return m.replace('Eingeplant', 'Ersetzt'); })), lane, { date: d, ignore: y => y.blockId === x.blockId }) });
     }
-    opts.push({ label: 'Aus dem Plan entfernen', danger: true, hint: 'Kommt wieder nach vorne in die Rotation', run: () => undoable(() => { removeBlock(x.blockId, true); return 'Entfernt.'; }) });
+    opts.push({ label: 'Aus dem Plan entfernen', danger: true, run: () => undoable(() => { removeBlock(x.blockId, true); return 'Entfernt.'; }) });
   }
   optionsSheet(title, r ? esc(r.name) : '', opts);
 }
@@ -4458,21 +4465,21 @@ function dayActions(d) {
   if (isDraft) {
     if (p && p.drafted && p.blockId) {
       const idx = draft.sequence.findIndex(s => s.blockId === p.blockId);
-      opts.push({ label: 'Tauschen', hint: 'Nächstes Gericht aus der Rotation', run: () => { draftSwap(p.blockId); rerender(); } });
+      opts.push({ label: 'Tauschen', run: () => { draftSwap(p.blockId); rerender(); } });
       if (idx > 0) opts.push({ label: 'Früher einplanen', run: () => { draftMove(p.blockId, -1); rerender(); } });
       if (idx < draft.sequence.length - 1) opts.push({ label: 'Später einplanen', run: () => { draftMove(p.blockId, 1); rerender(); } });
       opts.push({ label: 'Selbst wählen', run: () => recipePickSheet('Gericht wählen', id => pickCheck(id, p.date, y => y.blockId === p.blockId, o => { if (o) removeOther(o); draftPick(p.blockId, id); rerender(); }), 'MAIN', { date: p.date, ignore: y => y.blockId === p.blockId }) });
-      opts.push({ label: p.locked ? 'Fixierung lösen' : 'Fixieren', hint: 'Wird beim erneuten Füllen nicht überschrieben', run: () => { draftToggleLock(p.blockId); rerender(); } });
+      opts.push({ label: p.locked ? 'Fixierung lösen' : 'Fixieren', run: () => { draftToggleLock(p.blockId); rerender(); } });
     }
     const carry = p && !p.drafted && p.type === 'LEFTOVER';
     if (carry) {
       const cr = recipeById(p.recipeId);
-      opts.push({ label: 'Reste verschieben', hint: 'Übertrag aus der Vorwoche auf einen anderen Tag legen', run: () => restSheet(cr, p, draft.clone, nd => { moveRest(p.id, nd, draft.clone); relayoutDraft(); rerender(); }) });
-      opts.push({ label: 'Reste streichen', hint: 'z. B. eingefroren oder schon gegessen – der Tag wird frei', run: () => { dropRest(p.id, draft.clone); relayoutDraft(); rerender(); } });
-      opts.push({ label: 'Tag sperren', hint: d < EP.todayISO() ? 'z. B. doch auswärts gegessen – diese Reste kommen auf heute oder später' : 'z. B. Auswärts essen – die Reste rutschen einen Tag weiter', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { draftBlockCarry(d, note); rerender(); }) });
+      opts.push({ label: 'Reste verschieben', run: () => restSheet(cr, p, draft.clone, nd => { moveRest(p.id, nd, draft.clone); relayoutDraft(); rerender(); }) });
+      opts.push({ label: 'Reste streichen', run: () => { dropRest(p.id, draft.clone); relayoutDraft(); rerender(); } });
+      opts.push({ label: 'Tag sperren', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { draftBlockCarry(d, note); rerender(); }) });
     }
     if (p && p.extraBlocked) opts.push({ label: 'Tag wieder freigeben', run: () => { draft.blocked.delete(d); relayoutDraft(); rerender(); } });
-    else if (!p || p.drafted) opts.push({ label: 'Tag sperren', hint: 'z. B. Auswärts essen – Reste rutschen weiter', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { draft.blocked.set(d, note); relayoutDraft(); rerender(); }) });
+    else if (!p || p.drafted) opts.push({ label: 'Tag sperren', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => { draft.blocked.set(d, note); relayoutDraft(); rerender(); }) });
     addLaneOptions(d, opts);
     if (!opts.length) opts.push({ label: 'Dieser Tag bleibt unverändert', hint: 'Fixiert, gesperrt oder Übertrag aus der Vorwoche', run: () => {} });
     return optionsSheet(title, p && p.recipeId ? esc(recipeById(p.recipeId).name) : '', opts, dayChip(p));
@@ -4487,7 +4494,7 @@ function dayActions(d) {
       if (o) removeOther(o);
       const e = EP.manualPickEntry(db, id), m = pickMsg(id, e, o); placeBlock(d, { recipeId: id, rotationEntryId: e ? e.id : null }); return m;
     })), 'MAIN', { date: d }) });
-    opts.push({ label: 'Tag sperren', hint: 'z. B. Auswärts essen', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => undoable(() => { blockDay(d, note); return 'Tag gesperrt.'; })) });
+    opts.push({ label: 'Tag sperren', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => undoable(() => { blockDay(d, note); return 'Tag gesperrt.'; })) });
   } else if (p.type === 'BLOCKED') {
     opts.push({ label: 'Tag wieder freigeben', run: () => undoable(() => { unblockDay(d); return 'Tag freigegeben.'; }) });
     opts.push({ label: 'Notiz ändern', run: () => promptSheet('Notiz ändern', 'Notiz', p.note, 'Speichern', note => { const x = planByDate().get(d); x.note = note; EP.touch(x); change(); }) });
@@ -4497,16 +4504,16 @@ function dayActions(d) {
     if (r && (r.instructions || r.ingredients.length)) opts.push({ label: 'Kochansicht öffnen', run: () => openCook(r.id) });
     if (r && p.type === 'COOK' && d >= today) opts.push(guestOpt(p));
     if (d >= today) {
-      opts.push({ label: 'Tauschen', hint: 'Nächstes Gericht aus der Rotation', run: () => undoable(() => { const nr = swapBlock(p.blockId); return nr ? 'Getauscht gegen ' + nr.name + '.' : 'Keine weiteren Gerichte in der Rotation.'; }) });
+      opts.push({ label: 'Tauschen', run: () => undoable(() => { const nr = swapBlock(p.blockId); return nr ? 'Getauscht gegen ' + nr.name + '.' : 'Keine weiteren Gerichte in der Rotation.'; }) });
       if (p.type === 'LEFTOVER') {
-        opts.push({ label: 'Reste verschieben', hint: 'Nur diesen Resttag auf einen anderen Tag legen', run: () => restSheet(r, p, null, nd => undoable(() => { moveRest(p.id, nd); return 'Reste verschoben.'; })) });
-        opts.push({ label: 'Reste streichen', hint: 'z. B. eingefroren oder schon gegessen – der Tag wird frei', run: () => undoable(() => { dropRest(p.id); return 'Resttag gestrichen.'; }) });
+        opts.push({ label: 'Reste verschieben', run: () => restSheet(r, p, null, nd => undoable(() => { moveRest(p.id, nd); return 'Reste verschoben.'; })) });
+        opts.push({ label: 'Reste streichen', run: () => undoable(() => { dropRest(p.id); return 'Resttag gestrichen.'; }) });
       }
-      opts.push({ label: p.type === 'LEFTOVER' ? 'Ganzes Gericht verschieben' : 'Verschieben', hint: p.type === 'LEFTOVER' ? 'Kochtag und alle Reste' : '', run: () => {
+      opts.push({ label: p.type === 'LEFTOVER' ? 'Ganzes Gericht verschieben' : 'Verschieben', run: () => {
         const cook = blockEntries(p.blockId).find(x => x.type === 'COOK');
         dateSheet('Verschieben', r, cook ? cook.date : d, 'Verschieben', nd => undoable(() => { moveBlock(p.blockId, nd); return 'Verschoben.'; }));
       } });
-      opts.push({ label: 'Selbst wählen', hint: 'Dieses Gericht ersetzen', run: () => recipePickSheet('Gericht wählen', id => pickCheck(id, d, y => y.blockId === p.blockId, o => undoable(() => {
+      opts.push({ label: 'Selbst wählen', run: () => recipePickSheet('Gericht wählen', id => pickCheck(id, d, y => y.blockId === p.blockId, o => undoable(() => {
         const cook = blockEntries(p.blockId).find(x => x.type === 'COOK');
         const info = removeBlock(p.blockId, true);
         if (o) removeOther(o);
@@ -4514,14 +4521,14 @@ function dayActions(d) {
         placeBlock(cook ? cook.date : d, { recipeId: id, rotationEntryId: e ? e.id : null, locked: info && info.locked });
         return m.replace(/^Eingeplant/, 'Ersetzt');
       })), 'MAIN', { date: d, ignore: y => y.blockId === p.blockId }) });
-      opts.push({ label: 'Tag sperren', hint: p.type === 'LEFTOVER' ? 'z. B. Auswärts essen – die Reste rutschen einen Tag weiter' : 'Reste rutschen auf den nächsten freien Tag', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => undoable(() => { blockDay(d, note); return 'Tag gesperrt.'; })) });
+      opts.push({ label: 'Tag sperren', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => undoable(() => { blockDay(d, note); return 'Tag gesperrt.'; })) });
     } else if (p.type === 'LEFTOVER') {
-      opts.push({ label: 'Tag sperren', hint: 'z. B. doch auswärts gegessen – diese Reste kommen auf heute oder später', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => undoable(() => { blockDay(d, note); return 'Tag gesperrt, Reste neu eingeplant.'; })) });
-      opts.push({ label: 'Reste verschieben', hint: 'Auf heute oder einen späteren Tag legen', run: () => restSheet(r, p, null, nd => undoable(() => { moveRest(p.id, nd); return 'Reste verschoben.'; })) });
-      opts.push({ label: 'Reste streichen', hint: 'z. B. eingefroren oder weggeworfen', run: () => undoable(() => { dropRest(p.id); return 'Resttag gestrichen.'; }) });
+      opts.push({ label: 'Tag sperren', run: () => promptSheet('Tag sperren', 'Notiz', 'Auswärts essen', 'Sperren', note => undoable(() => { blockDay(d, note); return 'Tag gesperrt, Reste neu eingeplant.'; })) });
+      opts.push({ label: 'Reste verschieben', run: () => restSheet(r, p, null, nd => undoable(() => { moveRest(p.id, nd); return 'Reste verschoben.'; })) });
+      opts.push({ label: 'Reste streichen', run: () => undoable(() => { dropRest(p.id); return 'Resttag gestrichen.'; }) });
     }
-    opts.push({ label: p.locked ? 'Fixierung lösen' : 'Fixieren', hint: 'Fixierte Gerichte bleiben beim Füllen der Woche stehen', run: () => { const v = toggleLock(p.blockId); change(v ? 'Fixiert.' : 'Fixierung gelöst.'); } });
-    opts.push({ label: 'Aus dem Plan entfernen', danger: true, hint: 'Das Gericht kommt wieder nach vorne in die Rotation', run: () => undoable(() => { removeBlock(p.blockId, true); return 'Entfernt.'; }) });
+    opts.push({ label: p.locked ? 'Fixierung lösen' : 'Fixieren', run: () => { const v = toggleLock(p.blockId); change(v ? 'Fixiert.' : 'Fixierung gelöst.'); } });
+    opts.push({ label: 'Aus dem Plan entfernen', danger: true, run: () => undoable(() => { removeBlock(p.blockId, true); return 'Entfernt.'; }) });
   }
   addLaneOptions(d, opts);
   optionsSheet(title, p && p.recipeId ? esc((recipeById(p.recipeId) || {}).name || '') : '', opts, dayChip(p));
@@ -4537,7 +4544,7 @@ function addExtraSheet(d) {
   }), k, { kinds: EXTRA_KINDS, onKind: v => { extraKind = v; }, date: d });
 }
 function extraOption(d) {
-  return { label: 'Weiteres Gericht hinzufügen', hint: 'z. B. Beilage oder ein zweites Mittagessen – ohne Rotation', run: () => addExtraSheet(d) };
+  return { label: 'Weiteres Gericht hinzufügen', run: () => addExtraSheet(d) };
 }
 /* Zusätzliches Gericht verschieben: Tage der Woche als Knöpfe, dazu freie Datumswahl */
 function extraMoveSheet(x, r) {
@@ -4559,7 +4566,7 @@ function extraActions(id) {
   const r = recipeById(x.recipeId), k = x.dishKind || 'MAIN';
   const opts = [];
   if (r && (r.instructions || r.ingredients.length)) opts.push({ label: 'Kochansicht öffnen', run: () => openCook(r.id) });
-  if (r && k === 'CAKE' && !(draft && draft.ws === weekStartISO)) opts.push({ label: 'Backform', hint: x.pan ? EP.panLabel(x.pan) : r.pan ? EP.panLabel(r.pan) + ' – andere Größe wählen' : 'Größe angeben und umrechnen', run: () => planPanSheet(x, r) });
+  if (r && k === 'CAKE' && !(draft && draft.ws === weekStartISO)) opts.push({ label: 'Backform', hint: x.pan ? EP.panLabel(x.pan) : r.pan ? EP.panLabel(r.pan) : '', run: () => planPanSheet(x, r) });
   opts.push({ label: 'Anderes Gericht wählen', run: () => recipePickSheet('Gericht wählen', nid => pickCheck(nid, x.date, y => y.id === id, o => undoable(() => { if (o) removeOther(o); replaceExtra(id, nid); return 'Ersetzt.'; })), k, { kinds: EXTRA_KINDS, date: x.date, ignore: y => y.id === id }) });
   opts.push({ label: 'Auf anderen Tag verschieben', run: () => extraMoveSheet(x, r) });
   opts.push({ label: 'Noch ein Gericht hinzufügen', run: () => addExtraSheet(x.date) });
@@ -4574,17 +4581,17 @@ function addLaneOptions(d, opts) {
     if (laneVisible(l) && laneActiveOn(l, d) && d >= EP.todayISO()) return;     // Zeile ist ohnehin sichtbar
     if (!liveRecipes().some(r => EP.laneOf(r) === l)) return;                   // keine Rezepte dieser Art
     const o = { label: l === 'LUNCH' ? 'Mittagessen hinzufügen' : 'Kuchen hinzufügen',
-      hint: 'Zusätzlich zum Hauptgericht an diesem Tag', run: () => laneActions(d, l) };
+      run: () => laneActions(d, l) };
     const i = opts.findIndex(x => x.danger);           // rote Aktion bleibt ganz unten
     i === -1 ? opts.push(o) : opts.splice(i, 0, o);
   });
   if (hasSpecial() && d >= EP.todayISO() && !(draft && draft.ws === EP.weekStart(d)) && !specialOn(ents, d)) {
-    const o = { label: `${DISH_LABEL.SPECIAL} wählen`, icon: 'star', tone: 'rim', group: 1, hint: 'Als Abend- oder Mittagessen – außerhalb der Rotation', run: () => specialPick(d) };
+    const o = { label: `${DISH_LABEL.SPECIAL} wählen`, icon: 'star', tone: 'rim', group: 1, run: () => specialPick(d) };
     const i = opts.findIndex(x => x.danger);
     i === -1 ? opts.push(o) : opts.splice(i, 0, o);
   }
   if (draft && draft.ws === EP.weekStart(d) && !ents.get(d) && specialFree([d]).length) {
-    opts.unshift({ label: 'Doch normal füllen', icon: 'dice', group: 1, hint: `Freigehalten für ${DISH_LABEL.SPECIAL} – stattdessen aus der Rotation`, run: () => { draft.specialOff.add(d); relayoutDraft(); rerender(); } });
+    opts.unshift({ label: 'Doch normal füllen', icon: 'dice', group: 1, run: () => { draft.specialOff.add(d); relayoutDraft(); rerender(); } });
   }
   if (liveRecipes().length) {
     const i = opts.findIndex(x => x.danger);
@@ -4638,9 +4645,8 @@ function vShop() {
     ${list.drogerie.length ? `<section class="shopsec box">${head('DROGERIE', 'Drogerie')}${groups(list.drogerie)}</section>` : ''}
     </div>
     <section class="shopsec box noprint"><h3>Weitere Artikel</h3>
-      <p class="hint" style="margin-top:0">Werden automatisch einsortiert, z. B. Spülmittel → Haushalt, Zahnpasta → Drogerie. Mengen gehen davor oder dahinter: „4 Oatly“, „Feta 2 Packungen“. Antippen zum Umsortieren.</p>
       <div class="quick" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. 2 Packungen Feta" enterkeyhint="done" autocomplete="off"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
-      ${recent.length ? `<div class="recenthead"><span class="hint">${recentEdit ? 'Antippen zum Entfernen aus den Vorschlägen' : 'Vorschläge: wieder fällig ↻ und oft gekauft'}</span>
+      ${recent.length ? `<div class="recenthead"><span class="hint">${recentEdit ? 'Antippen zum Entfernen' : 'Vorschläge'}</span>
         <button class="btn quiet small" data-act="recentedit">${recentEdit ? 'Fertig' : 'Bearbeiten'}</button></div>
       <div class="chips recentx${recentEdit ? ' editing' : ''}">${recent.map(t => recentEdit
         ? `<button class="chip" data-act="recentdel" data-arg="${esc(t)}" aria-label="${esc(t)} aus den Vorschlägen entfernen">✕ ${esc(t)}</button>`
@@ -4696,11 +4702,8 @@ function vRecipes() {
   const ph = { MAIN: 'Rezeptname eingeben', LUNCH: 'z. B. Nudelsuppe', CAKE: 'z. B. Apfelkuchen', SIDE: 'z. B. Gurkensalat', SPECIAL: 'z. B. Rinderrouladen' }[kind];
   const rot = EP.ROTATES(kind);
   return `${laneSeg(kind, 'rkind', EP.KINDS)}
-    ${rot ? '' : kind === 'SPECIAL' ? `<p class="hint" style="margin-top:-6px">Keine Rotation. An ${esc(specialDaysText())} erscheint im Wochenplan „${esc(DISH_LABEL.SPECIAL)} – Gericht wählen“, an anderen Tagen über den Tag → „${esc(DISH_LABEL.SPECIAL)} wählen“.</p>`
-      : `<p class="hint" style="margin-top:-6px">${esc(LANE_LABEL[kind])} haben keine Rotation. Du fügst sie im Wochenplan über einen Tag → „Weiteres Gericht hinzufügen“ hinzu.</p>`}
     <div class="quick" style="margin-top:12px"><input class="in" id="qa" placeholder="${ph}" enterkeyhint="done" autocomplete="off">
       <button class="btn primary" data-act="qa" aria-label="Rezept anlegen">+</button></div>
-    <p class="hint">Enter legt das Rezept an. Mehrere Zeilen einfügen legt mehrere Rezepte an.</p>
     <div class="impbtns"><button class="btn quiet small impbtn" data-act="rimport">Rezepte aus JSON importieren</button><button class="btn quiet small impbtn" data-act="rexport">Rezepte als JSON exportieren</button></div>
     ${all.length ? `<input class="in" id="rq" placeholder="Suchen nach Name, Tag oder Zutat" value="${esc(recipeFilter.q)}" style="margin-top:14px">
     ${rot ? `<div class="seg" style="margin-top:10px">${seg('all', 'Alle')}${seg('active', 'In Rotation')}${seg('paused', 'Pausiert')}</div>` : ''}
@@ -4749,7 +4752,7 @@ function exportSheet() {
       + rs.map(r => `<label class="imphead"><input type="checkbox" data-exp="${r.id}" data-k="${k}" ${k === cur ? 'checked' : ''}><span class="nm">${esc(r.name)}</span></label>`).join('');
   }).join('');
   openSheet(`<h2>Rezepte exportieren</h2>
-    <p class="hint" style="margin-top:0">Gleiches Format wie beim Import – die Datei lässt sich hier oder in einem anderen Haushalt wieder einlesen. Bilder, Gewichtung und Plan sind nicht enthalten.</p>
+    
     <div class="btns two"><button class="btn" data-x="all">Alle wählen</button><button class="btn" data-x="none">Keine</button></div>
     <div class="explist">${groups}</div>
     <p class="hint" id="expn"></p>
@@ -4799,7 +4802,7 @@ async function quickImport() {
 function importSheet(prefill) {
   const canRead = !!(navigator.clipboard && navigator.clipboard.readText);
   openSheet(`<h2>Rezepte importieren</h2>
-    <p class="sub" style="margin-top:6px">Füge die Antwort aus dem Rezept-Scanner-Chat ein. Text vor oder nach dem Block stört nicht.</p>
+    
     <textarea class="in" id="imp-t" placeholder="{ &quot;format&quot;: &quot;essensplanung-import&quot;, … }" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-top:12px;min-height:150px;font-size:16px">${esc(prefill || '')}</textarea>
     <p class="warn hidden" id="imp-err" role="alert" style="font-size:14px;margin-top:8px"></p>
     <div class="btns two">${canRead ? '<button class="btn" data-x="paste">Einfügen</button>' : ''}<button class="btn" data-x="file" ${canRead ? '' : 'style="grid-column:1/-1"'}>Datei wählen</button></div>
@@ -4862,7 +4865,7 @@ function importPreview(recs, rawText) {
   };
   const MODE_HINT = { skip: 'Das vorhandene Rezept bleibt unverändert.', replace: 'Zutaten, Portionen und Anleitung werden ersetzt. Bilder, Gewichtung und Rotation bleiben.', copy: 'Wird mit Zusatz „(2)“ im Namen angelegt.' };
   openSheet(`<h2>${items.length === 1 ? '1 Rezept gefunden' : items.length + ' Rezepte gefunden'}</h2>
-    <p class="sub" style="margin-top:6px">Prüfe die Art und hake ab, was übernommen werden soll. Details kannst du danach im Rezept bearbeiten.</p>
+    
     ${items.map(card).join('')}
     <div class="btns two"><button class="btn" data-x="back">Zurück</button><button class="btn primary" data-x="yes"></button></div>`, el => {
     const count = () => items.filter(it => it.include && it.mode !== 'skip').length;
@@ -4945,13 +4948,13 @@ function vEdit() {
   const imgs = (r.images || []).slice().sort((a, b) => a.sortOrder - b.sortOrder);
   return `<datalist id="inglist">${EP.live(db.ingredients).sort((a, b) => a.name.localeCompare(b.name, 'de')).map(i => `<option value="${esc(i.name)}">`).join('')}</datalist>
     <label class="field" style="margin-top:0"><span>Name</span><input class="in nameinput" id="e-name" value="${esc(r.name)}" maxlength="120" placeholder="z. B. Linsensuppe"></label>
-    <div class="field"><div class="row"><span class="grow" style="margin:0;color:var(--ink);font-weight:600">Favorit<small class="hint" style="display:block;font-weight:400;margin:2px 0 0">Steht bei der Auswahl ganz oben</small></span>
+    <div class="field"><div class="row"><span class="grow" style="margin:0;color:var(--ink);font-weight:600">Favorit</span>
       <label class="switch"><input type="checkbox" id="e-fav" ${r.favorite ? 'checked' : ''} aria-label="Favorit"><i></i></label></div></div>
     <div class="field"><span>Art</span>
       <div class="seg seg5">${EP.KINDS.map(l => `<button data-act="ekind" data-arg="${l.key}" aria-pressed="${kind === l.key}">${segLbl(DISH_LABEL[l.key])}</button>`).join('')}</div>
-      <p class="hint">${kind === 'SPECIAL' ? 'Aufwendiges Essen für Sonntage und besondere Tage. Nie in der Rotation – im Wochenplan am Tag als Abend- oder Mittagessen wählen.' : isMain ? 'Normale Mahlzeit, belegt je nach Portionen mehrere Tage.' : kind === 'LUNCH' ? 'Zusätzliches Mittagessen an den eingestellten Tagen, eigene Rotation.' : kind === 'SIDE' ? 'Salat, Soße, Brot … Keine Rotation – im Wochenplan über „Weiteres Gericht hinzufügen“ einplanen.' : 'Kommt zusätzlich zum Essen dazu, eigene Rotation.'}</p></div>
+</div>
     ${kind === 'CAKE' ? `<div class="field"><span>Backform</span><button class="in panfield" data-act="epan">${r.pan ? esc(EP.panLabel(r.pan)) : 'Nicht angegeben – antippen'}</button>
-      <p class="hint">Größe, für die die Mengen gedacht sind. Beim Backen und im Wochenplan kannst du dann auf andere Formen umrechnen.</p></div>` : ''}
+</div>` : ''}
     <div class="field"><span>${kind === 'CAKE' ? 'Stücke' : 'Portionen pro Zubereitung'}</span>
       <div class="stepper"><button data-act="serv" data-arg="-1" aria-label="Weniger">−</button><output id="e-serv">${r.servings}</output><button data-act="serv" data-arg="1" aria-label="Mehr">+</button></div>
       ${isMain ? `<p class="live" id="e-live">${liveDaysText(r)}</p><p class="hint" id="e-hint">${esc(hint)}</p>` : ''}</div>
@@ -4967,7 +4970,6 @@ function vEdit() {
       <label class="switch"><input type="checkbox" id="e-rot" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></label></div></div>`}
 
     <h3>Zutaten</h3>
-    <p class="hint" style="margin-top:0">Mengen gelten für die ganze Zubereitung. Ohne Menge = nach Geschmack.</p>
     ${rows}
     <button class="btn" data-act="rowadd" style="margin-top:10px">Zutat hinzufügen</button>
 
@@ -4980,7 +4982,7 @@ function vEdit() {
     <label class="field"><span>Notizen</span><textarea class="in" id="e-notes" style="min-height:70px">${esc(r.notes)}</textarea></label>
 
     <h3>${kind === 'SIDE' ? 'Weitere Beilagen dazu' : 'Passende Beilagen'}</h3>
-    <p class="hint" style="margin-top:0">${kind === 'SIDE' ? 'z. B. Brot zum Salat.' : 'z. B. Naan zum Curry, Sauce Hollandaise zum Spargel.'} Ist das Gericht eingeplant, schlägt der Wochenplan sie mit einem Tipp vor.</p>
+
     <div class="chips sidelinks">${EP.linkedSides(db, r).map(s => `<button class="chip" data-act="esidedel" data-arg="${s.id}" aria-label="${esc(s.name)} nicht mehr verknüpfen">${esc(s.name)} <span aria-hidden="true">✕</span></button>`).join('')}
       <button class="chip addchip" data-act="esideadd">+ Beilage verknüpfen</button></div>
     ${(() => { const f = EP.linkedFrom(db, r); return f.length ? `<p class="hint">Passt zu: ${f.map(x => esc(x.name)).join(', ')}</p>` : ''; })()}
@@ -5483,7 +5485,7 @@ function renderCook() {
     ${empty ? `<section class="ccard"><p style="font-size:18px;margin:0 0 12px">Für dieses Gericht sind noch keine Zutaten und keine Anleitung hinterlegt.</p>
       <button class="btn primary" data-act="cookedit" data-arg="${r.id}">Rezept ergänzen</button></section>` : ''}
     ${cookState.done.size ? '<div class="btns"><button class="btn quiet" data-act="cookreset">Abhaken zurücksetzen</button></div>' : ''}
-    <p class="hint" style="margin-top:18px;text-align:center">Der Bildschirm bleibt an, solange die Kochansicht offen ist. Tippe auf Zutaten und Schritte, um sie abzuhaken – der Stand bleibt bis zu 12 Stunden gespeichert. Timer laufen weiter, auch wenn du die Kochansicht schließt; der Ton kommt, solange die App geöffnet ist.</p></div>`;
+</div>`;
   bindCook();
   Images.hydrate(el);
 }
@@ -5572,7 +5574,7 @@ function ingredientSheet(id) {
       <option value="SUPERMARKT" ${i.shoppingSource === 'SUPERMARKT' ? 'selected' : ''}>Supermarkt</option>
       <option value="DROGERIE" ${i.shoppingSource === 'DROGERIE' ? 'selected' : ''}>Drogerie</option>
       <option value="VORRAT" ${i.shoppingSource === 'VORRAT' ? 'selected' : ''}>Vorrat</option></select></label>
-    <div class="field"><div class="row"><span class="grow" style="margin:0;color:var(--ink);font-weight:600">Nie auf die Einkaufsliste<small class="hint" style="display:block;font-weight:400;margin:2px 0 0">z. B. Wasser aus der Leitung</small></span>
+    <div class="field"><div class="row"><span class="grow" style="margin:0;color:var(--ink);font-weight:600">Nie auf die Einkaufsliste</span>
       <label class="switch"><input type="checkbox" id="in-ns" ${EP.neverShop(i) ? 'checked' : ''} aria-label="Nie auf die Einkaufsliste"><i></i></label></div></div>
     <label class="field"><span>Standardeinheit</span><select class="in" id="in-u">${EP.UNIT_ORDER.map(u => `<option value="${u}" ${u === i.defaultUnit ? 'selected' : ''}>${EP.UNITS[u].s}</option>`).join('')}</select></label>
     ${id ? `<p class="hint">In ${used} ${used === 1 ? 'Rezept' : 'Rezepten'} verwendet.</p>` : ''}
@@ -5676,7 +5678,7 @@ function specialDaysText() { const d = EP.specialDays(db.settings); return d.len
 function specialDaysSheet() {
   const cur = () => EP.specialDays(db.settings);
   openSheet(`<h2>Besondere Tage</h2>
-    <p class="sub" style="margin-top:6px">An diesen Tagen bietet der Wochenplan „${esc(DISH_LABEL.SPECIAL)}“ an und hält das Abendessen beim Füllen frei.</p>
+
     <div class="chips daypick">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="chip" data-sd="${d}" aria-pressed="${cur().includes(d)}">${DAYN[d]}</button>`).join('')}</div>
     <div class="btns"><button class="btn primary" data-x="no">Fertig</button></div>`, el => {
     $$('[data-sd]', el).forEach(b => b.onclick = () => {
@@ -5691,7 +5693,7 @@ function specialDaysSheet() {
 function kindNamesSheet() {
   const kn = db.settings.kindNames || {};
   openSheet(`<h2>Bezeichnungen</h2>
-    <p class="sub" style="margin-top:6px">So heißen die Rezept-Arten in der ganzen App. Leer lassen = Standardname.</p>
+    <p class="sub" style="margin-top:6px">Leer = Standard</p>
     <div class="kindnames">${EP.KINDS.map(k => `<label class="field"><span>${esc(k.short)}</span><input class="in" data-kn="${k.key}" maxlength="24" value="${esc(kn[k.key] || '')}" placeholder="${esc(k.short)}" autocomplete="off"></label>`).join('')}</div>
     <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">Speichern</button></div>`, el => {
     $('[data-x=no]', el).onclick = closeSheet;
@@ -5708,40 +5710,40 @@ function vSettings() {
   const syncVal = Sync.enabled() ? (Sync.isPB ? 'Pi' : 'GitHub') : 'Aus';
   const nNew = unreviewedCount();
   return gGroup('', [
-      gRow({ icon: 'people', color: '#0A84FF', label: 'Portionen pro Tag', sub: 'Wie viel euer Haushalt pro Tag isst',
+      gRow({ icon: 'people', color: '#0A84FF', label: 'Portionen pro Tag',
         right: `<div class="stepper small"><button data-act="ppd" data-arg="-1" aria-label="Weniger">−</button><output>${s.portionsPerDay}</output><button data-act="ppd" data-arg="1" aria-label="Mehr">+</button></div>` }),
       gRow({ icon: 'round', color: '#FF9500', label: 'Krumme Portionen', value: s.roundingMode === 'FLOOR' ? 'Abrunden' : 'Aufrunden', act: 'setpick', arg: 'roundingMode' }),
       gRow({ icon: 'shuffle', color: '#AF52DE', label: 'Reihenfolge der Rotation', value: s.rotationMode === 'FIXED' ? 'Fest' : 'Neu mischen', act: 'setpick', arg: 'rotationMode' }),
       gRow({ icon: 'scale', color: '#34C759', label: 'Marktliste mit Mengen', right: sw('s-mq', s.marketListShowQuantities, 'Marktliste mit Mengen') }),
-    ], s.roundingMode === 'FLOOR' ? '5 Portionen bei 2 pro Tag = 2 Tage, 1 Portion bleibt übrig.' : '5 Portionen bei 2 pro Tag = 3 Tage, am letzten Tag nur 1 Portion.')
+    ])
     + gGroup('Zusätzliche Mahlzeiten', [
       gRow({ icon: 'lunch', color: '#30B158', label: esc(laneWhat('LUNCH')), value: daysText('LUNCH'), act: 'lanedays', arg: 'LUNCH' }),
       gRow({ icon: 'cake', color: '#FF6B4A', label: esc(laneWhat('CAKE')), value: daysText('CAKE'), act: 'lanedays', arg: 'CAKE' }),
-    ], 'Kommen zusätzlich zum Hauptgericht dazu und haben jeweils eine eigene Rotation.')
+    ])
     + gGroup(esc(LANE_LABEL.SPECIAL), [
       gRow({ icon: 'star', color: '#8E44AD', label: 'Besondere Tage', value: specialDaysText(), act: 'specialdays' }),
-      gRow({ icon: 'cal', color: '#8E44AD', label: 'Beim Füllen freihalten', sub: 'Abendessen an diesen Tagen nicht aus der Rotation', right: sw('s-spfree', s.specialKeepFree !== false, 'Beim Füllen freihalten') }),
-      gRow({ icon: 'pencil', color: '#636366', label: 'Bezeichnungen', sub: 'Namen der Rezept-Arten anpassen', value: Object.values(s.kindNames || {}).some(x => x) ? 'Eigene' : 'Standard', act: 'kindnames' }),
-    ], `Rezepte der Art „${esc(DISH_LABEL.SPECIAL)}“ sind nie in der Rotation. Im Wochenplan wählst du sie an den besonderen Tagen als Abend- oder Mittagessen.`)
+      gRow({ icon: 'cal', color: '#8E44AD', label: 'Beim Füllen freihalten', right: sw('s-spfree', s.specialKeepFree !== false, 'Beim Füllen freihalten') }),
+      gRow({ icon: 'pencil', color: '#636366', label: 'Bezeichnungen', value: Object.values(s.kindNames || {}).some(x => x) ? 'Eigene' : 'Standard', act: 'kindnames' }),
+    ])
     + gGroup('Verwalten', [
-      gRow({ icon: 'cart', color: '#30B0C7', label: 'Einkaufsorte', sub: 'Markt, Supermarkt oder Vorrat', right: nNew ? `<span class="countbadge">${nNew}</span>` : '', act: 'to', arg: 'sources' }),
-      gRow({ icon: 'shop', color: '#FF9500', label: 'Geschäfte', sub: 'Regal-Reihenfolge für die Einkaufsliste', value: EP.liveStores(db.settings).length || 'Keine', act: 'to', arg: 'stores' }),
+      gRow({ icon: 'cart', color: '#30B0C7', label: 'Einkaufsorte', right: nNew ? `<span class="countbadge">${nNew}</span>` : '', act: 'to', arg: 'sources' }),
+      gRow({ icon: 'shop', color: '#FF9500', label: 'Geschäfte', value: EP.liveStores(db.settings).length || 'Keine', act: 'to', arg: 'stores' }),
       gRow({ icon: 'leaf', color: '#34C759', label: 'Zutaten', value: EP.live(db.ingredients).length, act: 'to', arg: 'ingredients' }),
       gRow({ icon: 'cycle', color: '#5856D6', label: 'Rotation ansehen', act: 'to', arg: 'rotation' }),
       gRow({ icon: 'sync', color: '#0A84FF', label: 'Geräteabgleich', value: syncVal, act: 'to', arg: 'sync' }),
-      gRow({ icon: 'bell', color: '#FF3B30', label: 'Mitteilungen', sub: 'Kochtimer, Kocherinnerung, Einkaufsliste …', value: typeof Push !== 'undefined' && Push.enabled() ? 'An' : 'Aus', act: 'mitteilungen' }),
+      gRow({ icon: 'bell', color: '#FF3B30', label: 'Mitteilungen', value: typeof Push !== 'undefined' && Push.enabled() ? 'An' : 'Aus', act: 'mitteilungen' }),
     ])
     + gGroup('Datensicherung', [
-      gRow({ icon: 'image', color: '#FF2D55', label: 'Bilder mit sichern', sub: 'Größere Datei', right: `<label class="switch"><input type="checkbox" id="s-img" aria-label="Bilder mit sichern"><i></i></label>` }),
+      gRow({ icon: 'image', color: '#FF2D55', label: 'Bilder mit sichern', right: `<label class="switch"><input type="checkbox" id="s-img" aria-label="Bilder mit sichern"><i></i></label>` }),
       gRow({ icon: 'down', color: '#8E8E93', label: 'Als Datei sichern', act: 'export' }),
       gRow({ icon: 'up', color: '#8E8E93', label: 'Sicherung einlesen', act: 'import' }),
       liveRecipes().length ? '' : gRow({ icon: 'book', color: '#FF9500', label: 'Beispielrezepte laden', act: 'seed' }),
     ])
     + `<input type="file" id="s-file" accept=".json,application/json" class="hidden">`
     + gGroup(`Haushalt ${esc(db.household ? db.household.name : '')}`, Konto.loggedIn() ? [
-      gRow({ icon: 'people', color: '#0A84FF', label: 'Konto', sub: 'Haushalt ist mit deinem Konto verknüpft', value: esc(Konto.user()), act: 'konto' }),
+      gRow({ icon: 'people', color: '#0A84FF', label: 'Konto', value: esc(Konto.user()), act: 'konto' }),
     ] : [
-      gRow({ icon: 'people', color: '#8E8E93', label: 'Konto', sub: 'Im Hauptmenü anmelden – dann ohne Haushaltspasswort auf allen Geräten', value: 'Aus', act: 'konto' }),
+      gRow({ icon: 'people', color: '#8E8E93', label: 'Konto', sub: 'Im Hauptmenü anmelden', value: 'Aus', act: 'konto' }),
       gRow({ icon: 'key', color: '#8E8E93', label: 'Passwort ändern', act: 'chpw' }),
       gRow({ icon: 'out', color: '#FF3B30', label: 'Abmelden', act: 'logout', danger: true, chevron: false }),
     ]);
@@ -5749,7 +5751,7 @@ function vSettings() {
 /* Wochentage für Mittag / Kuchen */
 function laneDaysSheet(l) {
   openSheet(`<h2>${esc(laneWhat(l))} an</h2>
-    <p class="sub" style="margin-top:6px">An diesen Tagen schlägt die App ${l === 'LUNCH' ? 'ein Mittagessen' : 'einen Kuchen'} aus der eigenen Rotation vor.</p>
+
     <div class="chips daypick">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="chip" data-act="laneday" data-arg="${l}|${d}" aria-pressed="${laneDays(l).includes(d)}">${DAYN[d]}</button>`).join('')}</div>
     <div class="btns"><button class="btn primary" data-x="no">Fertig</button></div>`, el => { $('[data-x=no]', el).onclick = closeSheet; });
 }
@@ -5819,11 +5821,11 @@ function extraCatSheet(i) {
   const unSec = () => { if (inSec) { const a = Object.assign({}, store.assign); delete a[nx]; store.assign = a; EP.touch(db.settings); } };
   const secOpts = store ? (store.sections || []).map(sec => ({ label: sec.name, hint: `Bereich in „${store.name}“`, icon: inSec === sec.id ? 'check' : 'bowl', tone: inSec === sec.id ? 'basil' : 'speckle', group: 0,
     run: () => { store.assign = Object.assign({}, store.assign, { [nx]: sec.id }); EP.touch(db.settings); change(`${nm} → ${sec.name}`); } })) : [];
-  const editOpt = { label: 'Bearbeiten', hint: 'Tippfehler korrigieren', icon: 'pencil', tone: 'rim', group: -1, run: () => extraEditSheet(i) };
+  const editOpt = { label: 'Bearbeiten', icon: 'pencil', tone: 'rim', group: -1, run: () => extraEditSheet(i) };
   const curSrc = extraSourceOf(nm);
-  const srcOpts = XSRC.map(([k, l]) => ({ label: `Einkaufen: ${l}`, hint: k === curSrc ? 'aktuell' : 'für „' + nm + '“ merken', icon: k === curSrc ? 'check' : 'cart', tone: k === curSrc ? 'basil' : 'rim', group: -1,
+  const srcOpts = XSRC.map(([k, l]) => ({ label: `Einkaufen: ${l}`, icon: k === curSrc ? 'check' : 'cart', tone: k === curSrc ? 'basil' : 'rim', group: -1,
     run: () => { setExtraSource(nm, k); change(`${nm} → ${l}`); } }));
-  optionsSheet(`„${nm}“`, 'Bearbeiten, Einkaufsort oder Regal wählen – wird für diesen Begriff gemerkt.', [editOpt].concat(srcOpts).concat(secOpts).concat(EP.CATEGORIES.map(c => ({
+  optionsSheet(`„${nm}“`, '', [editOpt].concat(srcOpts).concat(secOpts).concat(EP.CATEGORIES.map(c => ({
     label: c.label, hint: { MARKT: 'Markt', SUPERMARKT: 'Supermarkt', DROGERIE: 'Drogerie', VORRAT: 'Vorrat' }[EP.categorySource(c.key, db.settings)],
     icon: c.key === cur ? 'check' : 'bowl', tone: c.key === cur ? 'basil' : 'speckle', group: 0,
     run: () => {
@@ -5836,7 +5838,7 @@ function extraCatSheet(i) {
 function extraEditSheet(i) {
   const st = shopState(), x = st.extras.find(e => e.id === i); if (!x) return;
   const cur = EP.extraParts(x);
-  textSheet('Eintrag bearbeiten', 'Menge davor oder dahinter, z. B. „4 Packungen Feta“', EP.extraEditText(cur), 'Speichern', v => {
+  textSheet('Eintrag bearbeiten', '', EP.extraEditText(cur), 'Speichern', v => {
     const p = EP.parseExtra(v.slice(0, 80)), old = cur.name;
     if (!p.name) return;
     if (p.name === old && p.qty === cur.qty && (p.unit || null) === (cur.unit || null)) return;
@@ -5858,7 +5860,7 @@ const curStore = () => EP.storeById(db.settings, route.params && route.params.id
 function storesSave(msg) { EP.touch(db.settings); return change(msg); }
 function vStores() {
   const all = EP.liveStores(db.settings), def = db.settings.storeDefault || {};
-  return `<p class="sub">Lege deine Geschäfte an und sortiere Kategorien und eigene Bereiche so, wie du durch den Laden gehst. Die Einkaufsliste folgt dann dieser Reihenfolge – für alle im Haushalt.</p>`
+  return ''
     + EP.STORE_KINDS.map(([k, l]) => gGroup(l, all.filter(x => x.kind === k).map(x => gRow({ icon: 'shop', color: KIND_COLOR[k], label: esc(x.name),
         sub: def[k] === x.id ? 'Standard' : '', act: 'storeopen', arg: x.id }))
       .concat([gRow({ icon: 'plus', color: '#8E8E93', label: `${l} hinzufügen`, act: 'storeadd', arg: k })]))).join('');
@@ -5876,12 +5878,12 @@ function vStore() {
   return gGroup('', [
       gRow({ icon: 'shop', color: KIND_COLOR[s.kind], label: 'Name', value: esc(s.name), act: 'storename' }),
       gRow({ icon: 'cart', color: '#8E8E93', label: 'Einkaufsort', value: kl, act: 'storekind' }),
-      gRow({ icon: 'star', color: '#FFCC00', label: `Standard für ${kl}`, sub: 'Wird in der Einkaufsliste automatisch gewählt',
+      gRow({ icon: 'star', color: '#FFCC00', label: `Standard für ${kl}`,
         right: `<label class="switch"><input type="checkbox" id="st-def" ${isDef ? 'checked' : ''} aria-label="Standard für ${kl}"><i></i></label>` }),
     ])
     + `<h3 class="ghead">Reihenfolge im Laden</h3><div class="glist ordlist">${rows}</div>
-      <p class="gfoot">Von oben nach unten so, wie du durch den Laden gehst. Eigene Bereiche (z. B. „Bio-Regal“) holen einzelne Artikel aus ihrer Kategorie – antippen zum Bearbeiten.</p>`
-    + gGroup('', [gRow({ icon: 'plus', color: '#34C759', label: 'Bereich hinzufügen', sub: 'z. B. Bio-Regal, Asia-Ecke, Kassenbereich', act: 'secadd' })])
+`
+    + gGroup('', [gRow({ icon: 'plus', color: '#34C759', label: 'Bereich hinzufügen', act: 'secadd' })])
     + gGroup('', [gRow({ icon: 'trash', color: '#FF3B30', label: 'Geschäft löschen', act: 'storedel', danger: true, chevron: false })]);
 }
 function storeAddSheet(kind) {
@@ -5901,7 +5903,7 @@ function sectionSheet(secId) {
   const ingNames = EP.live(db.ingredients).map(i => i.name).concat(db.settings.recentExtras || []);
   const nice = new Map(ingNames.map(n => [EP.normExtra(n), n]));
   const items = Object.entries(s.assign || {}).filter(([, v]) => v === secId).map(([k]) => k).sort((a, b) => a.localeCompare(b, 'de'));
-  openSheet(`<h2>${esc(sec.name)}</h2><p class="sub" style="margin-top:6px">Bereich in „${esc(s.name)}“. Diese Artikel stehen in der Einkaufsliste hier statt in ihrer Kategorie.</p>
+  openSheet(`<h2>${esc(sec.name)}</h2><p class="sub" style="margin-top:6px">Bereich in „${esc(s.name)}“</p>
     <div class="quick" style="margin-top:12px"><input class="in" id="sec-in" list="sec-dl" placeholder="Artikel, z. B. Hafermilch" autocomplete="off" enterkeyhint="done"><button class="btn primary" data-x="add" aria-label="Artikel zuordnen">+</button></div>
     <datalist id="sec-dl">${[...new Set(ingNames)].sort((a, b) => a.localeCompare(b, 'de')).map(n => `<option value="${esc(n)}">`).join('')}</datalist>
     <div class="secitems">${items.length ? items.map(k => `<div class="secitem"><span class="grow">${esc(nice.get(k) || k)}</span><button class="btn quiet small" data-del="${esc(k)}" aria-label="${esc(nice.get(k) || k)} entfernen">✕</button></div>`).join('') : '<p class="hint">Noch keine Artikel zugeordnet.</p>'}</div>
@@ -5970,7 +5972,7 @@ function vSources() {
   const ings = EP.live(db.ingredients).sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const fresh = ings.filter(i => i.reviewed === false);
   const row = i => srcRow(i, s);
-  return `<p class="sub">Lege fest, was du auf dem Markt kaufst und was im Supermarkt. „Vorrat“ heißt: meist zu Hause, nur prüfen.</p>
+  return `
     <div class="srcsearch"><input class="in" id="srcq" type="search" placeholder="Zutat suchen, z. B. Feta" value="${esc(srcQuery)}" autocomplete="off" enterkeyhint="search" aria-label="Zutat suchen">
       <button class="iconbtn ${srcQuery ? '' : 'hidden'}" id="srcx" aria-label="Suche löschen">✕</button></div>
     <div id="srcres">${srcResults(srcQuery)}</div>
@@ -5978,11 +5980,9 @@ function vSources() {
     ${fresh.length ? `<h3>Neu hinzugekommen (${fresh.length})</h3><div class="box newbox">${fresh.map(row).join('')}
       <button class="btn primary" data-act="srcok" style="margin-top:12px">${fresh.length === 1 ? 'Passt so' : 'Alle passen so'}</button></div>` : ''}
     <h3>Nach Kategorie</h3>
-    <p class="hint" style="margin-top:0">Gilt für alle Zutaten der Kategorie, die du nicht einzeln geändert hast.</p>
     <div class="box">${EP.CATEGORIES.map(c => `<div class="srcrow"><div class="row"><span class="grow nm">${esc(c.label)}</span></div>
       ${srcSeg('catsrc', c.key, EP.categorySource(c.key, s))}</div>`).join('')}</div>
-    ${(() => { const xs = extraNames(); return xs.length ? `<details class="box srcgroup" data-cat="__x" ${srcOpen.has('__x') ? 'open' : ''}><summary>Eigene Artikel <span class="amt">${xs.length}</span></summary>
-      <p class="hint" style="margin:6px 0 0">Was du selbst auf die Einkaufsliste schreibst, z. B. Croissants → Markt.</p>${xs.map(xsrcRow).join('')}</details>` : ''; })()}
+    ${(() => { const xs = extraNames(); return xs.length ? `<details class="box srcgroup" data-cat="__x" ${srcOpen.has('__x') ? 'open' : ''}><summary>Eigene Artikel <span class="amt">${xs.length}</span></summary>${xs.map(xsrcRow).join('')}</details>` : ''; })()}
     <h3>Einzelne Zutaten</h3>
     ${ings.length ? EP.CATEGORIES.map(c => {
       const list = ings.filter(i => i.category === c.key && i.reviewed !== false);
@@ -6014,7 +6014,7 @@ function pbJoinForm() {
   return `<h3>Schon auf einem anderen Gerät eingerichtet</h3>
     <label class="field"><span>Link vom anderen Gerät</span><input class="in" id="pb-in" value="${esc(pendingJoin)}" placeholder="…/essensplanung.html#join=…" autocapitalize="off" autocomplete="off" spellcheck="false"></label>
     ${pwField('pb-pw3')}
-    <p class="hint">Die Daten dieses Geräts werden mit dem verbundenen Haushalt zusammengeführt.</p>
+    
     <div class="btns"><button class="btn${pendingJoin ? ' primary' : ''}" data-act="pbjoinhere">Verbinden</button></div>`;
 }
 function vSync() {
@@ -6022,15 +6022,15 @@ function vSync() {
   const last = Sync.lastSync ? new Date(Sync.lastSync).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : 'noch nie';
   const status = `<p class="hint">Letzter Abgleich: ${last}${Sync.msg ? `<br><span class="warn">${esc(Sync.msg)}</span>` : ''}</p>
       <div class="btns two"><button class="btn primary" data-act="syncnow">Jetzt abgleichen</button><button class="btn danger" data-act="syncoff">Trennen</button></div>`;
-  if (on && Sync.isPB) return `<div class="box"><p><b>Verbunden</b> mit deinem Pi. Eure Daten liegen dort verschlüsselt.</p>${status}</div>
+  if (on && Sync.isPB) return `<div class="box"><p><b>Verbunden</b> mit deinem Pi.</p>${status}</div>
     <h3>Weiteres Gerät verbinden</h3>
-    <p class="sub">Öffne diesen Link auf dem anderen Gerät oder füge ihn dort unter „Mit bestehendem Haushalt verbinden“ ein. Danach wird das Haushaltspasswort abgefragt.</p>
+    
     <div class="box stack"><input class="in" id="pb-link" readonly value="${esc(PB.link(r.pb, Auth.token))}" aria-label="Verbindungslink">
       <div class="btns${navigator.share ? ' two' : ''}"><button class="btn primary" data-act="pbcopy">Link kopieren</button>${navigator.share ? '<button class="btn" data-act="pbshare">Senden …</button>' : ''}</div></div>
-    <p class="hint">Wer den Link hat, kann eure Daten entschlüsseln. Gib ihn nur an Personen im Haushalt weiter.</p>
+    <p class="hint">Nur an Personen im Haushalt weitergeben.</p>
     ${Konto.loggedIn() ? `<h3>Per Benutzername einladen</h3>
     <div class="box stack"><input class="in" id="inv-n" placeholder="Benutzername" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off" enterkeyhint="send" aria-label="Benutzername">
-      <p class="hint" id="inv-s" style="margin:0">Die Person sieht die Einladung im Hauptmenü und muss nur bestätigen. Gültig ${Konto.inviteDays} Tage.</p>
+      <p class="hint" id="inv-s" style="margin:0">Gültig ${Konto.inviteDays} Tage.</p>
       <div class="btns"><button class="btn primary" data-act="invsend">Einladen</button></div></div>
     <div id="inv-list"></div>` : `<p class="hint">Mit Konto kannst du andere per Benutzername einladen – <a href="index.html#konto">im Hauptmenü anmelden</a>.</p>`}`;
   if (on) return `<div class="box"><p><b>Verbunden</b> mit dem GitHub-Repository ${esc(r.owner)}/${esc(r.name)}.</p>${status}</div>
@@ -6446,7 +6446,7 @@ function changePasswordSheet() {
     <label class="field"><span>Bisheriges Passwort</span><input class="in" type="password" id="p0" autocomplete="current-password"></label>
     <label class="field"><span>Neues Passwort</span><input class="in" type="password" id="p1" autocomplete="new-password"></label>
     <label class="field"><span>Neues Passwort wiederholen</span><input class="in" type="password" id="p2" autocomplete="new-password"></label>
-    <p class="hint">Gilt für alle Geräte des Haushalts.</p>
+    
     <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">Ändern</button></div>`, el => {
     $('[data-x=no]', el).onclick = closeSheet;
     $('[data-x=yes]', el).onclick = async () => {
