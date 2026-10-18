@@ -288,7 +288,10 @@ details.box[open] summary:after{content:'−'}
 /* ---------- Kochansicht ---------- */
 .cookscreen{position:fixed;inset:0;z-index:40;background:var(--enamel);overflow:auto;padding:calc(10px + env(safe-area-inset-top)) 16px calc(40px + env(safe-area-inset-bottom))}
 .cookscreen .inner{max-width:720px;margin:0 auto}
-.cooktop{display:flex;justify-content:flex-end;margin-bottom:10px}
+.cooktop{position:sticky;top:0;z-index:6;height:0;display:flex;justify-content:flex-end;pointer-events:none}
+.cookx{pointer-events:auto;width:44px;height:44px;margin-top:2px;border-radius:50%;border:1px solid var(--line);background:color-mix(in srgb,var(--plate) 82%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:var(--ink);display:grid;place-items:center;box-shadow:0 2px 10px rgba(0,0,0,.18);cursor:pointer;padding:0}
+.cookx:active{transform:scale(.94)}
+.cookscreen .inner>.cooktop+:not(.hero){margin-top:56px}
 .cookscreen .hero{width:100%;max-height:40dvh;object-fit:cover;border-radius:22px;display:block;margin-bottom:-28px}
 .ccard{background:var(--plate);border-radius:24px;padding:20px 20px 22px;margin-bottom:16px;box-shadow:0 2px 14px rgba(15,30,60,.07);position:relative}
 .ccard h2{font-size:24px;font-weight:800;margin:0 0 14px}
@@ -5453,7 +5456,7 @@ function renderCook() {
   ].filter(Boolean).join('');
   const empty = !ings.length && !md.steps.length && !String(r.instructions || '').trim();
   el.innerHTML = `<div class="inner${ings.length && md.steps.length ? ' two' : ''}">
-    <div class="cooktop"><button class="btn small" data-act="closecook">Schließen</button></div>
+    <div class="cooktop"><button class="cookx" data-act="closecook" aria-label="Schließen"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
     ${ck ? `<img class="hero" data-img="${ck}" data-thumb="0" alt="">` : ''}
     <section class="ccard chead"><h1>${esc(r.name)}</h1>
       <div class="cmeta">${meta}</div>
