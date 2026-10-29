@@ -254,6 +254,13 @@ details.box[open] summary:after{content:'−'}
 .grab i{display:block;width:44px;height:5px;border-radius:99px;background:var(--speckle);opacity:.55;margin:0 auto}
 .sheet h2{font-size:22px}
 @keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+.rqrow{display:flex;gap:8px;margin-top:14px;align-items:stretch}
+.rqrow .in{flex:1;min-width:0;width:auto;margin:0}
+.rsortbtn{flex:none;width:auto;margin:0;min-height:44px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;white-space:nowrap}
+.rsortbtn svg{width:18px;height:18px;flex:none}
+.sortopt[aria-pressed=true]{border-color:var(--rim);background:var(--rim-soft)}
+.sortopt .sortchk{width:24px;height:24px;flex:none;color:var(--rim)}
+.sortopt .sortchk svg{width:24px;height:24px}
 .opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:52px;padding:12px 14px;border-radius:14px;background:var(--plate);border:1px solid var(--line);margin-top:8px;font-weight:600}
 .opt small{display:block;font-weight:400;color:var(--speckle);font-size:13px}
 .opt.danger{color:var(--tomato)}
@@ -3703,6 +3710,7 @@ async function importData(json, mode) {
    Essensplanung – App Teil 3: Oberfläche
    ========================================================================== */
 const ICON = {
+  sort: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3.5 16.5 7 20l3.5-3.5M17 20V4M13.5 7.5 17 4l3.5 3.5"/></svg>',
   pot: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 10h16v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M2 11h2M20 11h2M9 7.5V5M12 7.5V4M15 7.5V5"/></svg>',
   plate: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/></svg>',
   week: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
@@ -4693,13 +4701,67 @@ let favPinned = null;
 function favBtn(r) {
   return `<button class="favbtn" data-act="fav" data-arg="${r.id}" aria-pressed="${!!r.favorite}" aria-label="${r.favorite ? 'Kein Favorit mehr' : 'Als Favorit markieren'}">${r.favorite ? ICON.starOn : ICON.star}</button>`;
 }
+/* Sortierung der Rezeptliste – Wahl gilt auf diesem Gerät */
+const SORT_MODES = {
+  name: { label: 'Name (A–Z)', short: 'A–Z', sub: 'Favoriten oben' },
+  new: { label: 'Zuletzt hinzugefügt', short: 'Neueste' },
+  cooked: { label: 'Zuletzt gekocht', short: 'Zuletzt' },
+  long: { label: 'Lange nicht gekocht', short: 'Lange nicht', sub: 'Nie gekochte zuerst' },
+  often: { label: 'Am häufigsten gekocht', short: 'Häufig' },
+  quick: { label: 'Schnellste zuerst', short: 'Schnell', sub: 'Nach Zubereitungszeit' },
+};
+function recipeSortMode() { let m = recipeFilter.sort; if (!m) { try { m = localStorage.getItem('ep_rsort'); } catch (e) {} } return SORT_MODES[m] ? m : 'name'; }
+function setRecipeSort(m) { recipeFilter.sort = m; try { localStorage.setItem('ep_rsort', m); } catch (e) {} }
+/* je Rezept: letzter Kochtag (bis heute) und Anzahl Kochtage */
+function cookStats() {
+  const today = EP.todayISO(), m = new Map();
+  EP.live(db.plan).forEach(p => {
+    if (p.type !== 'COOK' || !p.recipeId || (p.dayIndex || 1) !== 1 || p.date > today) return;
+    const o = m.get(p.recipeId) || { last: '', n: 0 };
+    o.n++; if (p.date > o.last) o.last = p.date; m.set(p.recipeId, o);
+  });
+  return m;
+}
+function recipeSorter(mode, stats) {
+  const byName = (a, b) => a.name.localeCompare(b.name, 'de');
+  const st = r => (stats && stats.get(r.id)) || { last: '', n: 0 };
+  switch (mode) {
+    case 'new': return (a, b) => (b.createdAt || 0) - (a.createdAt || 0) || (b.sortOrder || 0) - (a.sortOrder || 0) || byName(a, b);
+    case 'cooked': return (a, b) => st(b).last.localeCompare(st(a).last) || byName(a, b);
+    case 'long': return (a, b) => st(a).last.localeCompare(st(b).last) || byName(a, b);
+    case 'often': return (a, b) => st(b).n - st(a).n || st(b).last.localeCompare(st(a).last) || byName(a, b);
+    case 'quick': return (a, b) => (a.prepTimeMinutes || 1e9) - (b.prepTimeMinutes || 1e9) || byName(a, b);
+    default: return (a, b) => (favPinned.has(b.id) - favPinned.has(a.id)) || byName(a, b);
+  }
+}
+function agoLabel(iso) {
+  const d = Math.round((EP.parseISO(EP.todayISO()) - EP.parseISO(iso)) / 864e5);
+  if (d <= 0) return 'heute'; if (d === 1) return 'gestern'; if (d < 14) return `vor ${d} Tagen`;
+  if (d < 60) return `vor ${Math.round(d / 7)} Wochen`; const mo = Math.round(d / 30); return mo < 12 ? `vor ${mo} Monaten` : 'vor über einem Jahr';
+}
+function sortMeta(r, mode, stats) {
+  if (mode === 'quick') return r.prepTimeMinutes ? `<br>${r.prepTimeMinutes} min` : '';
+  if (mode === 'new') return r.createdAt ? `<br>Hinzugefügt ${agoLabel(EP.iso(new Date(r.createdAt)))}` : '';
+  if (!stats) return '';
+  const o = stats.get(r.id);
+  if (!o) return '<br>Noch nie gekocht';
+  return mode === 'often' ? `<br>${o.n}× gekocht, zuletzt ${agoLabel(o.last)}` : `<br>Zuletzt gekocht ${agoLabel(o.last)}`;
+}
+function sortSheet() {
+  const cur = recipeSortMode();
+  openSheet(`<h2>Sortieren</h2>
+    ${Object.entries(SORT_MODES).map(([k, o]) => `<button class="opt sortopt" data-m="${k}" aria-pressed="${k === cur}"><span class="grow">${esc(o.label)}${o.sub ? `<small>${esc(o.sub)}</small>` : ''}</span><span class="sortchk" aria-hidden="true">${k === cur ? COOK_ICON.check : ''}</span></button>`).join('')}`, el => {
+    $$('[data-m]', el).forEach(b => b.onclick = () => { setRecipeSort(b.dataset.m); closeSheet(); rerender(); });
+  });
+}
 function vRecipes() {
   const kind = recipeFilter.kind;
   const all = liveRecipes().filter(r => EP.laneOf(r) === kind);
   const tags = [...new Set(all.flatMap(r => r.tags || []))].sort((a, b) => a.localeCompare(b, 'de'));
   // Favoriten oben – Reihenfolge erst beim nächsten Öffnen anpassen, damit ein angetippter Stern nicht wegspringt
   if (!favPinned) favPinned = new Set(all.filter(r => r.favorite).map(r => r.id));
-  const list = all.filter(recipeMatches).sort((a, b) => (favPinned.has(b.id) - favPinned.has(a.id)) || a.name.localeCompare(b.name, 'de'));
+  const mode = recipeSortMode(), stats = mode === 'name' || mode === 'new' || mode === 'quick' ? null : cookStats();
+  const list = all.filter(recipeMatches).sort(recipeSorter(mode, stats));
   const pp = db.settings.portionsPerDay;
   const seg = (k, l) => `<button data-act="rstatus" data-arg="${k}" aria-pressed="${recipeFilter.status === k}">${l}</button>`;
   const ph = { MAIN: 'Rezeptname eingeben', LUNCH: 'z. B. Nudelsuppe', CAKE: 'z. B. Apfelkuchen', SIDE: 'z. B. Gurkensalat', SPECIAL: 'z. B. Rinderrouladen' }[kind];
@@ -4708,7 +4770,8 @@ function vRecipes() {
     <div class="quick" style="margin-top:12px"><input class="in" id="qa" placeholder="${ph}" enterkeyhint="done" autocomplete="off">
       <button class="btn primary" data-act="qa" aria-label="Rezept anlegen">+</button></div>
     <div class="impbtns"><button class="btn quiet small impbtn" data-act="rimport">Rezepte aus JSON importieren</button><button class="btn quiet small impbtn" data-act="rexport">Rezepte als JSON exportieren</button></div>
-    ${all.length ? `<input class="in" id="rq" placeholder="Suchen nach Name, Tag oder Zutat" value="${esc(recipeFilter.q)}" style="margin-top:14px">
+    ${all.length ? `<div class="rqrow"><input class="in" id="rq" placeholder="Suchen: Name, Tag, Zutat" value="${esc(recipeFilter.q)}">
+      <button class="btn rsortbtn" data-act="rsort" aria-label="Sortierung: ${esc(SORT_MODES[mode].label)}">${ICON.sort}<span>${esc(SORT_MODES[mode].short)}</span></button></div>
     ${rot ? `<div class="seg" style="margin-top:10px">${seg('all', 'Alle')}${seg('active', 'In Rotation')}${seg('paused', 'Pausiert')}</div>` : ''}
     ${tags.length ? `<div class="chips">${tags.map(t => `<button class="chip" data-act="rtag" data-arg="${esc(t)}" aria-pressed="${recipeFilter.tag === t}">${esc(t)}</button>`).join('')}</div>` : ''}` : ''}
     <div class="rlist">${list.map(r => {
@@ -4717,7 +4780,7 @@ function vRecipes() {
         <div class="rtop"><button class="head" data-act="edit" data-arg="${r.id}">
           ${ck ? `<img class="thumb" data-img="${ck}" data-thumb="1" alt="">` : ''}
           <span class="grow"><span class="nm" style="display:block">${esc(r.name)}</span>
-          <span class="meta" style="display:block">${kind === 'MAIN' ? `${r.servings} Portionen = ${daysLabel(n)}${r.daysOverride ? ' (fest)' : ''}` : `${r.servings} ${kind === 'CAKE' ? 'Stücke' : 'Portionen'}`}${r.ingredients.length ? `, ${r.ingredients.length} Zutaten` : ''}${EP.seasonLabel(r) ? `<br>Saison: ${EP.seasonLabel(r)}` : ''}</span></span>
+          <span class="meta" style="display:block">${kind === 'MAIN' ? `${r.servings} Portionen = ${daysLabel(n)}${r.daysOverride ? ' (fest)' : ''}` : `${r.servings} ${kind === 'CAKE' ? 'Stücke' : 'Portionen'}`}${r.ingredients.length ? `, ${r.ingredients.length} Zutaten` : ''}${EP.seasonLabel(r) ? `<br>Saison: ${EP.seasonLabel(r)}` : ''}${sortMeta(r, mode, stats)}</span></span>
         </button>${favBtn(r)}</div>
         ${rot ? `<div class="ctrl">
           <label><span class="switch"><input type="checkbox" data-rot="${r.id}" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></span>${r.inRotation ? 'In Rotation' : 'Pausiert'}</label>
@@ -6346,6 +6409,7 @@ const ACT = {
   rimport: () => quickImport(),
   rexport: () => exportSheet(),
   rstatus: a => { recipeFilter.status = a; rerender(); },
+  rsort: () => sortSheet(),
   rtag: a => { recipeFilter.tag = recipeFilter.tag === a ? '' : a; rerender(); },
   w: a => { const [id, d] = a.split('|'); const r = recipeById(id); setWeight(r, r.weight + (+d)); change(); },
   edit: id => openEdit(id),
