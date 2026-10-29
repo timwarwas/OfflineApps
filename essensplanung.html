@@ -669,6 +669,32 @@ main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 /* „Speichern“ oben beim Bearbeiten eines Rezepts */
 .top .hdrsave{min-height:44px;padding:0 16px;border-radius:12px;flex:none}
 .top .hdrsave.hidden,.top .hidden{display:none}
+/* Kochansicht: Vorbereiten */
+.prepbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;margin-top:14px}
+.prepbtn svg{width:20px;height:20px;flex:none}
+.prepbtn.on{background:var(--rim-soft);border-color:var(--rim);color:var(--rim)}
+.prepstep{margin:0 0 12px}
+.prepcard h3{margin:20px 0 6px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--speckle)}
+.pcount{margin:-4px 0 6px;color:var(--speckle);font-size:15px}
+.prep{list-style:none;padding:0;margin:0}
+.prep li{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line);cursor:pointer;min-height:44px}
+.prep li:last-child{border-bottom:0}
+.prep .pchk{flex:none;width:30px;height:30px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;color:transparent;margin-top:1px}
+.prep .pchk svg{width:18px;height:18px}
+.prep li.done .pchk{background:var(--basil);border-color:var(--basil);color:var(--plate)}
+.prep .pbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+.prep .nm{font-size:19px;line-height:1.3;overflow-wrap:anywhere}
+.prep .nm b{font-weight:700}
+.prep .ptasks{display:flex;flex-wrap:wrap;gap:6px}
+.prep .ptasks span{background:var(--rim-soft);color:var(--rim);font-weight:700;font-size:16px;border-radius:10px;padding:5px 10px}
+.prep small{color:var(--speckle);font-size:13px}
+.prep li.done .nm,.prep li.done .ptasks span{color:var(--speckle);text-decoration:line-through}
+.prep li.done .ptasks span{background:transparent;padding-left:0}
+.prep.small li{padding:10px 0}
+.prep.small .nm{font-size:17px}
+.prep.small .pchk{width:26px;height:26px}
+.cookscreen .inner.preping{max-width:640px}
+.toast.act span{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;padding:4px 0}
 
 </style>
 </head>
@@ -1863,6 +1889,61 @@ const EP = (function () {
   }
   /* Zutaten, die nie auf die Einkaufsliste kommen: von Hand markiert (noShop) oder Wasser aus der Leitung */
   const WATER = /^(heißes|heisses|kaltes|lauwarmes|warmes|kochendes|eiskaltes|lauwarm(es)?)?\s*(leitungs|eis|koch|nudel)?wasser$/i;
+  /* Vorbereitungs-Anweisungen in einem Text erkennen („fein würfeln“, „in Ringe schneiden“, „schälen“ …).
+     Liefert Bezeichnungen in sinnvoller Reihenfolge (erst waschen/schälen, dann schneiden). */
+  const PREP_RULES = [
+    [0, /\b(waschen|gewaschen|abspülen|abgespült)\b/, 'waschen'],
+    [1, /\b(putzen|geputzt)\b/, 'putzen'],
+    [2, /\b(schälen|geschält|pellen|gepellt)\b/, 'schälen'],
+    [3, /\b(entkernen|entkernt|entsteinen|entsteint)\b/, 'entkernen'],
+    [4, /\b(abtropfen)\b/, 'abtropfen lassen'],
+    [5, /\b(zupfen|gezupft|abzupfen)\b/, 'Blätter zupfen'],
+    [6, /\b(halbieren|halbiert)\b/, 'halbieren'],
+    [6, /\b(vierteln|geviertelt)\b/, 'vierteln'],
+    [6, /\b(achteln|geachtelt)\b/, 'achteln'],
+    [7, /\bin\s+(?:(dünne|feine|dicke|halbe|grobe|schmale)\s+)?(ringe|halbringe)\b/, m => `in ${m[1] ? m[1] + ' ' : ''}${m[2] === 'halbringe' ? 'Halbringe' : 'Ringe'} schneiden`],
+    [7, /\bin\s+(?:(dünne|feine|dicke|grobe)\s+)?scheiben\b/, m => `in ${m[1] ? m[1] + ' ' : ''}Scheiben schneiden`],
+    [7, /\bin\s+(?:(dünne|feine|breite|schmale)\s+)?streifen\b/, m => `in ${m[1] ? m[1] + ' ' : ''}Streifen schneiden`],
+    [7, /\bin\s+(?:(kleine|grobe|große|mundgerechte|feine|\d+\s*cm\s*große)\s+)?(stücke|würfel|stifte|spalten)\b/, m => `in ${m[1] ? m[1] + ' ' : ''}${m[2][0].toUpperCase() + m[2].slice(1)} schneiden`],
+    [7, /\b(?:(fein|grob|klein)\s+)?(würfeln|gewürfelt|würfelt)\b/, m => `${m[1] ? m[1] + ' ' : ''}würfeln`],
+    [7, /\b(?:(fein|grob)\s+)?(hacken|gehackt|hackt)\b/, m => `${m[1] ? m[1] + ' ' : ''}hacken`],
+    [7, /\b(?:(fein|grob)\s+)?(reiben|gerieben|raspeln|geraspelt)\b/, m => `${m[1] ? m[1] + ' ' : ''}reiben`],
+    [7, /\b(zerkleinern|zerkleinert)\b/, 'zerkleinern'],
+    [8, /\b(auspressen|ausgepresst)\b/, 'auspressen'],
+    [8, /\b(pressen|gepresst)\b/, 'pressen'],
+    [8, /\b(abreiben|abrieb)\b/, 'Schale abreiben'],
+    [9, /\b(?:(fein|klein|grob|dünn)\s+)?(schneiden|geschnitten|schneidet|aufschneiden|kleinschneiden|kleingeschnitten)\b/, m => `${m[1] ? m[1] + ' ' : ''}schneiden`],
+  ];
+  function prepPhrases(text) {
+    const t = String(text || '').toLowerCase();
+    const hits = [];
+    PREP_RULES.forEach(([rank, re, lbl]) => { const m = t.match(re); if (m) hits.push([rank, typeof lbl === 'function' ? lbl(m) : lbl]); });
+    // „in Ringe schneiden“ enthält schon „schneiden“ → allgemeines Schneiden weglassen
+    const cut = hits.some(h => h[0] === 7);
+    return [...new Set(hits.filter(h => !(cut && h[0] === 9)).sort((a, b) => a[0] - b[0]).map(h => h[1]))];
+  }
+  /* Text in Sätze und diese in Satzteile zerlegen: [[Satzteil, …], …] */
+  function prepClauses(text) {
+    return String(text || '').replace(/<[^>]+>/g, ' ').split(/[.!?;:\n]+/)
+      .map(sn => sn.split(/,|\b(?:dann|anschließend|danach)\b/i).map(x => x.trim()).filter(Boolean)).filter(a => a.length);
+  }
+  /* Anweisungen den Zutaten zuordnen. hit(text) → Liste der erwähnten Zutat-Schlüssel.
+     Satzteil ohne Zutat gehört zum vorigen („Paprika waschen, entkernen und in Streifen schneiden“),
+     Zutat ohne Anweisung wartet auf den nächsten Satzteil („Zwiebeln, Knoblauch und Ingwer fein hacken“). */
+  function prepAssign(text, hit) {
+    const out = new Map(), add = (keys, ph) => keys.forEach(k => { const l = out.get(k) || []; ph.forEach(p => { if (!l.includes(p)) l.push(p); }); out.set(k, l); });
+    prepClauses(text).forEach(sn => {
+      let pending = [], last = null;
+      sn.forEach((c, i) => {
+        const keys = hit(c), ph = prepPhrases(c);
+        if (!keys.length) { if (last) add(last, ph); else if (pending.length) { add(pending, ph); last = pending; pending = []; } return; }
+        const all = pending.concat(keys);
+        if (!ph.length && i < sn.length - 1) { pending = all; last = null; return; }
+        add(all, ph); last = all; pending = [];
+      });
+    });
+    return out;
+  }
   function neverShop(ing) { return !!ing && (ing.noShop === true || (ing.noShop !== false && WATER.test(String(ing.name || '').trim()))); }
   function sourceOf(ing, settings) { return ing.shoppingSource || categorySource(ing.category, settings); }
   /* Kategorie aus dem Zutatennamen erraten (längster Treffer gewinnt) */
@@ -2538,7 +2619,7 @@ const EP = (function () {
     manualPickEntry, resetRotation, syncRecipeIntoCycles, cycleProgress,
     nextFreeDates, layoutDraft, fillWeek,
     UNITS, UNIT_ORDER, dimOf, fmtNum, sumAmounts,
-    CATEGORIES, CAT, neverShop, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText, recordExtra, renameExtra, parseExtra, extraParts, extraAmount, extraEditText, extraSuggestions, PAN_SHAPES, PAN_PRESETS, cleanPan, panArea, panFactor, panLabel, samePan, planFactor, roundScaled, shopUnits, migrateShopping, ensureShopping, shopMark, mergeShopping, pruneShopping,
+    CATEGORIES, CAT, neverShop, prepPhrases, prepClauses, prepAssign, categorySource, extraCategory, STORE_KINDS, liveStores, storeById, storeFor, storeOrder, normExtra, sourceOf, guessCategory, buildShoppingList, shoppingText, recordExtra, renameExtra, parseExtra, extraParts, extraAmount, extraEditText, extraSuggestions, PAN_SHAPES, PAN_PRESETS, cleanPan, panArea, panFactor, panLabel, samePan, planFactor, roundScaled, shopUnits, migrateShopping, ensureShopping, shopMark, mergeShopping, pruneShopping,
     mergeDb, cleanRotation, releaseOrphans, normalizePlan, pruneTombstones, buildRecipeExport,
     parseAmount, parseRecipeImport, parseTimers, fmtClock, nameSimilar, similarRecipes,
   };
@@ -3375,6 +3456,25 @@ function addExtra(date, recipeId) {
   eachPlan(pl => pl.push(deep(e)));
   return e;
 }
+/* Beilage reicht nicht für alle Tage des Hauptgerichts → an den Resttagen erneut einplanen.
+   Beispiel: Curry für 3 Tage, Naan für 1 Tag → Naan am Kochtag und an beiden Resttagen; Salat für 2 Tage → Tag 1 und 3.
+   Liefert die zusätzlich belegten Tage. */
+function sideRepeatDates(date, recipeId, src) {
+  const r = recipeById(recipeId); if (!r || EP.laneOf(r) !== 'SIDE') return [];
+  const m = laneAt(src, date, 'MAIN');
+  if (!m || !m.blockId || (m.type !== 'COOK' && m.type !== 'LEFTOVER')) return [];
+  const days = blockEntries(m.blockId, src).filter(p => p.type === 'COOK' || p.type === 'LEFTOVER').map(p => p.date).filter(d => d >= date);
+  const k = daysOf(r), out = [];
+  for (let j = k; j < days.length; j += k) out.push(days[j]);
+  return out.filter(d => !extrasAt(src, d).some(x => x.recipeId === recipeId));
+}
+function addSide(date, recipeId) {
+  const more = sideRepeatDates(date, recipeId);
+  addExtra(date, recipeId);
+  more.forEach(d => addExtra(d, recipeId));
+  return more;
+}
+const sideMoreMsg = more => more.length ? `, auch ${more.map(d => `${EP.weekday(d)} ${EP.fmtShort(d)}`).join(', ')}` : '';
 function removeExtra(id) { eachPlan(pl => { const p = pl.find(x => x.id === id && !x.deleted); if (p) EP.tomb(p); }); }
 function moveExtra(id, date) {
   eachPlan(pl => { const p = pl.find(x => x.id === id && !x.deleted); if (p) { p.date = date; p.status = date < EP.todayISO() ? 'DONE' : 'PLANNED'; EP.touch(p); } });
@@ -4551,7 +4651,7 @@ function addExtraSheet(d) {
   const has = k => liveRecipes().some(r => EP.laneOf(r) === k);
   const k = extraKind || (has('SIDE') ? 'SIDE' : 'MAIN');
   recipePickSheet(`Weiteres Gericht am ${EP.weekday(d)} ${EP.fmtShort(d)}`, id => pickCheck(id, d, null, o => {
-    undoable(() => { if (o) removeOther(o); addExtra(d, id); return o ? pickMsg(id, null, o) : 'Hinzugefügt.'; });
+    undoable(() => { if (o) removeOther(o); const more = addSide(d, id); return o ? pickMsg(id, null, o) : 'Hinzugefügt' + sideMoreMsg(more) + '.'; });
   }), k, { kinds: EXTRA_KINDS, onKind: v => { extraKind = v; }, date: d });
 }
 function extraOption(d) {
@@ -5424,6 +5524,7 @@ const COOK_ICON = {
   people: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15.5 14.2c2.4.2 4.2 1.8 4.7 4.8"/></svg>',
   leaf: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 19c0-8 5-13 14-14-1 9-6 14-14 14z"/><path d="M5 19l7-7"/></svg>',
   basket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10h16l-1.6 8.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8z"/><path d="M8 10l3-5M16 10l-3-5"/></svg>',
+  knife: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l9.5-9.5"/><path d="M12.5 11.5 19 5a2.1 2.1 0 0 1 3 3l-6.5 6.5c-1 1-2.6 1-3.6 0l-.4-.4c-1-1-1-2.6 0-3.6z"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
 };
 /* Menge für n Portionen, sinnvoll gerundet; bei der Originalportion unverändert */
@@ -5490,6 +5591,41 @@ function markFirstUse(html, ings, keys) {
     return `<mark class="ning">${w}</mark>`;
   })).join('');
 }
+/* Vorbereiten: je Zutat, was zu tun ist (aus der Zutat-Notiz und den Satzteilen der Anleitung) */
+const PREP_SKIP = new Set(['GEWUERZE', 'OELE_ESSIG', 'GETRAENKE']);
+function cookPrepItems(steps) {
+  const all = cookIngredients(), keys = all.map(o => o.key);
+  const cuttable = all.filter(o => { const ing = ingById(o.x.ingredientId); return o.key && !o.spice && ing && !PREP_SKIP.has(ing.category); });
+  const found = new Map();
+  steps.forEach(t => EP.prepAssign(t, c => cuttable.filter(o => mentions(c, o.key, keys)).map(o => o.key))
+    .forEach((ph, k) => found.set(k, [...new Set((found.get(k) || []).concat(ph))])));
+  return all.map((o, idx) => {
+    const skip = !cuttable.includes(o);
+    const fromNote = o.x.note ? EP.prepPhrases(o.x.note) : [];
+    const fromSteps = skip ? [] : found.get(o.key) || [];
+    let tasks = [...new Set(fromNote.concat(fromSteps))];
+    if (!tasks.length && o.x.note && !skip) tasks = [o.x.note];
+    const first = o.key ? steps.findIndex(t => mentions(t, o.key, keys)) : -1;
+    return { o, idx, tasks, first };
+  });
+}
+function prepCard(md, f) {
+  const items = cookPrepItems(md.steps);
+  const order = (a, b) => (a.first < 0 ? 1e9 : a.first) - (b.first < 0 ? 1e9 : b.first);
+  const work = items.filter(x => x.tasks.length).sort(order);
+  const rest = items.filter(x => !x.tasks.length && !x.o.spice).sort(order), spices = items.filter(x => !x.tasks.length && x.o.spice);
+  const row = (x, big) => `<li data-ci="${x.idx}" class="${big ? 'pwork' : ''}${cookState.done.has('i' + x.idx) ? ' done' : ''}">
+    <span class="pchk" aria-hidden="true">${COOK_ICON.check}</span>
+    <span class="pbody"><span class="nm"><b>${esc(cookAmount(x.o.x, f))}</b> ${esc(x.o.name)}</span>
+    ${big ? `<span class="ptasks">${x.tasks.map(t => `<span>${esc(t)}</span>`).join('')}</span>${x.first >= 0 ? `<small>Schritt ${x.first + 1}</small>` : ''}` : ''}</span></li>`;
+  const open = work.filter(x => !cookState.done.has('i' + x.idx)).length;
+  return `<section class="ccard prepcard"><h2>Vorbereiten</h2>
+    ${work.length ? `<p class="pcount" id="prep-n">${open ? `Noch ${open} von ${work.length}` : 'Alles vorbereitet'}</p><ul class="prep">${work.map(x => row(x, true)).join('')}</ul>`
+      : '<p class="pcount">In der Anleitung steht nichts zum Schneiden.</p>'}
+    ${rest.length ? `<h3>Bereitstellen</h3><ul class="prep small">${rest.map(x => row(x, false)).join('')}</ul>` : ''}
+    ${spices.length ? `<h3>Gewürze</h3><ul class="prep small">${spices.map(x => row(x, false)).join('')}</ul>` : ''}
+    <div class="btns"><button class="btn primary" data-act="cookprep">Fertig – zur Anleitung</button></div></section>`;
+}
 const ingLine = (o, f) => `<li class="${o.spice ? 'spice' : ''}">${esc(cookAmount(o.x, f))} ${esc(o.name)}</li>`;
 function openCook(id) {
   const r = recipeById(id); if (!r) return;
@@ -5499,7 +5635,7 @@ function openCook(id) {
   // Gäste: nächster geplanter Kochtag dieses Gerichts mit abweichender Personenzahl
   const g = EP.live(db.plan).filter(p => p.recipeId === id && p.type === 'COOK' && p.guests && p.date >= EP.todayISO()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const gn = g ? Math.round((r.servings || 2) * EP.guestFactor(g, r, db.settings)) : null;
-  cookState = { r, n: prog ? prog.n : (gn || r.servings || 2), done: new Set(prog ? prog.done : []), pan: prog && prog.pan !== undefined ? prog.pan : (planned ? planned.pan : null) };
+  cookState = { prep: false, r, n: prog ? prog.n : (gn || r.servings || 2), done: new Set(prog ? prog.done : []), pan: prog && prog.pan !== undefined ? prog.pan : (planned ? planned.pan : null) };
   const el = $('#cookview');
   el.classList.remove('hidden');
   renderCook();
@@ -5518,7 +5654,8 @@ function renderCook() {
     EP.seasonLabel(r) ? `<span>${COOK_ICON.leaf}${esc(EP.seasonLabel(r))}</span>` : '',
   ].filter(Boolean).join('');
   const empty = !ings.length && !md.steps.length && !String(r.instructions || '').trim();
-  el.innerHTML = `<div class="inner${ings.length && md.steps.length ? ' two' : ''}">
+  const prep = cookState.prep && ings.length;
+  el.innerHTML = `<div class="inner${ings.length && md.steps.length && !prep ? ' two' : ''}${prep ? ' preping' : ''}">
     <div class="cooktop"><button class="cookx" data-act="closecook" aria-label="Schließen"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></button></div>
     ${ck ? `<img class="hero" data-img="${ck}" data-thumb="0" alt="">` : ''}
     <section class="ccard chead"><h1>${esc(r.name)}</h1>
@@ -5526,12 +5663,14 @@ function renderCook() {
       ${(r.tags || []).length ? `<div class="ctags">${r.tags.map(t => `<span>${esc(t)}</span>`).join('')}</div>` : ''}
       ${(() => { const a = EP.linkedSides(db, r), b = EP.linkedFrom(db, r).filter(x => !a.some(y => y.id === x.id));
         return a.length || b.length ? `<div class="csides">${a.length ? `<span>Dazu:</span>${a.map(s => `<button class="chip small" data-act="cookside" data-arg="${s.id}">${esc(s.name)} ›</button>`).join('')}` : ''}
-          ${b.length ? `<span>Passt zu:</span>${b.map(s => `<button class="chip small" data-act="cookside" data-arg="${s.id}">${esc(s.name)} ›</button>`).join('')}` : ''}</div>` : ''; })()}</section>
-    ${ings.length ? `<section class="ccard cingcard"><h2>Zutaten</h2>
+          ${b.length ? `<span>Passt zu:</span>${b.map(s => `<button class="chip small" data-act="cookside" data-arg="${s.id}">${esc(s.name)} ›</button>`).join('')}` : ''}</div>` : ''; })()}
+      ${ings.length ? `<button class="btn prepbtn${prep ? ' on' : ''}" data-act="cookprep" aria-pressed="${!!prep}">${COOK_ICON.knife}${prep ? 'Zurück zur Anleitung' : 'Vorbereiten'}</button>` : ''}</section>
+    ${prep ? `${isCake(r) && r.pan ? '' : `<div class="cstep prepstep" role="group" aria-label="${unit}"><button data-act="cookpp" data-arg="-1" aria-label="Weniger ${unit}">−</button><output id="cook-n">${cookState.n} ${unit}</output><button data-act="cookpp" data-arg="1" aria-label="Mehr ${unit}">+</button></div>`}${prepCard(md, cookFactor())}` : ''}
+    ${ings.length && !prep ? `<section class="ccard cingcard"><h2>Zutaten</h2>
       ${isCake(r) ? `<button class="panbtn" data-act="cookpan">${r.pan ? `<span>Backform</span><b>${esc(EP.panLabel(cookState.pan || r.pan))} ▾</b>${cookState.pan ? `<small>Zutaten ${fmtFactor(cookFactor())} · ca. ${Math.max(1, Math.round((r.servings || 12) * cookFactor()))} Stücke</small>` : ''}` : '<span>Backform</span><b>Größe angeben ▾</b><small>dann auf andere Formen umrechnen</small>'}</button>` : ''}
       ${isCake(r) && r.pan ? '' : `<div class="cstep" role="group" aria-label="${unit}"><button data-act="cookpp" data-arg="-1" aria-label="Weniger ${unit}">−</button><output id="cook-n">${cookState.n} ${unit}</output><button data-act="cookpp" data-arg="1" aria-label="Mehr ${unit}">+</button></div>`}
       <ul class="cing" id="cook-ing">${cookIngRows()}</ul></section>` : ''}
-    ${md.steps.length ? (() => {
+    ${md.steps.length && !prep ? (() => {
       const plan = cookPlan(md.steps), f = cookFactor();
       const unused = plan.all.filter((o, k) => plan.first[k] < 0);
       const prep = unused.filter(o => !o.spice), spices = unused.filter(o => o.spice);
@@ -5547,10 +5686,10 @@ function renderCook() {
       }).join('')}</ol>
       ${spices.length ? `<div class="cextra spices" id="cook-spices"><b>Zum Würzen und Abschmecken</b><ul>${spices.map(o => ingLine(o, f)).join('')}</ul></div>` : ''}</section>`;
     })() : ''}
-    ${r.notes ? `<section class="ccard cnotecard"><h2>Notizen</h2><p class="cnotes">${esc(r.notes)}</p></section>` : ''}
+    ${r.notes && !prep ? `<section class="ccard cnotecard"><h2>Notizen</h2><p class="cnotes">${esc(r.notes)}</p></section>` : ''}
     ${empty ? `<section class="ccard"><p style="font-size:18px;margin:0 0 12px">Für dieses Gericht sind noch keine Zutaten und keine Anleitung hinterlegt.</p>
       <button class="btn primary" data-act="cookedit" data-arg="${r.id}">Rezept ergänzen</button></section>` : ''}
-    ${cookState.done.size ? '<div class="btns"><button class="btn quiet" data-act="cookreset">Abhaken zurücksetzen</button></div>' : ''}
+    ${cookState.done.size && !prep ? '<div class="btns"><button class="btn quiet" data-act="cookreset">Abhaken zurücksetzen</button></div>' : ''}
 </div>`;
   bindCook();
   Images.hydrate(el);
@@ -5575,7 +5714,7 @@ function strikeRow(item, on, cls) {
 function bindCook() {
   const el = $('#cookview');
   const flip = (li, k) => { const on = !cookState.done.has(k); on ? cookState.done.add(k) : cookState.done.delete(k); strikeRow(li, on, 'done'); saveCookProgress(); };
-  $$('[data-ci]', el).forEach(li => li.onclick = () => flip(li, 'i' + li.dataset.ci));
+  $$('[data-ci]', el).forEach(li => li.onclick = () => { flip(li, 'i' + li.dataset.ci); if (cookState.prep) prepCount(); });
   $$('[data-cs]', el).forEach(li => li.onclick = () => {
     flip(li, 's' + li.dataset.cs);
     const cur = markCurrentStep();
@@ -5590,6 +5729,17 @@ function bindCook() {
     Timers.start(cookState.r.id, +k, +sec, lbl.join('|'));
   });
   markCurrentStep();
+}
+function prepCount() {
+  const n = $('#prep-n'); if (!n) return;
+  const all = $$('#cookview .prep li.pwork'), open = all.filter(li => !li.classList.contains('done')).length;
+  n.textContent = open ? `Noch ${open} von ${all.length}` : 'Alles vorbereitet';
+}
+function cookPrepToggle() {
+  if (!cookState) return;
+  cookState.prep = !cookState.prep;
+  renderCook();
+  $('#cookview').scrollTop = 0;
 }
 function cookPortions(d) {
   if (!cookState) return;
@@ -6196,7 +6346,7 @@ const ACT = {
     }, 'SIDE', { kinds: ['SIDE', 'MAIN', 'LUNCH', 'SPECIAL', 'CAKE'] });
   },
   esidedel: id => { readEditForm(); const r = editState.r; r.sides = (r.sides || []).filter(x => x !== id); editState.dirty = true; rerender(); },
-  sideadd: a => { const [d, id] = a.split('|'); const s = recipeById(id); undoable(() => { addExtra(d, id); return `${s ? s.name : 'Beilage'} dazu eingeplant.`; }); },
+  sideadd: a => { const [d, id] = a.split('|'); const s = recipeById(id); undoable(() => { const more = addSide(d, id); return `${s ? s.name : 'Beilage'} dazu eingeplant${sideMoreMsg(more)}.`; }); },
   sideoff: d => { weekStartISO = EP.weekStart(d); undoable(() => { dismissSides(weekEntries(EP.weekStart(d)), d); return 'Diesmal ohne Beilage.'; }); },
   cookside: id => { closeCook(); openCook(id); },
   emonth: m => { readEditForm(); m = +m; const r = editState.r; const set = new Set(r.seasonMonths || []); set.has(m) ? set.delete(m) : set.add(m); r.seasonMonths = [...set].sort((a, b) => a - b); editState.dirty = true; rerender(); },
@@ -6420,6 +6570,7 @@ const ACT = {
   fav: id => { const r = recipeById(id); if (!r) return; r.favorite = !r.favorite; EP.touch(r); change(r.favorite ? '★ Favorit.' : 'Kein Favorit mehr.'); },
   cookreset: () => { cookState.done.clear(); saveCookProgress(); const el = $('#cookview'), y = el.scrollTop; renderCook(); el.scrollTop = y; },
   closecook: () => closeCook(),
+  cookprep: () => cookPrepToggle(),
   cookpp: d => cookPortions(+d),
   cookedit: id => { closeCook(); ACT.edit(id); },
   /* Editor */
