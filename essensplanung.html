@@ -709,6 +709,17 @@ main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 .part .amt{color:var(--speckle);font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .part .xdel,.part .xsp{flex:none;width:44px;min-height:44px}
 .part.checked .pl,.part.checked .amt{text-decoration:line-through;color:var(--speckle)}
+/* Einkaufsliste anordnen */
+.laylist{margin-top:10px}
+.layrow{display:flex;align-items:center;gap:8px;min-height:52px;border-bottom:1px solid var(--line)}
+.layrow:last-child{border-bottom:none}
+.layrow .laynm{flex:1;min-width:0;font-weight:600}
+.layrow.off .laynm{color:var(--speckle)}
+.layrow .laymv{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--plate);color:var(--rim);font-size:20px;font-weight:700}
+.layrow .laymv:disabled{opacity:.3}
+.layrow .layfix{flex:none;width:52px}
+.suggbox .recenthead{margin-top:0}
+.btn.small.shoplaybtn{min-height:44px}
 
 </style>
 </head>
@@ -4755,7 +4766,42 @@ function addLaneOptions(d, opts) {
 }
 
 /* ---------- Einkauf (5.5) ---------- */
-const shopOpen = new Set();   // aufgeklappte Zeilen (Einzelposten)
+const shopOpen = new Set();
+/* Anordnung der Einkaufsliste (je Gerät): Reihenfolge der Blöcke und ausgeblendete Blöcke */
+const SHOP_BLOCKS = [['period', 'Zeitraum'], ['title', 'Überschrift'], ['list', 'Einkaufsliste'], ['add', 'Artikel hinzufügen'], ['sugg', 'Vorschläge'], ['pantry', 'Vorrat prüfen'], ['actions', 'Kopieren, Teilen, Drucken']];
+function shopLayout() {
+  let o = null; try { o = JSON.parse(localStorage.getItem('ep_shoplayout') || 'null'); } catch (e) {}
+  const keys = SHOP_BLOCKS.map(b => b[0]);
+  const order = ((o && o.order) || []).filter(k => keys.includes(k));
+  keys.forEach(k => { if (!order.includes(k)) order.splice(keys.indexOf(k), 0, k); });
+  return { order, hidden: ((o && o.hidden) || []).filter(k => keys.includes(k) && k !== 'list') };
+}
+function saveShopLayout(l) { try { localStorage.setItem('ep_shoplayout', JSON.stringify(l)); } catch (e) {} }
+function shopLayoutSheet() {
+  const draw = el => {
+    const l = shopLayout(), name = Object.fromEntries(SHOP_BLOCKS);
+    $('#laylist', el).innerHTML = l.order.map((k, i) => `<div class="layrow${l.hidden.includes(k) ? ' off' : ''}">
+      <span class="laynm">${esc(name[k])}</span>
+      <button class="laymv" data-mv="${k}|-1" ${i === 0 ? 'disabled' : ''} aria-label="${esc(name[k])} nach oben">↑</button>
+      <button class="laymv" data-mv="${k}|1" ${i === l.order.length - 1 ? 'disabled' : ''} aria-label="${esc(name[k])} nach unten">↓</button>
+      ${k === 'list' ? '<span class="layfix"></span>' : `<label class="switch"><input type="checkbox" data-show="${k}" ${l.hidden.includes(k) ? '' : 'checked'} aria-label="${esc(name[k])} zeigen"><i></i></label>`}</div>`).join('');
+    $$('[data-mv]', el).forEach(b => b.onclick = () => {
+      const [k, d] = b.dataset.mv.split('|'), l2 = shopLayout(), i = l2.order.indexOf(k), j = i + +d;
+      if (j < 0 || j >= l2.order.length) return;
+      [l2.order[i], l2.order[j]] = [l2.order[j], l2.order[i]]; saveShopLayout(l2); draw(el); rerender();
+    });
+    $$('[data-show]', el).forEach(c => c.onchange = () => {
+      const l2 = shopLayout(), k = c.dataset.show;
+      l2.hidden = c.checked ? l2.hidden.filter(x => x !== k) : l2.hidden.concat(k); saveShopLayout(l2); draw(el); rerender();
+    });
+  };
+  openSheet(`<h2>Einkaufsliste anordnen</h2><div id="laylist" class="laylist"></div>
+    <div class="btns two"><button class="btn" data-x="reset">Standard</button><button class="btn primary" data-x="no">Fertig</button></div>`, el => {
+    draw(el);
+    $('[data-x=no]', el).onclick = closeSheet;
+    $('[data-x=reset]', el).onclick = () => { try { localStorage.removeItem('ep_shoplayout'); } catch (e) {} draw(el); rerender(); };
+  });
+}   // aufgeklappte Zeilen (Einzelposten)
 function vShop() {
   const { from, to, mode } = curShopRange();
   const isWeek = EP.weekStart(from) === from && EP.addDays(from, 6) === to;
@@ -4787,7 +4833,8 @@ function vShop() {
     ? list.marketGroups.map(g => `<p class="cat">${esc(g.label)}</p>${g.items.map(r => item(r, showQ)).join('')}`).join('')
     : list.market.map(r => item(r, showQ)).join('');
   const nChecked = list.market.concat(...list.supermarket.map(g => g.items), ...list.drogerie.map(g => g.items), list.pantry).filter(r => r.checked).length;
-  return `<div class="seg shopmode noprint"><button data-act="shopmode" data-arg="all" aria-pressed="${mode === 'all'}">Alles Kommende</button><button data-act="shopmode" data-arg="week" aria-pressed="${mode !== 'all'}">Nach Woche</button></div>
+  const B = {
+    period: `<div class="seg shopmode noprint"><button data-act="shopmode" data-arg="all" aria-pressed="${mode === 'all'}">Alles Kommende</button><button data-act="shopmode" data-arg="week" aria-pressed="${mode !== 'all'}">Nach Woche</button></div>
     ${mode === 'all' ? `<div class="weekhead noprint"><div class="kw"><b>Ab heute</b><span>${EP.fmtRange(from, to)}</span></div></div>` : `<div class="weekhead noprint">
       <button class="iconbtn" data-act="shopwk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
       <div class="kw"><b>${isWeek ? 'KW ' + EP.isoWeek(from) : 'Eigener Zeitraum'}</b><span>${EP.fmtRange(from, to)}</span></div>
@@ -4798,34 +4845,43 @@ function vShop() {
         <label><span class="hint">Von</span><input class="in" type="date" id="sf" value="${from}"></label>
         <label><span class="hint">Bis</span><input class="in" type="date" id="st" value="${to}"></label>
       </div></details>
-    <h2 style="margin-top:18px" class="printonly-h">Einkauf ${EP.fmtRange(from, to)}</h2>
+`,
+    title: `    <h2 style="margin-top:18px" class="printonly-h">Einkauf ${EP.fmtRange(from, to)}</h2>
     <p class="sub">${!list.recipes.length ? 'In diesem Zeitraum ist nichts gekocht geplant.' : 'Für: ' + esc(list.recipes.join(', '))}</p>
 
-    ${list.warnings.length ? `<ul class="box warnbox" style="margin-top:12px">${list.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+`,
+    list: `    ${list.warnings.length ? `<ul class="box warnbox" style="margin-top:12px">${list.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
     <div class="shopcols">
     ${list.market.length ? `<section class="shopsec box">${head('MARKT', 'Markt', list.market.length)}${marketHtml}</section>` : ''}
     ${list.supermarket.length ? `<section class="shopsec box">${head('SUPERMARKT', 'Supermarkt')}${groups(list.supermarket)}</section>` : ''}
     ${list.drogerie.length ? `<section class="shopsec box">${head('DROGERIE', 'Drogerie')}${groups(list.drogerie)}</section>` : ''}
     </div>
-    <section class="shopsec box noprint"><h3>Weitere Artikel</h3>
-      <div class="quick" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. 2 Packungen Feta" enterkeyhint="done" autocomplete="off"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
-      ${recent.length ? `<div class="recenthead"><span class="hint">${recentEdit ? 'Antippen zum Entfernen' : 'Vorschläge'}</span>
-        <button class="btn quiet small" data-act="recentedit">${recentEdit ? 'Fertig' : 'Bearbeiten'}</button></div>
-      <div class="chips recentx${recentEdit ? ' editing' : ''}">${recent.map(t => recentEdit
-        ? `<button class="chip" data-act="recentdel" data-arg="${esc(t)}" aria-label="${esc(t)} aus den Vorschlägen entfernen">✕ ${esc(t)}</button>`
-        : (x => `<button class="chip${x.due ? ' due' : ''}" data-act="recentx" data-arg="${esc(t)}" aria-label="${esc(t)} hinzufügen${x.due ? `, wieder fällig (etwa alle ${x.every} Tage)` : x.n > 1 ? `, ${x.n}-mal gekauft` : ''}">${x.due ? '↻' : '+'} ${esc(t)}</button>`)(sugg.find(y => y.text === t))).join('')}</div>` : ''}
-    </section>
-    ${list.pantry.length ? `<details class="shopsec box"><summary>Vorrat prüfen (${list.pantry.length})</summary>${list.pantry.map(r => item(r, false)).join('')}</details>` : ''}
     <div class="btns two noprint shopclean ${nChecked || list.removedCount ? '' : 'hidden'}">
       <button class="btn ${nChecked ? '' : 'hidden'}" data-act="clearchecked">Abgehakte entfernen (${nChecked})</button>
       ${list.removedCount ? `<button class="btn quiet" data-act="showremoved">Entfernte zeigen (${list.removedCount})</button>` : ''}</div>
-    <div class="btns noprint">
+`,
+    add: `    <section class="shopsec box noprint"><h3>Weitere Artikel</h3>
+      <div class="quick" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. 2 Packungen Feta" enterkeyhint="done" autocomplete="off"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
+    </section>
+`,
+    sugg: recent.length ? `<section class="shopsec box noprint suggbox">${recent.length ? `<div class="recenthead"><span class="hint">${recentEdit ? 'Antippen zum Entfernen' : 'Vorschläge'}</span>
+        <button class="btn quiet small" data-act="recentedit">${recentEdit ? 'Fertig' : 'Bearbeiten'}</button></div>
+      <div class="chips recentx${recentEdit ? ' editing' : ''}">${recent.map(t => recentEdit
+        ? `<button class="chip" data-act="recentdel" data-arg="${esc(t)}" aria-label="${esc(t)} aus den Vorschlägen entfernen">✕ ${esc(t)}</button>`
+        : (x => `<button class="chip${x.due ? ' due' : ''}" data-act="recentx" data-arg="${esc(t)}" aria-label="${esc(t)} hinzufügen${x.due ? `, wieder fällig (etwa alle ${x.every} Tage)` : x.n > 1 ? `, ${x.n}-mal gekauft` : ''}">${x.due ? '↻' : '+'} ${esc(t)}</button>`)(sugg.find(y => y.text === t))).join('')}</div>` : ''}</section>` : '',
+    pantry: `    ${list.pantry.length ? `<details class="shopsec box"><summary>Vorrat prüfen (${list.pantry.length})</summary>${list.pantry.map(r => item(r, false)).join('')}</details>` : ''}
+`,
+    actions: `    <div class="btns noprint">
       <button class="btn primary" data-act="copyshop">Offene Zutaten kopieren</button>
       <div class="btns two" style="margin-top:0">
         ${navigator.share ? '<button class="btn" data-act="shareshop">Teilen</button>' : ''}
         <button class="btn" data-act="printshop" ${navigator.share ? '' : 'style="grid-column:1/-1"'}>Drucken</button>
       </div>
-    </div>`;
+    </div>`,
+  };
+  const lay = shopLayout();
+  return lay.order.filter(k => !lay.hidden.includes(k)).map(k => B[k] || '').join('\n')
+    + `<div class="btns noprint"><button class="btn quiet small shoplaybtn" data-act="shoplayout">Anordnen</button></div>`;
 }
 function shopText() { return EP.shoppingText(curShopList(), db.settings); }
 
@@ -5997,6 +6053,7 @@ function vSettings() {
       gRow({ icon: 'cart', color: '#30B0C7', label: 'Einkaufsorte', right: nNew ? `<span class="countbadge">${nNew}</span>` : '', act: 'to', arg: 'sources' }),
       gRow({ icon: 'shop', color: '#FF9500', label: 'Geschäfte', value: EP.liveStores(db.settings).length || 'Keine', act: 'to', arg: 'stores' }),
       gRow({ icon: 'cal', color: '#34C759', label: 'Markttage', value: marketDaysText(), act: 'marketdays' }),
+      gRow({ icon: 'cart', color: '#5856D6', label: 'Einkaufsliste anordnen', act: 'shoplayout' }),
       gRow({ icon: 'leaf', color: '#34C759', label: 'Zutaten', value: EP.live(db.ingredients).length, act: 'to', arg: 'ingredients' }),
       gRow({ icon: 'cycle', color: '#5856D6', label: 'Rotation ansehen', act: 'to', arg: 'rotation' }),
       gRow({ icon: 'sync', color: '#0A84FF', label: 'Geräteabgleich', value: syncVal, act: 'to', arg: 'sync' }),
@@ -6415,6 +6472,7 @@ const ACT = {
   cookside: id => { closeCook(); openCook(id); },
   emonth: m => { readEditForm(); m = +m; const r = editState.r; const set = new Set(r.seasonMonths || []); set.has(m) ? set.delete(m) : set.add(m); r.seasonMonths = [...set].sort((a, b) => a - b); editState.dirty = true; rerender(); },
   marketdays: () => marketDaysSheet(),
+  shoplayout: () => shopLayoutSheet(),
   marketday: a => {
     const days = new Set(marketDaysOf()); days.has(+a) ? days.delete(+a) : days.add(+a);
     db.settings.marketDays = days.size === 7 ? null : [...days].sort(); EP.touch(db.settings); change();
@@ -6801,7 +6859,7 @@ const BIND = {
       const f = $('#sf', m).value, t = $('#st', m).value;
       if (f && t && f <= t) { shopRange = { mode: 'custom', from: f, to: t }; rerender(); }
     };
-    $('#sf', m).onchange = setRange; $('#st', m).onchange = setRange;
+    if ($('#sf', m)) { $('#sf', m).onchange = setRange; $('#st', m).onchange = setRange; }
     const updClean = () => {   // Knopf „Abgehakte entfernen“ ohne Neuaufbau (Scrollposition bleibt)
       const n = $$('[data-check]:checked, [data-extra]:checked', m).length, b = $('[data-act=clearchecked]', m), w = $('.shopclean', m);
       b.textContent = `Abgehakte entfernen (${n})`; b.classList.toggle('hidden', !n);
