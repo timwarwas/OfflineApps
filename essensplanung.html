@@ -720,6 +720,17 @@ main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 .layrow .layfix{flex:none;width:52px}
 .suggbox .recenthead{margin-top:0}
 .btn.small.shoplaybtn{min-height:44px}
+/* Rezept-Editor: Anleitung in einzelnen Schritten */
+.inshead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.inshead .btn.small{min-height:44px}
+.steplist{display:flex;flex-direction:column;gap:12px}
+.stepedit{background:var(--plate);border:1px solid var(--line);border-radius:16px;padding:10px 10px 12px}
+.stephead{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.stephead .spill{margin-right:auto;font-size:14px;padding:6px 12px}
+.stepbtn{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--enamel);color:var(--rim);font-size:18px;font-weight:700}
+.stepbtn.del{color:var(--tomato)}
+.stepbtn:disabled{opacity:.3}
+textarea.in.stepin{min-height:64px;resize:none;overflow:hidden;line-height:1.4}
 
 </style>
 </head>
@@ -1897,7 +1908,7 @@ const EP = (function () {
   /* ---------- 5.5 Einkaufsliste ---------- */
   const CATEGORIES = [
     ['GEMUESE', 'Gemüse', 'MARKT'], ['OBST', 'Obst', 'MARKT'], ['KRAEUTER', 'Frische Kräuter', 'MARKT'],
-    ['EIER', 'Eier', 'MARKT'], ['BACKWAREN', 'Brot & Backwaren', 'SUPERMARKT'],
+    ['EIER', 'Eier', 'MARKT'], ['BACKWAREN', 'Brot & Backwaren', 'SUPERMARKT'], ['FRUEHSTUECK', 'Frühstück', 'SUPERMARKT'],
     ['FLEISCH', 'Fleisch & Wurst', 'SUPERMARKT'], ['FISCH', 'Fisch', 'SUPERMARKT'],
     ['MILCHPRODUKTE', 'Milchprodukte', 'SUPERMARKT'], ['KAESE', 'Käse', 'SUPERMARKT'],
     ['TROCKENWAREN', 'Nudeln, Reis & Hülsenfrüchte', 'SUPERMARKT'],
@@ -1982,11 +1993,12 @@ const EP = (function () {
     FISCH: 'lachs thunfisch fisch garnele garnelen kabeljau forelle seelachs scampi krabben',
     MILCHPRODUKTE: 'milch sahne schlagsahne joghurt quark magerquark butter schmand crème fraîche creme fraiche saure sahne buttermilch kefir',
     KAESE: 'käse parmesan mozzarella feta gouda emmentaler ricotta halloumi frischkäse bergkäse reibekäse mascarpone pecorino',
-    TROCKENWAREN: 'nudel nudeln suppennudeln spaghetti pasta penne fusilli lasagneplatten reis basmatireis risottoreis linsen rote linsen mehl weizenmehl zucker puderzucker vanillezucker haferflocken couscous bulgur quinoa grieß backpulver speisestärke stärke polenta nüsse mandeln haselnüsse walnüsse kakao schokolade trockenhefe hefe paniermehl semmelbrösel',
-    KONSERVEN: 'gehackte tomaten passierte tomaten tomatenmark kokosmilch kidneybohnen bohnen kichererbsen dosenmais oliven pesto senf ketchup marmelade honig kapern essiggurken thunfisch dose',
+    TROCKENWAREN: 'nudel nudeln suppennudeln spaghetti pasta penne fusilli lasagneplatten reis basmatireis risottoreis linsen rote linsen mehl weizenmehl zucker puderzucker vanillezucker couscous bulgur quinoa grieß backpulver speisestärke stärke polenta nüsse mandeln haselnüsse walnüsse kakao schokolade trockenhefe hefe paniermehl semmelbrösel',
+    KONSERVEN: 'gehackte tomaten passierte tomaten tomatenmark kokosmilch kidneybohnen bohnen kichererbsen dosenmais oliven pesto senf ketchup kapern essiggurken thunfisch dose',
+    FRUEHSTUECK: 'kaffee kaffeebohnen filterkaffee instantkaffee espresso kaffeepads kaffeekapseln kapseln tee teebeutel früchtetee kräutertee pfefferminztee kamillentee müsli granola cornflakes haferflocken porridge cerealien frühstücksflocken marmelade konfitüre gelee honig nutella nussnougatcreme erdnussbutter brotaufstrich aufstrich ahornsirup kakaopulver',
     TIEFKUEHL: 'tk tiefkühl erbsen tiefkühlerbsen blätterteig eis eiscreme tiefkühlpizza tk-pizza pommes fischstäbchen rahmspinat',
-    SUESSES: 'schokolade schoki chips kekse keks gummibärchen süßigkeiten riegel müsliriegel nüsse erdnüsse cashews mandeln popcorn salzstangen cracker pralinen bonbons kaugummi nutella',
-    GETRAENKE: 'wasser mineralwasser sprudel saft apfelsaft orangensaft cola limo limonade schorle bier radler wein rotwein weißwein rosé sekt prosecco tee kaffee kaffeebohnen espresso kaffeepads kapseln kakao eistee energydrink sirup',
+    SUESSES: 'schokolade schoki chips kekse keks gummibärchen süßigkeiten riegel müsliriegel nüsse erdnüsse cashews mandeln popcorn salzstangen cracker pralinen bonbons kaugummi',
+    GETRAENKE: 'wasser mineralwasser sprudel saft apfelsaft orangensaft cola limo limonade schorle bier radler wein rotwein weißwein rosé sekt prosecco kakao eistee energydrink sirup',
     HAUSHALT: 'spülmittel geschirrspültabs spültabs spülmaschinentabs tabs klarspüler spülmaschinensalz regeneriersalz waschmittel weichspüler küchenrolle küchenpapier müllbeutel müllsäcke alufolie frischhaltefolie backpapier gefrierbeutel schwamm schwämme spülschwamm putzmittel allzweckreiniger glasreiniger wc-reiniger badreiniger entkalker batterien glühbirne kerzen servietten teelichter streichhölzer',
     TIER: 'katzenfutter hundefutter katzenstreu leckerli futter vogelfutter',
     DROGERIE: 'zahnpasta zahnbürste zahnseide mundspülung shampoo spülung duschgel seife flüssigseife deo deodorant rasierer rasierklingen rasierschaum sonnencreme bodylotion handcreme gesichtscreme taschentücher toilettenpapier klopapier watte wattepads wattestäbchen pflaster tampons binden slipeinlagen windeln feuchttücher haargel haarspray lippenpflege labello nagellack kosmetiktücher abschminktücher kontaktlinsen kopfschmerztabletten ibuprofen paracetamol vitamine',
@@ -2831,6 +2843,12 @@ function repairDb(d) {
   d.settings.lanes = Object.assign({}, e.settings.lanes, d.settings.lanes || {});
   ['LUNCH', 'CAKE'].forEach(l => { if (!d.settings.lanes[l] || !Array.isArray(d.settings.lanes[l].days)) d.settings.lanes[l] = deep(e.settings.lanes[l]); });
   d.ingredients.forEach(i => { if (i.reviewed === undefined) i.reviewed = true; });
+  // einmalig (Nov. 2026): neue Kategorie Frühstück – Kaffee, Tee, Müsli, Marmelade … aus ihrer alten automatischen Kategorie holen
+  d.ingredients.forEach(i => {
+    if (i.cat2) return;
+    if (['GETRAENKE', 'KONSERVEN', 'SUESSES', 'TROCKENWAREN'].includes(i.category) && EP.guessCategory(i.name) === 'FRUEHSTUECK') { i.category = 'FRUEHSTUECK'; EP.touch(i); }
+    i.cat2 = 1;
+  });
   d.shopping = d.shopping && typeof d.shopping === 'object' ? d.shopping : e.shopping;
   d.recipes.forEach(r => {
     if (!Array.isArray(r.ingredients)) r.ingredients = [];
@@ -5252,8 +5270,8 @@ function vEdit() {
     ${rows}
     <button class="btn" data-act="rowadd" style="margin-top:10px">Zutat hinzufügen</button>
 
-    <h3>Anleitung</h3>
-    <textarea class="in" id="e-ins" placeholder="Eine Zeile pro Schritt, z. B.&#10;1. Zwiebeln fein würfeln&#10;2. In Olivenöl anschwitzen">${esc(r.instructions)}</textarea>
+    <div class="inshead"><h3>Anleitung</h3><button class="btn quiet small" data-act="estepmode">${editState.insText ? 'Einzelne Schritte' : 'Als Text bearbeiten'}</button></div>
+    ${editState.insText ? `<textarea class="in" id="e-ins" placeholder="Eine Zeile pro Schritt, z. B.&#10;1. Zwiebeln fein würfeln&#10;2. In Olivenöl anschwitzen">${esc(r.instructions)}</textarea>` : stepEditor()}
     <div class="row" style="gap:10px">
       <label class="field grow"><span>Zubereitungszeit (min)</span><input class="in" id="e-time" inputmode="numeric" value="${r.prepTimeMinutes || ''}"></label>
       <label class="field grow"><span>Tags</span><input class="in" id="e-tags" value="${esc((r.tags || []).join(', '))}" placeholder="vegetarisch, schnell"></label>
@@ -5277,6 +5295,32 @@ function vEdit() {
       <button class="btn danger" data-act="archive">Rezept löschen</button>`}
     </div>`;
 }
+/* Anleitung in einzelne Schritte zerlegen („1. …“-Zeilen; Folgezeilen gehören zum Schritt davor) und wieder zusammensetzen */
+function splitSteps(text) {
+  const intro = [], steps = [];
+  const lines = String(text || '').split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.some(l => /^\d+[.)]\s+/.test(l))) return { intro: '', steps: lines };
+  lines.forEach(l => { const m = l.match(/^\d+[.)]\s+(.*)$/); if (m) steps.push(m[1]); else if (steps.length) steps[steps.length - 1] += ' ' + l; else intro.push(l); });
+  return { intro: intro.join('\n'), steps };
+}
+function joinSteps(intro, steps) {
+  const st = (steps || []).map(t => String(t).replace(/\s*\n+\s*/g, ' ').trim()).filter(Boolean);
+  return [String(intro || '').trim()].filter(Boolean).concat(st.map((t, i) => `${i + 1}. ${t}`)).join('\n');
+}
+function stepEditor() {
+  if (!editState.steps) { const sp = splitSteps(editState.r.instructions); editState.steps = sp.steps.length ? sp.steps : ['']; editState.intro = sp.intro; }
+  const st = editState.steps;
+  return `${editState.intro ? `<label class="field"><span>Vorab</span><textarea class="in stepin" id="e-intro" rows="2">${esc(editState.intro)}</textarea></label>` : ''}
+    <div id="e-steps" class="steplist">${st.map((t, i) => `<div class="stepedit">
+      <div class="stephead"><span class="spill">Schritt ${i + 1}</span>
+        <button class="stepbtn" data-act="estepmv" data-arg="${i}|-1" ${i ? '' : 'disabled'} aria-label="Schritt ${i + 1} nach oben">↑</button>
+        <button class="stepbtn" data-act="estepmv" data-arg="${i}|1" ${i < st.length - 1 ? '' : 'disabled'} aria-label="Schritt ${i + 1} nach unten">↓</button>
+        <button class="stepbtn del" data-act="estepdel" data-arg="${i}" aria-label="Schritt ${i + 1} löschen">✕</button></div>
+      <textarea class="in stepin" data-step="${i}" rows="2" placeholder="${i ? '' : 'z. B. Zwiebeln fein würfeln'}">${esc(t)}</textarea></div>`).join('')}</div>
+    <button class="btn" data-act="estepadd" style="margin-top:10px">Schritt hinzufügen</button>`;
+}
+function stepFocus(i) { setTimeout(() => { const t = $(`#e-steps [data-step="${i}"]`); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }, 30); }
+function growSteps() { $$('#main .stepin').forEach(t => { const g = () => { t.style.height = 'auto'; t.style.height = Math.max(64, t.scrollHeight + 2) + 'px'; }; g(); t.addEventListener('input', g); }); }
 function liveDaysText(r) {
   return `= ${daysLabel(EP.daysFor(r, db.settings))} bei ${db.settings.portionsPerDay} Portionen/Tag${r.daysOverride ? ' (fest vorgegeben)' : ''}`;
 }
@@ -5287,7 +5331,12 @@ function readEditForm() {
   if ($('#e-days')) { const d = parseInt(v('e-days'), 10); r.daysOverride = d > 0 ? d : null; }
   if ($('#e-rot')) r.inRotation = $('#e-rot').checked;
   if ($('#e-fav')) r.favorite = $('#e-fav').checked;
-  r.instructions = v('e-ins') || '';
+  if ($('#e-ins')) r.instructions = v('e-ins') || '';
+  else if ($('#e-steps')) {
+    editState.steps = $$('#e-steps [data-step]').map(t => t.value);
+    if ($('#e-intro')) editState.intro = v('e-intro');
+    r.instructions = joinSteps(editState.intro, editState.steps);
+  }
   const t = parseInt(v('e-time'), 10); r.prepTimeMinutes = t > 0 ? t : null;
   r.tags = (v('e-tags') || '').split(',').map(x => x.trim()).filter(Boolean);
   r.notes = v('e-notes') || '';
@@ -6461,6 +6510,10 @@ const ACT = {
   lane: a => { const [d, l] = a.split('|'); weekStartISO = EP.weekStart(d); laneActions(d, l); },
   extra: id => { const x = EP.live((draft ? draft.clone : db).plan).find(p => p.id === id) || EP.live(db.plan).find(p => p.id === id); if (x) weekStartISO = EP.weekStart(x.date); extraActions(id); },
   shopwk: n => { const f = EP.addDays(EP.weekStart(curShopRange().from), +n); shopRange = { mode: 'week', from: f, to: EP.addDays(f, 6) }; rerender(); },
+  estepadd: () => { readEditForm(); editState.steps.push(''); editState.dirty = true; rerender(); stepFocus(editState.steps.length - 1); },
+  estepdel: i => { readEditForm(); editState.steps.splice(+i, 1); if (!editState.steps.length) editState.steps.push(''); editState.r.instructions = joinSteps(editState.intro, editState.steps); editState.dirty = true; rerender(); },
+  estepmv: a => { readEditForm(); const [i, d] = a.split('|').map(Number), j = i + d, st = editState.steps; if (j < 0 || j >= st.length) return; [st[i], st[j]] = [st[j], st[i]]; editState.r.instructions = joinSteps(editState.intro, st); editState.dirty = true; const y = scrollY; rerender(); scrollTo(0, y); },
+  estepmode: () => { readEditForm(); editState.insText = !editState.insText; if (!editState.insText) editState.steps = null; rerender(); },
   ekind: k => { readEditForm(); const r = editState.r; if (EP.laneOf(r) === k) return; if (!EP.ROTATES(EP.laneOf(r))) r.inRotation = true; if (!EP.ROTATES(k)) r.inRotation = false; if (k !== 'MAIN' && k !== 'SPECIAL') r.daysOverride = null; r.kind = k; if (k === 'CAKE' && r.servings <= 4) r.servings = 12; if (k !== 'CAKE' && r.servings > 8 && editState.isNew) r.servings = db.settings.portionsPerDay; editState.dirty = true; rerender(); },
   esideadd: () => {
     readEditForm();
@@ -6902,6 +6955,7 @@ const BIND = {
   },
   edit: m => {
     $$('input,textarea,select', m).forEach(el => el.addEventListener('input', () => { if (editState) editState.dirty = true; }));
+    growSteps();
     const refreshRow = el => {
       const rowEl = el.closest('[data-row]');
       const name = $('[data-f=name]', rowEl).value.trim();
