@@ -700,7 +700,7 @@ main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 .item .partsbtn svg{width:18px;height:18px;transition:transform .15s}
 .item .partsbtn[aria-expanded=true] svg{transform:rotate(180deg)}
 .item .partsbtn:active{background:var(--rim-soft)}
-.item.hasparts{border-bottom-style:dashed}
+.item.hasparts:has(+.parts){border-bottom-style:dashed}
 .parts{margin:0 0 6px 34px;padding:2px 0 4px;border-left:2px solid var(--rim-soft);padding-left:12px}
 .part{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;border-bottom:1px solid var(--line)}
 .part:last-child{border-bottom:none}
@@ -2353,6 +2353,9 @@ const EP = (function () {
       }
       delete r._open; if (r.parts) r.parts.forEach(q => delete q.xp);
     });
+    // Markttage: an anderen Tagen kommt alles vom Markt mit in den Supermarkt (z. B. nur samstags auf den Markt)
+    const md = db.settings && db.settings.marketDays, marketToday = !Array.isArray(md) || md.includes(parseISO(today).getDay());
+    if (!marketToday) rows.forEach(r => { if (r.source === 'MARKT') r.source = 'SUPERMARKT'; });
     const stores = {}; STORE_KINDS.forEach(([k]) => { stores[k] = storeFor(db.settings, k, st); });
     /* Gruppen nach der Reihenfolge des Geschäfts; eigene Bereiche ziehen ihre Artikel aus den Kategorien */
     const storeGroups = (src, store) => {
@@ -2383,7 +2386,7 @@ const EP = (function () {
     const pantry = rows.filter(r => r.source === 'VORRAT').sort((a, b) => cmpDe(a.name, b.name))
       .map(r => ({ key: r.key, ingId: r.ingId, units: r.units, name: r.name, checked: r.checked, carry: r.carry, dishes: r.dishes, parts: r.parts, extras: r.extras }));
     return { from, to, recipes: names, market, marketGroups, supermarket, drogerie, pantry, extraItems: extras, warnings,
-      removedCount: removedIngs.size, stores, carried: rows.filter(r => r.carry && !r.checked).length };
+      removedCount: removedIngs.size, stores, marketToday, carried: rows.filter(r => r.carry && !r.checked).length };
   }
   /* Text zum Teilen/Kopieren: nur die offenen Zutaten, eine pro Zeile – ohne Überschrift, Gerichte oder Kategorien
      (so lässt es sich z. B. direkt in die Erinnerungen einfügen). Vorrat und Hinweise bleiben weg. */
@@ -5993,6 +5996,7 @@ function vSettings() {
     + gGroup('Verwalten', [
       gRow({ icon: 'cart', color: '#30B0C7', label: 'Einkaufsorte', right: nNew ? `<span class="countbadge">${nNew}</span>` : '', act: 'to', arg: 'sources' }),
       gRow({ icon: 'shop', color: '#FF9500', label: 'Geschäfte', value: EP.liveStores(db.settings).length || 'Keine', act: 'to', arg: 'stores' }),
+      gRow({ icon: 'cal', color: '#34C759', label: 'Markttage', value: marketDaysText(), act: 'marketdays' }),
       gRow({ icon: 'leaf', color: '#34C759', label: 'Zutaten', value: EP.live(db.ingredients).length, act: 'to', arg: 'ingredients' }),
       gRow({ icon: 'cycle', color: '#5856D6', label: 'Rotation ansehen', act: 'to', arg: 'rotation' }),
       gRow({ icon: 'sync', color: '#0A84FF', label: 'Geräteabgleich', value: syncVal, act: 'to', arg: 'sync' }),
@@ -6021,6 +6025,17 @@ function laneDaysSheet(l) {
     <div class="btns"><button class="btn primary" data-x="no">Fertig</button></div>`, el => { $('[data-x=no]', el).onclick = closeSheet; });
 }
 
+/* Markttage: an anderen Tagen steht Markt-Ware beim Supermarkt */
+const marketDaysOf = () => Array.isArray(db.settings.marketDays) ? db.settings.marketDays : [0, 1, 2, 3, 4, 5, 6];
+function marketDaysText() {
+  const d = marketDaysOf();
+  return d.length === 7 ? 'Jeden Tag' : !d.length ? 'Nie' : [1, 2, 3, 4, 5, 6, 0].filter(x => d.includes(x)).map(x => DAYN[x]).join(', ');
+}
+function marketDaysSheet() {
+  openSheet(`<h2>Markttage</h2>
+    <div class="chips daypick">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button class="chip" data-act="marketday" data-arg="${d}" aria-pressed="${marketDaysOf().includes(d)}">${DAYN[d]}</button>`).join('')}</div>
+    <div class="btns"><button class="btn primary" data-x="no">Fertig</button></div>`, el => { $('[data-x=no]', el).onclick = closeSheet; });
+}
 /* ---------- Einkaufsorte ---------- */
 const SRC = [['MARKT', 'Markt'], ['SUPERMARKT', 'Supermarkt'], ['DROGERIE', 'Drogerie'], ['VORRAT', 'Vorrat']];
 function srcSeg(act, id, cur, extraCls) {
@@ -6399,6 +6414,12 @@ const ACT = {
   sideoff: d => { weekStartISO = EP.weekStart(d); undoable(() => { dismissSides(weekEntries(EP.weekStart(d)), d); return 'Diesmal ohne Beilage.'; }); },
   cookside: id => { closeCook(); openCook(id); },
   emonth: m => { readEditForm(); m = +m; const r = editState.r; const set = new Set(r.seasonMonths || []); set.has(m) ? set.delete(m) : set.add(m); r.seasonMonths = [...set].sort((a, b) => a - b); editState.dirty = true; rerender(); },
+  marketdays: () => marketDaysSheet(),
+  marketday: a => {
+    const days = new Set(marketDaysOf()); days.has(+a) ? days.delete(+a) : days.add(+a);
+    db.settings.marketDays = days.size === 7 ? null : [...days].sort(); EP.touch(db.settings); change();
+    $$(`#scrim [data-act=marketday][data-arg="${a}"]`).forEach(b => b.setAttribute('aria-pressed', days.has(+a)));
+  },
   laneday: a => {
     const [l, d] = a.split('|'); const days = new Set(laneDays(l)); days.has(+d) ? days.delete(+d) : days.add(+d);
     db.settings.lanes = Object.assign({}, db.settings.lanes, { [l]: { days: [...days] } }); EP.touch(db.settings); change();
