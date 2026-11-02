@@ -2088,10 +2088,15 @@ const EP = (function () {
   /* vollständige Reihenfolge eines Geschäfts: gespeicherte Reihenfolge, dann fehlende Kategorien und Bereiche */
   function storeOrder(store, settings) {
     const secs = new Map((store.sections || []).map(x => [x.id, x]));
-    const cats = CATEGORIES.filter(c => { const src = categorySource(c.key, settings); return src === store.kind || (c.key === 'SONSTIGES' && store.kind !== 'MARKT'); }).map(c => c.key);
+    // Supermarkt kennt auch alles vom Markt (Gemüse, Obst …): kommt an Nicht-Markttagen oder ohne Markt dorthin
+    const fromMarket = c => store.kind === 'SUPERMARKT' && categorySource(c.key, settings) === 'MARKT';
+    const cats = CATEGORIES.filter(c => { const src = categorySource(c.key, settings); return src === store.kind || fromMarket(c) || (c.key === 'SONSTIGES' && store.kind !== 'MARKT'); }).map(c => c.key);
     const ok = k => k.startsWith('S:') ? secs.has(k.slice(2)) : cats.includes(k);
     const out = [];
     (store.order || []).forEach(k => { if (ok(k) && !out.includes(k)) out.push(k); });
+    // noch nicht einsortierte Markt-Kategorien vorn einfügen (im Supermarkt meist gleich am Eingang)
+    const mk = CATEGORIES.filter(c => fromMarket(c) && !out.includes(c.key)).map(c => c.key);
+    out.unshift(...mk);
     cats.forEach(k => { if (!out.includes(k)) out.push(k); });
     secs.forEach((x, id) => { if (!out.includes('S:' + id)) out.push('S:' + id); });
     return out.map(k => k.startsWith('S:') ? { key: k, label: secs.get(k.slice(2)).name, section: true, id: k.slice(2) } : { key: k, label: CAT[k].label, section: false });
