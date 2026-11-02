@@ -4718,12 +4718,12 @@ function vShop() {
   const showQ = db.settings.marketListShowQuantities;
   const item = (r, withAmt) => r.extra != null
     ? `<div class="item xitem ${r.checked ? 'checked' : ''}"><input type="checkbox" data-extra="${r.extra}" ${r.checked ? 'checked' : ''} aria-label="${esc(r.name)} abhaken">
-      <button class="nm xname" data-act="xcat" data-arg="${r.extra}" aria-label="${esc(r.name)}: bearbeiten oder einsortieren">${esc(r.name)}<small>${r.carry && !r.checked ? 'zusätzlich · noch offen von vorher' : 'zusätzlich'}</small></button>
+      <button class="nm xname" data-act="xcat" data-arg="${r.extra}" aria-label="${esc(r.name)}: bearbeiten oder einsortieren">${esc(r.name)}<small>zusätzlich</small></button>
       ${r.amount ? `<span class="amt xamt">${esc(r.amount)}</span>` : ''}
       <button class="btn quiet small noprint xedit" data-act="xedit" data-arg="${r.extra}" aria-label="${esc(r.name)} bearbeiten">${ICON.opencil}</button>
 <button class="btn quiet small noprint xdel" data-act="delextra" data-arg="${r.extra}" aria-label="${esc(r.name)} entfernen">✕</button></div>`
     : `<label class="item ${r.checked ? 'checked' : ''}"><input type="checkbox" data-check="${esc(r.key)}" ${r.checked ? 'checked' : ''}>
-    <span class="nm">${esc(r.name)}${(r.carry && !r.checked) || (r.dishes && r.dishes.length) ? `<small class="dish">${[r.carry && !r.checked ? '<span class="carry">noch offen von vorher</span>' : '', r.dishes && r.dishes.length ? 'für ' + r.dishes.map(esc).join(', ') : ''].filter(Boolean).join(' · ')}</small>` : ''}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}</label>`;
+    <span class="nm">${esc(r.name)}${r.dishes && r.dishes.length ? `<small class="dish">für ${r.dishes.map(esc).join(', ')}</small>` : ''}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}</label>`;
   const groups = gs => gs.map(g => `<p class="cat">${esc(g.label)}</p>${g.items.map(r => item(r, true)).join('')}`).join('');
   const onList = new Set(list.extraItems.map(x => EP.normExtra(x.text)));
   const sugg = EP.extraSuggestions(extraStats(), EP.todayISO(), onList, 8), recent = sugg.map(x => x.text);
