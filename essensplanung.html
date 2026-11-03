@@ -731,6 +731,10 @@ main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env
 .stepbtn.del{color:var(--tomato)}
 .stepbtn:disabled{opacity:.3}
 textarea.in.stepin{min-height:64px;resize:none;overflow:hidden;line-height:1.4}
+/* Vorschläge einklappen */
+.recenthead .foldbtn{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--enamel);color:var(--rim);font-size:24px;font-weight:600;line-height:1;display:grid;place-items:center}
+.recenthead .hint{flex:1}
+.suggbox.folded .recenthead .hint{color:var(--speckle)}
 
 </style>
 </head>
@@ -4799,6 +4803,9 @@ function shopLayout() {
   keys.forEach(k => { if (!order.includes(k)) order.splice(keys.indexOf(k), 0, k); });
   return { order, hidden: ((o && o.hidden) || []).filter(k => keys.includes(k) && k !== 'list') };
 }
+/* Vorschläge eingeklappt (je Gerät) */
+function suggFolded() { try { return localStorage.getItem('ep_suggfold') === '1'; } catch (e) { return false; } }
+function setSuggFolded(on) { try { on ? localStorage.setItem('ep_suggfold', '1') : localStorage.removeItem('ep_suggfold'); } catch (e) {} }
 function saveShopLayout(l) { try { localStorage.setItem('ep_shoplayout', JSON.stringify(l)); } catch (e) {} }
 function shopLayoutSheet() {
   const draw = el => {
@@ -4887,11 +4894,12 @@ function vShop() {
       <div class="quick" style="margin-top:8px"><input class="in" id="extra" placeholder="z. B. 2 Packungen Feta" enterkeyhint="done" autocomplete="off"><button class="btn primary" data-act="addextra" aria-label="Hinzufügen">+</button></div>
     </section>
 `,
-    sugg: recent.length ? `<section class="shopsec box noprint suggbox">${recent.length ? `<div class="recenthead"><span class="hint">${recentEdit ? 'Antippen zum Entfernen' : 'Vorschläge'}</span>
-        <button class="btn quiet small" data-act="recentedit">${recentEdit ? 'Fertig' : 'Bearbeiten'}</button></div>
-      <div class="chips recentx${recentEdit ? ' editing' : ''}">${recent.map(t => recentEdit
+    sugg: recent.length ? `<section class="shopsec box noprint suggbox${suggFolded() ? ' folded' : ''}">${recent.length ? `<div class="recenthead"><span class="hint">${suggFolded() ? `Vorschläge (${recent.length})` : recentEdit ? 'Antippen zum Entfernen' : 'Vorschläge'}</span>
+        ${suggFolded() ? '' : `<button class="btn quiet small" data-act="recentedit">${recentEdit ? 'Fertig' : 'Bearbeiten'}</button>`}
+        <button class="foldbtn" data-act="suggfold" aria-expanded="${!suggFolded()}" aria-label="Vorschläge ${suggFolded() ? 'aufklappen' : 'einklappen'}">${suggFolded() ? '+' : '−'}</button></div>
+      ${suggFolded() ? '' : `<div class="chips recentx${recentEdit ? ' editing' : ''}">${recent.map(t => recentEdit
         ? `<button class="chip" data-act="recentdel" data-arg="${esc(t)}" aria-label="${esc(t)} aus den Vorschlägen entfernen">✕ ${esc(t)}</button>`
-        : (x => `<button class="chip${x.due ? ' due' : ''}" data-act="recentx" data-arg="${esc(t)}" aria-label="${esc(t)} hinzufügen${x.due ? `, wieder fällig (etwa alle ${x.every} Tage)` : x.n > 1 ? `, ${x.n}-mal gekauft` : ''}">${x.due ? '↻' : '+'} ${esc(t)}</button>`)(sugg.find(y => y.text === t))).join('')}</div>` : ''}</section>` : '',
+        : (x => `<button class="chip${x.due ? ' due' : ''}" data-act="recentx" data-arg="${esc(t)}" aria-label="${esc(t)} hinzufügen${x.due ? `, wieder fällig (etwa alle ${x.every} Tage)` : x.n > 1 ? `, ${x.n}-mal gekauft` : ''}">${x.due ? '↻' : '+'} ${esc(t)}</button>`)(sugg.find(y => y.text === t))).join('')}</div>`}` : ''}</section>` : '',
     pantry: `    ${list.pantry.length ? `<details class="shopsec box"><summary>Vorrat prüfen (${list.pantry.length})</summary>${list.pantry.map(r => item(r, false)).join('')}</details>` : ''}
 `,
     actions: `    <div class="btns noprint">
@@ -6652,6 +6660,7 @@ const ACT = {
   },
   recentx: t => { const res = addExtraItem(t); change(res && res.exists ? `${res.name} steht schon auf der Liste.` : `${t} hinzugefügt`); },
   recentedit: () => { recentEdit = !recentEdit; rerender(); },
+  suggfold: () => { setSuggFolded(!suggFolded()); recentEdit = false; const y = scrollY; rerender(); scrollTo(0, y); },
   storepick: k => storePickSheet(k),
   storeadd: k => storeAddSheet(k),
   storeopen: id => go('store', { id }),
