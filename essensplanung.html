@@ -1582,10 +1582,11 @@ const EP = (function () {
   function specialDays(settings) { const d = settings && settings.specialDays; return Array.isArray(d) ? d : [0]; }
   /* Gäste: Personen am Kochtag statt der üblichen Portionen pro Tag. Die zusätzlichen (oder fehlenden) Portionen
      werden nur für diesen Tag mitgekocht – die Reste bleiben gleich. */
+  /* Mengenfaktor eines Kochtags: eigene Portionenzahl (p.portions, z. B. 2 statt 4) und Gäste am Kochtag (p.guests) */
   function guestFactor(p, r, settings) {
-    if (!p || !p.guests || !r || laneOf(r) === 'CAKE') return 1;
+    if (!p || (!p.guests && !p.portions) || !r || laneOf(r) === 'CAKE') return 1;
     const sv = r.servings || (settings && settings.portionsPerDay) || 2, pp = (settings && settings.portionsPerDay) || 2;
-    return Math.max(0.25, (sv + p.guests - pp) / sv);
+    return Math.max(0.1, ((p.portions || sv) + (p.guests ? p.guests - pp : 0)) / sv);
   }
   const ROTATES = k => LANES.some(l => l.key === k);
   const laneOf = x => (x && (x.lane || x.kind)) || 'MAIN';
@@ -3336,13 +3337,14 @@ function nextDifferent(src, ex, lane, month, notRecipe) {
 /* ---------- Plan (übernommene Einträge, wirken sofort) ---------- */
 function placeBlock(start, o) {
   const recipe = recipeById(o.recipeId);
-  const n = daysOf(recipe);
+  const n = o.portions ? Math.max(1, Math.floor(o.portions / db.settings.portionsPerDay)) : daysOf(recipe);
   const dates = EP.nextFreeDates(start, n, mainDates());
   const bid = o.blockId || EP.uuid();
   dates.forEach((date, i) => db.plan.push(EP.touch({
     id: EP.uuid(), date, lane: 'MAIN', type: i ? 'LEFTOVER' : 'COOK', recipeId: recipe.id, blockId: bid,
     dayIndex: i + 1, dayCount: n, rotationEntryId: o.rotationEntryId || null,
     source: o.rotationEntryId ? 'ROTATION' : 'MANUAL', locked: !!o.locked, status: 'PLANNED', note: '', deleted: false,
+    ...(i === 0 && o.portions ? { portions: o.portions } : {}), ...(i === 0 && o.guests ? { guests: o.guests } : {}),
   })));
   if (o.rotationEntryId) { const e = rotById(null, o.rotationEntryId); if (e && e.status !== 'DONE') EP.planEntry(e); }
   return dates;
@@ -3398,8 +3400,10 @@ function swapBlock(bid) {
   return recipeById(next.recipeId);
 }
 function moveBlock(bid, newStart) {
+  const cook = blockEntries(bid).find(x => x.type === 'COOK');
+  const keep = cook ? { portions: cook.portions || null, guests: cook.guests || null } : {};
   const info = removeBlock(bid, false);
-  if (info) placeBlock(newStart, Object.assign({}, info, { blockId: bid }));
+  if (info) placeBlock(newStart, Object.assign({}, info, keep, { blockId: bid }));
 }
 /* ---------- Reste einzeln verschieben, streichen, weiterrutschen ---------- */
 /* Tage eines Gerichts neu durchzählen (Kochtag 1/n, Reste 2/n …) */
@@ -3656,6 +3660,25 @@ function placeSpecial(d, id, slot) {
 function setGuests(entryId, n) {
   const p = db.plan.find(x => x.id === entryId && !x.deleted); if (!p) return;
   p.guests = n && n !== db.settings.portionsPerDay ? n : null; EP.touch(p);
+}
+/* Portionen für einen Kochtag (null = wie im Rezept). Beim Hauptgericht passen sich die Resttage an:
+   weniger Portionen → hintere Resttage fallen weg, mehr → zusätzliche Resttage auf den nächsten freien Tagen. */
+function setPortions(entryId, n) {
+  const p = db.plan.find(x => x.id === entryId && !x.deleted); if (!p) return 0;
+  const r = recipeById(p.recipeId), sv = (r && r.servings) || db.settings.portionsPerDay;
+  p.portions = n && n !== sv ? n : null; EP.touch(p);
+  if (EP.laneOf(p) !== 'MAIN' || !p.blockId) return 0;
+  const want = p.portions ? Math.max(1, Math.floor(p.portions / db.settings.portionsPerDay)) : daysOf(r);
+  const es = blockEntries(p.blockId).filter(x => x.type === 'COOK' || x.type === 'LEFTOVER');
+  if (want < es.length) es.slice(want).forEach(x => EP.tomb(x));
+  else if (want > es.length) {
+    const last = es[es.length - 1].date, nd = new Date(EP.parseISO(last)); nd.setDate(nd.getDate() + 1);
+    EP.nextFreeDates(EP.iso(nd), want - es.length, mainDates()).forEach(date => db.plan.push(EP.touch({
+      id: EP.uuid(), date, lane: 'MAIN', type: 'LEFTOVER', recipeId: p.recipeId, blockId: p.blockId, dayIndex: 0, dayCount: 0,
+      rotationEntryId: p.rotationEntryId || null, source: p.source, locked: !!p.locked, status: 'PLANNED', note: '', deleted: false })));
+  }
+  renumberBlock(p.blockId);
+  return want - es.length;
 }
 function draftUsed() { return new Set(draft.sequence.filter(s => s.kind === 'ROT').map(s => s.entryId)); }
 function draftSwap(bid) {
@@ -4509,7 +4532,7 @@ function weekBlock(ws, today, showLane) {
         .some(x => x.type === 'COOK' && x.date < ws);
       const b = p.type === 'COOK' ? `<span class="badge cook">Kochtag${p.dayCount > 1 ? ` 1/${p.dayCount}` : ''}</span>`
         : `<span class="badge rest">Reste ${p.dayIndex}/${p.dayCount}</span>`;
-      body = `<div class="nm">${esc(r ? r.name : 'Gelöschtes Rezept')}</div><div class="tags">${b}${r && EP.laneOf(r) === 'SPECIAL' ? `<span class="badge special">${esc(DISH_LABEL.SPECIAL)}</span>` : ''}${p.guests && p.type === 'COOK' ? `<span class="badge guests">👥 ${p.guests}</span>` : ''}${carry ? '<span class="badge">Übertrag</span>' : ''}
+      body = `<div class="nm">${esc(r ? r.name : 'Gelöschtes Rezept')}</div><div class="tags">${b}${r && EP.laneOf(r) === 'SPECIAL' ? `<span class="badge special">${esc(DISH_LABEL.SPECIAL)}</span>` : ''}${p.portions && p.type === 'COOK' ? `<span class="badge guests">${p.portions} Port.</span>` : ''}${p.guests && p.type === 'COOK' ? `<span class="badge guests">👥 ${p.guests}</span>` : ''}${carry ? '<span class="badge">Übertrag</span>' : ''}
         ${p.status === 'DONE' && p.type === 'COOK' ? '<span class="badge done">Gekocht</span>' : ''}${p.source === 'MANUAL' && p.type === 'COOK' ? '<span class="badge">Selbst gewählt</span>' : ''}</div>`;
     }
     const laneLines = ['LUNCH', 'CAKE'].map(l => {
@@ -4517,7 +4540,7 @@ function weekBlock(ws, today, showLane) {
       if (!x && !(showLane[l] && laneActiveOn(l, d) && d >= today)) return '';
       const r = x && recipeById(x.recipeId);
       return `<div class="dayrow lanerow"><button class="laneline ${x && x.drafted ? 'drafted' : ''} lane-${l.toLowerCase()}" data-act="lane" data-arg="${d}|${l}">
-        <span class="lanelbl">${LANE_LABEL[l]}</span><span class="nm ${x ? '' : 'free'}">${x ? esc(r ? r.name : 'Gelöschtes Rezept') : 'Frei'}${x && x.pan ? `<small class="panlbl">${esc(EP.panLabel(x.pan))}</small>` : ''}${x && x.guests ? `<small class="panlbl">👥 ${x.guests}</small>` : ''}</span>
+        <span class="lanelbl">${LANE_LABEL[l]}</span><span class="nm ${x ? '' : 'free'}">${x ? esc(r ? r.name : 'Gelöschtes Rezept') : 'Frei'}${x && x.pan ? `<small class="panlbl">${esc(EP.panLabel(x.pan))}</small>` : ''}${x && x.portions ? `<small class="panlbl">${x.portions} Port.</small>` : ''}${x && x.guests ? `<small class="panlbl">👥 ${x.guests}</small>` : ''}</span>
         ${x && x.status === 'DONE' ? `<span class="badge done">${l === 'CAKE' ? 'Gebacken' : 'Gekocht'}</span>` : ''}</button>${x ? cookBtn(r) : ''}</div>`;
     }).join('');
     const extraLines = (ents.extras.get(d) || []).map(x => {
@@ -4602,6 +4625,27 @@ function guestSheet(p) {
     $('[data-x=yes]', el).onclick = () => { closeSheet(); setGuests(p.id, n); change(n === pp ? 'Wieder wie immer.' : `Für ${n} Personen.`); };
   });
 }
+/* Portionen: wie viel an diesem Tag gekocht wird – Zutaten und (beim Hauptgericht) Resttage passen sich an */
+function portionSheet(p) {
+  const r = recipeById(p.recipeId), pp = db.settings.portionsPerDay, sv = r.servings || pp, main = EP.laneOf(p) === 'MAIN';
+  let n = p.portions || sv;
+  const info = () => {
+    const days = Math.max(1, Math.floor(n / pp));
+    return (n === sv ? 'Wie im Rezept' : `Zutaten für ${n} statt ${sv}`) + (main ? ` · ${days === 1 ? '1 Tag' : days + ' Tage'}` : '');
+  };
+  openSheet(`<h2>Portionen</h2><p class="serif" style="font-size:19px;margin-top:4px">${esc(r.name)}</p>
+    <p class="sub">${EP.weekdayLong(p.date)}, ${EP.fmtShort(p.date)}</p>
+    <div class="stepper big" style="margin:16px auto"><button data-x="m" aria-label="Weniger">−</button><output id="pn">${n}</output><button data-x="p" aria-label="Mehr">+</button></div>
+    <p class="hint" id="pi" style="text-align:center">${info()}</p>
+    <div class="btns two"><button class="btn" data-x="no">Abbrechen</button><button class="btn primary" data-x="yes">Übernehmen</button></div>`, el => {
+    const upd = d => { n = Math.max(1, Math.min(40, n + d)); $('#pn', el).textContent = n; $('#pi', el).textContent = info(); };
+    $('[data-x=m]', el).onclick = () => upd(-1);
+    $('[data-x=p]', el).onclick = () => upd(1);
+    $('[data-x=no]', el).onclick = closeSheet;
+    $('[data-x=yes]', el).onclick = () => { closeSheet(); undoable(() => { const dd = setPortions(p.id, n); return (n === sv ? 'Wieder wie im Rezept' : `${n} Portionen`) + (dd < 0 ? `, ${-dd === 1 ? 'ein Resttag' : -dd + ' Resttage'} weniger` : dd > 0 ? `, ${dd === 1 ? 'ein Resttag' : dd + ' Resttage'} mehr` : '') + '.'; }); };
+  });
+}
+const portionOpt = p => ({ label: 'Portionen', icon: 'people', group: 0, hint: p.portions ? `${p.portions} statt ${(recipeById(p.recipeId) || {}).servings || ''}` : '', run: () => portionSheet(p) });
 const guestOpt = p => ({ label: 'Personen / Gäste', icon: 'people', group: 0, hint: p.guests ? `${p.guests} Personen` : '', run: () => guestSheet(p) });
 /* Aktionen für Mittag / Kuchen an einem Tag */
 function laneActions(d, lane) {
@@ -4632,7 +4676,7 @@ function laneActions(d, lane) {
   } else {
     if (x.status !== 'DONE') opts.push({ label: lane === 'CAKE' ? 'Als gebacken markieren' : 'Als gekocht markieren', run: () => undoable(() => { markCooked(x.blockId); return 'Erledigt.'; }) });
     if (r && (r.instructions || r.ingredients.length)) opts.push({ label: 'Kochansicht öffnen', run: () => openCook(r.id) });
-    if (r && lane === 'LUNCH' && x.date >= EP.todayISO()) opts.push(guestOpt(x));
+    if (r && lane === 'LUNCH' && x.date >= EP.todayISO()) { opts.push(portionOpt(x)); opts.push(guestOpt(x)); }
     if (r && lane === 'CAKE') opts.push({ label: 'Backform', hint: x.pan ? EP.panLabel(x.pan) : r.pan ? EP.panLabel(r.pan) : '', run: () => planPanSheet(x, r) });
     if (d >= EP.todayISO()) {
       opts.push({ label: 'Tauschen', run: () => undoable(() => { const nr = swapLane(d, lane); return nr ? 'Getauscht gegen ' + nr.name + '.' : 'Keine weiteren Gerichte in dieser Rotation.'; }) });
@@ -4695,7 +4739,8 @@ function dayActions(d) {
     const r = recipeById(p.recipeId);
     if (p.status !== 'DONE') opts.push({ label: 'Als gekocht markieren', run: () => undoable(() => { markCooked(p.blockId); return 'Als gekocht markiert.'; }) });
     if (r && (r.instructions || r.ingredients.length)) opts.push({ label: 'Kochansicht öffnen', run: () => openCook(r.id) });
-    if (r && p.type === 'COOK' && d >= today) opts.push(guestOpt(p));
+    if (r && p.type === 'COOK' && d >= today) { opts.push(portionOpt(p)); opts.push(guestOpt(p)); }
+    else if (r && p.type === 'LEFTOVER' && d >= today) { const c = blockEntries(p.blockId).find(x => x.type === 'COOK'); if (c && c.date >= today) opts.push(portionOpt(c)); }
     if (d >= today) {
       opts.push({ label: 'Tauschen', run: () => undoable(() => { const nr = swapBlock(p.blockId); return nr ? 'Getauscht gegen ' + nr.name + '.' : 'Keine weiteren Gerichte in der Rotation.'; }) });
       if (p.type === 'LEFTOVER') {
@@ -5803,7 +5848,7 @@ function openCook(id) {
   // Backform: gespeicherter Kochstand, sonst der nächste geplante Termin dieses Kuchens
   const planned = EP.live(db.plan).filter(p => p.recipeId === id && p.pan && p.date >= EP.todayISO()).sort((a, b) => a.date.localeCompare(b.date))[0];
   // Gäste: nächster geplanter Kochtag dieses Gerichts mit abweichender Personenzahl
-  const g = EP.live(db.plan).filter(p => p.recipeId === id && p.type === 'COOK' && p.guests && p.date >= EP.todayISO()).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const g = EP.live(db.plan).filter(p => p.recipeId === id && p.type === 'COOK' && (p.guests || p.portions) && p.date >= EP.todayISO()).sort((a, b) => a.date.localeCompare(b.date))[0];
   const gn = g ? Math.round((r.servings || 2) * EP.guestFactor(g, r, db.settings)) : null;
   cookState = { prep: false, r, n: prog ? prog.n : (gn || r.servings || 2), done: new Set(prog ? prog.done : []), pan: prog && prog.pan !== undefined ? prog.pan : (planned ? planned.pan : null) };
   const el = $('#cookview');
