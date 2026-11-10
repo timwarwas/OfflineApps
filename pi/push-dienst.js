@@ -25,7 +25,7 @@ const FILE = path.join(DIR, 'state.json'), VAPID = path.join(DIR, 'vapid.json');
 let vapid;
 try { vapid = JSON.parse(fs.readFileSync(VAPID, 'utf8')); }
 catch (e) { vapid = wp.generateVapidKeys(); fs.writeFileSync(VAPID, JSON.stringify(vapid), { mode: 0o600 }); }
-let state = { devices: {}, jobs: [] };
+let state = { devices: {}, jobs: [], inbox: {} };
 try { state = Object.assign(state, JSON.parse(fs.readFileSync(FILE, 'utf8'))); } catch (e) {}
 let saveTimer = null;
 function save() {
@@ -59,6 +59,61 @@ async function tick() {
   for (const j of due) await deliver(j);
 }
 
+/* ---------- Briefkasten für Kurzbefehle (Siri → Einkaufsliste) ----------
+   Die App legt einen Briefkasten an: zufällige ID, Verwaltungsschlüssel (nur als Hash gespeichert),
+   Schlüssel für den Kurzbefehl (nur als Hash) und ihren öffentlichen ECDH-Schlüssel (P-256).
+   Ein Kurzbefehl schickt Text; der Dienst verschlüsselt ihn sofort mit dem öffentlichen Schlüssel
+   (ECDH mit Einmalschlüssel → HKDF-SHA-256 → AES-256-GCM) und speichert nur das Ergebnis.
+   Entschlüsseln kann nur die App (privater Schlüssel liegt verschlüsselt in den Haushaltsdaten). */
+const INBOX = { max: 200, text: 300, perMin: 30 };
+function inboxSeal(pubRaw, text) {
+  const eph = crypto.createECDH('prime256v1'); eph.generateKeys();
+  const shared = eph.computeSecret(pubRaw);
+  const key = Buffer.from(crypto.hkdfSync('sha256', shared, Buffer.from('einkauf-inbox-v1'), Buffer.from('enc'), 32));
+  const iv = crypto.randomBytes(12), c = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const ct = Buffer.concat([c.update(Buffer.from(text, 'utf8')), c.final(), c.getAuthTag()]);
+  return { e: eph.getPublicKey().toString('base64url'), iv: iv.toString('base64url'), c: ct.toString('base64url') };
+}
+function inboxBox(b) {
+  const box = isId(b.box) && state.inbox[b.box];
+  return box && typeof b.admin === 'string' && box.admin === hash(b.admin) ? box : null;
+}
+const inboxRoutes = {
+  /* Anlegen/ändern: { box, admin, pub (raw, base64url), token } – bestehender Briefkasten nur mit seinem admin */
+  'POST /inbox/setup': b => {
+    if (!isId(b.box) || !isId(b.admin) || !isId(b.token)) return [400, { error: 'box/admin/token' }];
+    let pub; try { pub = Buffer.from(String(b.pub), 'base64url'); const t = crypto.createECDH('prime256v1'); t.generateKeys(); t.computeSecret(pub); } catch (e) { return [400, { error: 'pub' }]; }
+    const cur = state.inbox[b.box];
+    if (cur && cur.admin !== hash(b.admin)) return [403, { error: 'admin' }];
+    state.inbox[b.box] = { admin: hash(b.admin), token: hash(b.token), pub: pub.toString('base64url'), msgs: cur ? cur.msgs : [], seen: new Date().toISOString() };
+    save(); return [200, { ok: true }];
+  },
+  /* vom Kurzbefehl: { key: "<box>.<token>", text } – mit ?plain=1 kommt ein Satz für Siri zurück */
+  'POST /inbox/add': (b, ip) => {
+    if (!rateOk('inbox|' + ip)) return [429, { error: 'zu viele', msg: 'Bitte kurz warten.' }];
+    const [boxId, token] = String(b.key || '').trim().split('.');
+    const box = isId(boxId) && state.inbox[boxId];
+    if (!box || box.token !== hash(token)) return [403, { error: 'key', msg: 'Der Schlüssel im Kurzbefehl stimmt nicht.' }];
+    const text = String(b.text == null ? '' : b.text).replace(/\s+/g, ' ').trim().slice(0, INBOX.text);
+    if (!text) return [400, { error: 'text', msg: 'Ich habe nichts verstanden.' }];
+    if (box.msgs.length >= INBOX.max) return [429, { error: 'voll', msg: 'Der Briefkasten ist voll. Bitte einmal die App öffnen.' }];
+    box.msgs.push(Object.assign({ id: crypto.randomBytes(9).toString('base64url'), t: Date.now() }, inboxSeal(Buffer.from(box.pub, 'base64url'), text)));
+    save();
+    return [200, { ok: true, msg: `${text} kommt auf die Einkaufsliste.` }];
+  },
+  /* App holt ab: { box, admin } */
+  'POST /inbox/fetch': b => { const box = inboxBox(b); if (!box) return [403, { error: 'admin' }]; box.seen = new Date().toISOString(); return [200, { msgs: box.msgs }]; },
+  /* App bestätigt: { box, admin, ids:[…] } */
+  'POST /inbox/ack': b => {
+    const box = inboxBox(b); if (!box) return [403, { error: 'admin' }];
+    const ids = new Set(Array.isArray(b.ids) ? b.ids : []), n = box.msgs.length;
+    box.msgs = box.msgs.filter(m => !ids.has(m.id)); if (n !== box.msgs.length) save();
+    return [200, { ok: true, removed: n - box.msgs.length }];
+  },
+  /* App schaltet ab: { box, admin } */
+  'POST /inbox/off': b => { const box = inboxBox(b); if (box) { delete state.inbox[b.box]; save(); } return [200, { ok: true }]; },
+};
+
 /* ---------- Anfragen ---------- */
 const sendCounts = new Map();
 function rateOk(ip) {
@@ -68,7 +123,7 @@ function rateOk(ip) {
 }
 const routes = {
   'GET /vapid': () => [200, { publicKey: vapid.publicKey }],
-  'GET /health': () => [200, { ok: true, devices: Object.keys(state.devices).length, jobs: state.jobs.length }],
+  'GET /health': () => [200, { ok: true, devices: Object.keys(state.devices).length, jobs: state.jobs.length, inbox: Object.keys(state.inbox || {}).length }],
   /* Gerät anmelden/aktualisieren: { device, secret, sub:{endpoint,keys:{p256dh,auth}}, channels:{ch:[kinds]} } */
   'POST /subscribe': b => {
     if (!isId(b.device) || !isId(b.secret)) return [400, { error: 'device/secret' }];
@@ -125,14 +180,19 @@ const server = http.createServer((req, res) => {
   const cors = { 'Access-Control-Allow-Origin': ORIGIN, 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type', 'Access-Control-Max-Age': '86400', 'Vary': 'Origin' };
   if (req.method === 'OPTIONS') { res.writeHead(204, cors); return res.end(); }
   const p = new URL(req.url, 'http://x').pathname.replace(/^\/push(?=\/)/, '');   // mit oder ohne /push davor
-  const fn = routes[req.method + ' ' + p];
-  const reply = (st, j) => { res.writeHead(st, Object.assign({ 'Content-Type': 'application/json' }, cors)); res.end(JSON.stringify(j)); };
+  const fn = routes[req.method + ' ' + p] || inboxRoutes[req.method + ' ' + p];
+  const plain = new URL(req.url, 'http://x').searchParams.get('plain') === '1';   // Kurzbefehl: nur der Satz
+  const reply = (st, j) => {
+    if (plain) { res.writeHead(st, Object.assign({ 'Content-Type': 'text/plain; charset=utf-8' }, cors)); return res.end(j.msg || (st < 300 ? 'OK' : 'Fehler')); }
+    res.writeHead(st, Object.assign({ 'Content-Type': 'application/json' }, cors)); res.end(JSON.stringify(j));
+  };
   if (!fn) return reply(404, { error: 'unbekannt' });
   let raw = '';
   req.on('data', c => { raw += c; if (raw.length > LIMIT.body) req.destroy(); });
   req.on('end', async () => {
     let b = {};
-    if (raw) { try { b = JSON.parse(raw); } catch (e) { return reply(400, { error: 'json' }); } }
+    if (raw) { try { b = JSON.parse(raw); } catch (e) { if (p !== '/inbox/add') return reply(400, { error: 'json' }); b = { text: raw }; } }
+    if (p === '/inbox/add') { const q = new URL(req.url, 'http://x').searchParams; if (!b.key && q.get('key')) b.key = q.get('key'); }
     const ip = req.headers['x-forwarded-for'] ? String(req.headers['x-forwarded-for']).split(',')[0].trim() : req.socket.remoteAddress;
     try { const [st, j] = await fn(b, ip); reply(st, j); } catch (e) { log('Fehler', e.message); reply(500, { error: 'intern' }); }
   });
@@ -141,4 +201,4 @@ if (require.main === module) {
   server.listen(PORT, '127.0.0.1', () => log(`Push-Dienst läuft auf 127.0.0.1:${PORT}, Origin ${ORIGIN}`));
   setInterval(() => tick().catch(e => log('tick', e.message)), 2000);
 }
-module.exports = { server, tick, state: () => state, sendImpl, vapid: () => vapid };
+module.exports = { server, tick, state: () => state, sendImpl, vapid: () => vapid, inboxSeal };

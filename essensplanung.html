@@ -735,6 +735,10 @@ textarea.in.stepin{min-height:64px;resize:none;overflow:hidden;line-height:1.4}
 .recenthead .foldbtn{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--enamel);color:var(--rim);font-size:24px;font-weight:600;line-height:1;display:grid;place-items:center}
 .recenthead .hint{flex:1}
 .suggbox.folded .recenthead .hint{color:var(--speckle)}
+/* Siri-Kurzbefehl */
+.ibsteps{margin:10px 0 14px;padding-left:22px;line-height:1.45;font-size:15px}
+.ibsteps li{margin:6px 0}
+#ib-url{font-size:13px;font-family:ui-monospace,Menlo,monospace}
 
 </style>
 </head>
@@ -6161,6 +6165,7 @@ function vSettings() {
       gRow({ icon: 'shop', color: '#FF9500', label: 'Geschäfte', value: EP.liveStores(db.settings).length || 'Keine', act: 'to', arg: 'stores' }),
       gRow({ icon: 'cal', color: '#34C759', label: 'Markttage', value: marketDaysText(), act: 'marketdays' }),
       gRow({ icon: 'cart', color: '#5856D6', label: 'Einkaufsliste anordnen', act: 'shoplayout' }),
+      gRow({ icon: 'bell', color: '#AF52DE', label: 'Siri-Kurzbefehl', value: db.settings.inbox ? 'An' : 'Aus', act: 'inbox' }),
       gRow({ icon: 'leaf', color: '#34C759', label: 'Zutaten', value: EP.live(db.ingredients).length, act: 'to', arg: 'ingredients' }),
       gRow({ icon: 'cycle', color: '#5856D6', label: 'Rotation ansehen', act: 'to', arg: 'rotation' }),
       gRow({ icon: 'sync', color: '#0A84FF', label: 'Geräteabgleich', value: syncVal, act: 'to', arg: 'sync' }),
@@ -6189,6 +6194,94 @@ function laneDaysSheet(l) {
     <div class="btns"><button class="btn primary" data-x="no">Fertig</button></div>`, el => { $('[data-x=no]', el).onclick = closeSheet; });
 }
 
+/* ---------- Siri-Kurzbefehl: Briefkasten auf dem Pi ----------
+   Der Kurzbefehl schickt Text an …/push/inbox/add; der Pi verschlüsselt ihn sofort mit dem öffentlichen
+   Schlüssel dieses Haushalts. Die App holt ab, entschlüsselt (privater Schlüssel in db.settings.inbox,
+   gleicht verschlüsselt mit ab), bestätigt und trägt die Artikel ein. */
+const Inbox = (() => {
+  const DEFAULT = 'https://kostenpi.tail281e3e.ts.net/push';
+  const server = () => { try { return localStorage.getItem('push-server') || DEFAULT; } catch (e) { return DEFAULT; } };
+  const b64e = u8 => { let s = ''; u8.forEach(b => { s += String.fromCharCode(b); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const b64d = str => { str = String(str).replace(/-/g, '+').replace(/_/g, '/'); while (str.length % 4) str += '='; const b = atob(str), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+  const rnd = n => b64e(crypto.getRandomValues(new Uint8Array(n)));
+  const cfg = () => db && db.settings && db.settings.inbox && db.settings.inbox.box ? db.settings.inbox : null;
+  const post = async (path, body) => {
+    const r = await fetch(server() + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(j.error || 'HTTP ' + r.status), { status: r.status });
+    return j;
+  };
+  async function setup(newToken) {
+    const old = cfg();
+    let c = old;
+    if (!c) {
+      const kp = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+      c = { box: rnd(18), admin: rnd(24), token: rnd(18), priv: await crypto.subtle.exportKey('jwk', kp.privateKey), pub: b64e(new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey))) };
+    } else if (newToken) c = Object.assign({}, c, { token: rnd(18) });
+    await post('/inbox/setup', { box: c.box, admin: c.admin, pub: c.pub, token: c.token });
+    db.settings.inbox = c; EP.touch(db.settings); persist();
+    return c;
+  }
+  async function off() {
+    const c = cfg(); if (!c) return;
+    try { await post('/inbox/off', { box: c.box, admin: c.admin }); } catch (e) {}
+    db.settings.inbox = null; EP.touch(db.settings); persist();
+  }
+  const url = () => { const c = cfg(); return c ? `${server()}/inbox/add?plain=1&key=${c.box}.${c.token}` : ''; };
+  async function open(c, m) {
+    const priv = await crypto.subtle.importKey('jwk', c.priv, { name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveBits']);
+    const eph = await crypto.subtle.importKey('raw', b64d(m.e), { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+    const shared = await crypto.subtle.deriveBits({ name: 'ECDH', public: eph }, priv, 256);
+    const hk = await crypto.subtle.importKey('raw', shared, 'HKDF', false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: new TextEncoder().encode('einkauf-inbox-v1'), info: new TextEncoder().encode('enc') }, hk, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+    return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64d(m.iv) }, key, b64d(m.c)));
+  }
+  /* „Milch, 2 Gurken und Brot“ → drei Artikel */
+  const split = t => String(t).split(/\s*(?:,|;|\bund\b|\bsowie\b|\n)\s*/i).map(x => x.replace(/[.!?]+$/, '').trim()).filter(Boolean);
+  let busy = false;
+  async function pull() {
+    const c = cfg(); if (!c || busy || !navigator.onLine) return 0;
+    busy = true;
+    try {
+      const { msgs } = await post('/inbox/fetch', { box: c.box, admin: c.admin });
+      if (!msgs || !msgs.length) return 0;
+      await post('/inbox/ack', { box: c.box, admin: c.admin, ids: msgs.map(m => m.id) });   // zuerst bestätigen: ein zweites Gerät holt sie dann nicht noch einmal
+      const added = [];
+      for (const m of msgs.sort((a, b) => a.t - b.t)) {
+        let t; try { t = await open(c, m); } catch (e) { continue; }
+        split(t).forEach(x => { const r = addExtraItem(x); if (r) added.push(r.amount ? `${r.name} (${r.amount})` : r.name); });
+      }
+      if (added.length) { persist(); rerender(); notify('Per Siri: ' + added.join(', ')); }
+      return added.length;
+    } catch (e) { return 0; } finally { busy = false; }
+  }
+  return { setup, off, url, pull, cfg, split };
+})();
+function inboxSheet() {
+  const draw = el => {
+    const c = Inbox.cfg();
+    $('#ibx', el).innerHTML = c ? `
+      <ol class="ibsteps">
+        <li>App <b>Kurzbefehle</b> → <b>+</b></li>
+        <li>Aktion <b>Text diktieren</b></li>
+        <li>Aktion <b>Inhalte von URL abrufen</b>: Link unten einfügen, Methode <b>POST</b>, Hauptteil <b>JSON</b>, Feld <b>text</b> = <i>Diktierter Text</i></li>
+        <li>Aktion <b>Text sprechen</b> (Inhalte der URL)</li>
+        <li>Kurzbefehl z. B. „Einkauf“ nennen → „Hey Siri, Einkauf“</li>
+      </ol>
+      <label class="field"><span>Link für den Kurzbefehl</span><input class="in" id="ib-url" readonly value="${esc(Inbox.url())}"></label>
+      <div class="btns"><button class="btn primary" data-x="copy">Link kopieren</button></div>
+      <div class="btns two"><button class="btn" data-x="renew">Neuer Link</button><button class="btn danger" data-x="off">Ausschalten</button></div>`
+      : `<p class="sub">Artikel per Siri auf die Einkaufsliste, ohne die App zu öffnen.</p>
+      <div class="btns"><button class="btn primary" data-x="on">Einrichten</button></div>`;
+    const b = x => $(`[data-x=${x}]`, el);
+    const run = async (fn, ok) => { try { await fn(); if (ok) notify(ok); } catch (e) { notify('Pi nicht erreichbar.'); } draw(el); rerender(); };
+    if (b('on')) b('on').onclick = () => run(() => Inbox.setup(), 'Eingerichtet.');
+    if (b('renew')) b('renew').onclick = () => run(() => Inbox.setup(true), 'Neuer Link – im Kurzbefehl ersetzen.');
+    if (b('off')) b('off').onclick = () => run(() => Inbox.off(), 'Ausgeschaltet.');
+    if (b('copy')) b('copy').onclick = async () => { try { await navigator.clipboard.writeText(Inbox.url()); notify('Link kopiert.'); } catch (e) { $('#ib-url', el).select(); notify('Bitte markieren und kopieren.'); } };
+  };
+  openSheet(`<h2>Siri-Kurzbefehl</h2><div id="ibx"></div><div class="btns"><button class="btn quiet" data-x="no">Fertig</button></div>`, el => { draw(el); $('[data-x=no]', el).onclick = closeSheet; });
+}
 /* Markttage: an anderen Tagen steht Markt-Ware beim Supermarkt */
 const marketDaysOf = () => Array.isArray(db.settings.marketDays) ? db.settings.marketDays : [0, 1, 2, 3, 4, 5, 6];
 function marketDaysText() {
@@ -6583,6 +6676,7 @@ const ACT = {
   cookside: id => { closeCook(); openCook(id); },
   emonth: m => { readEditForm(); m = +m; const r = editState.r; const set = new Set(r.seasonMonths || []); set.has(m) ? set.delete(m) : set.add(m); r.seasonMonths = [...set].sort((a, b) => a - b); editState.dirty = true; rerender(); },
   marketdays: () => marketDaysSheet(),
+  inbox: () => inboxSheet(),
   shoplayout: () => shopLayoutSheet(),
   marketday: a => {
     const days = new Set(marketDaysOf()); days.has(+a) ? days.delete(+a) : days.add(+a);
@@ -7260,6 +7354,7 @@ async function enterApp() {
   if (housekeeping()) await persist();
   route = { name: HOME }; stack = [];
   rerender();
+  Inbox.pull();
   if (HOME === 'week') scrollToToday();
   BackNav.arm();
   if (Sync.enabled()) { Sync.run(); Sync.startPolling(); }
@@ -7282,11 +7377,13 @@ async function boot() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState !== 'visible') return;
     if (Sync.enabled()) Sync.run();
+    Inbox.pull();
     if (!$('#cookview').classList.contains('hidden')) lockScreen();
     if (db && housekeeping()) { persist(); rerender(); }
     if (Konto.loggedIn() && db && db.household) Konto.sync().then(kontoEnsure).catch(() => {});
   });
-  window.addEventListener('online', () => Sync.run());
+  window.addEventListener('online', () => { Sync.run(); Inbox.pull(); });
+  setInterval(() => { if (document.visibilityState === 'visible') Inbox.pull(); }, 30000);
   window.addEventListener('focus', () => { if (Sync.enabled()) Sync.run(); });
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
