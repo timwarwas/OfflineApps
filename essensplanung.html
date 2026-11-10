@@ -739,6 +739,13 @@ textarea.in.stepin{min-height:64px;resize:none;overflow:hidden;line-height:1.4}
 .ibsteps{margin:10px 0 14px;padding-left:22px;line-height:1.45;font-size:15px}
 .ibsteps li{margin:6px 0}
 #ib-url{font-size:13px;font-family:ui-monospace,Menlo,monospace}
+/* Blätter bei offener Tastatur: nur der sichtbare Bereich darüber */
+.scrim.kb{bottom:auto}
+.scrim.kb .sheet{max-height:calc(100% - 8px);padding-bottom:12px}
+/* Gericht wählen: Suchfeld klebt oben im Blatt */
+.psearch{position:sticky;top:22px;z-index:1;background:var(--enamel);margin:10px -18px 0;padding:6px 18px 8px}
+.psearch .in{margin:0}
+.psearch + .pick{min-height:40vh}
 
 </style>
 </head>
@@ -4219,9 +4226,12 @@ function recipePickSheet(title, onPick, kind, opts) {
   openSheet(`<h2>${esc(title)}</h2>
     ${kinds ? `<div class="seg ${kinds.length > 4 ? 'seg5' : 'seg4'} kind-seg" id="pk">${kinds.map(k => `<button data-k="${k}" aria-pressed="${k === cur}">${segLbl(DISH_LABEL[k])}</button>`).join('')}</div>` : ''}
     <div id="ptw">${toggleHtml()}</div>
-    <input class="in" id="ps" placeholder="Rezept suchen" style="margin-top:10px">
+    <div class="psearch"><input class="in" id="ps" type="search" placeholder="Rezept suchen" autocomplete="off" enterkeyhint="search"></div>
     <div class="pick" id="pl">${pickHtml()}</div>`, el => {
-    const filter = () => { const q = $('#ps', el).value.toLowerCase(); $$('#pl .opt', el).forEach(b => b.classList.toggle('hidden', !b.textContent.toLowerCase().includes(q))); };
+    // Suchfeld beim Tippen oben im Blatt, Treffer direkt darunter (über der Tastatur)
+    const toTop = () => setTimeout(() => { const ps = $('#ps', el), g = $('.grab', el); if (ps) el.scrollTop = Math.max(0, ps.parentNode.offsetTop - (g ? g.offsetHeight : 0)); }, 60);
+    const filter = () => { const q = $('#ps', el).value.toLowerCase(); $$('#pl .opt', el).forEach(b => b.classList.toggle('hidden', !b.textContent.toLowerCase().includes(q))); toTop(); };
+    $('#ps', el).onfocus = () => { toTop(); setTimeout(toTop, 400); };
     const bindList = () => { $$('#pl .opt', el).forEach(b => b.onclick = () => { if (kinds) opts.onKind && opts.onKind(cur); closeSheet(); onPick(b.dataset.id); }); filter(); };
     const bindToggle = () => { const t = $('#pt', el); if (t) t.onchange = () => { LS.set('ep_showPaused', t.checked); $('#pl', el).innerHTML = pickHtml(); bindList(); }; };
     $('#ps', el).oninput = filter;
@@ -7341,10 +7351,19 @@ function kbdCheck() {
   const on = isTyping(document.activeElement) && kbdOpen(), was = document.documentElement.classList.contains('typing');
   document.documentElement.classList.toggle('typing', on);
   if (was && !on) window.scrollTo(window.scrollX, window.scrollY);   // Safari ordnet feste Elemente danach wieder am Bildschirm aus
+  fitScrim();
+}
+/* Offenes Blatt bei Tastatur auf den sichtbaren Bereich darüber begrenzen (sonst liegen Treffer hinter der Tastatur) */
+function fitScrim() {
+  const s = $('#scrim'); if (!s) return;
+  const vv = window.visualViewport, on = !!vv && kbdOpen() && isTyping(document.activeElement);
+  s.classList.toggle('kb', on);
+  s.style.top = on ? vv.offsetTop + 'px' : '';
+  s.style.height = on ? vv.height + 'px' : '';
 }
 document.addEventListener('focusin', () => { kbdCheck(); setTimeout(kbdCheck, 350); });
 document.addEventListener('focusout', () => setTimeout(kbdCheck, 80));
-if (window.visualViewport) visualViewport.addEventListener('resize', kbdCheck);
+if (window.visualViewport) { visualViewport.addEventListener('resize', kbdCheck); visualViewport.addEventListener('scroll', fitScrim); }
 
 /* ---------- Start ---------- */
 async function enterApp() {
