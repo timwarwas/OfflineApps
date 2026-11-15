@@ -306,7 +306,8 @@
   .lt-preview-box .p-body{margin-bottom:22px}
   .lt-preview-box .p-body ul,.lt-preview-box .p-body ol{padding-left:20px;margin:5px 0}
   .lt-preview-box .p-sign{white-space:pre-line}
-  .lt-preview-box .p-sign .nm{margin-top:26px}
+  .lt-preview-box .p-sign .nm{margin-top:26px;min-height:40px}
+  .lt-off{opacity:.4;pointer-events:none}
 
   /* ---------- Dialoge (Bottom-Sheets) ---------- */
   .modal{position:fixed;inset:0;background:rgba(10,12,26,.75);display:none;
@@ -813,6 +814,11 @@ a.gi:active,button.gi:active,label.gi:active{background:var(--rim-soft)}
 
     <div class="lt-sep">Unterschrift</div>
     <div class="lt-hint" style="margin:6px 0 0">🔒 Wird verschlüsselt im Profil „<span id="lt-sig-profile"></span>" gespeichert und steht für jeden Brief bereit.</div>
+    <div class="glist inform" style="margin-top:10px">
+      <label class="gi">
+        <span class="gbody"><span class="glbl">Unterschrift im Brief<small>Aus: Platz zum Unterschreiben von Hand</small></span><span class="switch"><input type="checkbox" id="lt-sig-on" onchange="ltSaveDraft();ltRenderSigState()"><i></i></span></span>
+      </label>
+    </div>
     <div id="lt-sig-preview" class="lt-sig-preview"></div>
     <div class="glist inform" style="margin-top:10px">
       <button type="button" class="gi" id="lt-sig-btn" onclick="ltSignatureMenu()">
@@ -2415,6 +2421,8 @@ function ltRenderEditor(){
   if(dAuto){ dAuto.checked = ltDraft.dateAuto!==false;
     document.getElementById('lt-date-manual').style.display = dAuto.checked?'none':''; }
   // Info-Block
+  const sOn=document.getElementById('lt-sig-on');
+  if(sOn){ sOn.checked = !ltDraft.sigOff; ltRenderSigState(); }
   const iOn=document.getElementById('lt-info-on');
   if(iOn){ iOn.checked = !!ltDraft.infoOn;
     document.getElementById('lt-info-fields').style.display = iOn.checked?'':'none'; }
@@ -2444,7 +2452,8 @@ function ltSaveDraft(){
     dateAuto: chk('lt-date-auto'), date:v('lt-date'), place:v('lt-place'),
     infoOn: chk('lt-info-on'), iKunde:v('lt-i-kunde'), iVertrag:v('lt-i-vertrag'),
     iAkte:v('lt-i-akte'), iBearb:v('lt-i-bearb'),
-    attach:v('lt-attach'), sig: ltDraft.sig||'', salManual: !!ltDraft.salManual };
+    attach:v('lt-attach'), sig: ltDraft.sig||'', salManual: !!ltDraft.salManual,
+    sigOff: document.getElementById('lt-sig-on') ? !chk('lt-sig-on') : !!ltDraft.sigOff };
   ltSaveDraftStore();
 }
 function ltClearDraft(){
@@ -2454,7 +2463,7 @@ function ltClearDraft(){
       font:ltDraft.font||'georgia', size:ltDraft.size||11,
       dateAuto:true, date:'', place:ltDraft.place||'', infoOn:false,
       iKunde:'', iVertrag:'', iAkte:'', iBearb:'', attach:'',
-      sig:ltDraft.sig||'', salManual:false };
+      sig:ltDraft.sig||'', salManual:false, sigOff:!!ltDraft.sigOff };
     ltSaveDraftStore(); ltRenderEditor(); notify('Brief geleert.');
   }, 'Ja, leeren', null,
   {detail:'Empfänger, Betreff und Text werden gelöscht. Dein Profil bleibt erhalten.', noLabel:'Nein, behalten'});
@@ -2529,6 +2538,13 @@ function ltEffectivePlace(){
   const c=(ltActive&&ltActive.sender&&ltActive.sender.city)||'';
   return c.replace(/^\d{4,5}\s*/,'').trim();
 }
+/* Anrede endet im Brief mit Komma (DIN 5008), auch wenn es beim Tippen fehlt */
+function ltSalutationText(t){ t=String(t||'').trim(); return t && !/[,!:]$/.test(t) ? t+',' : t; }
+/* Unterschrift aus: Vorschaubild und „Ändern“ ausgegraut */
+function ltRenderSigState(){
+  const off=!!ltDraft.sigOff;
+  ['lt-sig-preview','lt-sig-btn'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.toggle('lt-off', off); });
+}
 function ltBuildPreviewHTML(){
   const s=ltActive.sender, d=ltDraft;
   const fromLine=[s.name,s.street,s.city].filter(Boolean).join(' · ');
@@ -2546,7 +2562,7 @@ function ltBuildPreviewHTML(){
   const atts=(d.attach||'').split('\n').map(x=>x.trim()).filter(Boolean);
   const attachHTML = atts.length
     ? `<div class="p-attach"><b>${atts.length>1?'Anlagen':'Anlage'}</b>${atts.map(a=>esc(a)).join('<br>')}</div>` : '';
-  const sigSrc = ltCurrentSig() || d.sig || '';
+  const sigSrc = d.sigOff ? '' : (ltCurrentSig() || d.sig || '');
   const sigHTML = sigSrc ? `<img src="${sigSrc}" alt="Unterschrift">` : '';
   const noteHTML = (d.rNote&&d.rNote.trim()) ? `<div class="p-note">${esc(d.rNote.trim())}</div>` : '';
   return `<div class="p-from">${esc(fromLine)}</div>
@@ -2554,7 +2570,7 @@ function ltBuildPreviewHTML(){
     <div class="p-to">${noteHTML}${esc(to)}</div>
     <div class="p-date">${esc(place)}${place?', ':''}${ltEffectiveDate()}</div>
     <div class="p-subject">${esc(d.subject)}</div>
-    <div class="p-body"><div>${esc(d.salutation)}</div><div><br></div>${ltSanitize(d.body||'')}</div>
+    <div class="p-body"><div>${esc(ltSalutationText(d.salutation))}</div><div><br></div>${ltSanitize(d.body||'')}</div>
     <div class="p-sign">${esc(d.closing)}<div class="nm">${sigHTML}</div><div>${esc(s.name)}</div>${contact?`<div style="font-size:11px;color:#555;margin-top:14px">${esc(contact)}</div>`:''}</div>
     ${attachHTML}`;
 }
@@ -2614,7 +2630,7 @@ function ltCopyLetter(){
   const plainBody=(tmp.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
   const txt=[[s.name,s.street,s.city].filter(Boolean).join('\n'),'',
     [d.rName,d.rExtra,d.rStreet,d.rCity].filter(Boolean).join('\n'),'',
-    ltLetterDate(),'',d.subject,'',d.salutation,'',plainBody,'',d.closing,'',s.name].join('\n');
+    ltLetterDate(),'',d.subject,'',ltSalutationText(d.salutation),'',plainBody,'',d.closing,'',s.name].join('\n');
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(()=>notify('Brief kopiert.')).catch(()=>notify('Kopieren nicht möglich.'));
   }else notify('Kopieren wird nicht unterstützt.');
