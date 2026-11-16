@@ -262,8 +262,11 @@
   .lt-sign-canvas{width:100%;height:190px;background:#fff;border-radius:12px;touch-action:none;display:block}
   /* Fenstermarken (DIN-Umschlag mit Sichtfenster) */
   .lt-preview-box.winmarks{position:relative}
-  .lt-preview-box.winmarks .p-to{position:relative;outline:2px dashed var(--coral);outline-offset:6px;border-radius:2px}
-  .lt-preview-box.winmarks .p-to:after{content:'Sichtfenster';position:absolute;top:-19px;left:0;
+  /* Anschriftfeld nach DIN 5008: 85 mm von 165 mm Textbreite ≈ 52 %, links */
+  .lt-preview-box .p-win{width:52%;margin-bottom:24px}
+  .lt-preview-box .p-win .p-to{margin-bottom:0}
+  .lt-preview-box.winmarks .p-win{position:relative;outline:2px dashed var(--coral);outline-offset:6px;border-radius:2px;min-height:96px}
+  .lt-preview-box.winmarks .p-win:after{content:'Sichtfenster';position:absolute;top:-21px;left:0;
     font-family:system-ui,sans-serif;font-size:9px;font-weight:700;color:#C52B41;letter-spacing:.04em}
   .lt-preview-box .p-info{float:right;width:42%;font-size:10px;line-height:1.5;
     border:.5px solid #bbb;padding:6px 8px;margin:0 0 10px 10px}
@@ -299,7 +302,7 @@
   .lt-preview-box{background:#fff;color:#111;border-radius:12px;padding:22px 20px;
     font-family:Georgia,'Times New Roman',serif;font-size:13px;line-height:1.55;margin-bottom:16px;
     box-shadow:0 4px 18px rgba(0,0,0,.25);overflow-wrap:break-word}
-  .lt-preview-box .p-from{font-size:9px;color:#555;border-bottom:.5px solid #999;padding-bottom:3px;margin-bottom:14px}
+  .lt-preview-box .p-from{font-size:8px;color:#555;border-bottom:.5px solid #999;padding-bottom:3px;margin-bottom:10px}
   .lt-preview-box .p-to{margin-bottom:24px;white-space:pre-line}
   .lt-preview-box .p-date{text-align:right;margin-bottom:22px;font-size:12px}
   .lt-preview-box .p-subject{font-weight:bold;margin-bottom:18px}
@@ -2565,9 +2568,8 @@ function ltBuildPreviewHTML(){
   const sigSrc = d.sigOff ? '' : (ltCurrentSig() || d.sig || '');
   const sigHTML = sigSrc ? `<img src="${sigSrc}" alt="Unterschrift">` : '';
   const noteHTML = (d.rNote&&d.rNote.trim()) ? `<div class="p-note">${esc(d.rNote.trim())}</div>` : '';
-  return `<div class="p-from">${esc(fromLine)}</div>
-    ${info}
-    <div class="p-to">${noteHTML}${esc(to)}</div>
+  return `${info}<div class="p-win"><div class="p-from">${esc(fromLine)}</div>
+    <div class="p-to">${noteHTML}${esc(to)}</div></div>
     <div class="p-date">${esc(place)}${place?', ':''}${ltEffectiveDate()}</div>
     <div class="p-subject">${esc(d.subject)}</div>
     <div class="p-body"><div>${esc(ltSalutationText(d.salutation))}</div><div><br></div>${ltSanitize(d.body||'')}</div>
@@ -2599,12 +2601,14 @@ function ltPrint(){
         html,body{background:#fff!important;margin:0!important;padding:0!important;height:auto!important;overflow:visible!important}
         body>*:not(#lt-print){display:none!important}
         #lt-print{display:block!important;font-family:${fam};font-size:${size}pt;line-height:1.5;color:#000;background:#fff}
-        ${P}.p-from{font-size:${Math.max(7,size-3)}pt;color:#444;border-bottom:.5pt solid #888;padding-bottom:2mm;margin-bottom:10mm}
-        ${P}.p-info{float:right;width:45mm;font-size:${Math.max(7,size-2)}pt;line-height:1.45;border:.5pt solid #999;padding:2mm 3mm;margin:0 0 4mm 5mm}
+        /* DIN 5008 Form B: Anschriftfeld 45 mm unter der Oberkante (Seitenrand 25 mm + 20 mm), 80 mm Textbreite, 45 mm hoch */
+        ${P}.p-win{margin-top:20mm;width:80mm;height:45mm;overflow:hidden;margin-bottom:8mm}
+        ${P}.p-from{font-size:7pt;line-height:1.2;color:#444;border-bottom:.5pt solid #888;padding-bottom:1mm;margin-bottom:4mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        ${P}.p-info{float:right;width:65mm;margin-top:25mm;font-size:${Math.max(7,size-2)}pt;line-height:1.45;border:.5pt solid #999;padding:2mm 3mm}
         ${P}.p-info b{display:block;font-size:${Math.max(6,size-3.5)}pt;text-transform:uppercase;letter-spacing:.04em;color:#555}
         ${P}.p-note{font-weight:bold;font-size:${Math.max(8,size-1)}pt;margin-bottom:1.5mm}
-        ${P}.p-to{margin-bottom:20mm;white-space:pre-line}
-        ${P}.p-date{text-align:right;margin-bottom:14mm;clear:both}
+        ${P}.p-to{white-space:pre-line;line-height:1.25}
+        ${P}.p-date{text-align:right;margin-bottom:10mm;clear:both}
         ${P}.p-subject{font-weight:bold;margin-bottom:8mm}
         ${P}.p-body{margin-bottom:12mm}
         ${P}.p-body ul,${P}.p-body ol{padding-left:6mm;margin:2mm 0}
