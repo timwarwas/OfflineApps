@@ -2585,42 +2585,40 @@ function ltPreview(){
   show('scr-lt-preview');
 }
 function ltPrint(){
-  const w=window.open('','_blank');
-  if(!w){ notify('Bitte Pop-ups für diese Seite erlauben.'); return; }
+  // Direkt aus der App drucken (kein neues Fenster: in der Home-Bildschirm-App gäbe es dort kein Zurück)
   const fam=ltFontCSS(ltDraft.font), size=(ltDraft.size||11);
-  const s=ltActive.sender, d=ltDraft;
-  // Kopfzeile für Folgeseiten (DIN 5008: Name, Betreff, Seitenzahl)
-  const contHead=esc([s.name, d.subject].filter(Boolean).join(' · '));
-  w.document.write(`<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Brief</title>
-    <style>
-      @page{size:A4;margin:25mm 20mm 20mm 25mm}
-      @page:first{margin-top:25mm}
-      body{font-family:${fam};font-size:${size}pt;line-height:1.5;color:#000;counter-reset:page 1}
-      .p-from{font-size:${Math.max(7,size-3)}pt;color:#444;border-bottom:.5pt solid #888;padding-bottom:2mm;margin-bottom:10mm}
-      .p-info{float:right;width:45mm;font-size:${Math.max(7,size-2)}pt;line-height:1.45;
-        border:.5pt solid #999;padding:2mm 3mm;margin:0 0 4mm 5mm}
-      .p-info b{display:block;font-size:${Math.max(6,size-3.5)}pt;text-transform:uppercase;letter-spacing:.04em;color:#555}
-      .p-note{font-weight:bold;font-size:${Math.max(8,size-1)}pt;margin-bottom:1.5mm}
-      .p-to{margin-bottom:20mm;white-space:pre-line}
-      .p-date{text-align:right;margin-bottom:14mm;clear:both}
-      .p-subject{font-weight:bold;margin-bottom:8mm}
-      .p-body{margin-bottom:12mm}
-      .p-body ul,.p-body ol{padding-left:6mm;margin:2mm 0}
-      .p-sign{white-space:pre-line;page-break-inside:avoid}
-      .p-sign .nm{margin-top:6mm;min-height:14mm}
-      .p-sign .nm img{max-height:16mm}
-      .p-attach{margin-top:10mm;font-size:${Math.max(8,size-1)}pt;page-break-inside:avoid}
-      .p-attach b{display:block;margin-bottom:1mm}
-      .pagefoot{position:fixed;bottom:-14mm;left:0;right:0;text-align:right;
-        font-size:${Math.max(7,size-3)}pt;color:#666}
-      .pagefoot:after{counter-increment:page;content:'Seite ' counter(page)}
-      @media print{ .pagefoot{display:block} }
-    </style></head><body>
-      <div class="pagefoot"></div>
-      ${ltBuildPreviewHTML()}
-    </body></html>`);
-  w.document.close();
-  setTimeout(()=>{ w.focus(); w.print(); },500);
+  ltSaveDraft();
+  let host=document.getElementById('lt-print');
+  if(host) host.remove();
+  host=document.createElement('div'); host.id='lt-print';
+  const P='#lt-print ';
+  host.innerHTML=`<style>
+      #lt-print{display:none}
+      @media print{
+        @page{size:A4;margin:25mm 20mm 20mm 25mm}
+        html,body{background:#fff!important;margin:0!important;padding:0!important;height:auto!important;overflow:visible!important}
+        body>*:not(#lt-print){display:none!important}
+        #lt-print{display:block!important;font-family:${fam};font-size:${size}pt;line-height:1.5;color:#000;background:#fff}
+        ${P}.p-from{font-size:${Math.max(7,size-3)}pt;color:#444;border-bottom:.5pt solid #888;padding-bottom:2mm;margin-bottom:10mm}
+        ${P}.p-info{float:right;width:45mm;font-size:${Math.max(7,size-2)}pt;line-height:1.45;border:.5pt solid #999;padding:2mm 3mm;margin:0 0 4mm 5mm}
+        ${P}.p-info b{display:block;font-size:${Math.max(6,size-3.5)}pt;text-transform:uppercase;letter-spacing:.04em;color:#555}
+        ${P}.p-note{font-weight:bold;font-size:${Math.max(8,size-1)}pt;margin-bottom:1.5mm}
+        ${P}.p-to{margin-bottom:20mm;white-space:pre-line}
+        ${P}.p-date{text-align:right;margin-bottom:14mm;clear:both}
+        ${P}.p-subject{font-weight:bold;margin-bottom:8mm}
+        ${P}.p-body{margin-bottom:12mm}
+        ${P}.p-body ul,${P}.p-body ol{padding-left:6mm;margin:2mm 0}
+        ${P}.p-sign{white-space:pre-line;page-break-inside:avoid}
+        ${P}.p-sign .nm{margin-top:6mm;min-height:14mm}
+        ${P}.p-sign .nm img{max-height:16mm}
+        ${P}.p-attach{margin-top:10mm;font-size:${Math.max(8,size-1)}pt;page-break-inside:avoid}
+        ${P}.p-attach b{display:block;margin-bottom:1mm}
+      }
+    </style>${ltBuildPreviewHTML()}`;
+  document.body.appendChild(host);
+  const done=()=>{ window.removeEventListener('afterprint',done); setTimeout(()=>{ const h=document.getElementById('lt-print'); if(h) h.remove(); },300); };
+  window.addEventListener('afterprint',done);
+  setTimeout(()=>{ try{ window.print(); }catch(e){ notify('Drucken wird hier nicht unterstützt.'); done(); } },150);
 }
 function ltCopyLetter(){
   const s=ltActive.sender, d=ltDraft;
