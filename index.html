@@ -893,7 +893,8 @@ a.gi:active,button.gi:active,label.gi:active{background:var(--rim-soft)}
     <button id="lt-win-on" onclick="ltSetWindowMarks(true)">Fenstermarken</button>
   </div>
   <div id="lt-preview-box" class="lt-preview-box"></div>
-  <button class="primary" onclick="ltPrint()">🖨 Drucken / Als PDF sichern</button>
+  <button class="primary" onclick="ltSharePdf()">📄 PDF teilen / drucken</button>
+  <button id="lt-print-btn" onclick="ltPrint()">🖨 Drucken (Browser)</button>
   <button class="ghost" onclick="ltCopyLetter()">📋 Brieftext kopieren</button>
 </div>
 
@@ -2578,6 +2579,8 @@ function ltBuildPreviewHTML(){
 }
 function ltPreview(){
   if(!ltActive){ show('scr-lt-profiles'); return; }
+  // In der Home-Bildschirm-App kann iOS nicht drucken – dort nur „PDF teilen / drucken“
+  const pb=document.getElementById('lt-print-btn'); if(pb) pb.style.display=(navigator.standalone||matchMedia('(display-mode: standalone)').matches)?'none':'';
   ltSaveDraft();
   const box=document.getElementById('lt-preview-box');
   box.innerHTML=ltBuildPreviewHTML();
@@ -2585,6 +2588,152 @@ function ltPreview(){
   box.style.fontSize=Math.round((ltDraft.size||11)*1.18)+'px';
   box.classList.toggle('winmarks', ltWinMarks);
   show('scr-lt-preview');
+}
+/* ---------- PDF selbst erzeugen (iOS-Home-Bildschirm-Apps können nicht drucken) ----------
+   A4, DIN 5008 Form B. Standardschriften (Times/Helvetica/Courier, WinAnsi), Fett/Kursiv, Listen,
+   automatischer Umbruch und Folgeseiten mit Kopfzeile „Name · Betreff · Seite n“. Unterschrift als JPEG. */
+const LT_PDF_FONTS = {
+  serif: ['Times-Roman', 'Times-Bold', 'Times-Italic', 'Times-BoldItalic', "'Times New Roman',Times,serif"],
+  sans: ['Helvetica', 'Helvetica-Bold', 'Helvetica-Oblique', 'Helvetica-BoldOblique', "Helvetica,Arial,sans-serif"],
+  mono: ['Courier', 'Courier-Bold', 'Courier-Oblique', 'Courier-BoldOblique', "'Courier New',Courier,monospace"],
+};
+function ltPdfFamily(key){ return key==='courier' ? 'mono' : ['helvetica','arial','verdana'].includes(key) ? 'sans' : 'serif'; }
+const LT_WIN = {0x20AC:0x80,0x201A:0x82,0x0192:0x83,0x201E:0x84,0x2026:0x85,0x2020:0x86,0x2021:0x87,0x02C6:0x88,0x2030:0x89,0x0160:0x8A,0x2039:0x8B,0x0152:0x8C,0x017D:0x8E,
+  0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2013:0x96,0x2014:0x97,0x02DC:0x98,0x2122:0x99,0x0161:0x9A,0x203A:0x9B,0x0153:0x9C,0x017E:0x9E,0x0178:0x9F};
+function ltWinAnsi(t){
+  let o=''; for(const ch of String(t)){ const c=ch.codePointAt(0);
+    o += (c>=32&&c<127)||(c>=160&&c<=255) ? String.fromCharCode(c) : LT_WIN[c] ? String.fromCharCode(LT_WIN[c]) : c===0x202F||c===0x2009||c===0x00A0 ? ' ' : '?'; }
+  return o;
+}
+const ltPdfStr = t => '(' + ltWinAnsi(t).replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)') + ')';
+function ltBuildPdf(){
+  const s=ltActive.sender, d=ltDraft, size=d.size||11, fam=LT_PDF_FONTS[ltPdfFamily(d.font)];
+  const MM=72/25.4, W=595.28, H=841.89, L=25*MM, R=W-20*MM, TOP1=25*MM, TOPN=20*MM, BOT=H-20*MM;
+  const cv=document.createElement('canvas').getContext('2d');
+  const fnt=(b,i)=>(b&&i?3:b?1:i?2:0);
+  const measure=(t,sz,f)=>{ cv.font=`${f===1||f===3?'bold ':''}${f===2||f===3?'italic ':''}${sz}px ${fam[4]}`; return cv.measureText(t).width*1.02; };
+  const pages=[]; let ops=null, y=0;
+  const newPage=()=>{ ops=[]; pages.push(ops); y=pages.length===1?TOP1:TOPN;
+    if(pages.length>1){ text(L, y+7, [s.name,d.subject].filter(Boolean).join(' · ')+' · Seite '+pages.length, 8, 0, '0.35'); y+=8*MM; } };
+  const text=(x,base,t,sz,f,gray)=>{ ops.push(`BT ${gray?gray+' g ':''}/F${f+1} ${sz} Tf ${x.toFixed(2)} ${(H-base).toFixed(2)} Td ${ltPdfStr(t)} Tj ET${gray?' 0 g':''}`); };
+  const line=(x1,yy,x2,w,gray)=>ops.push(`${gray||'0.5'} G ${w||0.5} w ${x1.toFixed(2)} ${(H-yy).toFixed(2)} m ${x2.toFixed(2)} ${(H-yy).toFixed(2)} l S 0 G`);
+  const ensure=h=>{ if(y+h>BOT) newPage(); };
+  // Absatz mit gemischten Läufen [{t,f}] umbrechen und setzen
+  const para=(runs,sz,lh,opt={})=>{
+    const x0=L+(opt.indent||0), maxW=(opt.width||(R-L))-(opt.indent||0);
+    const words=[]; runs.forEach(r=>String(r.t).split(/(\s+)/).forEach(w=>{ if(w) words.push({t:w,f:r.f}); }));
+    let lineW=[], w=0; const lines=[];
+    words.forEach(wd=>{ const ww=measure(wd.t,sz,wd.f);
+      if(/^\s+$/.test(wd.t)){ if(lineW.length){ lineW.push(wd); w+=ww; } return; }
+      if(w+ww>maxW && lineW.length){ while(lineW.length&&/^\s+$/.test(lineW[lineW.length-1].t)) lineW.pop(); lines.push(lineW); lineW=[]; w=0; }
+      lineW.push(wd); w+=ww; });
+    while(lineW.length&&/^\s+$/.test(lineW[lineW.length-1].t)) lineW.pop();
+    if(lineW.length||!lines.length) lines.push(lineW);
+    lines.forEach((ln,k)=>{ ensure(lh); let x=x0;
+      if(k===0&&opt.bullet) text(L+(opt.indent||0)-measure(opt.bullet+' ',sz,0), y+sz, opt.bullet, sz, 0);
+      if(opt.right){ const tw=ln.reduce((a,b)=>a+measure(b.t,sz,b.f),0); x=R-tw; }
+      ln.forEach(wd=>{ text(x, y+sz, wd.t, sz, wd.f); x+=measure(wd.t,sz,wd.f); }); y+=lh; });
+  };
+  const LH=size*1.5;
+  newPage();
+  // Info-Block rechts (ab 50 mm von oben, 125 mm von links)
+  let infoBottom=0;
+  if(d.infoOn){
+    const rows=[['Kundennummer',d.iKunde],['Vertragsnummer',d.iVertrag],['Aktenzeichen',d.iAkte],['Bearbeiter',d.iBearb]].filter(r=>r[1]&&r[1].trim());
+    let iy=50*MM; rows.forEach(r=>{ text(125*MM, iy+6, r[0].toUpperCase(), 6.5, 0, '0.35'); text(125*MM, iy+6+size, r[1], size-1, 0); iy+=size+10; }); infoBottom=iy;
+  }
+  // Anschriftfeld: Rücksendeangabe ab 45 mm, Anschrift darunter, 80 mm breit
+  const AW=80*MM; y=45*MM;
+  let from=[s.name,s.street,s.city].filter(Boolean).join(' · ');
+  while(from.length>4&&measure(from,7,0)>AW) from=from.slice(0,-2)+'…';
+  text(L, y+7, from, 7, 0, '0.3'); line(L, y+9.5, L+AW, 0.4); y+=4*MM+3;
+  if(d.rNote&&d.rNote.trim()) para([{t:d.rNote.trim(),f:1}], size-1, (size-1)*1.25, {width:AW});
+  [d.rName,d.rExtra,d.rStreet,d.rCity].filter(Boolean).forEach(t=>para([{t,f:0}], size, size*1.25, {width:AW}));
+  // Datum, Betreff, Text
+  y=Math.max(y, 90*MM, infoBottom)+8*MM;
+  const place=ltEffectivePlace();
+  para([{t:(place?place+', ':'')+ltEffectiveDate(), f:0}], size, LH, {right:true}); y+=6*MM;
+  if(d.subject){ para([{t:d.subject,f:1}], size, LH); y+=4*MM; }
+  if(d.salutation){ para([{t:ltSalutationText(d.salutation),f:0}], size, LH); y+=LH*0.6; }
+  // Text aus dem Editor: Blöcke (div/p/li) mit fett/kursiv
+  const box=document.createElement('div'); box.innerHTML=ltSanitize(d.body||'');
+  const blocks=[]; let cur=null;
+  const flush=()=>{ if(cur){ blocks.push(cur); cur=null; } };
+  const walk=(n,b,i,list)=>{
+    n.childNodes.forEach(c=>{
+      if(c.nodeType===3){ if(!cur) cur={runs:[],bullet:list}; cur.runs.push({t:c.textContent,f:fnt(b,i)}); return; }
+      if(c.nodeType!==1) return;
+      const tg=c.tagName;
+      if(tg==='BR'){ if(!cur) cur={runs:[],bullet:list}; flush(); return; }
+      if(tg==='UL'||tg==='OL'){ flush(); let k=0; c.childNodes.forEach(li=>{ if(li.nodeType===1){ k++; cur={runs:[],bullet:tg==='OL'?k+'.':'•'}; walk(li,b,i,null); flush(); } }); return; }
+      const blk=tg==='DIV'||tg==='P'||tg==='LI';
+      if(blk) flush();
+      walk(c, b||tg==='B'||tg==='STRONG', i||tg==='I'||tg==='EM', list);
+      if(blk) flush();
+    });
+  };
+  walk(box,false,false,null); flush();
+  blocks.forEach(bk=>{ const txt=bk.runs.map(r=>r.t).join('');
+    if(!txt.trim()){ y+=LH; return; }
+    para(bk.runs, size, LH, bk.bullet?{bullet:bk.bullet, indent:6*MM}:{}); });
+  // Gruß, Unterschrift, Name
+  y+=LH; ensure(LH*2+16*MM);
+  if(d.closing) para([{t:d.closing,f:0}], size, LH);
+  let img=null;
+  const sigEl=document.querySelector('#lt-preview-box .p-sign img');
+  if(!d.sigOff && sigEl && sigEl.complete && sigEl.naturalWidth){
+    const c=document.createElement('canvas'), k=Math.min(1, 900/sigEl.naturalWidth);
+    c.width=Math.round(sigEl.naturalWidth*k); c.height=Math.round(sigEl.naturalHeight*k);
+    const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(sigEl,0,0,c.width,c.height);
+    img={w:c.width,h:c.height,data:atob(c.toDataURL('image/jpeg',0.9).split(',')[1])};
+    const ih=16*MM, iw=Math.min(70*MM, ih*img.w/img.h);
+    ops.push(`q ${iw.toFixed(2)} 0 0 ${(iw*img.h/img.w).toFixed(2)} ${L.toFixed(2)} ${(H-y-2*MM-iw*img.h/img.w).toFixed(2)} cm /Im1 Do Q`);
+  }
+  y+=18*MM;
+  para([{t:s.name||'',f:0}], size, LH);
+  const contact=[s.mail,s.phone].filter(Boolean).join(' · ');
+  if(contact){ y+=2*MM; para([{t:contact,f:0}], 8, 11); }
+  const atts=(d.attach||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  if(atts.length){ y+=8*MM; ensure(LH*2); para([{t:atts.length>1?'Anlagen':'Anlage',f:1}], size-1, (size-1)*1.4); atts.forEach(a=>para([{t:a,f:0}], size-1, (size-1)*1.4)); }
+  // PDF zusammensetzen
+  const objs=[]; const add=o=>{ objs.push(o); return objs.length; };
+  const fontIds=fam.slice(0,4).map(n=>add(`<< /Type /Font /Subtype /Type1 /BaseFont /${n} /Encoding /WinAnsiEncoding >>`));
+  const imgId=img?add(`<< /Type /XObject /Subtype /Image /Width ${img.w} /Height ${img.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${img.data.length} >>\nstream\n${img.data}\nendstream`):0;
+  const pagesId=objs.length+pages.length*2+1;   // nach Inhalt+Seite je Seite folgt /Pages
+  const kids=[];
+  pages.forEach(o=>{ const st=o.join('\n'); const cId=add(`<< /Length ${st.length} >>\nstream\n${st}\nendstream`);
+    kids.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${W} ${H}] /Contents ${cId} 0 R /Resources << /Font << ${fontIds.map((f,k)=>`/F${k+1} ${f} 0 R`).join(' ')} >>${img?` /XObject << /Im1 ${imgId} 0 R >>`:''} >> >>`)); });
+  add(`<< /Type /Pages /Kids [${kids.map(k=>k+' 0 R').join(' ')}] /Count ${kids.length} >>`);
+  const cat=add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);
+  let out='%PDF-1.4\n%\xE2\xE3\xCF\xD3\n'; const offs=[];
+  objs.forEach((o,k)=>{ offs.push(out.length); out+=`${k+1} 0 obj\n${o}\nendobj\n`; });
+  const xref=out.length;
+  out+=`xref\n0 ${objs.length+1}\n0000000000 65535 f \n`+offs.map(o=>String(o).padStart(10,'0')+' 00000 n \n').join('');
+  out+=`trailer\n<< /Size ${objs.length+1} /Root ${cat} 0 R >>\nstartxref\n${xref}\n%%EOF`;
+  const bytes=new Uint8Array(out.length); for(let k=0;k<out.length;k++) bytes[k]=out.charCodeAt(k)&255;
+  return bytes;
+}
+function ltPdfName(){
+  const d=ltDraft, base=(d.subject||d.rName||'Brief').replace(/[^\wäöüÄÖÜß\- ]+/g,'').trim().replace(/\s+/g,'-').slice(0,50)||'Brief';
+  return base+'.pdf';
+}
+/* Knopf in der Vorschau: PDF erzeugen → Teilen-Menü (Drucken, In Dateien sichern, Mail …); sonst Download bzw. Drucken */
+function ltSharePdf(){
+  if(!ltActive) return;
+  ltSaveDraft();
+  let bytes; try{ bytes=ltBuildPdf(); }catch(e){ notify('PDF konnte nicht erstellt werden.'); return; }
+  const name=ltPdfName(), file=new File([bytes], name, {type:'application/pdf'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    navigator.share({files:[file], title:name}).catch(e=>{ if(e && e.name!=='AbortError') ltDownloadPdf(file); });
+    return;
+  }
+  ltDownloadPdf(file);
+}
+function ltDownloadPdf(file){
+  const url=URL.createObjectURL(file), a=document.createElement('a');
+  a.href=url; a.download=file.name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 60000);
+  notify('PDF gespeichert.');
 }
 function ltPrint(){
   // Direkt aus der App drucken (kein neues Fenster: in der Home-Bildschirm-App gäbe es dort kein Zurück)
