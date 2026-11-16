@@ -813,13 +813,16 @@ a.gi:active,button.gi:active,label.gi:active{background:var(--rim-soft)}
       data-placeholder="Hier deinen Text schreiben – oder unten den KI-Assistenten nutzen."
       oninput="ltSaveDraft()" onpaste="ltHandlePaste(event)"></div>
     <label>Grußformel</label>
-    <input id="lt-closing" type="text" placeholder="Mit freundlichen Grüßen" oninput="ltSaveDraft()">
+    <textarea id="lt-closing" rows="2" placeholder="Mit freundlichen Grüßen" oninput="ltSaveDraft()"></textarea>
 
     <div class="lt-sep">Unterschrift</div>
     <div class="lt-hint" style="margin:6px 0 0">🔒 Wird verschlüsselt im Profil „<span id="lt-sig-profile"></span>" gespeichert und steht für jeden Brief bereit.</div>
     <div class="glist inform" style="margin-top:10px">
       <label class="gi">
         <span class="gbody"><span class="glbl">Unterschrift im Brief<small>Aus: Platz zum Unterschreiben von Hand</small></span><span class="switch"><input type="checkbox" id="lt-sig-on" onchange="ltSaveDraft();ltRenderSigState()"><i></i></span></span>
+      </label>
+      <label class="gi" id="lt-name-row">
+        <span class="gbody"><span class="glbl">Name darunter<small>Name und Kontakt unter der Grußformel</small></span><span class="switch"><input type="checkbox" id="lt-name-on" onchange="ltSaveDraft();ltRenderSigState()"><i></i></span></span>
       </label>
     </div>
     <div id="lt-sig-preview" class="lt-sig-preview"></div>
@@ -2426,7 +2429,10 @@ function ltRenderEditor(){
     document.getElementById('lt-date-manual').style.display = dAuto.checked?'none':''; }
   // Info-Block
   const sOn=document.getElementById('lt-sig-on');
-  if(sOn){ sOn.checked = !ltDraft.sigOff; ltRenderSigState(); }
+  if(sOn){ sOn.checked = !ltDraft.sigOff; }
+  const nOn=document.getElementById('lt-name-on');
+  if(nOn){ nOn.checked = !ltDraft.nameOff; }
+  ltRenderSigState();
   const iOn=document.getElementById('lt-info-on');
   if(iOn){ iOn.checked = !!ltDraft.infoOn;
     document.getElementById('lt-info-fields').style.display = iOn.checked?'':'none'; }
@@ -2457,7 +2463,8 @@ function ltSaveDraft(){
     infoOn: chk('lt-info-on'), iKunde:v('lt-i-kunde'), iVertrag:v('lt-i-vertrag'),
     iAkte:v('lt-i-akte'), iBearb:v('lt-i-bearb'),
     attach:v('lt-attach'), sig: ltDraft.sig||'', salManual: !!ltDraft.salManual,
-    sigOff: document.getElementById('lt-sig-on') ? !chk('lt-sig-on') : !!ltDraft.sigOff };
+    sigOff: document.getElementById('lt-sig-on') ? !chk('lt-sig-on') : !!ltDraft.sigOff,
+    nameOff: document.getElementById('lt-name-on') ? !chk('lt-name-on') : !!ltDraft.nameOff };
   ltSaveDraftStore();
 }
 function ltClearDraft(){
@@ -2467,7 +2474,7 @@ function ltClearDraft(){
       font:ltDraft.font||'georgia', size:ltDraft.size||11,
       dateAuto:true, date:'', place:ltDraft.place||'', infoOn:false,
       iKunde:'', iVertrag:'', iAkte:'', iBearb:'', attach:'',
-      sig:ltDraft.sig||'', salManual:false, sigOff:!!ltDraft.sigOff };
+      sig:ltDraft.sig||'', salManual:false, sigOff:!!ltDraft.sigOff, nameOff:!!ltDraft.nameOff };
     ltSaveDraftStore(); ltRenderEditor(); notify('Brief geleert.');
   }, 'Ja, leeren', null,
   {detail:'Empfänger, Betreff und Text werden gelöscht. Dein Profil bleibt erhalten.', noLabel:'Nein, behalten'});
@@ -2548,7 +2555,10 @@ function ltSalutationText(t){ t=String(t||'').trim(); return t && !/[,!:]$/.test
 function ltRenderSigState(){
   const off=!!ltDraft.sigOff;
   ['lt-sig-preview','lt-sig-btn'].forEach(id=>{ const e=document.getElementById(id); if(e) e.classList.toggle('lt-off', off); });
+  const row=document.getElementById('lt-name-row'); if(row) row.style.display = off ? '' : 'none';   // mit Unterschrift steht der Name immer darunter
 }
+/* Name (und Kontakt) unter der Grußformel? Nur abschaltbar, wenn keine Unterschrift im Brief ist */
+const ltShowName = d => !(d.sigOff && d.nameOff);
 function ltBuildPreviewHTML(){
   const s=ltActive.sender, d=ltDraft;
   const fromLine=[s.name,s.street,s.city].filter(Boolean).join(' · ');
@@ -2574,7 +2584,7 @@ function ltBuildPreviewHTML(){
     <div class="p-date">${esc(place)}${place?', ':''}${ltEffectiveDate()}</div>
     <div class="p-subject">${esc(d.subject)}</div>
     <div class="p-body"><div>${esc(ltSalutationText(d.salutation))}</div><div><br></div>${ltSanitize(d.body||'')}</div>
-    <div class="p-sign">${esc(d.closing)}<div class="nm">${sigHTML}</div><div>${esc(s.name)}</div>${contact?`<div style="font-size:11px;color:#555;margin-top:14px">${esc(contact)}</div>`:''}</div>
+    <div class="p-sign">${esc(d.closing)}${ltShowName(d) ? `<div class="nm">${sigHTML}</div><div>${esc(s.name)}</div>${contact?`<div style="font-size:11px;color:#555;margin-top:14px">${esc(contact)}</div>`:''}` : ''}</div>
     ${attachHTML}`;
 }
 function ltPreview(){
@@ -2677,8 +2687,8 @@ function ltBuildPdf(){
     if(!txt.trim()){ y+=LH; return; }
     para(bk.runs, size, LH, bk.bullet?{bullet:bk.bullet, indent:6*MM}:{}); });
   // Gruß, Unterschrift, Name
-  y+=LH; ensure(LH*2+16*MM);
-  if(d.closing) para([{t:d.closing,f:0}], size, LH);
+  y+=LH; ensure(ltShowName(d) ? LH*2+16*MM : LH);
+  if(d.closing) String(d.closing).split('\n').forEach(t=>para([{t,f:0}], size, LH));   // Zeilenumbrüche der Grußformel bleiben
   let img=null;
   const sigEl=document.querySelector('#lt-preview-box .p-sign img');
   if(!d.sigOff && sigEl && sigEl.complete && sigEl.naturalWidth){
@@ -2689,10 +2699,12 @@ function ltBuildPdf(){
     const ih=16*MM, iw=Math.min(70*MM, ih*img.w/img.h);
     ops.push(`q ${iw.toFixed(2)} 0 0 ${(iw*img.h/img.w).toFixed(2)} ${L.toFixed(2)} ${(H-y-2*MM-iw*img.h/img.w).toFixed(2)} cm /Im1 Do Q`);
   }
-  y+=18*MM;
-  para([{t:s.name||'',f:0}], size, LH);
-  const contact=[s.mail,s.phone].filter(Boolean).join(' · ');
-  if(contact){ y+=2*MM; para([{t:contact,f:0}], 8, 11); }
+  if(ltShowName(d)){
+    y+=18*MM;
+    para([{t:s.name||'',f:0}], size, LH);
+    const contact=[s.mail,s.phone].filter(Boolean).join(' · ');
+    if(contact){ y+=2*MM; para([{t:contact,f:0}], 8, 11); }
+  }
   const atts=(d.attach||'').split('\n').map(x=>x.trim()).filter(Boolean);
   if(atts.length){ y+=8*MM; ensure(LH*2); para([{t:atts.length>1?'Anlagen':'Anlage',f:1}], size-1, (size-1)*1.4); atts.forEach(a=>para([{t:a,f:0}], size-1, (size-1)*1.4)); }
   // PDF zusammensetzen
@@ -2781,7 +2793,7 @@ function ltCopyLetter(){
   const plainBody=(tmp.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
   const txt=[[s.name,s.street,s.city].filter(Boolean).join('\n'),'',
     [d.rName,d.rExtra,d.rStreet,d.rCity].filter(Boolean).join('\n'),'',
-    ltLetterDate(),'',d.subject,'',ltSalutationText(d.salutation),'',plainBody,'',d.closing,'',s.name].join('\n');
+    ltLetterDate(),'',d.subject,'',ltSalutationText(d.salutation),'',plainBody,'',d.closing].concat(ltShowName(d)?['',s.name]:[]).join('\n');
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(()=>notify('Brief kopiert.')).catch(()=>notify('Kopieren nicht möglich.'));
   }else notify('Kopieren wird nicht unterstützt.');
