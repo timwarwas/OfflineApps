@@ -384,6 +384,8 @@ body{overflow-x:clip} /* „hidden“ machte body zum Scroll-Container, dann kle
 .iconbtn{color:var(--petrol-ink);font:600 16px var(--body)}
 .iconbtn:active{background:var(--petrol-soft)}
 .iconbtn.back{gap:2px;padding:0 10px 0 4px}
+.iconbtn.back.homebtn{padding:0;min-width:44px;justify-content:center}
+.iconbtn.back.homebtn svg{width:22px;height:22px;stroke-width:1.9}
 .iconbtn.back svg{width:24px;height:24px;stroke-width:2.4;flex:none}
 .iconbtn.del{color:var(--muted)}
 h1.title{font:600 34px/1.1 var(--head);letter-spacing:0;margin:8px 0 8px}
@@ -2064,7 +2066,7 @@ function vGroups(){
   const act=S.groups.filter(g=>!g.archived), arc=S.groups.filter(g=>g.archived);
   const row=g=>`<button class="grow" data-act="openGroup" data-id="${g.id}"><div class="mid"><div class="t">${g.share?'🔗 ':''}${esc(g.name)}</div><div class="small muted">${esc([fmtRange(g),g.members.length+(g.members.length===1?' Person':' Personen'),fmtEuro(totalExpenses(g))].filter(Boolean).join(' · '))}</div></div><span class="chev" aria-hidden="true">›</span></button>`;
   return `<div class="wrap">
-  <div class="top"><a class="iconbtn back" href="./index.html">${IC.back}Sammlung</a><div class="ttl"></div><button class="iconbtn gearbtn" data-act="showSettings" aria-label="Einstellungen">${IC.gear}</button></div>
+  <div class="top"><a class="iconbtn back homebtn" href="./index.html" aria-label="Zur App-Übersicht"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.2 12 4.5l8 6.7"/><path d="M6.2 9.8V19a1 1 0 0 0 1 1h9.6a1 1 0 0 0 1-1V9.8"/><path d="M10 20v-5h4v5"/></svg></a><div class="ttl"></div><button class="iconbtn gearbtn" data-act="showSettings" aria-label="Einstellungen">${IC.gear}</button></div>
   <h1 class="title">Kosten&shy;aufteilung</h1>
   
   ${act.length?`<div class="glist">${act.map(row).join('')}</div>`:`<div class="card empty"><p>Noch keine Reise angelegt. Leg eine neue an oder probier die Beispielreise aus.</p><button class="btn block" data-act="loadExample">Beispielreise „Hütte Tirol“ laden</button></div>`}

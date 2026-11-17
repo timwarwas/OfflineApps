@@ -2,11 +2,12 @@
    Betrifft ausschließlich die Seiten in PAGES – alle anderen Seiten bleiben unberührt.
    Strategie: erst Netz (immer aktueller Stand), ohne Netz die zuletzt geladene Version. */
 const CACHE = 'essensplanung-v1';   // Name beibehalten, damit der bestehende Offline-Stand erhalten bleibt
-const PAGES = ['/essensplanung.html', '/kosten.html', '/workout.html', '/cocktails.html', '/spiele.html'];
+const PAGES = ['/index.html', '/essensplanung.html', '/kosten.html', '/workout.html', '/cocktails.html', '/spiele.html'];
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+  if (url.origin === location.origin && url.pathname.endsWith('/')) url.pathname += 'index.html';   // Aufruf des Ordners = Hauptmenü
   if (e.request.method !== 'GET' || url.origin !== location.origin || !(PAGES.some(p => url.pathname.endsWith(p)))) return;
   e.respondWith(
     fetch(e.request).then(res => {
