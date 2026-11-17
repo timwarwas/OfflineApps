@@ -48,7 +48,8 @@ button{cursor:pointer;border:none;background:none}
 .gearbadge{position:absolute;top:3px;right:1px;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:var(--tomato);color:#fff;
   font-size:12px;font-weight:700;line-height:19px;text-align:center;box-shadow:0 0 0 2px var(--enamel)}
 .countbadge{min-width:24px;height:24px;padding:0 7px;border-radius:99px;background:var(--tomato);color:#fff;font-size:13px;font-weight:700;line-height:24px;text-align:center}
-.syncpill{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--speckle);padding:6px 9px;border-radius:99px;border:1px solid var(--line);background:var(--plate);min-height:32px}
+.syncpill{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:var(--speckle);padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:var(--plate);min-height:44px;min-width:44px;flex:none}
+@media (max-width:519px){.syncpill span{display:none}.syncpill{padding:0;border-color:transparent;background:transparent}.syncpill i{width:11px;height:11px;box-shadow:0 0 0 5px var(--rim-soft)}}
 .syncpill i{width:8px;height:8px;border-radius:50%;background:var(--speckle);display:block}
 .syncpill.ok i{background:var(--basil)} .syncpill.busy i{background:var(--rim)} .syncpill.err i{background:var(--tomato)}
 
@@ -93,7 +94,7 @@ select.in{appearance:none;-webkit-appearance:none;background-image:linear-gradie
 .empty{text-align:center;padding:36px 16px;color:var(--speckle)}
 .empty .serif{font-size:21px;color:var(--ink);margin-bottom:6px}
 .seg{display:flex;background:var(--rim-soft);border-radius:12px;padding:4px;gap:4px}
-.seg button{flex:1;min-height:40px;border-radius:9px;font-size:14px;font-weight:600;color:var(--speckle);padding:6px 8px}
+.seg button{flex:1;min-height:44px;border-radius:9px;font-size:14px;font-weight:600;color:var(--speckle);padding:6px 8px}
 .seg button[aria-pressed="true"]{background:var(--plate);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
 .stepper{display:flex;align-items:center;gap:6px}
 .stepper button{width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--plate);font-size:22px;font-weight:600;color:var(--rim)}
@@ -201,7 +202,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .rlist{margin-top:12px}
 .rcard{background:var(--plate);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
 .rcard.paused{opacity:.72}
-.rcard .head{display:flex;align-items:center;gap:12px}
+.rcard .head{display:flex;align-items:center;gap:12px;min-height:44px}
 .rcard .thumb{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;border:3px solid var(--rim)}
 .rcard .nm{font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.2;text-align:left;overflow-wrap:anywhere}
 .rcard .meta{font-size:13px;color:var(--speckle);margin-top:2px;text-align:left}
@@ -225,7 +226,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left}
 .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:8px;margin-top:8px}
 .gallery button{aspect-ratio:1;border-radius:12px;overflow:hidden;position:relative;border:1.5px solid var(--line);background:var(--rim-soft)}
 .gallery img{width:100%;height:100%;object-fit:cover;display:block}
-.gallery .cover{position:absolute;left:4px;top:4px;background:var(--rim);color:var(--rim-ink);font-size:11px;font-weight:700;padding:2px 6px;border-radius:99px}
+.gallery .cover{position:absolute;left:4px;top:4px;background:var(--rim);color:var(--rim-ink);font-size:12px;font-weight:700;padding:2px 6px;border-radius:99px}
 .gallery .add{display:flex;align-items:center;justify-content:center;font-size:30px;color:var(--rim);border-style:dashed}
 
 /* ---------- Einkauf ---------- */
@@ -409,7 +410,7 @@ body.cooking.has-timers .cookscreen{padding-bottom:calc(150px + env(safe-area-in
 .day.today{background:color-mix(in srgb,var(--rim) 7%,var(--plate))}
 .day.today:before{width:5px}
 .day.today .dt b{color:var(--rim)}
-.todaypill{display:block;font-style:normal;margin:4px auto 0;font-size:10.5px;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--rim-ink);background:var(--rim);border-radius:99px;padding:2px 0;width:44px}
+.todaypill{display:block;font-style:normal;margin:4px auto 0;font-size:12px;font-weight:800;letter-spacing:0;color:var(--rim-ink);background:var(--rim);border-radius:99px;padding:2px 0;width:44px}
 /* ---------- Mehr … ---------- */
 .optmore.hidden{display:none}
 .opt.moretoggle .grow{color:var(--speckle)}
@@ -444,7 +445,7 @@ button.gi:active{background:var(--rim-soft)}
 .gval{color:var(--speckle);font-size:15px;text-align:right;white-space:nowrap;max-width:45%;overflow:hidden;text-overflow:ellipsis}
 .gchev{width:15px;height:15px;color:var(--speckle);opacity:.6;flex-shrink:0}
 .stepper.small{gap:6px}
-.stepper.small button{width:44px;height:40px;font-size:20px}
+.stepper.small button{width:44px;height:44px;font-size:20px}
 .stepper.small output{min-width:26px;font-size:17px}
 .daypick{margin-top:14px}
 .daypick .chip{min-width:44px;min-height:44px;justify-content:center}
@@ -488,7 +489,7 @@ main{padding-bottom:calc(92px + env(safe-area-inset-bottom))}
 .shopclean{margin-top:10px}
 /* Zusatzartikel in den Gruppen */
 .xitem .xname{flex:1;min-width:0;text-align:left;min-height:44px;display:flex;flex-direction:column;justify-content:center;font:inherit;color:inherit}
-.xitem .xname small{font-size:11px;color:var(--speckle);font-weight:600}
+.xitem .xname small{font-size:12px;color:var(--speckle);font-weight:600}
 .xitem .xdel{min-width:44px;min-height:44px}
 .xitem .xedit{min-width:44px;min-height:44px;padding:0;display:inline-flex;align-items:center;justify-content:center;color:var(--rim)}
 .xitem .xedit svg{width:18px;height:18px}
@@ -552,7 +553,7 @@ button.ordlbl{cursor:pointer;font-weight:600}
 .dstrip{display:flex;gap:6px;overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;margin:12px -16px 4px;padding:4px 16px 6px;scrollbar-width:none}
 .dstrip::-webkit-scrollbar{display:none}
 .dchip{flex:0 0 auto;width:48px;min-height:66px;border-radius:14px;border:1px solid var(--line);background:var(--plate);color:inherit;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:4px 0;scroll-snap-align:center;cursor:pointer;position:relative}
-.dchip small{font-size:11.5px;color:var(--speckle);font-weight:600}
+.dchip small{font-size:12px;color:var(--speckle);font-weight:600}
 .dchip b{font-size:18px;line-height:1.2}
 .dchip i{width:7px;height:7px;border-radius:50%;background:transparent;margin-top:2px}
 .dchip.busy i{background:var(--speckle)}
@@ -578,7 +579,9 @@ button.ordlbl{cursor:pointer;font-weight:600}
 .lane-special .plus{font-size:22px;font-weight:600;color:var(--special);line-height:1;padding:0 2px}
 .badge.special{background:transparent;border:1.5px solid var(--special);color:var(--special)}
 .badge.guests{background:var(--rim-soft);color:var(--rim)}
-.seg5 button{flex:1 1 0;font-size:12.5px;padding:6px 2px;min-width:0;line-height:1.15;overflow-wrap:break-word;hyphens:manual}
+.seg5{overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.seg5::-webkit-scrollbar{display:none}
+.seg5 button{flex:1 0 auto;font-size:14px;padding:6px 14px;white-space:nowrap;scroll-snap-align:center}
 .stepper.big{justify-content:center}
 .stepper.big button{width:56px;height:56px;font-size:26px}
 .stepper.big output{min-width:64px;font-size:30px;font-family:var(--serif)}
@@ -746,6 +749,31 @@ textarea.in.stepin{min-height:64px;resize:none;overflow:hidden;line-height:1.4}
 .psearch{position:sticky;top:22px;z-index:1;background:var(--enamel);margin:10px -18px 0;padding:6px 18px 8px}
 .psearch .in{margin:0}
 .psearch + .pick{min-height:40vh}
+/* ---------- Aufräumen 17.11.2026 ---------- */
+/* Einkauf: Zeitraum als eine Zeile */
+.periodbar{display:flex;align-items:center;gap:4px;margin:0 0 10px}
+.periodbtn{flex:1;min-width:0;min-height:48px;display:flex;align-items:baseline;justify-content:center;gap:8px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:var(--plate);color:var(--ink)}
+.periodbtn b{font-family:var(--serif);font-size:19px;font-weight:600;white-space:nowrap}
+.periodbtn span{font-size:14px;color:var(--speckle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.periodbtn svg{width:18px;height:18px;flex:none;align-self:center;color:var(--rim);transition:transform .15s}
+.periodbtn[aria-expanded=true] svg{transform:rotate(180deg)}
+.periodbox{margin-bottom:12px}
+.periodbox .shopmode{margin:0 0 10px}
+h2.printonly-h{display:none}
+.shopfor{margin:2px 2px 10px}
+@media print{h2.printonly-h{display:block}}
+.item .partsbtn{min-width:44px}
+/* Woche */
+.cookbtn{flex-direction:column;gap:1px;width:56px}
+.cookbtn span{font-size:12px;font-weight:600;line-height:1}
+.cookbtn svg{width:22px;height:22px}
+.lanerow>.cookbtn span{display:none}
+/* Rezepte */
+.quick .morebtn{min-width:48px;padding:0 10px;color:var(--rim)}
+.quick .morebtn svg{width:22px;height:22px}
+.wbadge{font-weight:700;font-size:14px;color:var(--rim);background:var(--rim-soft);border-radius:99px;padding:4px 10px;font-variant-numeric:tabular-nums}
+.rcard .ctrl label{min-height:44px}
+.giswitch{cursor:pointer}
 
 </style>
 </head>
@@ -3933,6 +3961,8 @@ const ICON = {
   book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4.5h11a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11M9 8h6"/></svg>',
   gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M15 5l-7 7 7 7"/></svg>',
+  more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>',
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.2 12 4.5l8 6.7"/><path d="M6.2 9.8V19a1 1 0 0 0 1 1h9.6a1 1 0 0 0 1-1V9.8"/><path d="M10 20v-5h4v5"/></svg>',
   oplus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>',
   ocheck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   oswap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4L4 7l3 3M4 7h13M17 20l3-3-3-3M20 17H7"/></svg>',
@@ -3960,7 +3990,7 @@ const ICON = {
   opeople: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.9.3 5 2.6 5 5.8"/></svg>',
   lock: '<svg class="lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
 };
-const TABS = [['week', 'Woche', ICON.week], ['suggest', 'Vorschlag', ICON.plate], ['shop', 'Einkauf', ICON.cart], ['recipes', 'Rezepte', ICON.book]];
+const TABS = [['shop', 'Einkauf', ICON.cart], ['week', 'Woche', ICON.week], ['suggest', 'Vorschlag', ICON.plate], ['recipes', 'Rezepte', ICON.book]];   // Start-Reiter (HOME) steht links
 const TITLES = { suggest: 'Als Nächstes', week: 'Wochenplan', shop: 'Einkaufsliste', recipes: 'Rezepte',
   edit: 'Rezept', ingredients: 'Zutaten', rotation: 'Rotation', settings: 'Einstellungen', sync: 'Geräteabgleich', sources: 'Einkaufsorte',
   stores: 'Geschäfte', store: 'Geschäft' };
@@ -3969,7 +3999,7 @@ const LANE_DEF = { MAIN: 'Hauptgerichte', LUNCH: 'Mittag', CAKE: 'Kuchen', SIDE:
 const DISH_DEF = { MAIN: 'Hauptgericht', LUNCH: 'Mittag', CAKE: 'Kuchen', SIDE: 'Beilage', SPECIAL: 'Besonderes' };
 const customKind = k => { const n = typeof db !== 'undefined' && db && db.settings && db.settings.kindNames && db.settings.kindNames[k]; return n && String(n).trim() || ''; };
 /* Trennhilfe für enge Umschalter (fünf Arten nebeneinander) */
-const segLbl = t => esc(t).replace(/^Hauptgericht/, 'Haupt&shy;gericht').replace(/^Besonderes$/, 'Beson&shy;deres').replace(/^Mittagessen$/, 'Mittag&shy;essen');
+const segLbl = t => esc(t);   // früher mit Trennstellen; die Leiste ist jetzt bei Bedarf seitlich wischbar
 const laneWhat = l => customKind(l) || (l === 'LUNCH' ? 'Mittagessen' : l === 'CAKE' ? 'Kuchen' : LANE_DEF[l]);
 const LANE_LABEL = new Proxy(LANE_DEF, { get: (o, k) => (typeof k === 'string' && customKind(k)) || o[k] });
 const DISH_LABEL = new Proxy(DISH_DEF, { get: (o, k) => (typeof k === 'string' && customKind(k)) || o[k] });
@@ -4018,7 +4048,12 @@ function openSheet(html, bind) {
   const sheet = s.firstElementChild;
   enableSwipeDown(sheet, s);
   if (bind) bind(sheet);
+  centerSegs(sheet);
   const f = $('input,select,textarea', s); if (f && !('ontouchstart' in window)) f.focus();
+}
+/* Wischbare Leisten (5 Rezept-Arten): die gewählte Art in die Mitte holen */
+function centerSegs(root) {
+  $$('.seg5', root).forEach(c => { const b = $('[aria-pressed="true"]', c); if (b) c.scrollLeft = b.offsetLeft - (c.clientWidth - b.offsetWidth) / 2; });
 }
 /* Blatt am Griff (oder ganz oben) nach unten ziehen → schließen */
 function enableSwipeDown(sheet, scrim) {
@@ -4388,7 +4423,7 @@ function renderSyncPill() {
   const map = { off: ['', 'Nur dieses Gerät'], ok: ['ok', 'Abgeglichen'], busy: ['busy', 'Gleicht ab …'], err: ['err', 'Abgleich gestört'], offline: ['', 'Offline'] };
   const [cls, txt] = map[Sync.enabled() ? Sync.state : 'off'] || map.off;
   p.className = 'syncpill ' + cls;
-  p.innerHTML = `<i></i>${txt}`;
+  p.innerHTML = `<i></i><span>${txt}</span>`; p.setAttribute('aria-label', 'Geräteabgleich: ' + txt);
   p.title = Sync.msg || txt;
 }
 function rerender() {
@@ -4396,7 +4431,7 @@ function rerender() {
   const isTab = TABS.some(t => t[0] === route.name);
   $('#ttl').textContent = route.name === 'edit' ? (editState && editState.isNew ? 'Neues Rezept' : 'Rezept bearbeiten') : TITLES[route.name];
   $('#topleft').innerHTML = isTab
-    ? `<a class="iconbtn" href="index.html" aria-label="Zur Übersicht der Apps">${ICON.back}</a>`
+    ? `<a class="iconbtn" href="index.html" aria-label="Zur Übersicht der Apps">${ICON.home}</a>`
     : `<button class="iconbtn" data-act="back" aria-label="Zurück">${ICON.back}</button>`;
   $('#tabs').innerHTML = TABS.map(([k, l, ic]) => `<button data-tab="${k}" ${route.name === k || (!isTab && stack[0] && stack[0].name === k) ? 'aria-current="page"' : ''}>${ic}${l}</button>`).join('');
   const views = { suggest: vSuggest, week: vWeek, shop: vShop, recipes: vRecipes, edit: vEdit, ingredients: vIngredients, rotation: vRotation, settings: vSettings, sync: vSync, sources: vSources, stores: vStores, store: vStore };
@@ -4404,6 +4439,7 @@ function rerender() {
   main.className = 'r-' + route.name;   // für breite Bildschirme (iPad, quer): Aufteilung je Ansicht
   main.innerHTML = (views[route.name] || vSuggest)();
   const binder = BIND[route.name]; if (binder) binder(main);
+  centerSegs(main);
   renderSyncPill();
   const editing = route.name === 'edit';   // Rezept bearbeiten: „Speichern“ immer oben erreichbar
   $('#hdrsave').classList.toggle('hidden', !editing); $('#syncpill').classList.toggle('hidden', editing); $('#gear').classList.toggle('hidden', editing);
@@ -4516,7 +4552,7 @@ function vSuggest() {
 /* Direktknopf in die Kochansicht (bei leeren Rezepten zeigt sie einen Hinweis zum Ergänzen) */
 function cookBtn(r) {
   if (!r) return '';
-  return `<button class="cookbtn" data-act="cook" data-arg="${r.id}" aria-label="Kochansicht: ${esc(r.name)}">${ICON.pot}</button>`;
+  return `<button class="cookbtn" data-act="cook" data-arg="${r.id}" aria-label="Kochansicht: ${esc(r.name)}">${ICON.pot}<span>Kochen</span></button>`;
 }
 function laneVisible(lane) { return laneDays(lane).length > 0 && liveRecipes().some(r => EP.laneOf(r) === lane); }
 /* Durchgehende Wochenansicht: Wochen untereinander, KW als mitlaufende Trennzeile.
@@ -4547,7 +4583,7 @@ function weekBlock(ws, today, showLane) {
       const b = p.type === 'COOK' ? `<span class="badge cook">Kochtag${p.dayCount > 1 ? ` 1/${p.dayCount}` : ''}</span>`
         : `<span class="badge rest">Reste ${p.dayIndex}/${p.dayCount}</span>`;
       body = `<div class="nm">${esc(r ? r.name : 'Gelöschtes Rezept')}</div><div class="tags">${b}${r && EP.laneOf(r) === 'SPECIAL' ? `<span class="badge special">${esc(DISH_LABEL.SPECIAL)}</span>` : ''}${p.portions && p.type === 'COOK' ? `<span class="badge guests">${p.portions} Port.</span>` : ''}${p.guests && p.type === 'COOK' ? `<span class="badge guests">👥 ${p.guests}</span>` : ''}${carry ? '<span class="badge">Übertrag</span>' : ''}
-        ${p.status === 'DONE' && p.type === 'COOK' ? '<span class="badge done">Gekocht</span>' : ''}${p.source === 'MANUAL' && p.type === 'COOK' ? '<span class="badge">Selbst gewählt</span>' : ''}</div>`;
+        ${p.status === 'DONE' && p.type === 'COOK' ? '<span class="badge done">Gekocht</span>' : ''}</div>`;
     }
     const laneLines = ['LUNCH', 'CAKE'].map(l => {
       const x = ents.lanes[l].get(d);
@@ -4575,9 +4611,10 @@ function weekBlock(ws, today, showLane) {
       <div class="what">${body}</div>${p && p.locked ? ICON.lock : ''}</button>${cookBtn(mainRecipe)}</div>${specialLine}${laneLines}${extraLines}${sideLine}</div>`;
   }).join('');
   const canFill = !draft && days[6] >= today;
+  const hasFree = days.some(d => d >= today && !ents.get(d));   // „Füllen“ nur hervorheben, wenn es etwas zu füllen gibt
   return `<section class="wkblock${isDraft ? ' drafting' : ''}${ws === EP.weekStart(today) ? ' current' : ''}" data-ws="${ws}">
     <div class="wksep weekhead"><div class="kw"><b>KW ${kw}</b><span>${EP.fmtRange(ws, days[6])}</span></div>
-      <div class="wkbtns">${canFill ? `<button class="btn small primary" data-act="fill" data-arg="${ws}" aria-label="KW ${kw} füllen">Füllen</button>` : ''}
+      <div class="wkbtns">${canFill ? `<button class="btn small${hasFree ? ' primary' : ''} fillbtn" data-act="fill" data-arg="${ws}" aria-label="KW ${kw} füllen">Füllen</button>` : ''}
         <button class="iconbtn" data-act="toshop" data-arg="${ws}" aria-label="Einkaufsliste KW ${kw}">${ICON.cart}</button></div></div>
     ${isDraft ? `<div class="draftbar"><b>Entwurf</b> – noch nicht gespeichert. Tippe auf einen Tag, um zu tauschen, zu verschieben oder selbst zu wählen.</div>` : ''}
     <div class="days">${rows}</div>
@@ -4852,9 +4889,12 @@ function addLaneOptions(d, opts) {
 }
 
 /* ---------- Einkauf (5.5) ---------- */
+/* iOS druckt aus Home-Bildschirm-Apps nicht (window.print bleibt ohne Wirkung) */
+const canPrint = () => !(navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
 const shopOpen = new Set();
+let shopPeriodOpen = false;   // Zeitraum-Auswahl aufgeklappt
 /* Anordnung der Einkaufsliste (je Gerät): Reihenfolge der Blöcke und ausgeblendete Blöcke */
-const SHOP_BLOCKS = [['period', 'Zeitraum'], ['title', 'Überschrift'], ['list', 'Einkaufsliste'], ['add', 'Artikel hinzufügen'], ['sugg', 'Vorschläge'], ['pantry', 'Vorrat prüfen'], ['actions', 'Kopieren, Teilen, Drucken']];
+const SHOP_BLOCKS = [['period', 'Zeitraum'], ['title', 'Gerichte („Für: …“)'], ['list', 'Einkaufsliste'], ['add', 'Artikel hinzufügen'], ['sugg', 'Vorschläge'], ['pantry', 'Vorrat prüfen'], ['actions', 'Kopieren, Teilen, Drucken']];
 function shopLayout() {
   let o = null; try { o = JSON.parse(localStorage.getItem('ep_shoplayout') || 'null'); } catch (e) {}
   const keys = SHOP_BLOCKS.map(b => b[0]);
@@ -4907,7 +4947,7 @@ function vShop() {
       const who = [].concat(r.dishes || [], r.extras && r.extras.length ? ['selbst hinzugefügt'] : []);
       return `<label class="item ${r.checked ? 'checked' : ''}${multi ? ' hasparts' : ''}"><input type="checkbox" data-check="${esc(r.key)}" ${r.checked ? 'checked' : ''}>
     <span class="nm">${esc(r.name)}${who.length ? `<small class="dish">für ${who.map(esc).join(', ')}</small>` : ''}</span>${withAmt && r.amount ? `<span class="amt">${esc(r.amount)}</span>` : ''}
-    ${multi ? `<button class="partsbtn noprint" data-act="shopparts" data-arg="${esc(r.key)}" aria-expanded="${open}" aria-label="${esc(r.name)}: Einzelposten ${open ? 'zuklappen' : 'zeigen'}"><span>${r.parts.length}</span>${ICON.chev}</button>` : ''}</label>
+    ${multi ? `<button class="partsbtn noprint" data-act="shopparts" data-arg="${esc(r.key)}" aria-expanded="${open}" aria-label="${esc(r.name)}: ${r.parts.length} Einzelposten ${open ? 'zuklappen' : 'zeigen'}">${ICON.chev}</button>` : ''}</label>
     ${open ? `<div class="parts noprint">${r.parts.map(q => `<div class="part${q.checked ? ' checked' : ''}"><span class="pl">${esc(q.label)}${q.date ? `<small>${EP.weekday(q.date)} ${EP.fmtShort(q.date)}</small>` : ''}</span>
       <span class="amt">${esc(q.amount || '')}</span>${q.extra ? `<button class="btn quiet small xdel" data-act="delextra" data-arg="${q.extra}" aria-label="Selbst hinzugefügt: ${esc(r.name)} löschen">✕</button>` : '<span class="xsp"></span>'}</div>`).join('')}</div>` : ''}`;
     })();
@@ -4917,26 +4957,26 @@ function vShop() {
   const empty = !list.recipes.length && !list.extraItems.length;
   const anyStore = k => EP.liveStores(db.settings).some(x => x.kind === k);
   const storeChip = (k, lbl) => `<button class="storechip noprint" data-act="storepick" data-arg="${k}" aria-label="Geschäft für ${lbl} wählen">${list.stores[k] ? esc(list.stores[k].name) : anyStore(k) ? 'Ohne Geschäft' : 'Geschäft wählen'} ▾</button>`;
-  const head = (k, lbl, n) => `<div class="shophead"><h3>${lbl}${n != null ? ` <small>${n}</small>` : ''}</h3>${storeChip(k, lbl)}</div>`;
+  const head = (k, lbl) => `<div class="shophead"><h3>${lbl}</h3>${storeChip(k, lbl)}</div>`;
   const marketHtml = list.marketGroups
     ? list.marketGroups.map(g => `<p class="cat">${esc(g.label)}</p>${g.items.map(r => item(r, showQ)).join('')}`).join('')
     : list.market.map(r => item(r, showQ)).join('');
   const nChecked = list.market.concat(...list.supermarket.map(g => g.items), ...list.drogerie.map(g => g.items), list.pantry).filter(r => r.checked).length;
   const B = {
-    period: `<div class="seg shopmode noprint"><button data-act="shopmode" data-arg="all" aria-pressed="${mode === 'all'}">Alles Kommende</button><button data-act="shopmode" data-arg="week" aria-pressed="${mode !== 'all'}">Nach Woche</button></div>
-    ${mode === 'all' ? `<div class="weekhead noprint"><div class="kw"><b>Ab heute</b><span>${EP.fmtRange(from, to)}</span></div></div>` : `<div class="weekhead noprint">
-      <button class="iconbtn" data-act="shopwk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>
-      <div class="kw"><b>${isWeek ? 'KW ' + EP.isoWeek(from) : 'Eigener Zeitraum'}</b><span>${EP.fmtRange(from, to)}</span></div>
-      <button class="iconbtn" data-act="shopwk" data-arg="7" aria-label="Nächste Woche" style="transform:scaleX(-1)">${ICON.back}</button>
-    </div>`}
-    <details class="box noprint rangebox" ${mode === 'custom' ? 'open' : ''}><summary>Zeitraum anpassen</summary>
+    period: `<div class="periodbar noprint">
+      ${mode === 'all' ? '' : `<button class="iconbtn" data-act="shopwk" data-arg="-7" aria-label="Vorige Woche">${ICON.back}</button>`}
+      <button class="periodbtn" data-act="shopperiod" aria-expanded="${shopPeriodOpen}" aria-label="Zeitraum ändern"><b>${mode === 'all' ? 'Ab heute' : isWeek ? 'KW ' + EP.isoWeek(from) : 'Zeitraum'}</b><span>${EP.fmtRange(from, to)}</span>${ICON.chev}</button>
+      ${mode === 'all' ? '' : `<button class="iconbtn" data-act="shopwk" data-arg="7" aria-label="Nächste Woche" style="transform:scaleX(-1)">${ICON.back}</button>`}
+    </div>
+    ${shopPeriodOpen || mode === 'custom' ? `<div class="box noprint periodbox">
+      <div class="seg shopmode"><button data-act="shopmode" data-arg="all" aria-pressed="${mode === 'all'}">Alles Kommende</button><button data-act="shopmode" data-arg="week" aria-pressed="${mode !== 'all'}">Nach Woche</button></div>
       <div class="dategrid">
         <label><span class="hint">Von</span><input class="in" type="date" id="sf" value="${from}"></label>
         <label><span class="hint">Bis</span><input class="in" type="date" id="st" value="${to}"></label>
-      </div></details>
+      </div></div>` : ''}
 `,
-    title: `    <h2 style="margin-top:18px" class="printonly-h">Einkauf ${EP.fmtRange(from, to)}</h2>
-    <p class="sub">${!list.recipes.length ? 'In diesem Zeitraum ist nichts gekocht geplant.' : 'Für: ' + esc(list.recipes.join(', '))}</p>
+    title: `    <h2 class="printonly-h">Einkauf ${EP.fmtRange(from, to)}</h2>
+    <p class="sub shopfor">${!list.recipes.length ? 'In diesem Zeitraum ist nichts gekocht geplant.' : 'Für: ' + esc(list.recipes.join(', '))}</p>
 
 `,
     list: `    ${list.warnings.length ? `<ul class="box warnbox" style="margin-top:12px">${list.warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
@@ -4964,8 +5004,8 @@ function vShop() {
     actions: `    <div class="btns noprint">
       <button class="btn primary" data-act="copyshop">Offene Zutaten kopieren</button>
       <div class="btns two" style="margin-top:0">
-        ${navigator.share ? '<button class="btn" data-act="shareshop">Teilen</button>' : ''}
-        <button class="btn" data-act="printshop" ${navigator.share ? '' : 'style="grid-column:1/-1"'}>Drucken</button>
+        ${navigator.share ? `<button class="btn" data-act="shareshop" ${canPrint() ? '' : 'style="grid-column:1/-1"'}>Teilen${canPrint() ? '' : ' / Drucken'}</button>` : ''}
+        ${canPrint() || !navigator.share ? `<button class="btn" data-act="printshop" ${navigator.share ? '' : 'style="grid-column:1/-1"'}>Drucken</button>` : ''}
       </div>
     </div>`,
   };
@@ -5066,8 +5106,8 @@ function vRecipes() {
   const rot = EP.ROTATES(kind);
   return `${laneSeg(kind, 'rkind', EP.KINDS)}
     <div class="quick" style="margin-top:12px"><input class="in" id="qa" placeholder="${ph}" enterkeyhint="done" autocomplete="off">
-      <button class="btn primary" data-act="qa" aria-label="Rezept anlegen">+</button></div>
-    <div class="impbtns"><button class="btn quiet small impbtn" data-act="rimport">Rezepte aus JSON importieren</button><button class="btn quiet small impbtn" data-act="rexport">Rezepte als JSON exportieren</button></div>
+      <button class="btn primary" data-act="qa" aria-label="Rezept anlegen">+</button>
+      <button class="btn morebtn" data-act="rmore" aria-label="Rezepte importieren oder exportieren">${ICON.more}</button></div>
     ${all.length ? `<div class="rqrow"><input class="in" id="rq" placeholder="Suchen: Name, Tag, Zutat" value="${esc(recipeFilter.q)}">
       <button class="btn rsortbtn" data-act="rsort" aria-label="Sortierung: ${esc(SORT_MODES[mode].label)}">${ICON.sort}<span>${esc(SORT_MODES[mode].short)}</span></button></div>
     ${rot ? `<div class="seg" style="margin-top:10px">${seg('all', 'Alle')}${seg('active', 'In Rotation')}${seg('paused', 'Pausiert')}</div>` : ''}
@@ -5082,7 +5122,7 @@ function vRecipes() {
         </button>${favBtn(r)}</div>
         ${rot ? `<div class="ctrl">
           <label><span class="switch"><input type="checkbox" data-rot="${r.id}" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></span>${r.inRotation ? 'In Rotation' : 'Pausiert'}</label>
-          <div class="wstep"><button data-act="w" data-arg="${r.id}|-1" aria-label="Seltener">−</button><output>×${r.weight}</output><button data-act="w" data-arg="${r.id}|1" aria-label="Häufiger">+</button></div>
+          ${r.weight > 1 ? `<span class="wbadge" title="Häufigkeit in der Rotation">×${r.weight}</span>` : ''}
         </div>` : ''}</div>`;
     }).join('') || (all.length ? '<p class="empty">Keine Treffer.</p>' : `<div class="empty"><p class="serif">${{ MAIN: 'Dein Fundus ist leer', LUNCH: 'Noch keine Mittagsgerichte', CAKE: 'Noch keine Kuchen', SIDE: 'Noch keine Beilagen', SPECIAL: 'Noch nichts Besonderes' }[kind]}</p>
       <p>${{ MAIN: 'Tipp oben einen Gerichtnamen ein – Portionen, Zutaten und Anleitung kannst du später ergänzen.', LUNCH: 'Kleine Gerichte fürs Wochenende mit eigener Rotation.', CAKE: 'Kuchen kommen zusätzlich zum Essen dazu und haben ihre eigene Rotation.', SIDE: 'Salate, Soßen, Brot … ohne Rotation – du fügst sie selbst zu einem Tag hinzu.', SPECIAL: 'Aufwendige Gerichte für Sonntage und Festtage – gesammelt, aber nie in der Rotation.' }[kind]}</p>
@@ -6115,7 +6155,10 @@ function gRow({ icon, color, label, sub, value, right, act, arg, id, danger, che
   const btn = !!act;
   const inner = `<span class="gic" style="--c:${color}">${SI[icon]}</span><span class="gbody"><span class="glbl${danger ? ' danger' : ''}">${label}${sub ? `<small>${sub}</small>` : ''}</span>
     ${value != null ? `<span class="gval">${value}</span>` : ''}${right || ''}${btn && chevron !== false ? CHEV : ''}</span>`;
-  return btn ? `<button class="gi" data-act="${act}"${arg != null ? ` data-arg="${esc(String(arg))}"` : ''}${id ? ` id="${id}"` : ''}>${inner}</button>` : `<div class="gi">${inner}</div>`;
+  if (btn) return `<button class="gi" data-act="${act}"${arg != null ? ` data-arg="${esc(String(arg))}"` : ''}${id ? ` id="${id}"` : ''}>${inner}</button>`;
+  // Zeile mit Schalter: die ganze Zeile schaltet (nicht nur der kleine Schalter)
+  if (right && right.includes('class="switch"')) return `<label class="gi giswitch">${inner.replace('<label class="switch">', '<span class="switch">').replace(/<\/label>(?![\s\S]*<\/label>)/, '</span>')}</label>`;
+  return `<div class="gi">${inner}</div>`;
 }
 const gGroup = (title, rows, foot) => `${title ? `<h3 class="ghead">${title}</h3>` : ''}<div class="glist">${rows.filter(Boolean).join('')}</div>${foot ? `<p class="gfoot">${foot}</p>` : ''}`;
 const DAYN = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -6879,6 +6922,7 @@ const ACT = {
     EP.shopMark(db, 'removed', EP.shopUnits(db, r.from, r.to).units.map(u => u.key), false);   // auch vom verschobenen Vorgänger geerbte
     change('Wieder eingeblendet');
   },
+  shopperiod: () => { shopPeriodOpen = !shopPeriodOpen; const y = scrollY; rerender(); scrollTo(0, y); },
   shopparts: k => { shopOpen.has(k) ? shopOpen.delete(k) : shopOpen.add(k); const y = scrollY; rerender(); scrollTo(0, y); },
   delextra: i => { const st = shopState(), x = st.extras.find(e => e.id === i); if (!x) return; x.del = true; EP.touch(x); EP.touch(st); change(); },
   shopmode: m => {
@@ -6904,6 +6948,12 @@ const ACT = {
   rimport: () => quickImport(),
   rexport: () => exportSheet(),
   rstatus: a => { recipeFilter.status = a; rerender(); },
+  rmore: () => openSheet(`<h2>Rezepte</h2>
+    <button class="opt tone-rim" data-x="imp"><span class="oic">${ICON.odown}</span><span class="grow">Aus JSON importieren</span></button>
+    <button class="opt tone-rim" data-x="exp"><span class="oic">${ICON.oup}</span><span class="grow">Als JSON exportieren</span></button>`, el => {
+    $('[data-x=imp]', el).onclick = () => { closeSheet(); ACT.rimport(); };
+    $('[data-x=exp]', el).onclick = () => { closeSheet(); ACT.rexport(); };
+  }),
   rsort: () => sortSheet(),
   rtag: a => { recipeFilter.tag = recipeFilter.tag === a ? '' : a; rerender(); },
   w: a => { const [id, d] = a.split('|'); const r = recipeById(id); setWeight(r, r.weight + (+d)); change(); },
@@ -7190,7 +7240,7 @@ function authWelcome() {
   showAuth(`<h1>Essensplanung</h1><p class="lead">Rezepte sammeln, der Reihe nach kochen, Woche planen und einkaufen.</p>
     <div class="btns" style="margin-top:28px"><button class="btn primary" data-x="new">Neuen Haushalt einrichten</button>
     <button class="btn" data-x="join">Mit bestehendem Haushalt verbinden</button></div>
-    <p class="hint" style="text-align:center">Verbinden, wenn die Essensplanung schon auf einem anderen Gerät eingerichtet ist.</p>`, a => {
+`, a => {
     $('[data-x=new]', a).onclick = authSetup;
     $('[data-x=join]', a).onclick = () => authJoin(pendingJoin);
   });
@@ -7200,7 +7250,7 @@ function authSetup() {
     <label class="field"><span>Name des Haushalts</span><input class="in" id="a-n" placeholder="z. B. Familie Muster"></label>
     ${Konto.loggedIn() ? `<p class="hint">Der Haushalt wird mit deinem Konto <b>${esc(Konto.user())}</b> verknüpft und erscheint automatisch auf deinen anderen Geräten – kein eigenes Passwort nötig.</p>` : `<label class="field"><span>Passwort</span><input class="in" type="password" id="a-p1" autocomplete="new-password"></label>
     <label class="field"><span>Passwort wiederholen</span><input class="in" type="password" id="a-p2" autocomplete="new-password"></label>
-    <p class="hint">Mit diesem Passwort öffnest du die Essensplanung auf allen Geräten. Den Abgleich zwischen Geräten richtest du danach in den Einstellungen ein. Tipp: Mit einem Konto (im Hauptmenü) geht es ohne eigenes Passwort.</p>`}
+    <p class="hint">Gilt auf allen Geräten des Haushalts.</p>`}
     <div class="btns"><button class="btn primary" data-x="ok">Einrichten</button><button class="btn quiet" data-x="back">Zurück</button></div>`, a => {
     $('[data-x=back]', a).onclick = authWelcome;
     $('[data-x=ok]', a).onclick = async () => {
