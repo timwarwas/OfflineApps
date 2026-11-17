@@ -2,7 +2,7 @@
    Betrifft ausschließlich die Seiten in PAGES – alle anderen Seiten bleiben unberührt.
    Strategie: erst Netz (immer aktueller Stand), ohne Netz die zuletzt geladene Version. */
 const CACHE = 'essensplanung-v1';   // Name beibehalten, damit der bestehende Offline-Stand erhalten bleibt
-const PAGES = ['/index.html', '/essensplanung.html', '/kosten.html', '/workout.html', '/cocktails.html', '/spiele.html'];
+const PAGES = ['/index.html', '/essensplanung.html', '/kosten.html', '/workout.html', '/cocktails.html', '/spiele.html', '/verstecken.html'];
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {
@@ -23,14 +23,16 @@ self.addEventListener('fetch', e => {
 /* ---------- Mitteilungen (Web-Push vom Push-Dienst auf dem Pi) ----------
    Die Nachricht enthält nur Kanal, Art und einen verschlüsselten Block. Den Schlüssel legen die Apps
    in IndexedDB „push-keys“ ab; ohne Schlüssel erscheint ein neutraler Hinweis. */
-function pushKey(ch) {
+function idbKey(name, ch) {
   return new Promise(res => {
-    const r = indexedDB.open('push-keys', 1);
+    const r = indexedDB.open(name, 1);
     r.onupgradeneeded = () => r.result.createObjectStore('k');
     r.onerror = () => res(null);
     r.onsuccess = () => { try { const q = r.result.transaction('k').objectStore('k').get(ch); q.onsuccess = () => { res(q.result || null); r.result.close(); }; q.onerror = () => res(null); } catch (e) { res(null); } };
   });
 }
+/* „verstecken-keys“: eigene Kanäle der Verstecken-App (getrennt, weil push.js „push-keys“ beim Abgleich leert) */
+async function pushKey(ch) { return (await idbKey('push-keys', ch)) || (await idbKey('verstecken-keys', ch)); }
 const b64d = s => { s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
 async function openBox(keyB64, box) {
   const p = String(box || '').split('.');
