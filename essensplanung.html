@@ -5118,7 +5118,7 @@ function vRecipes() {
         <div class="rtop"><button class="head" data-act="edit" data-arg="${r.id}">
           ${ck ? `<img class="thumb" data-img="${ck}" data-thumb="1" alt="">` : ''}
           <span class="grow"><span class="nm" style="display:block">${esc(r.name)}</span>
-          <span class="meta" style="display:block">${kind === 'MAIN' ? `${r.servings} Portionen = ${daysLabel(n)}${r.daysOverride ? ' (fest)' : ''}` : `${r.servings} ${kind === 'CAKE' ? 'Stücke' : 'Portionen'}`}${r.ingredients.length ? `, ${r.ingredients.length} Zutaten` : ''}${EP.seasonLabel(r) ? `<br>Saison: ${EP.seasonLabel(r)}` : ''}${sortMeta(r, mode, stats)}</span></span>
+          <span class="meta" style="display:block">${kind === 'MAIN' ? `${r.servings} Portionen = ${daysLabel(n)}${r.daysOverride ? ' (fest)' : ''}` : `${r.servings} ${kind === 'CAKE' ? 'Stücke' : 'Portionen'}`}${r.ingredients.length ? `, ${r.ingredients.length} ${r.ingredients.length === 1 ? 'Zutat' : 'Zutaten'}` : ''}${EP.seasonLabel(r) ? `<br>Saison: ${EP.seasonLabel(r)}` : ''}${sortMeta(r, mode, stats)}</span></span>
         </button>${favBtn(r)}</div>
         ${rot ? `<div class="ctrl">
           <label><span class="switch"><input type="checkbox" data-rot="${r.id}" ${r.inRotation ? 'checked' : ''} aria-label="In Rotation"><i></i></span>${r.inRotation ? 'In Rotation' : 'Pausiert'}</label>
@@ -5247,7 +5247,7 @@ function importPreview(recs, rawText) {
   const card = (it, i) => {
     const r = it.rec, newIngs = r.ingredients.filter(x => !findIngredient(x.name)).length;
     const steps = r.instructions ? r.instructions.split('\n').filter(l => l.trim()).length : 0;
-    const meta = [`${r.servings} ${it.kind === 'CAKE' ? 'Stücke' : 'Portionen'}`, `${r.ingredients.length} Zutaten${newIngs ? ` (${newIngs} neu)` : ''}`,
+    const meta = [`${r.servings} ${it.kind === 'CAKE' ? 'Stücke' : 'Portionen'}`, `${r.ingredients.length} ${r.ingredients.length === 1 ? 'Zutat' : 'Zutaten'}${newIngs ? ` (${newIngs} neu)` : ''}`,
       `${steps} ${steps === 1 ? 'Schritt' : 'Schritte'}`, r.prepTimeMinutes ? r.prepTimeMinutes + ' Min.' : ''].filter(Boolean).join(', ');
     return `<div class="rcard impcard" data-card="${i}">
       <label class="imphead"><input type="checkbox" data-inc="${i}" checked aria-label="${esc(r.name)} importieren"><span class="nm">${esc(r.name)}</span></label>
