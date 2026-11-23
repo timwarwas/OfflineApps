@@ -1,23 +1,47 @@
-/* Service Worker der Anwendungssammlung: hält einzelne Apps für die Offline-Nutzung bereit.
+/* Service Worker der Anwendungssammlung: hält die Apps für die Offline-Nutzung bereit.
    Betrifft ausschließlich die Seiten in PAGES – alle anderen Seiten bleiben unberührt.
-   Strategie: erst Netz (immer aktueller Stand), ohne Netz die zuletzt geladene Version. */
+   Strategie (seit 23.11.2026): sofort die gespeicherte Version zeigen und im Hintergrund nachladen.
+   Ist die geladene Fassung neuer, bekommt die geöffnete Seite die Nachricht {type: 'sw-update'} und
+   zeigt „Neue Version · Neu laden“. Vorher wurde bei jedem Start erst die ganze Seite aus dem Netz
+   geladen – bei schwachem Empfang dauerte der Start dadurch mehrere Sekunden. */
 const CACHE = 'essensplanung-v1';   // Name beibehalten, damit der bestehende Offline-Stand erhalten bleibt
 const PAGES = ['/index.html', '/essensplanung.html', '/kosten.html', '/workout.html', '/cocktails.html', '/spiele.html', '/verstecken.html'];
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+const pause = ms => new Promise(r => setTimeout(r, ms));
+const stamp = r => r && (r.headers.get('etag') || r.headers.get('last-modified'));
+async function isNewer(cached, fresh) {
+  if (stamp(cached) && stamp(fresh)) return stamp(cached) !== stamp(fresh);
+  try { return (await cached.clone().text()) !== (await fresh.clone().text()); } catch (e) { return false; }
+}
+async function tell(clientId, page) {   // die gerade geöffnete Seite benachrichtigen (sie lädt evtl. noch)
+  for (let i = 0; i < 20; i++) {
+    const c = clientId && await self.clients.get(clientId);
+    if (c) { c.postMessage({ type: 'sw-update', page }); return; }
+    await pause(500);
+  }
+}
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (url.origin === location.origin && url.pathname.endsWith('/')) url.pathname += 'index.html';   // Aufruf des Ordners = Hauptmenü
   if (e.request.method !== 'GET' || url.origin !== location.origin || !(PAGES.some(p => url.pathname.endsWith(p)))) return;
-  e.respondWith(
-    fetch(e.request).then(res => {
+  const page = PAGES.find(p => url.pathname.endsWith(p));
+  let finish; e.waitUntil(new Promise(r => { finish = r; }));   // Hintergrund-Laden darf zu Ende laufen
+  e.respondWith((async () => {
+    const cache = await caches.open(CACHE);
+    const cached = await cache.match(url.pathname);
+    const update = fetch(e.request).then(async res => {
       if (res.ok) {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(url.pathname, copy));
+        const newer = cached && await isNewer(cached, res);
+        await cache.put(url.pathname, res.clone());
+        if (newer) await tell(e.resultingClientId || e.clientId, page);
       }
       return res;
-    }).catch(() => caches.open(CACHE).then(c => c.match(url.pathname)).then(r => r || caches.match(e.request, { ignoreSearch: true })))
-  );
+    });
+    update.catch(() => {}).then(finish);
+    if (cached) return cached.clone();   // sofort starten (Kopie: das Original wird danach mit der neuen Fassung verglichen)
+    return update.catch(() => caches.match(e.request, { ignoreSearch: true }));   // erster Start: Netz
+  })().catch(err => { finish(); throw err; }));
 });
 
 /* ---------- Mitteilungen (Web-Push vom Push-Dienst auf dem Pi) ----------

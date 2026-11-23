@@ -3553,7 +3553,34 @@ kontoInvRefresh();
 pushRender();
 pushHash();
 Push.sync().catch(()=>{});
-if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+<script>
+/* ===== Neue Version (gemeinsam für alle Apps, Quelle: essensplanung-quellcode/sw-update.js) =====
+   Die App startet sofort aus dem Offline-Speicher; der Service Worker lädt im Hintergrund nach und
+   meldet {type:'sw-update'}, wenn eine neuere Fassung bereitliegt. Dann erscheint oben „Neue Version · Neu laden“. */
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  var shown = false;
+  navigator.serviceWorker.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (!d || d.type !== 'sw-update' || shown) return;
+    var here = location.pathname.replace(/\/$/, '/index.html');
+    if (d.page && here.slice(-d.page.length) !== d.page) return;
+    shown = true;
+    var st = document.createElement('style');
+    st.textContent = '#sw-update{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 8px);transform:translateX(-50%);z-index:2147483000;display:flex;align-items:center;gap:6px;min-height:44px;max-width:calc(100vw - 32px);padding:0 18px;border:0;border-radius:22px;font:600 15px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#fff;background:#1F2937;box-shadow:0 8px 28px rgba(0,0,0,.28);cursor:pointer;white-space:nowrap;animation:swup .25s ease-out}'
+      + '#sw-update b{font-weight:800}#sw-update:active{transform:translateX(-50%) scale(.97)}'
+      + '@keyframes swup{from{opacity:0;transform:translate(-50%,-12px)}to{opacity:1;transform:translate(-50%,0)}}'
+      + '@media (prefers-color-scheme:dark){#sw-update{color:#111827;background:#F3F4F6}}';
+    document.head.appendChild(st);
+    var b = document.createElement('button');
+    b.id = 'sw-update'; b.type = 'button';
+    b.innerHTML = 'Neue Version <b>· Neu laden</b>';
+    b.onclick = function () { location.reload(); };
+    document.body.appendChild(b);
+  });
+})();
 </script>
 </body>
 </html>
